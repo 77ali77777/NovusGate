@@ -1,0 +1,15 @@
+{
+  "body": {
+    "cidr": "10.67.0.0/24",
+    "created_at": "<time>",
+    "id": "<uuid>",
+    "interface_name": "wg69",
+    "listen_port": 51820,
+    "name": "contract-new",
+    "server_endpoint": "127.0.0.1:51820",
+    "server_public_key": "<key>",
+    "updated_at": "<time>"
+  },
+  "content_type": "application/json",
+  "status": 201
+}

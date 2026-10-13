@@ -1,0 +1,25 @@
+{
+  "body": [
+    {
+      "created_at": "<time>",
+      "endpoints": null,
+      "id": "<uuid>",
+      "labels": {
+        "wireguard_private_key": "<key>"
+      },
+      "last_seen": "<time>",
+      "name": "contract-node",
+      "network_id": "<uuid>",
+      "node_info": {
+        "arch": "",
+        "hostname": "",
+        "os": ""
+      },
+      "public_key": "<key>",
+      "status": "online",
+      "virtual_ip": "10.66.0.3"
+    }
+  ],
+  "content_type": "application/json",
+  "status": 200
+}

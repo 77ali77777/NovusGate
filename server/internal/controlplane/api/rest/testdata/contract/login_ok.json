@@ -1,0 +1,8 @@
+{
+  "body": {
+    "token": "<token>",
+    "username": "admin"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

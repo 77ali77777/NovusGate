@@ -625,7 +625,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	network.ListenPort = port
 	
 	// 3. Generate WireGuard keys BEFORE saving to DB
-	privateKey, publicKey, err := wireguard.GenerateKeys()
+	privateKey, publicKey, err := generateKeys()
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to generate WireGuard keys: "+err.Error())
 		return
@@ -1179,16 +1179,26 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, info)
 }
 
-// execCommand helper
-func execCommand(name string, args ...string) (string, error) {
+// execCommand and execHostCommand run commands in the container or on the
+// host; tests replace them so no host command ever runs.
+var (
+	execCommand     = runCommand
+	execHostCommand = runHostCommand
+)
+
+// generateKeys creates a WireGuard key pair (replaced in tests).
+var generateKeys = wireguard.GenerateKeys
+
+// runCommand runs a command in the container.
+func runCommand(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	out, err := cmd.Output()
 	return string(out), err
 }
 
-// execHostCommand executes a command on the host system using nsenter
+// runHostCommand executes a command on the host system using nsenter
 // This is needed because fail2ban runs on host, not in container
-func execHostCommand(name string, args ...string) (string, error) {
+func runHostCommand(name string, args ...string) (string, error) {
 	// First try direct execution (works if binary is mounted or we're on host)
 	cmd := exec.Command(name, args...)
 	out, err := cmd.Output()

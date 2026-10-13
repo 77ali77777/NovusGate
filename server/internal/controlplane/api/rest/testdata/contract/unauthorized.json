@@ -1,0 +1,7 @@
+{
+  "body": {
+    "error": "missing authorization header"
+  },
+  "content_type": "application/json",
+  "status": 401
+}

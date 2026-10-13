@@ -269,7 +269,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	// 1. Generate keys
-	privateKey, publicKey, err := wireguard.GenerateKeys()
+	privateKey, publicKey, err := generateKeys()
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to generate keys: "+err.Error())
 		return

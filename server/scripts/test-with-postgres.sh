@@ -8,6 +8,7 @@ set -euo pipefail
 SERVER_DIR="${SERVER_DIR:-/mnt/c/Users/Administrator/Desktop/NovusGate/server}"
 NET=novusgate-test-net
 PG=novusgate-test-pg
+INNER="${INNER:-scripts/test-in-docker.sh}"
 
 cleanup() {
   docker rm -f "$PG" > /dev/null 2>&1 || true
@@ -29,4 +30,4 @@ done
 MSYS_NO_PATHCONV=1 docker run --rm --cap-add NET_ADMIN --network "$NET" \
   -e TEST_DATABASE_URL="postgres://ng:ng@$PG:5432/ng?sslmode=disable" \
   -v gomod:/go/pkg/mod -v "$SERVER_DIR":/src -w /src \
-  golang:1.23 bash scripts/test-in-docker.sh
+  golang:1.23 bash "$INNER"

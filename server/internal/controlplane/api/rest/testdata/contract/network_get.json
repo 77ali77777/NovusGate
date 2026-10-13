@@ -1,0 +1,15 @@
+{
+  "body": {
+    "cidr": "10.66.0.0/24",
+    "created_at": "<time>",
+    "id": "<uuid>",
+    "interface_name": "wg66",
+    "listen_port": 51866,
+    "name": "contract-net",
+    "server_endpoint": "203.0.113.1",
+    "server_public_key": "<key>",
+    "updated_at": "<time>"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

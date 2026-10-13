@@ -1,0 +1,7 @@
+{
+  "body": {
+    "error": "invalid credentials"
+  },
+  "content_type": "application/json",
+  "status": 401
+}

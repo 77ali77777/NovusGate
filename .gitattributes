@@ -4,3 +4,4 @@
 *.nft text eol=lf
 # gofmt checks in scripts/test-in-docker.sh fail on CRLF checkouts.
 *.go text eol=lf
+server/**/testdata/** text eol=lf

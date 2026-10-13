@@ -1,0 +1,5 @@
+{
+  "body": "[Interface]\nPrivateKey = <key>\nAddress = 10.66.0.3\n\n[Peer]\nPublicKey = <key>\nEndpoint = 203.0.113.1\nAllowedIPs = 10.66.0.0/24\nPersistentKeepalive = 25\n",
+  "content_type": "text/plain",
+  "status": 200
+}
