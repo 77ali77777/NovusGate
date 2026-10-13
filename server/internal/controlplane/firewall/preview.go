@@ -15,16 +15,12 @@ type Source interface {
 	GetNode(ctx context.Context, id string) (*models.Node, error)
 }
 
-// DetectHost reads the host facts a ruleset depends on: the ports sshd
-// listens on and the interface that carries the default route.
+// DetectHost reads the host facts a ruleset depends on: the ports SSH must
+// stay reachable on and the interface that carries the default route.
 func DetectHost(r nft.Runner) ([]uint16, string, error) {
-	out, err := r.Run("", "sshd", "-T")
+	ports, err := nft.DetectSSHPorts(r)
 	if err != nil {
-		return nil, "", fmt.Errorf("sshd -T: %v: %s", err, out)
-	}
-	ports := nft.ParseSSHDPorts(out)
-	if len(ports) == 0 {
-		return nil, "", fmt.Errorf("sshd -T reported no port")
+		return nil, "", err
 	}
 	route, err := r.Run("", "ip", "route", "get", "8.8.8.8")
 	if err != nil {

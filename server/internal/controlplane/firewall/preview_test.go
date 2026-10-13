@@ -80,4 +80,12 @@ func TestDetectHost(t *testing.T) {
 	if _, _, err := DetectHost(fakeHost{out: map[string]string{}}); err == nil {
 		t.Fatal("missing sshd must be an error, never a guessed port")
 	}
+	// sshd -T fails without /run/sshd; the live listeners must still be found.
+	ports, _, err = DetectHost(fakeHost{out: map[string]string{
+		"ss -Htlnp":            `LISTEN 0 128 0.0.0.0:2200 0.0.0.0:* users:(("sshd",pid=7,fd=3))`,
+		"ip route get 8.8.8.8": "8.8.8.8 dev eth0 src 192.0.2.10 uid 0",
+	}})
+	if err != nil || len(ports) != 2 || ports[0] != 22 || ports[1] != 2200 {
+		t.Fatalf("ss fallback: DetectHost = %v, %v; want [22 2200]", ports, err)
+	}
 }
