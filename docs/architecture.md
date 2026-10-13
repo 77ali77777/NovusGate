@@ -12,3 +12,15 @@
 - Hazırda heç bir HTTP endpoint və ya startup kodu nft tətbiq etmir. Tətbiq P3b-də `FIREWALL_ENGINE` bayrağı ilə gələcək.
 - Semantika: nftables-də `accept` yekun deyil, `drop` yekundur. Siyasət drop ilə tətbiq olunur, Docker-in və fail2ban-ın cədvəllərinə toxunulmur.
 - Testlər: `server/scripts/test-in-docker.sh` (`NFT_CHECK=1` ilə kernel yoxlaması).
+
+## Firewall engine inteqrasiyası (P3b-1)
+- **`FIREWALL_ENGINE`:**
+  - `iptables` — default, köhnə kod yolları dəyişmir;
+  - `shadow` — startup-da yalnız `nft -c` icra olunur;
+  - `nft` — engine tətbiq edir.
+- **`firewall.Engine`:** `Change.Mutate` ilə dəyişikliyi yaddaşda qurur, tətbiq edir. `Change.Commit` ilə yalnız dəyişiklik canlı olandan sonra (dərhal və ya təsdiqdən sonra) DB-yə yazır, ona görə rollback olan dəyişiklik saxlanmır. Bitmə vaxtı olan IP qaydası üçün reconcile planlaşdırılır.
+- **DB:** `fw_services`, `fw_ip_rules`, `fw_forwards`, `fw_egress`, `fw_meta` (migration 006). Rollback faylı `store/migrations_rollback/`-dadır və embed olunmur.
+- **REST:** `/api/v1/firewall/v2/*` (bax `docs/api.md`). nft rejimində köhnə `/firewall/host/*` endpoint-ləri validasiyadan sonra adapterə keçir (`firewall_v1_nft.go`). Şəbəkə və node dəyişiklikləri reconcile edir.
+- **Startup (nft):** iptables-dən bir dəfəlik idxal (`fw_meta.iptables_imported`), köhnə `novusgate-vpn-*` FORWARD qaydalarının silinməsi, reconcile.
+- **Boot faylı:** `/etc/novusgate/firewall.nft`. Onu yükləyən unit P3b-2-dədir.
+- **DB testləri:** `server/scripts/test-with-postgres.sh` (`TEST_DATABASE_URL`, `-p 1`).

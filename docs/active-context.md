@@ -58,6 +58,11 @@
 - **Yoxlanmayıb:** privileged konteynerdə real kernel end-to-end sınağı. İstifadəçi bu sınağı rədd etdi, ona görə o, P3b-1 runbook-una (staging) köçürüldü.
 - **Davam:** P3b-1 icrası, sonra P3b-2 (iptables → nft keçidi, fail2ban nftables, boot unit, installer).
 
+### Eyni sessiyanın davamı (2026-10-13): P3b-1 icra olundu
+- **Nəticə:** Task 1–4 commit-ləndi (`76a1316`, `70f656f`, `42fcd9b`, `b3d267f`), Task 5 sənədlərdir. `bash server/scripts/test-with-postgres.sh` → `ok` `…/api/rest` (0.669s, real DB), `…/firewall`, `…/store`, `…/nft`; exit 0. Compose config validdir. Köhnə fayllarda (`handlers.go`, `firewall_handlers.go`, `main.go`, compose) yalnız əlavələr var (88 sətir).
+- **Default `FIREWALL_ENGINE=iptables`:** heç bir serverin davranışı dəyişmir.
+- **Davam:** staging-də `docs/runbooks/p3b1-firewall-engine.md`. Sonra P3b-2 planı: iptables `INPUT DROP`-dan keçid, fail2ban nftables, boot unit, installer-in `nftables` paketi, nft-dən iptables-ə geri qayıdanda cədvəlin silinməsi.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
