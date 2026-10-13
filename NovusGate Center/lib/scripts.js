@@ -120,8 +120,8 @@ log_info "Cleaning up previous VPN state..."
 
 # 1. Stop existing Docker containers holding ports
 if command -v docker &> /dev/null; then
-  docker ps -q --filter name=NovusGate | xargs -r docker stop || true
-  docker ps -q --filter name=NovusGate | xargs -r docker rm || true
+  docker ps -q --filter name=novusgate | xargs -r docker stop || true
+  docker ps -q --filter name=novusgate | xargs -r docker rm || true
 fi
 
 # 2. Stop Systemd Services
@@ -274,7 +274,7 @@ sleep 30
 # Initialize
 log_info "Skipping default network creation (Admin Network is auto-created)..."
 # We DO NOT run init anymore, because we only want the Admin Network initially.
-# INIT_OUTPUT=$(docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./NovusGate-server init --name "$NETWORK_NAME" --cidr "$NETWORK_CIDR" 2>&1 || true)
+# INIT_OUTPUT=$(docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server init --name "$NETWORK_NAME" --cidr "$NETWORK_CIDR" 2>&1 || true)
 # echo "$INIT_OUTPUT"
 
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -316,7 +316,7 @@ echo "JWT_SECRET:  $JWT_SECRET"
 echo "------------------------------------------"
 echo "These keys were automatically written to deployments/docker/.env"
 echo ""
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep NovusGate || true
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -i novusgate || true
 `;
 
 
@@ -488,7 +488,7 @@ echo "Re-Initializing NovusGate Control Plane..."
 # Init command skipped (Admin Network auto-bootstrapped)
 
 echo "REINSTALL COMPLETE!"
-docker ps | grep NovusGate || true
+docker ps | grep -i novusgate || true
 `;
 };
 
@@ -511,8 +511,8 @@ if [ -f "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" ]; then
 fi
 
 # Fallback: kill any NovusGate containers
-docker ps -q --filter name=NovusGate | xargs -r docker stop || true
-docker ps -a --format "{{.ID}} {{.Names}}" | grep NovusGate | awk '{print $1}' | xargs -r docker rm -f || true
+docker ps -q --filter name=novusgate | xargs -r docker stop || true
+docker ps -a --format "{{.ID}} {{.Names}}" | grep -i novusgate | awk '{print $1}' | xargs -r docker rm -f || true
 
 echo "[2/5] Cleaning WireGuard Interfaces..."
 # Stop Admin VPN
@@ -650,6 +650,7 @@ if command -v rsync &> /dev/null; then
     --exclude='web/.env' \\
     --exclude='data/' \\
     --exclude='*.log' \\
+    --exclude='admin-vpn.conf' \\
     "$TEMP_DIR/" "$INSTALL_DIR/"
 else
   # Backup .env files
@@ -701,7 +702,7 @@ fi
 echo "[5/6] Checking database..."
 if [ "$SERVER_CHANGED" = true ]; then
   sleep 5
-  docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./NovusGate-server migrate 2>&1 || echo "Migration skipped"
+  docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate 2>&1 || echo "Migration skipped"
 else
   echo "  Server unchanged - skipping migration"
 fi
@@ -731,7 +732,7 @@ if [ "$SERVER_CHANGED" = false ] && [ "$WEB_CHANGED" = false ]; then echo "  ✅
 echo "  ✅ .env preserved"
 echo "  ✅ Database preserved"
 echo "=========================================="
-docker ps --format "table {{.Names}}\\t{{.Status}}" | grep NovusGate || true
+docker ps --format "table {{.Names}}\\t{{.Status}}" | grep -i novusgate || true
 `;
 
 // Database-only migration script (no file changes)
@@ -748,7 +749,7 @@ echo "=========================================="
 cd "$INSTALL_DIR"
 
 echo "[1/2] Checking database migrations..."
-docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./NovusGate-server migrate
+docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate
 
 echo ""
 echo "=========================================="

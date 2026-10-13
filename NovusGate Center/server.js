@@ -172,7 +172,7 @@ app.get('/api/servers/:id/status', async (req, res) => {
     const isInstalled = NovusGateCheck.stdout.trim() === 'installed';
     
     // Check Docker containers
-    const dockerPs = await execSSH(conn, 'docker ps --format "{{.Names}}|{{.Status}}|{{.Ports}}" 2>/dev/null | grep NovusGate || true');
+    const dockerPs = await execSSH(conn, 'docker ps --format "{{.Names}}|{{.Status}}|{{.Ports}}" 2>/dev/null | grep -i novusgate || true');
     const containers = dockerPs.stdout.trim().split('\n').filter(Boolean).map(line => {
       const [name, status, ports] = line.split('|');
       return { name, status, ports };
