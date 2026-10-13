@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
+	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
 	"github.com/spf13/cobra"
@@ -127,6 +129,18 @@ func initConfig() {
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
+	// Structured logs for the server; slog.SetDefault also routes the
+	// standard log package. A typo in a logging variable must not stop the
+	// VPN control plane: fall back to JSON/info and say so.
+	logger, logErr := logging.New(os.Stdout, os.Getenv("LOG_FORMAT"), os.Getenv("LOG_LEVEL"))
+	if logErr != nil {
+		logger, _ = logging.New(os.Stdout, "", "")
+	}
+	slog.SetDefault(logger)
+	if logErr != nil {
+		slog.Warn(logErr.Error() + "; using LOG_FORMAT=json LOG_LEVEL=info")
+	}
+
 	// Get configuration
 	listenAddr := viper.GetString("listen")
 	databaseURL := viper.GetString("database_url")

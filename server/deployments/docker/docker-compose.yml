@@ -50,6 +50,8 @@ services:
       ADMIN_CIDR: ${ADMIN_CIDR:-10.99.0.0/24}
       # Firewall engine: iptables (default) | shadow (check only) | nft (enforce)
       FIREWALL_ENGINE: ${FIREWALL_ENGINE:-iptables}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
