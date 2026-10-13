@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"log/slog"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -36,5 +39,20 @@ func TestMaskDatabaseURLHidesUnusualPasswords(t *testing.T) {
 		if !strings.Contains(got, "xxxxx") {
 			t.Errorf("maskDatabaseURL(%q) = %q, want the password replaced by xxxxx", in, got)
 		}
+	}
+}
+
+// net/http's own errors (accept failures, panics) must reach the log at
+// Error, so LOG_LEVEL=warn does not hide them.
+func TestHTTPServerLogsItsErrorsAtErrorLevel(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	srv := newHTTPServer(":0", http.NotFoundHandler(), logger)
+	if srv.ErrorLog == nil {
+		t.Fatal("http.Server.ErrorLog must be set")
+	}
+	srv.ErrorLog.Print("http: Accept error: too many open files")
+	if !strings.Contains(buf.String(), `"level":"ERROR"`) || !strings.Contains(buf.String(), "Accept error") {
+		t.Fatalf("server error not logged at ERROR: %q", buf.String())
 	}
 }

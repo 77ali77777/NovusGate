@@ -301,7 +301,7 @@ func (e *Engine) Confirm(ctx context.Context, id string) error {
 	}
 	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state)
 	for _, w := range extra {
-		slog.Info(fmt.Sprintf("firewall: %v", w))
+		slog.Warn(fmt.Sprintf("firewall: %v", w))
 	}
 	return err
 }

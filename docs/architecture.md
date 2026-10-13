@@ -79,6 +79,8 @@
   - `/health` `debug` səviyyəsində, 5xx cavablar `error` səviyyəsində yazılır.
 - **`RecoverMiddleware`:** panic 500 (`{"error":"internal server error"}`) cavabına çevrilir və stack ilə log-a yazılır. `http.ErrAbortHandler` yenidən panic edilir.
 - **Middleware sırası:** Logging → Recover → API key → Auth. Hər biri bir dəfə işləyir; `main.go`-dakı ikiqat bükmə silindi.
+- **`http.Server.ErrorLog`** (accept xətaları, net/http panic-ləri) `slog`-a Error səviyyəsində yönləndirilir.
+- **Səviyyə qaydası:** xəta, uğursuzluq və xəbərdarlıq mesajları Warn və ya Error səviyyəsində yazılır. Bunu `TestLogLevelsMatchMessages` qoruyur.
 - **Runtime kodu yalnız `slog` ilə log yazır.** Mesaj mətnləri əvvəlki kimidir, ona görə runbook grep-ləri işləyir. Bunu `TestRuntimeCodeLogsThroughSlog` qoruyur.
   - CLI çıxışı (`migrate`, `init`, `version`, `firewall preview`) `fmt` olaraq qalır.
   - `migrate` slog-un mətn handler-i ilə yazır.

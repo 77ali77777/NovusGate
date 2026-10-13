@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -89,5 +90,62 @@ func TestRuntimeCodeLogsThroughSlog(t *testing.T) {
 	}
 	if len(bad) > 0 {
 		t.Fatalf("runtime code must log through log/slog, found %d direct prints:\n%s", len(bad), strings.Join(bad, "\n"))
+	}
+}
+
+// TestLogLevelsMatchMessages catches a message about an error, a failure or a
+// warning logged at Info or Debug: it would vanish at LOG_LEVEL=warn.
+func TestLogLevelsMatchMessages(t *testing.T) {
+	alarm := regexp.MustCompile(`(?i)\b(error|failed|failure|warning)\b`)
+	var bad []string
+	check := func(fset *token.FileSet, n ast.Node) {
+		ast.Inspect(n, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok || len(call.Args) == 0 {
+				return true
+			}
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			if pkg, ok := sel.X.(*ast.Ident); !ok || pkg.Name != "slog" || (sel.Sel.Name != "Info" && sel.Sel.Name != "Debug") {
+				return true
+			}
+			msg := call.Args[0]
+			if inner, ok := msg.(*ast.CallExpr); ok && len(inner.Args) > 0 {
+				msg = inner.Args[0] // slog.Info(fmt.Sprintf("...", ...))
+			}
+			if lit, ok := msg.(*ast.BasicLit); ok && alarm.MatchString(lit.Value) {
+				bad = append(bad, fset.Position(call.Pos()).String()+": "+lit.Value)
+			}
+			return true
+		})
+	}
+	for _, dir := range runtimeDirs {
+		files, _ := filepath.Glob(filepath.Join(dir, "*.go"))
+		for _, f := range files {
+			if strings.HasSuffix(f, "_test.go") {
+				continue
+			}
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, f, nil, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			check(fset, file)
+		}
+	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "../../../cmd/control-plane/main.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range file.Decls {
+		if fn, ok := d.(*ast.FuncDecl); ok && serverFuncs[fn.Name.Name] {
+			check(fset, fn)
+		}
+	}
+	if len(bad) > 0 {
+		t.Fatalf("errors and warnings must be logged at Warn or Error:\n%s", strings.Join(bad, "\n"))
 	}
 }

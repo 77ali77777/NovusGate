@@ -214,19 +214,13 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Create HTTP server
-	httpServer := &http.Server{
-		Addr:         listenAddr,
-		Handler:      apiServer.Router(),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
+	httpServer := newHTTPServer(listenAddr, apiServer.Router(), slog.Default())
 
 	// Start server in goroutine
 	go func() {
 		slog.Info(fmt.Sprintf("HTTP server listening on %s", listenAddr))
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Info(fmt.Sprintf("HTTP server error: %v", err))
+			slog.Error(fmt.Sprintf("HTTP server error: %v", err))
 		}
 	}()
 
@@ -514,7 +508,7 @@ func bootstrapSystem(db *store.Store) error {
 		// Step 4: Last resort - generate new keys (this should NOT happen in normal flow)
 		if privateKey == "" || publicKey == "" {
 			slog.Warn("WARNING: Could not read existing keys, generating new ones...")
-			slog.Info("This may cause connection issues if wg0 was already configured by installer!")
+			slog.Warn("This may cause connection issues if wg0 was already configured by installer!")
 			privateKey, publicKey, err = wireguard.GenerateKeys()
 			if err != nil {
 				return fmt.Errorf("failed to generate WireGuard keys: %w", err)
@@ -597,4 +591,18 @@ func bootstrapSystem(db *store.Store) error {
 	}
 
 	return nil
+}
+
+// newHTTPServer builds the API server. net/http's own errors (accept
+// failures, recovered panics) go to the logger at Error, so LOG_LEVEL=warn
+// does not hide them.
+func newHTTPServer(addr string, h http.Handler, logger *slog.Logger) *http.Server {
+	return &http.Server{
+		Addr:         addr,
+		Handler:      h,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+	}
 }

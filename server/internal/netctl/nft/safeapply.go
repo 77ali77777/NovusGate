@@ -169,7 +169,7 @@ func (s *SafeApplier) rollback(id string) {
 	}
 	s.pending = nil
 	if err := s.Timer.Disarm(); err != nil {
-		slog.Info(fmt.Sprintf("firewall: disarm after rollback: %v", err))
+		slog.Warn(fmt.Sprintf("firewall: disarm after rollback: %v", err))
 	}
 }
 
