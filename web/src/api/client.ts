@@ -283,7 +283,7 @@ class ApiClient {
 
   // Delete a firewall rule
   async deleteFirewallRule(request: DeleteRuleRequest): Promise<any> {
-    const { data } = await this.client.delete('/firewall/host/rules', { data: request })
+    const { data } = await this.client.post('/firewall/host/rules/delete', request)
     return data
   }
 

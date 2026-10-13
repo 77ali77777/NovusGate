@@ -18,6 +18,9 @@ import (
 // errNotFound is returned by engine mutations that reference a missing record.
 var errNotFound = errors.New("not found")
 
+// errConflict is returned by engine mutations that collide with a stored record.
+var errConflict = errors.New("conflict")
+
 // clearLegacyVPNRules removes the iptables novusgate-vpn-* FORWARD rules
 // (replaced in tests).
 var clearLegacyVPNRules = (*Server).clearNovusGateVPNRules
@@ -171,26 +174,38 @@ func (s *Server) protectAddrs(r *http.Request) []netip.Addr {
 func (s *Server) wireGuardEndpointFor(addr netip.Addr) (netip.Addr, bool) {
 	s.managersMu.RLock()
 	defer s.managersMu.RUnlock()
+	var all []wireguard.PeerStatus
 	for _, mgr := range s.managers {
 		peers, err := mgr.GetPeers()
 		if err != nil {
 			continue
 		}
 		for _, p := range peers {
-			for _, allowed := range strings.Split(p.AllowedIPs, ",") {
-				prefix, err := netip.ParsePrefix(strings.TrimSpace(allowed))
-				if err != nil || !prefix.Contains(addr) {
-					continue
-				}
-				ap, err := netip.ParseAddrPort(p.Endpoint)
-				if err != nil {
-					continue
-				}
-				return ap.Addr().Unmap(), true
-			}
+			all = append(all, p)
 		}
 	}
-	return netip.Addr{}, false
+	return endpointForAddr(all, addr)
+}
+
+// endpointForAddr returns the endpoint of the peer whose AllowedIPs match
+// addr most specifically, so a gateway with 0.0.0.0/0 never hides the
+// operator's own peer.
+func endpointForAddr(peers []wireguard.PeerStatus, addr netip.Addr) (netip.Addr, bool) {
+	best, bestBits := netip.Addr{}, -1
+	for _, p := range peers {
+		ap, err := netip.ParseAddrPort(p.Endpoint)
+		if err != nil {
+			continue
+		}
+		for _, allowed := range strings.Split(p.AllowedIPs, ",") {
+			prefix, err := netip.ParsePrefix(strings.TrimSpace(allowed))
+			if err != nil || !prefix.Contains(addr) || prefix.Bits() <= bestBits {
+				continue
+			}
+			best, bestBits = ap.Addr().Unmap(), prefix.Bits()
+		}
+	}
+	return best, bestBits >= 0
 }
 
 // engineError writes the HTTP status that matches an engine error.
@@ -200,6 +215,7 @@ func engineError(w http.ResponseWriter, err error) {
 		errorResponse(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, firewall.ErrEngineDisabled),
 		errors.Is(err, firewall.ErrNotReady),
+		errors.Is(err, errConflict),
 		errors.Is(err, nft.ErrPendingConfirmation),
 		errors.Is(err, nft.ErrRollbackArmed):
 		errorResponse(w, http.StatusConflict, err.Error())

@@ -19,6 +19,11 @@ import (
 // tables. They apply immediately (no confirmation UI exists for them); the
 // lockout guard still protects every change.
 
+// displayPrefix shows single addresses without their /32 or /128.
+func displayPrefix(p string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(p, "/32"), "/128")
+}
+
 // v1Entry is one synthesized INPUT rule with the record it came from.
 type v1Entry struct {
 	rule      FirewallRule
@@ -51,6 +56,16 @@ func (s *Server) v1Entries(ctx context.Context) ([]v1Entry, error) {
 		add(v1Entry{rule: FirewallRule{Target: "ACCEPT", Protocol: "tcp", Port: strconv.Itoa(int(p)), Options: "SSH", Protected: true}})
 	}
 	add(v1Entry{rule: FirewallRule{Target: "ACCEPT", Protocol: "udp", Port: "51820:51900", Options: "WireGuard", Protected: true}})
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, n := range networks {
+		if n.ListenPort > 0 && (n.ListenPort < int(nft.LegacyWireGuardRange.From) || n.ListenPort > int(nft.LegacyWireGuardRange.To)) {
+			add(v1Entry{rule: FirewallRule{Target: "ACCEPT", Protocol: "udp", Port: strconv.Itoa(n.ListenPort),
+				Options: "WireGuard " + n.InterfaceName, Protected: true}})
+		}
+	}
 	for _, p := range nft.AdminPorts {
 		add(v1Entry{rule: FirewallRule{Target: "ACCEPT", Protocol: "tcp", Port: strconv.Itoa(int(p)),
 			Interface: nft.AdminInterface, InInterface: nft.AdminInterface, Options: "admin VPN only", Protected: true}})
@@ -81,7 +96,7 @@ func (s *Server) v1Entries(ctx context.Context) ([]v1Entry, error) {
 			proto = "all"
 		}
 		add(v1Entry{ipRuleID: r.ID, rule: FirewallRule{Target: target, Protocol: proto, Port: r.Ports,
-			Source: strings.TrimSuffix(r.Prefix, "/32"), Options: r.Comment}})
+			Source: displayPrefix(r.Prefix), Options: r.Comment}})
 	}
 	return out, nil
 }
@@ -310,7 +325,7 @@ func (s *Server) handleFail2BanGetPermanentBansNft(w http.ResponseWriter, r *htt
 	for i, rule := range wholeBlocks(st) {
 		bans = append(bans, map[string]interface{}{
 			"line_number": strconv.Itoa(i + 1),
-			"ip":          strings.TrimSuffix(rule.Prefix, "/32"),
+			"ip":          displayPrefix(rule.Prefix),
 			"target":      "DROP",
 			"protocol":    "all",
 		})

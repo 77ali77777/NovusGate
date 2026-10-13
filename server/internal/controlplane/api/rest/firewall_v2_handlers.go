@@ -152,14 +152,7 @@ func addServices(s *Server, svcs ...*models.FirewallService) firewall.Change {
 			st.Services = append(st.Services, svcs...)
 			return nil
 		},
-		Commit: func(ctx context.Context) error {
-			for _, svc := range svcs {
-				if err := s.store.CreateFirewallService(ctx, svc); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		Commit: func(ctx context.Context) error { return s.store.CreateFirewallServices(ctx, svcs) },
 	}
 }
 
@@ -331,6 +324,11 @@ func (s *Server) handleFirewallV2CreateForward(w http.ResponseWriter, r *http.Re
 		TargetIP: ip.Unmap().String(), TargetPort: req.TargetPort, Comment: req.Comment}
 	s.proposeV2(w, r, f, firewall.Change{
 		Mutate: func(st *firewall.State) error {
+			for _, x := range st.Forwards {
+				if x.Protocol == f.Protocol && x.PublicPort == f.PublicPort {
+					return fmt.Errorf("%w: %s port %d is already forwarded", errConflict, f.Protocol, f.PublicPort)
+				}
+			}
 			st.Forwards = append(st.Forwards, f)
 			return nil
 		},

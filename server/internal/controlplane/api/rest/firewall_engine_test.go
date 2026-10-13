@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"os"
 	"strings"
 	"sync"
@@ -347,5 +348,68 @@ func TestStartFirewallRefusesUnreadyHost(t *testing.T) {
 	}
 	if r.last() != "" {
 		t.Fatal("nothing may be applied on an unready host")
+	}
+}
+
+func TestDuplicateForwardIsConflict(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	ctx := context.Background()
+	net := &models.Network{Name: "fw-dup-test", CIDR: "10.21.0.0/24", InterfaceName: "wg92", ListenPort: 51992}
+	if err := s.store.CreateNetwork(ctx, net); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.store.DeleteNetwork(context.Background(), net.ID) })
+	body := `{"protocol":"tcp","public_port":8082,"target_ip":"10.21.0.5","target_port":80}`
+	if rec := call(t, s, "POST", "/api/v1/firewall/v2/forwards?confirm=false", body); rec.Code != 200 {
+		t.Fatalf("first forward = %d %s", rec.Code, rec.Body)
+	}
+	applied := len(r.applied)
+	if rec := call(t, s, "POST", "/api/v1/firewall/v2/forwards?confirm=false", body); rec.Code != http.StatusConflict {
+		t.Fatalf("duplicate forward = %d, want 409", rec.Code)
+	}
+	if len(r.applied) != applied {
+		t.Fatal("a duplicate must be refused before anything is applied")
+	}
+}
+
+func TestEndpointForAddrPrefersLongestPrefix(t *testing.T) {
+	peers := []wireguard.PeerStatus{
+		{AllowedIPs: "0.0.0.0/0", Endpoint: "198.51.100.1:51820"},                          // site gateway
+		{AllowedIPs: "10.99.0.2/32, 10.99.1.0/24", Endpoint: "[::ffff:203.0.113.7]:40000"}, // operator
+		{AllowedIPs: "10.99.0.0/24", Endpoint: "(none)"},
+	}
+	for i := 0; i < 3; i++ {
+		ep, ok := endpointForAddr(peers, netip.MustParseAddr("10.99.0.2"))
+		if !ok || ep != netip.MustParseAddr("203.0.113.7") {
+			t.Fatalf("got %v %v, want the operator's own endpoint", ep, ok)
+		}
+		peers[0], peers[1] = peers[1], peers[0] // order must not matter
+	}
+	if _, ok := endpointForAddr(peers, netip.MustParseAddr("192.0.2.1")); !ok {
+		t.Fatal("the gateway's 0.0.0.0/0 still matches unknown addresses")
+	}
+}
+
+func TestV1ListShowsNetworkPortsAndShortIPv6(t *testing.T) {
+	s, _ := newEngineServer(t, firewall.ModeNft)
+	ctx := context.Background()
+	net := &models.Network{Name: "fw-port-test", CIDR: "10.22.0.0/24", InterfaceName: "wg93", ListenPort: 51993}
+	if err := s.store.CreateNetwork(ctx, net); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.store.DeleteNetwork(context.Background(), net.ID) })
+	if rec := call(t, s, "POST", "/api/v1/firewall/host/ip/block", `{"ip":"2001:db8::9"}`); rec.Code != 200 {
+		t.Fatalf("block = %d %s", rec.Code, rec.Body)
+	}
+	st := inputRules(t, s)
+	var wg, v6 bool
+	for _, c := range st.Chains {
+		for _, rule := range c.Rules {
+			wg = wg || (rule.Port == "51993" && rule.Protected)
+			v6 = v6 || rule.Source == "2001:db8::9"
+		}
+	}
+	if !wg || !v6 {
+		t.Fatalf("network port shown=%v, IPv6 shown without /128=%v", wg, v6)
 	}
 }

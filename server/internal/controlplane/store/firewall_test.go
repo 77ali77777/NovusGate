@@ -179,3 +179,16 @@ func TestImportFirewallRulesIsAtomic(t *testing.T) {
 		t.Fatal("the marker must be set with the rows")
 	}
 }
+
+func TestCreateFirewallServicesIsAtomic(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	ok := &models.FirewallService{Protocol: "tcp", PortFrom: 443, PortTo: 443}
+	bad := &models.FirewallService{Protocol: "xyz", PortFrom: 1, PortTo: 1} // violates CHECK (protocol IN ('tcp', 'udp'))
+	if err := s.CreateFirewallServices(ctx, []*models.FirewallService{ok, bad}); err == nil {
+		t.Fatal("an invalid service must fail the whole insert")
+	}
+	if got, _ := s.ListFirewallServices(ctx); len(got) != 0 {
+		t.Fatalf("nothing may be stored after a failed insert, got %d", len(got))
+	}
+}

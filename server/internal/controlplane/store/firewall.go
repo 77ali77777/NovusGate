@@ -37,19 +37,35 @@ func (s *Store) ListFirewallServices(ctx context.Context) ([]*models.FirewallSer
 
 // CreateFirewallService stores a service; an empty ID gets a new UUID.
 func (s *Store) CreateFirewallService(ctx context.Context, svc *models.FirewallService) error {
-	if svc.ID == "" {
-		svc.ID = uuid.New().String()
+	return s.CreateFirewallServices(ctx, []*models.FirewallService{svc})
+}
+
+// CreateFirewallServices stores services in one transaction (Open Port with
+// "both" creates a tcp and a udp service).
+func (s *Store) CreateFirewallServices(ctx context.Context, svcs []*models.FirewallService) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
 	}
-	if svc.Sources == nil {
-		svc.Sources = []string{}
+	defer tx.Rollback()
+	now := time.Now()
+	for _, svc := range svcs {
+		if svc.ID == "" {
+			svc.ID = uuid.New().String()
+		}
+		if svc.Sources == nil {
+			svc.Sources = []string{}
+		}
+		svc.CreatedAt = now
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO fw_services (id, protocol, port_from, port_to, sources, interface, comment, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			svc.ID, svc.Protocol, svc.PortFrom, svc.PortTo, pq.Array(svc.Sources),
+			nullString(svc.Interface), nullString(svc.Comment), svc.CreatedAt); err != nil {
+			return err
+		}
 	}
-	svc.CreatedAt = time.Now()
-	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO fw_services (id, protocol, port_from, port_to, sources, interface, comment, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		svc.ID, svc.Protocol, svc.PortFrom, svc.PortTo, pq.Array(svc.Sources),
-		nullString(svc.Interface), nullString(svc.Comment), svc.CreatedAt)
-	return err
+	return tx.Commit()
 }
 
 // DeleteFirewallService removes a service; a missing ID is not an error.
