@@ -70,6 +70,9 @@ func writeInput(b *builder, rs Ruleset) {
 	b.line(2, "ct state invalid drop")
 	b.line(2, "tcp dport @ssh_ports accept")
 	b.line(2, "udp dport @wg_ports accept")
+	// DHCPv6 replies come from the server's link-local address to a multicast
+	// solicit, so conntrack cannot match them as established.
+	b.line(2, `ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"`)
 	b.line(2, fmt.Sprintf(`iifname %q tcp dport { %s } accept`, AdminInterface, joinPorts(AdminPorts)))
 	b.line(2, fmt.Sprintf(`iifname %q tcp dport { %s } accept`, VPNInterfacePattern, joinPorts(APIPorts)))
 	for _, s := range rs.Services {
@@ -115,9 +118,11 @@ func writeForward(b *builder, rs Ruleset) {
 	b.line(2, "ip saddr @blocked_v4 counter drop")
 	b.line(2, "ip6 saddr @blocked_v6 counter drop")
 	b.line(2, "ct state established,related accept")
-	// Docker publishes postgres on all addresses and its DNAT bypasses the
-	// input chain; only the admin VPN may reach it.
-	b.line(2, fmt.Sprintf(`iifname %q meta l4proto tcp ct original proto-dst 5432 counter drop comment "docker-published postgres"`, rs.EgressInterface))
+	// Docker publishes postgres on all addresses and DNATs it to the
+	// container, so it passes forward, not input: the admin VPN keeps access,
+	// every other interface (public, LAN, IPv6) loses it.
+	b.line(2, fmt.Sprintf(`iifname %q meta l4proto tcp ct original proto-dst 5432 ct status dnat accept comment "admin VPN to docker-published postgres"`, AdminInterface))
+	b.line(2, `meta l4proto tcp ct original proto-dst 5432 ct status dnat counter drop comment "docker-published postgres"`)
 	b.line(2, fmt.Sprintf(`iifname %q jump vpn_policy`, VPNInterfacePattern))
 	b.line(2, fmt.Sprintf(`oifname %q ct status dnat accept`, VPNInterfacePattern))
 	b.line(2, fmt.Sprintf(`oifname %q counter drop`, VPNInterfacePattern))
@@ -289,7 +294,11 @@ func blockedElems(entries []BlockedEntry, now time.Time) (v4, v6 []string) {
 		el := elemPrefix(e.Prefix)
 		if e.Expires != nil {
 			secs := int64(math.Ceil(e.Expires.Sub(now).Seconds()))
-			el += fmt.Sprintf(" timeout %ds", secs)
+			// nft rejects timeouts of several years; longer bans stay in the
+			// set without a timeout and are removed by a later reconcile.
+			if secs <= maxElementTimeout {
+				el += fmt.Sprintf(" timeout %ds", secs)
+			}
 		}
 		if e.Prefix.Addr().Is4() {
 			v4 = append(v4, el)
@@ -299,6 +308,10 @@ func blockedElems(entries []BlockedEntry, now time.Time) (v4, v6 []string) {
 	}
 	return v4, v6
 }
+
+// maxElementTimeout is the longest set-element timeout rendered (365 days);
+// nft 1.0.2–1.0.9 reject multi-year values with "value too large".
+const maxElementTimeout = 365 * 24 * 3600
 
 // elemPrefix renders a host prefix as a bare address, as nft lists it.
 func elemPrefix(p netip.Prefix) string {

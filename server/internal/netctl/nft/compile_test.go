@@ -89,7 +89,7 @@ func TestCompileKeyBehaviour(t *testing.T) {
 		`ip saddr { 203.0.113.0/24 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`ip6 saddr { 2001:db8::/32 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`iifname "wg1" udp dport 53 accept comment "svc:vpn-dns"`,
-		`iifname "eth0" meta l4proto tcp ct original proto-dst 5432 counter drop`,
+		`meta l4proto tcp ct original proto-dst 5432 ct status dnat counter drop`,
 		`ip saddr 10.20.0.0/24 ip daddr 10.30.0.0/24 tcp dport { 22 } counter drop comment "rule:block-ssh-a-b"`,
 		`ip daddr 10.30.0.10/32 meta l4proto icmp counter accept comment "rule:any-ping"`,
 		`iifname "wg0" oifname "wg0" accept`,
@@ -165,5 +165,70 @@ func TestCompiledRulesetLoadsInKernel(t *testing.T) {
 	cmd.Stdin = strings.NewReader(script)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("nft -c rejected the ruleset: %v\n%s", err, out)
+	}
+}
+
+// Docker DNATs wg0 traffic to the published postgres port, so it goes through
+// forward: the admin VPN must keep that access, every other interface loses it.
+func TestForwardKeepsAdminAccessToPublishedPostgres(t *testing.T) {
+	got, err := Compile(fullRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accept := `iifname "wg0" meta l4proto tcp ct original proto-dst 5432 ct status dnat accept`
+	drop := `meta l4proto tcp ct original proto-dst 5432 ct status dnat counter drop`
+	ai, di, ji := strings.Index(got, accept), strings.Index(got, drop), strings.Index(got, "jump vpn_policy")
+	if ai < 0 || di < 0 {
+		t.Fatalf("missing postgres rules:\n%s", got)
+	}
+	if !(ai < di && di < ji) {
+		t.Fatal("order must be: admin accept, then drop, then the VPN policy jump")
+	}
+}
+
+// nft rejects element timeouts of several years ("value too large"); such
+// bans are rendered without a timeout and expire through the next reconcile.
+func TestLongBanRendersWithoutTimeout(t *testing.T) {
+	rs := fullRuleset()
+	tenYears := testNow.Add(10 * 365 * 24 * time.Hour)
+	month := testNow.Add(30 * 24 * time.Hour)
+	rs.Blocked = []BlockedEntry{
+		{Prefix: netip.MustParsePrefix("203.0.113.1/32"), Expires: &tenYears},
+		{Prefix: netip.MustParsePrefix("203.0.113.2/32"), Expires: &month},
+	}
+	got, err := Compile(rs, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "elements = { 203.0.113.1, 203.0.113.2 timeout 2592000s }") {
+		t.Fatalf("unexpected blocked elements:\n%s", got)
+	}
+}
+
+func TestUDPForwardOnNetworkListenPortRejected(t *testing.T) {
+	rs := fullRuleset()
+	rs.Forwards[0].Proto = UDP
+	rs.Forwards[0].PublicPort = 51950 // wg2's listen port, outside the legacy range
+	if _, err := Compile(rs, testNow); err == nil {
+		t.Fatal("a UDP forward must not take a WireGuard listen port")
+	}
+}
+
+func TestDHCPv6ClientRepliesAccepted(t *testing.T) {
+	got, err := Compile(fullRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, `ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept`) {
+		t.Fatal("DHCPv6 replies must be accepted, or the host loses its IPv6 lease")
+	}
+}
+
+func TestValidInterfaceName(t *testing.T) {
+	for name, want := range map[string]bool{"wg0": true, "ens3": true, "br-1a2b": true, "": false,
+		"wg-name-longer-than-15": false, `eth0"`: false} {
+		if ValidInterfaceName(name) != want {
+			t.Errorf("ValidInterfaceName(%q) != %v", name, want)
+		}
 	}
 }

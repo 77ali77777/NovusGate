@@ -33,6 +33,7 @@ table inet novusgate {
 		ct state invalid drop
 		tcp dport @ssh_ports accept
 		udp dport @wg_ports accept
+		ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"
 		iifname "wg0" tcp dport { 3007, 5432 } accept
 		iifname "wg*" tcp dport { 8080, 8443 } accept
 		tcp dport 443 accept comment "svc:https"
@@ -47,7 +48,8 @@ table inet novusgate {
 		ip saddr @blocked_v4 counter drop
 		ip6 saddr @blocked_v6 counter drop
 		ct state established,related accept
-		iifname "eth0" meta l4proto tcp ct original proto-dst 5432 counter drop comment "docker-published postgres"
+		iifname "wg0" meta l4proto tcp ct original proto-dst 5432 ct status dnat accept comment "admin VPN to docker-published postgres"
+		meta l4proto tcp ct original proto-dst 5432 ct status dnat counter drop comment "docker-published postgres"
 		iifname "wg*" jump vpn_policy
 		oifname "wg*" ct status dnat accept
 		oifname "wg*" counter drop

@@ -87,8 +87,12 @@ func Validate(rs Ruleset) error {
 		if f.Proto == TCP && (reserved[f.PublicPort] || contains(rs.SSHPorts, f.PublicPort)) {
 			return fmt.Errorf("forward %s: public port %d is reserved", f.ID, f.PublicPort)
 		}
-		if f.Proto == UDP && f.PublicPort >= LegacyWireGuardRange.From && f.PublicPort <= LegacyWireGuardRange.To {
-			return fmt.Errorf("forward %s: public port %d is in the WireGuard range", f.ID, f.PublicPort)
+		if f.Proto == UDP {
+			for _, wg := range wireGuardRanges(rs) {
+				if f.PublicPort >= wg.From && f.PublicPort <= wg.To {
+					return fmt.Errorf("forward %s: public port %d is a WireGuard port", f.ID, f.PublicPort)
+				}
+			}
 		}
 		if _, ok := networkFor(rs.Networks, f.TargetIP); !ok {
 			return fmt.Errorf("forward %s: target %s is not inside any VPN network", f.ID, f.TargetIP)
@@ -138,4 +142,10 @@ func contains(ports []uint16, p uint16) bool {
 		}
 	}
 	return false
+}
+
+// ValidInterfaceName reports whether name is a Linux interface name that can
+// be rendered safely into the ruleset.
+func ValidInterfaceName(name string) bool {
+	return ifaceRe.MatchString(name)
 }
