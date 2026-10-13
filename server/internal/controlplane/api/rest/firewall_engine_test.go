@@ -93,13 +93,15 @@ func newEngineServer(t *testing.T, mode firewall.Mode) (*Server, *recRunner) {
 	s := &Server{store: st, router: mux.NewRouter(), managers: map[string]*wireguard.Manager{},
 		peerActivity: map[string]*PeerActivity{}}
 	s.setupRoutes()
-	s.SetFirewall(&firewall.Engine{
+	e := &firewall.Engine{
 		Mode: mode, Store: st, Applier: applier, Now: time.Now,
 		Detect: func() (firewall.HostInfo, error) {
 			return firewall.HostInfo{SSHPorts: []uint16{22}, Egress: "eth0"}, nil
 		},
 		Persist: func(string) error { return nil },
-	})
+	}
+	e.MarkReady()
+	s.SetFirewall(e)
 	return s, r
 }
 

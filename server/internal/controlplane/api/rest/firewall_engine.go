@@ -99,6 +99,7 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 		if n > 0 || len(skipped) > 0 {
 			fmt.Printf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules left alone)\n", n, len(skipped))
 		}
+		s.firewall.MarkReady()
 		// The legacy iptables VPN rules are removed by AfterApply once this (or
 		// a retried) apply succeeds, so a failure never leaves FORWARD open.
 		res, err := s.firewall.ReconcileOrRetry(ctx)
@@ -184,6 +185,7 @@ func engineError(w http.ResponseWriter, err error) {
 	case errors.Is(err, errNotFound):
 		errorResponse(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, firewall.ErrEngineDisabled),
+		errors.Is(err, firewall.ErrNotReady),
 		errors.Is(err, nft.ErrPendingConfirmation),
 		errors.Is(err, nft.ErrRollbackArmed):
 		errorResponse(w, http.StatusConflict, err.Error())

@@ -128,6 +128,7 @@ func newHarness(mode Mode) *harness {
 			return func() bool { return true }
 		},
 	}
+	h.e.MarkReady()
 	return h
 }
 
@@ -457,5 +458,62 @@ func TestImportRefusesAllowShadowedByLaterBlock(t *testing.T) {
 		"-A INPUT -s 192.0.2.7/32 -p tcp -m tcp --dport 443 -j ACCEPT\n-A INPUT -s 192.0.2.0/24 -p tcp -m tcp --dport 22 -j DROP\n"
 	if _, _, err := ImportIptables(context.Background(), h.st, h.r, []uint16{22}, engineNow); err != nil {
 		t.Fatalf("a block before the allow, or on other ports, behaves the same in nft: %v", err)
+	}
+}
+
+func TestEngineRefusesChangesUntilReady(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.e = &Engine{Mode: ModeNft, Store: h.st, Applier: h.e.Applier, Now: h.e.Now, Detect: h.e.Detect}
+	commits := 0
+	if _, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil); !errors.Is(err, ErrNotReady) {
+		t.Fatalf("Propose before MarkReady = %v, want ErrNotReady", err)
+	}
+	if len(h.r.applied) != 0 || commits != 0 {
+		t.Fatal("nothing may be applied or stored before the engine is ready")
+	}
+	h.e.MarkReady()
+	if _, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A request whose client disconnects must still store the live change.
+func TestCommitIgnoresRequestCancellation(t *testing.T) {
+	h := newHarness(ModeNft)
+	ctx, cancel := context.WithCancel(context.Background())
+	ch := Change{
+		Mutate: func(st *State) error { return nil },
+		Commit: func(c context.Context) error { cancel(); return c.Err() },
+	}
+	if _, err := h.e.Propose(ctx, ch, false, nil); err != nil {
+		t.Fatalf("commit must not see the request's cancellation: %v", err)
+	}
+}
+
+// A change that is live but could not be stored is undone by a reconcile.
+func TestFailedCommitSchedulesReconcile(t *testing.T) {
+	h := newHarness(ModeNft)
+	ch := Change{
+		Mutate: func(st *State) error { return nil },
+		Commit: func(context.Context) error { return errors.New("db down") },
+	}
+	if _, err := h.e.Propose(context.Background(), ch, false, nil); err == nil {
+		t.Fatal("a failed commit must be reported")
+	}
+	if len(h.timers) != 1 || h.timers[0].d != retryMin {
+		t.Fatalf("a reconcile must restore the stored state, timers=%+v", h.timers)
+	}
+}
+
+func TestPersistFailureIsAWarning(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.e.Persist = func(string) error { return errors.New("read-only /etc") }
+	commits := 0
+	res, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil)
+	if err != nil || commits != 1 {
+		t.Fatalf("the change is live and stored; Persist failure must not be an error (err=%v)", err)
+	}
+	if len(res.Warnings) != 1 || !strings.Contains(res.Warnings[0].Error(), "boot-time ruleset") {
+		t.Fatalf("warnings = %v", res.Warnings)
 	}
 }

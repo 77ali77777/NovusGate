@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/novusgate/novusgate/internal/netctl/nft"
@@ -43,6 +44,10 @@ var (
 	// ErrRejected wraps changes refused before touching the host: an invalid
 	// ruleset or one that would lock the operator out.
 	ErrRejected = errors.New("firewall change rejected")
+	// ErrNotReady is returned until startup has finished the one-time
+	// iptables import; changes before that could hand INPUT over to nftables
+	// before the panel's iptables rules were copied.
+	ErrNotReady = errors.New("the firewall engine is starting (iptables import pending); try again shortly")
 )
 
 // Store is everything the engine reads.
@@ -105,7 +110,11 @@ type Engine struct {
 	stopExpiry func() bool
 	stopRetry  func() bool
 	retryDelay time.Duration
+	ready      atomic.Bool
 }
+
+// MarkReady lets Propose run; StartFirewall calls it after the import.
+func (e *Engine) MarkReady() { e.ready.Store(true) }
 
 // Backoff for reconciles that could not be applied.
 const (
@@ -169,6 +178,9 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 	if e.Mode != ModeNft {
 		return Result{}, ErrEngineDisabled
 	}
+	if !e.ready.Load() {
+		return Result{}, ErrNotReady
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -221,7 +233,8 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 		e.pending = &pendingCommit{id: p.ID, commit: ch.Commit, script: script, state: st}
 		return Result{Pending: &p, Warnings: warnings}, nil
 	}
-	return Result{Warnings: warnings}, e.finish(ctx, ch.Commit, script, st)
+	extra, err := e.finish(ctx, ch.Commit, script, st)
+	return Result{Warnings: append(warnings, extra...)}, err
 }
 
 // Reconcile re-applies the stored state immediately.
@@ -242,12 +255,14 @@ func (e *Engine) ReconcileOrRetry(ctx context.Context) (Result, error) {
 }
 
 func (e *Engine) scheduleRetry() {
-	if e.AfterFunc == nil {
-		return
-	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if e.stopRetry != nil {
+	e.scheduleRetryLocked()
+}
+
+// scheduleRetryLocked needs e.mu held.
+func (e *Engine) scheduleRetryLocked() {
+	if e.AfterFunc == nil || e.stopRetry != nil {
 		return // one retry at a time
 	}
 	if e.retryDelay == 0 {
@@ -281,7 +296,11 @@ func (e *Engine) Confirm(ctx context.Context, id string) error {
 	if pc == nil || pc.id != id {
 		return nil
 	}
-	return e.finish(ctx, pc.commit, pc.script, pc.state)
+	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state)
+	for _, w := range extra {
+		log.Printf("firewall: %v", w)
+	}
+	return err
 }
 
 // PendingChange reports the change waiting for confirmation, if any.
@@ -289,7 +308,11 @@ func (e *Engine) PendingChange() (nft.Pending, bool) {
 	return e.Applier.PendingChange()
 }
 
-func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State) error {
+// finish runs after the host took a change: it stores it (detached from the
+// request, so a disconnecting client cannot leave it unsaved), schedules the
+// next expiry and writes the boot-time ruleset. It returns warnings and an
+// error.
+func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State) ([]error, error) {
 	// The stored state is live: a pending retry is no longer needed.
 	if e.stopRetry != nil {
 		e.stopRetry()
@@ -300,18 +323,20 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 		e.AfterApply()
 	}
 	if commit != nil {
-		if err := commit(ctx); err != nil {
-			// The next reconcile restores the stored state on the host.
-			return fmt.Errorf("firewall change applied but not saved: %w", err)
+		if err := commit(context.WithoutCancel(ctx)); err != nil {
+			// The host runs a change the database does not have; the
+			// reconcile re-applies the stored state.
+			e.scheduleRetryLocked()
+			return nil, fmt.Errorf("firewall change applied but not saved (the stored state is re-applied shortly): %w", err)
 		}
 	}
 	e.scheduleExpiry(st)
 	if e.Persist != nil {
 		if err := e.Persist(script); err != nil {
-			return fmt.Errorf("firewall applied but the boot-time ruleset was not written: %w", err)
+			return []error{fmt.Errorf("the boot-time ruleset was not written: %w", err)}, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // scheduleExpiry re-runs reconcile when the next IP rule expires, so rules the
