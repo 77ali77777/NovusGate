@@ -282,6 +282,11 @@ func (s *Server) handleFirewallGetRules(w http.ResponseWriter, r *http.Request) 
 		chains = []string{chainFilter}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallGetRulesNft(w, r, chains)
+		return
+	}
+
 	result := FirewallStatus{
 		Chains:     []ChainInfo{},
 		TotalRules: 0,
@@ -362,6 +367,11 @@ func (s *Server) handleFirewallOpenPort(w http.ResponseWriter, r *http.Request) 
 		protocols = []string{"tcp", "udp"}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallOpenPortNft(w, r, req, protocols)
+		return
+	}
+
 	for _, proto := range protocols {
 		args := []string{"-A", "INPUT", "-p", proto, "--dport", strconv.Itoa(req.Port), "-j", "ACCEPT"}
 		if req.Source != "" {
@@ -423,6 +433,11 @@ func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request)
 		protocols = []string{"tcp", "udp"}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallClosePortNft(w, r, req, protocols)
+		return
+	}
+
 	deletedCount := 0
 	for _, proto := range protocols {
 		// Find and delete all ACCEPT rules for this port
@@ -536,6 +551,11 @@ func (s *Server) handleFirewallBlockIP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallIPRuleNft(w, r, "block", req.IP, req.Ports)
+		return
+	}
+
 	// Build iptables command
 	args := []string{"-I", "INPUT", "-s", req.IP}
 	
@@ -594,6 +614,11 @@ func (s *Server) handleFirewallAllowIP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallIPRuleNft(w, r, "allow", req.IP, req.Ports)
+		return
+	}
+
 	// Build iptables command
 	args := []string{"-I", "INPUT", "-s", req.IP}
 	
@@ -649,6 +674,11 @@ func (s *Server) handleFirewallDeleteRule(w http.ResponseWriter, r *http.Request
 		return
 	}
 	
+	if s.engineEnforces() {
+		s.handleFirewallDeleteRuleNft(w, r, req)
+		return
+	}
+
 	// Get current rules to check if protected
 	output, err := execHostCommand("iptables", "-L", req.Chain, "-n", "-v", "--line-numbers")
 	if err != nil {
@@ -705,6 +735,10 @@ func (s *Server) handleFirewallDeleteRule(w http.ResponseWriter, r *http.Request
 
 // handleFirewallExport exports all iptables rules in iptables-save format
 func (s *Server) handleFirewallExport(w http.ResponseWriter, r *http.Request) {
+	if s.engineEnforces() {
+		s.handleFirewallExportNft(w, r)
+		return
+	}
 	output, err := execHostCommand("iptables-save")
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to export rules: %v", err))
@@ -719,6 +753,10 @@ func (s *Server) handleFirewallExport(w http.ResponseWriter, r *http.Request) {
 
 // handleFirewallImport imports iptables rules from iptables-restore format
 func (s *Server) handleFirewallImport(w http.ResponseWriter, r *http.Request) {
+	if s.engineEnforces() {
+		errorResponse(w, http.StatusConflict, "importing iptables rules is not supported while the nftables engine enforces the firewall")
+		return
+	}
 	var req ImportRulesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorResponse(w, http.StatusBadRequest, "invalid request body")
@@ -774,6 +812,10 @@ func writeHostFile(path string, content string) error {
 
 // handleFirewallReset resets firewall to default NovusGate configuration
 func (s *Server) handleFirewallReset(w http.ResponseWriter, r *http.Request) {
+	if s.engineEnforces() {
+		s.handleFirewallResetNft(w, r)
+		return
+	}
 	// Default NovusGate firewall rules
 	defaultRules := `*filter
 :INPUT DROP [0:0]
@@ -1254,6 +1296,14 @@ func (s *Server) resolveVPNRuleEndpoint(ctx context.Context, endpointType string
 
 // syncVPNFirewallRules syncs all database rules to iptables FORWARD chain
 func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
+	if s.engineEnforces() {
+		// The engine enforces VPN rules in table inet novusgate.
+		if _, err := execHostCommand("sysctl", "-w", "net.ipv4.ip_forward=1"); err != nil {
+			fmt.Printf("[Firewall] warning: enable ip_forward: %v\n", err)
+		}
+		_, err := s.firewall.Reconcile(ctx, nil)
+		return err
+	}
 	// First, remove all existing NovusGate VPN rules from FORWARD chain
 	// We identify them by the comment "novusgate-vpn-*"
 	if err := s.clearNovusGateVPNRules(); err != nil {

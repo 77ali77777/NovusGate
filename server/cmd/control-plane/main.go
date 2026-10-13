@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -162,6 +163,21 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Create REST API server (WireGuard managers are initialized internally by loadNetworks)
 	apiServer := rest.NewServer(db)
+
+	// Firewall engine: iptables (default, legacy paths), shadow (check only) or nft.
+	fwMode, err := firewall.ParseMode(os.Getenv("FIREWALL_ENGINE"))
+	if err != nil {
+		return err
+	}
+	if fwMode != firewall.ModeIptables {
+		apiServer.SetFirewall(firewall.NewHostEngine(fwMode, db))
+		go func() {
+			if err := apiServer.StartFirewall(context.Background()); err != nil {
+				fmt.Fprintf(os.Stderr, "[Firewall] startup failed: %v\n", err)
+			}
+		}()
+		fmt.Printf("  Firewall engine: %s\n", fwMode)
+	}
 
 	// Ensure Admin Network manager is registered after bootstrap
 	// This handles the case where bootstrapSystem creates the network after loadNetworks runs

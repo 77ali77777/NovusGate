@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -58,6 +59,7 @@ type Server struct {
 	managers   map[string]*wireguard.Manager
 	managersMu sync.RWMutex
 	peerActivity map[string]*PeerActivity
+	firewall     *firewall.Engine // nil, or engine for FIREWALL_ENGINE=shadow|nft
 	activityMu   sync.RWMutex
 }
 
@@ -336,6 +338,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/firewall/vpn/rules/{id}", s.handleVPNFirewallUpdateRule).Methods("PUT")
 	api.HandleFunc("/firewall/vpn/rules/{id}", s.handleVPNFirewallDeleteRule).Methods("DELETE")
 	api.HandleFunc("/firewall/vpn/apply", s.handleVPNFirewallApply).Methods("POST")
+	s.setupFirewallV2Routes(api)
 
 	// Helper for SPA (Single Page Application) serving
 	s.router.PathPrefix("/").HandlerFunc(s.handleSPA)
@@ -667,6 +670,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		s.managersMu.Unlock()
 	}
 	
+	s.reconcileFirewall(r.Context())
 	jsonResponse(w, http.StatusCreated, network)
 }
 
@@ -727,6 +731,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	fmt.Printf("Network %s (%s) deleted\n", network.Name, network.InterfaceName)
+	s.reconcileFirewall(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -1021,6 +1026,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to delete node")
 		return
 	}
+	s.reconcileFirewall(r.Context())
 	jsonResponse(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -1729,6 +1735,10 @@ func (s *Server) handleFail2BanManualBan(w http.ResponseWriter, r *http.Request)
 	}
 	
 	if req.Permanent {
+		if s.engineEnforces() {
+			s.handleFail2BanPermanentBanNft(w, r, req.IP)
+			return
+		}
 		// Add permanent ban via iptables
 		_, err := execHostCommand("iptables", "-I", "INPUT", "-s", req.IP, "-j", "DROP")
 		if err != nil {
@@ -1935,6 +1945,11 @@ func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Re
 
 // Fail2Ban Get Permanent Bans - Get list of permanently banned IPs via iptables
 func (s *Server) handleFail2BanGetPermanentBans(w http.ResponseWriter, r *http.Request) {
+	if s.engineEnforces() {
+		s.handleFail2BanGetPermanentBansNft(w, r)
+		return
+	}
+
 	// Get iptables rules that DROP traffic
 	out, err := execHostCommand("iptables", "-L", "INPUT", "-n", "--line-numbers")
 	if err != nil {
@@ -1998,6 +2013,11 @@ func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http
 		}
 	}
 	
+	if s.engineEnforces() {
+		s.handleFail2BanRemovePermanentBanNft(w, r, req.IP)
+		return
+	}
+
 	// Remove the DROP rule for this IP
 	_, err := execHostCommand("iptables", "-D", "INPUT", "-s", req.IP, "-j", "DROP")
 	if err != nil {

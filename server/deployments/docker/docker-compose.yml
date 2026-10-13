@@ -48,6 +48,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       WG_SERVER_ENDPOINT: ${WG_SERVER_ENDPOINT:-127.0.0.1}
       ADMIN_CIDR: ${ADMIN_CIDR:-10.99.0.0/24}
+      # Firewall engine: iptables (default) | shadow (check only) | nft (enforce)
+      FIREWALL_ENGINE: ${FIREWALL_ENGINE:-iptables}
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
