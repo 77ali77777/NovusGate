@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -89,10 +90,30 @@ var protectedPorts = map[int]string{
 	22: "SSH",
 }
 
+// legacySSHPorts returns the ports sshd uses, so the iptables code paths
+// never close SSH on a custom port; 22 alone when detection fails, as before
+// (replaced in tests).
+var legacySSHPorts = func() []uint16 {
+	ports, err := nft.DetectSSHPorts(nft.HostRunner{})
+	if err != nil {
+		return []uint16{22}
+	}
+	return ports
+}
+
+func isSSHPort(port string, sshPorts []uint16) bool {
+	for _, p := range sshPorts {
+		if port == strconv.Itoa(int(p)) {
+			return true
+		}
+	}
+	return false
+}
+
 // isProtectedRule checks if a rule is protected (SSH, WireGuard, Admin API)
-func isProtectedRule(rule FirewallRule) bool {
+func isProtectedRule(rule FirewallRule, sshPorts []uint16) bool {
 	// Protect SSH rules
-	if rule.Port == "22" && rule.Target == "ACCEPT" {
+	if isSSHPort(rule.Port, sshPorts) && rule.Target == "ACCEPT" {
 		return true
 	}
 	
@@ -135,6 +156,8 @@ func parseIptablesOutput(output string, chainName string) (*ChainInfo, error) {
 		}
 	}
 	
+	sshPorts := legacySSHPorts()
+
 	// Parse rules
 	// Format: "num   pkts bytes target     prot opt in     out     source               destination"
 	// Example: "1     100  5000 ACCEPT     tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            tcp dpt:22"
@@ -166,7 +189,7 @@ func parseIptablesOutput(output string, chainName string) (*ChainInfo, error) {
 		
 		rule := parseRuleLine(line, chainName)
 		if rule != nil {
-			rule.Protected = isProtectedRule(*rule)
+			rule.Protected = isProtectedRule(*rule, sshPorts)
 			chain.Rules = append(chain.Rules, *rule)
 		}
 	}
@@ -415,6 +438,10 @@ func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request)
 	// Check if this is a protected port
 	if portName, isProtected := protectedPorts[req.Port]; isProtected && !req.Force {
 		errorResponse(w, http.StatusForbidden, fmt.Sprintf("port %d (%s) is protected. Set force=true to override", req.Port, portName))
+		return
+	}
+	if isSSHPort(strconv.Itoa(req.Port), legacySSHPorts()) && !req.Force {
+		errorResponse(w, http.StatusForbidden, fmt.Sprintf("port %d (SSH) is protected. Set force=true to override", req.Port))
 		return
 	}
 	

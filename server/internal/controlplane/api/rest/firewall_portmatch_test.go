@@ -1,6 +1,11 @@
 package rest
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
 
 // Output of `iptables -L INPUT -n -v --line-numbers` (classic format, with the opt column).
 const inputWithOpt = `Chain INPUT (policy DROP 0 packets, 0 bytes)
@@ -50,5 +55,26 @@ func TestFindRuleLineNumber(t *testing.T) {
 				t.Fatalf("findRuleLineNumber(%s, %d) = %d, want %d", tc.protocol, tc.port, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestCustomSSHPortIsProtectedInLegacyMode(t *testing.T) {
+	orig := legacySSHPorts
+	legacySSHPorts = func() []uint16 { return []uint16{22, 2222} }
+	t.Cleanup(func() { legacySSHPorts = orig })
+
+	if !isProtectedRule(FirewallRule{Port: "2222", Target: "ACCEPT"}, legacySSHPorts()) {
+		t.Fatal("an ACCEPT for a detected SSH port must be protected")
+	}
+	if isProtectedRule(FirewallRule{Port: "2223", Target: "ACCEPT"}, legacySSHPorts()) {
+		t.Fatal("other ports are not SSH")
+	}
+
+	s := &Server{}
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"port":2222,"protocol":"tcp"}`))
+	rec := httptest.NewRecorder()
+	s.handleFirewallClosePort(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("closing a detected SSH port = %d, want 403", rec.Code)
 	}
 }
