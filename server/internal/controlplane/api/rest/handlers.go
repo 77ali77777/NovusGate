@@ -1967,7 +1967,7 @@ func (s *Server) handleFail2BanGetPermanentBans(w http.ResponseWriter, r *http.R
 		return
 	}
 	
-	var bannedIPs []map[string]interface{}
+	bannedIPs := []map[string]interface{}{}
 	lines := strings.Split(out, "\n")
 	
 	for _, line := range lines {
@@ -2153,7 +2153,7 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 	
 	out, _ := execHostCommand("sh", "-c", fmt.Sprintf("grep -E '%s' /var/log/fail2ban.log 2>/dev/null | tail -n %d", grepPattern, limit))
 	
-	var history []map[string]string
+	history := []map[string]string{}
 	lines := strings.Split(out, "\n")
 	
 	for _, line := range lines {

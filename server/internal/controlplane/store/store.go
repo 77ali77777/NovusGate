@@ -107,7 +107,7 @@ func (s *Store) ListNetworks(ctx context.Context) ([]*models.Network, error) {
 	}
 	defer rows.Close()
 	
-	var networks []*models.Network
+	networks := []*models.Network{}
 	for rows.Next() {
 		var network models.Network
 		var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
@@ -235,7 +235,7 @@ func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node
 	}
 	defer rows.Close()
 	
-	var nodes []*models.Node
+	nodes := []*models.Node{}
 	for rows.Next() {
 		var node models.Node
 		var virtualIP string
@@ -408,7 +408,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 	}
 	defer rows.Close()
 	
-	var users []*models.User
+	users := []*models.User{}
 	for rows.Next() {
 		var user models.User
 		if err := rows.Scan(&user.ID, &user.Username, &user.CreatedAt); err != nil {

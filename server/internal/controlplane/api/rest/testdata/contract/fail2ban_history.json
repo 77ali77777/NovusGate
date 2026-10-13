@@ -1,7 +1,7 @@
 {
   "body": {
     "count": 0,
-    "history": null,
+    "history": [],
     "jail": ""
   },
   "content_type": "application/json",

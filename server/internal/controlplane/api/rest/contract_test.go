@@ -224,3 +224,32 @@ func TestContract(t *testing.T) {
 		assertContract(t, c.name, callAs(t, s, c.method, c.path, c.body, c.auth))
 	}
 }
+
+// B14: an empty collection is [] (VPNRuleModal maps over it), never null.
+func TestEmptyCollectionsAreArrays(t *testing.T) {
+	s, st, stub := newContractServer(t)
+	stub.out["iptables -L INPUT -n --line-numbers"] = "Chain INPUT (policy DROP)\nnum  target     prot opt source               destination\n"
+	for path, want := range map[string]string{
+		"/api/v1/networks": "[]",
+		"/api/v1/users":    "[]",
+	} {
+		if got := strings.TrimSpace(callAs(t, s, "GET", path, "", true).Body.String()); got != want {
+			t.Errorf("GET %s = %s, want %s", path, got, want)
+		}
+	}
+	e := &models.Network{Name: "contract-empty", CIDR: "10.69.0.0/24", ListenPort: 51869, InterfaceName: "wg69"}
+	if err := st.CreateNetwork(context.Background(), e); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(callAs(t, s, "GET", "/api/v1/networks/"+e.ID+"/nodes", "", true).Body.String()); got != "[]" {
+		t.Errorf("nodes of an empty network = %s, want []", got)
+	}
+	for path, key := range map[string]string{
+		"/api/v1/system/fail2ban/ban-history":    `"history":[]`,
+		"/api/v1/system/fail2ban/permanent-bans": `"permanent_bans":[]`,
+	} {
+		if got := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(got, key) {
+			t.Errorf("GET %s = %s, want %s", path, got, key)
+		}
+	}
+}
