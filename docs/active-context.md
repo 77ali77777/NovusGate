@@ -110,6 +110,22 @@
 
   Qalan 7 minor P3c/P7 üçün ledger-dədir.
 
+### Eyni sessiyanın davamı (2026-10-13): P2 bölgüsü və P2a planı
+- **Nəticə:**
+  - `docs/superpowers/specs/2026-10-13-p2-backend-core-design.md`: P2 dörd alt-plana bölündü:
+    - P2a: kontrakt + baqlar;
+    - P2b: müşahidə;
+    - P2c: WireGuard + reconciler + expiry;
+    - P2d: servis qatı + vahid xəta + OpenAPI.
+  - `docs/superpowers/plans/2026-10-13-p2a-contract-and-bugs.md` yazıldı (8 tapşırıq).
+  - Kod dəyişməyib.
+- **Kod xəritəsindən yoxlanılan faktlar:**
+  - startup log-u DB parolunu açıq yazır (`maskDatabaseURL` heç nə etmir);
+  - fail2ban history-nin regex-i heç vaxt uyğun gəlmir, jail kimi PID götürülür;
+  - `AllocateIP` broadcast ünvanını verir;
+  - `parseRuleLine` 8–9 sahəli sətirdə panic edir və "opt" sütunsuz formatı səhv oxuyur.
+- **Davam:** P2a planının icrası.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
