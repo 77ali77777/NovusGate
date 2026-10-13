@@ -612,19 +612,19 @@ app.post('/api/servers/:id/install', async (req, res) => {
     res.write(`data: ${JSON.stringify({ text: text + '\n', stderr: isError })}\n\n`);
   };
 
+  // Declared outside the try so the catch below can clean up the archive.
+  let archivePath = null;
   try {
     sendLog('[INFO] Initializing installation...');
 
     // 1. Create Archive (Local only)
-    let archivePath = null;
     if (source === 'local') {
       sendLog('[INFO] Creating project archive...');
       try {
         archivePath = await createProjectArchive();
         sendLog('[INFO] Archive created successfully.');
       } catch (err) {
-        sendLog(`[ERROR] Failed to create archive: ${err.message}`, true);
-        res.end();
+        endWithError(res, new Error(`Failed to create archive: ${err.message}`));
         return;
       }
     }
@@ -672,8 +672,7 @@ app.post('/api/servers/:id/install', async (req, res) => {
     
     conn.exec(`${envs}\n${script}`, (err, stream) => {
       if (err) {
-        sendLog(`[ERROR] Execution failed: ${err.message}`, true);
-        res.end();
+        endWithError(res, new Error(`Execution failed: ${err.message}`));
         conn.end();
         return;
       }
@@ -737,8 +736,10 @@ app.post('/api/servers/:id/install', async (req, res) => {
     });
     
   } catch (err) {
-    if (archivePath && fs.existsSync(archivePath)) {
-      fs.unlinkSync(archivePath);
+    try {
+      if (archivePath && fs.existsSync(archivePath)) fs.unlinkSync(archivePath);
+    } catch (cleanupErr) {
+      console.error('Failed to remove archive:', cleanupErr);
     }
     endWithError(res, err);
   }
