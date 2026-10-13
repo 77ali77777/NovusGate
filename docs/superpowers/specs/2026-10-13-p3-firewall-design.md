@@ -95,6 +95,15 @@
 | **P3b İnteqrasiya** | Yeni cədvəllər (`fw_services`, `fw_blocked`, `fw_forwards`, `fw_egress`, `fw_settings`, `fw_snapshots`) + rollback; API `/firewall/v2/*` (təsdiq ilə); v1 endpoint-ləri adapter kimi; iptables-dən import (Open Port, Blocked IP); `FIREWALL_ENGINE=iptables\|shadow\|nft` (default `iptables`, sonra `shadow`, sonra `nft`); `novusgate-firewall.service` boot-da Docker-dən əvvəl; `setup-firewall.sh` artıq flush etmir; fail2ban `nftables-multiport` + xüsusi SSH portu; legacy backend aşkarlanması; SSH portlarını Close Port/Delete-dən qorumaq | Bəli, mərhələli və bayraqla idarə olunan | Staging runbook: lockout ssenariləri, Docker konteynerləri işləyir, reboot-dan sonra qaydalar yerindədir, Update panel qaydalarını silmir |
 | **P3c UI** | Yeni UI kit üzərində (P5-dən sonra): Overview (SSH qorunur, IPv6, Docker exposure, gözləyən təsdiq), Services, Access Lists, Network Policies (matris), NAT & Forwarding, Fail2Ban, Live (sayğaclar, drop log-u, conntrack), History (diff, rollback), System Rules (yalnız oxumaq üçün) | — | §6 paritet siyahısı + yeni funksiyalar |
 
+## 6a. P3a final review-dan P3b-yə ötürülən tələblər (2026-10-13)
+- `CheckProtection` hər tətbiq yolunda (`confirm=false` daxil) çağırılmalıdır. `SafeApplier` xam skript qəbul edir və qorumanı özü yoxlamır (M3).
+- `Protection.Addrs`-a sorğunun mənbə ünvanı və operatorun **WireGuard endpoint IP-si** daxil edilməlidir. `CheckProtection`-dan əvvəl ünvanlar `Unmap()` olunmalıdır (M2).
+- Reconcile ən yaxın ban bitmə vaxtında yenidən işləməlidir. Kompilyator interval set-də daha geniş, amma tez bitən blokun altındakı daha uzunömürlü daha dar bloku atır (M4). 365 gündən uzun ban-lar da timeout-suz render olunur.
+- `SystemdTimer` `NsenterRunner` ilə işlədilməlidir. Host-da `nft` olmalıdır, ona görə installer `apt-get install -y nftables` etməlidir. Olmasa, `Arm` rədd edir (fail closed).
+- Admin portlarının istisnası `wg*` prefiksinə görə deyil, `rs.Networks`-dəki interfeyslərə görə olmalıdır (M5).
+- Runbook-da qeyd olunmalıdır: istifadəçinin öz Docker bridge konteynerləri host xidmətlərinə və VPN peer-lərinə çata bilməyəcək (M8). Çevrilə bilməyən drop/reject VPN qaydaları atlanır (M9, indiki davranış kimi).
+- CI-a kənar ruleset-lər əlavə edilməlidir: boş, yalnız v6 mənbələr, şəbəkəsiz. Versiyalar arası snapshot yoxlaması da daxil (M10).
+
 ## 7. Açıq risklər
 
 - **Ubuntu 20.04 (iptables legacy):** konteynerdəki iptables-nft ilə hostun legacy qaydaları fərqli backend-lərdə yaşayır. P3b-də aşkarlanmalı və ayrıca xəbərdarlıq göstərilməlidir.

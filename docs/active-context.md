@@ -32,6 +32,17 @@
 - **Nəticə:** Task 1–6 commit-ləndi (`76b8e1b` … Task 6). Tam yoxlama (`bash scripts/test-in-docker.sh`, Docker, `NFT_CHECK=1`) → `ok …/api/rest`, `ok …/controlplane/firewall`, `ok …/netctl/nft`; exit 0. Golden ruleset Ubuntu 22.04-də (nft 1.0.2) `KERNEL-CHECK-OK` verdi. Control-plane image yığıldı, içində `nftables v1.0.9` var.
 - **End-to-end yoxlama:** real Postgres-də migration-lar icra olundu, şəbəkə, node və VPN qaydası əlavə edildi, `firewall preview --check` işlədildi. Nəticə: `nft -c: OK`, SSH portları `{ 22, 2222 }` real `sshd -T`-dən aşkarlandı, qayda düzgün çevrildi.
 - **Davranış dəyişikliyi:** yoxdur. Hostda heç nə avtomatik tətbiq olunmur.
+- **Final review (opus):** "With fixes" — 1 Critical, 7 Important. Hamısı RED→GREEN ilə düzəldildi (`e7eadc9`, `cf496f9`, `3c5ce3a`):
+  - SSH portları `listenaddress` və canlı `ss` dinləyicilərindən aşkarlanır;
+  - rollback faylı, timer və nft host-da işləyir;
+  - restart, confirm və disarm yarışları aradan qaldırıldı;
+  - wg0-un Docker postgres-ə çıxışı qorunur;
+  - DHCPv6 cavabları qəbul olunur;
+  - uzun ban-lar ruleset-i sındırmır;
+  - UDP forward WireGuard portunu tuta bilmir;
+  - IPv6 qaydaları xəbərdarlığa çevrilir.
+  
+  Fix-dən sonra suite exit 0, golden nft 1.0.2-də yüklənir. Minor-lar P3 spec §6a-ya köçürüldü.
 - **Davam:** P3b planı (DB cədvəlləri, `/firewall/v2`, iptables-dən import, `FIREWALL_ENGINE` bayrağı, boot unit, fail2ban nftables).
 
 ## Son Dəyişikliklər
