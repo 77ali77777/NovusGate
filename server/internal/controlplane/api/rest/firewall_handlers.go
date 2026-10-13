@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/netctl/nft"
@@ -1472,6 +1473,9 @@ func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFire
 		}
 		
 		for _, node := range nodes {
+			if !node.Active(time.Now()) {
+				continue // B11: never re-create an expired node's peer
+			}
 			// Update peer's AllowedIPs to include all routed networks
 			nodeAllowedIPs := node.VirtualIP.String() + "/32"
 			// Note: On server side, peer AllowedIPs is just the node's IP

@@ -902,6 +902,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusNotFound, "node not found")
 		return
 	}
+	before := *node
 
 	// Update name if provided
 	if req.Name != nil && *req.Name != "" {
@@ -923,43 +924,10 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 
 	// Update status if provided
 	if req.Status != nil {
-		newStatus := models.NodeStatus(*req.Status)
-		
-		// If reactivating an expired node, add it back to WireGuard
-		if node.Status == models.NodeStatusExpired && newStatus != models.NodeStatusExpired {
-			mgr := s.getManager(node.NetworkID)
-			if mgr != nil {
-				slog.Info(fmt.Sprintf("Reactivating node %s, adding to WireGuard", node.Name))
-				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
-					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
-				}
-			}
-		}
-		
-		// If disabling/expiring an active node, remove from WireGuard
-		if node.Status != models.NodeStatusExpired && newStatus == models.NodeStatusExpired {
-			mgr := s.getManager(node.NetworkID)
-			if mgr != nil {
-				if err := mgr.RemovePeer(node.PublicKey); err != nil {
-					slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
-				}
-			}
-		}
-		
-		node.Status = newStatus
-	} else {
-		// No explicit status change, but check if we're extending an expired node
-		if node.Status == models.NodeStatusExpired && req.ExpiresAt != nil && *req.ExpiresAt != "" {
-			// Node was expired but got new expiration - reactivate it
-			mgr := s.getManager(node.NetworkID)
-			if mgr != nil {
-				slog.Info(fmt.Sprintf("Extending expired node %s, reactivating and adding to WireGuard", node.Name))
-				node.Status = models.NodeStatusPending
-				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
-					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
-				}
-			}
-		}
+		node.Status = models.NodeStatus(*req.Status)
+	} else if node.Status == models.NodeStatusExpired && req.ExpiresAt != nil && *req.ExpiresAt != "" {
+		// A new expiry for an expired node re-activates it.
+		node.Status = models.NodeStatusPending
 	}
 
 	// Update NodeInfo if provided
@@ -981,6 +949,20 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.UpdateNode(r.Context(), node); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to update node")
 		return
+	}
+
+	// B11: the peer follows the node's activity.
+	if add, remove := peerTransition(&before, node, time.Now()); add || remove {
+		if mgr := s.getManager(node.NetworkID); mgr != nil {
+			if add {
+				slog.Info(fmt.Sprintf("Reactivating node %s, adding to WireGuard", node.Name))
+				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
+					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
+				}
+			} else if err := mgr.RemovePeer(node.PublicKey); err != nil {
+				slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
+			}
+		}
 	}
 
 	// Enrich with real-time data before returning

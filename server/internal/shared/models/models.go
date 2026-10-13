@@ -48,6 +48,16 @@ type Node struct {
 	CreatedAt time.Time         `json:"created_at"`
 }
 
+// Active reports whether the node may hold a WireGuard peer at time now: it
+// has a key and an address, is not marked expired, and now is not after
+// its expires_at.
+func (n *Node) Active(now time.Time) bool {
+	if n.PublicKey == "" || n.VirtualIP == nil || n.Status == NodeStatusExpired {
+		return false
+	}
+	return n.ExpiresAt == nil || n.ExpiresAt.IsZero() || !now.After(*n.ExpiresAt)
+}
+
 // NodeInfo contains metadata about the node's system
 type NodeInfo struct {
 	OS           string `json:"os"`
