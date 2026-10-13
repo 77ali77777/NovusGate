@@ -2,16 +2,8 @@
   "body": {
     "jail": "sshd",
     "whitelist": [
-      "These",
-      "IP",
-      "addresses/networks",
-      "are",
-      "ignored:",
-      "|-",
       "127.0.0.0/8",
-      "|-",
       "::1",
-      "`-",
       "10.99.0.0/24"
     ]
   },

@@ -1,7 +1,36 @@
 {
   "body": {
-    "count": 0,
-    "history": [],
+    "count": 4,
+    "history": [
+      {
+        "action": "ban",
+        "ip": "192.0.2.4",
+        "jail": "sshd",
+        "raw": "2026-10-13 12:00:00,500 fail2ban.actions [812]: NOTICE  [sshd] Restore Ban 192.0.2.4",
+        "timestamp": "2026-10-13 12:00:00,500"
+      },
+      {
+        "action": "ban",
+        "ip": "198.51.100.7",
+        "jail": "recidive",
+        "raw": "2026-10-13 11:30:00,400 fail2ban.actions [812]: NOTICE  [recidive] Ban 198.51.100.7",
+        "timestamp": "2026-10-13 11:30:00,400"
+      },
+      {
+        "action": "unban",
+        "ip": "203.0.113.9",
+        "jail": "sshd",
+        "raw": "2026-10-13 11:00:05,300 fail2ban.actions [812]: NOTICE  [sshd] Unban 203.0.113.9",
+        "timestamp": "2026-10-13 11:00:05,300"
+      },
+      {
+        "action": "ban",
+        "ip": "203.0.113.9",
+        "jail": "sshd",
+        "raw": "2026-10-13 10:00:05,200 fail2ban.actions [812]: NOTICE  [sshd] Ban 203.0.113.9",
+        "timestamp": "2026-10-13 10:00:05,200"
+      }
+    ],
     "jail": ""
   },
   "content_type": "application/json",

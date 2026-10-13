@@ -78,13 +78,16 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 	})
 
 	stub := &hostStub{out: map[string]string{}}
-	origHost, origCmd, origKeys, origSSH := execHostCommand, execCommand, generateKeys, legacySSHPorts
+	origHost, origCmd, origKeys, origSSH, origLog := execHostCommand, execCommand, generateKeys, legacySSHPorts, readFail2BanLog
 	execHostCommand, execCommand = stub.run, stub.run
+	readFail2BanLog = func() (string, error) { return "", os.ErrNotExist }
 	generateKeys = func() (string, string, error) {
 		return strings.Repeat("k", 43) + "=", strings.Repeat("K", 43) + "=", nil
 	}
 	legacySSHPorts = func() []uint16 { return []uint16{22} }
-	t.Cleanup(func() { execHostCommand, execCommand, generateKeys, legacySSHPorts = origHost, origCmd, origKeys, origSSH })
+	t.Cleanup(func() {
+		execHostCommand, execCommand, generateKeys, legacySSHPorts, readFail2BanLog = origHost, origCmd, origKeys, origSSH, origLog
+	})
 
 	s := &Server{store: st, router: mux.NewRouter(), managers: map[string]*wireguard.Manager{},
 		peerActivity: map[string]*PeerActivity{}}
@@ -190,6 +193,7 @@ func TestContract(t *testing.T) {
 	s, st, stub := newContractServer(t)
 	seed := seedContract(t, st)
 	stub.out["fail2ban-client get sshd ignoreip"] = fail2banIgnoreTree
+	readFail2BanLog = func() (string, error) { return sampleF2BLog, nil }
 	n, e, node := seed.network.ID, seed.empty.ID, seed.node.ID
 	missing := "00000000-0000-4000-8000-000000000000"
 
@@ -213,6 +217,7 @@ func TestContract(t *testing.T) {
 		{"vpn_rules_list", "GET", "/api/v1/firewall/vpn/rules", "", true},
 		{"fail2ban_whitelist", "GET", "/api/v1/system/fail2ban/whitelist", "", true},
 		{"fail2ban_history", "GET", "/api/v1/system/fail2ban/ban-history", "", true},
+		{"fail2ban_history_jail", "GET", "/api/v1/system/fail2ban/ban-history?jail=sshd&limit=2", "", true},
 		{"network_create", "POST", "/api/v1/networks", `{"name":"contract-new","cidr":"10.67.0.0/24"}`, true},
 		{"network_create_overlap", "POST", "/api/v1/networks", `{"name":"contract-overlap","cidr":"10.66.0.0/25"}`, true},
 		{"network_create_bad_body", "POST", "/api/v1/networks", `{`, true},

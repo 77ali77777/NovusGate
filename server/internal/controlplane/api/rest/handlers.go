@@ -1377,12 +1377,8 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 			logEntry["timestamp"] = strings.TrimSpace(parts[0])
 		}
 		
-		if strings.Contains(line, "Ban") {
-			logEntry["action"] = "ban"
-		} else if strings.Contains(line, "Unban") {
-			logEntry["action"] = "unban"
-		} else if strings.Contains(line, "Found") {
-			logEntry["action"] = "found"
+		if action := fail2banLogAction(line); action != "" {
+			logEntry["action"] = action
 		}
 		
 		parsedLogs = append(parsedLogs, logEntry)
@@ -1890,8 +1886,7 @@ func (s *Server) handleFail2BanGetWhitelist(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	
-	// Parse the output - format is usually "127.0.0.1/8 ::1 10.0.0.0/8"
-	ips := strings.Fields(strings.TrimSpace(out))
+	ips := parseIgnoreIPList(out)
 	
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"jail":      jail,
@@ -2143,65 +2138,13 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// Get ban/unban history from fail2ban log
-	var grepPattern string
-	if jail != "" {
-		grepPattern = fmt.Sprintf("\\[%s\\].*\\(Ban\\|Unban\\)", jail)
-	} else {
-		grepPattern = "\\(Ban\\|Unban\\)"
+	// The log is read directly; nothing from the request reaches a shell.
+	log, err := readFail2BanLog()
+	if err != nil {
+		log = "" // no log yet: empty history, as before
 	}
-	
-	out, _ := execHostCommand("sh", "-c", fmt.Sprintf("grep -E '%s' /var/log/fail2ban.log 2>/dev/null | tail -n %d", grepPattern, limit))
-	
-	history := []map[string]string{}
-	lines := strings.Split(out, "\n")
-	
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		
-		entry := map[string]string{
-			"raw": line,
-		}
-		
-		// Parse timestamp (format: 2024-01-15 10:30:45,123)
-		if len(line) > 23 {
-			entry["timestamp"] = line[:23]
-		}
-		
-		// Determine action
-		if strings.Contains(line, "Ban") {
-			entry["action"] = "ban"
-		} else if strings.Contains(line, "Unban") {
-			entry["action"] = "unban"
-		}
-		
-		// Extract jail name [jailname]
-		if start := strings.Index(line, "["); start != -1 {
-			if end := strings.Index(line[start:], "]"); end != -1 {
-				entry["jail"] = line[start+1 : start+end]
-			}
-		}
-		
-		// Extract IP (last word usually)
-		parts := strings.Fields(line)
-		if len(parts) > 0 {
-			lastPart := parts[len(parts)-1]
-			if net.ParseIP(lastPart) != nil {
-				entry["ip"] = lastPart
-			}
-		}
-		
-		history = append(history, entry)
-	}
-	
-	// Reverse to show newest first
-	for i, j := 0, len(history)-1; i < j; i, j = i+1, j-1 {
-		history[i], history[j] = history[j], history[i]
-	}
-	
+	history := parseFail2BanHistory(log, jail, limit)
+
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"history": history,
 		"count":   len(history),
