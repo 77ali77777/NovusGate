@@ -48,3 +48,19 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 ## Köhnə firewall endpoint-ləri `FIREWALL_ENGINE=iptables` rejimində
 - Close Port və Delete aşkarlanan bütün SSH portlarını (`sshd -T`, `ss`) qoruyur və `force` olmadan **403** qaytarır. Əvvəllər yalnız 22 qorunurdu.
 - Panel qaydanı `POST /firewall/host/rules/delete` ilə silir. Əvvəllər panel qeydiyyatdan keçməmiş `DELETE /firewall/host/rules` route-unu çağırırdı.
+
+## Kontrakt testləri (P2a)
+- **Snapshot-lar:** `server/internal/controlplane/api/rest/testdata/contract/*.json`. Hər faylda status, `Content-Type` və normallaşdırılmış body saxlanılır: UUID, vaxt, WireGuard açarı və token dəyişənlərlə əvəzlənir.
+- **Test:** `TestContract` (`contract_test.go`) real Postgres üzərində işləyir. Host əmrlərinin hamısı stub-dır.
+- **Yeniləmə:** `bash server/scripts/update-contracts.sh`. Bu skript yalnız `TestContract`-ı `-update` ilə işlədir. Hər fərq API dəyişikliyidir və commit-də əsaslandırılmalıdır.
+
+## P2a-da dəyişən cavablar
+- **Boş siyahılar `null` əvəzinə `[]` qaytarılır:** `GET /networks`, `GET /networks/{id}/nodes`, `GET /users`, `GET /system/fail2ban/ban-history` (`history`), `GET /system/fail2ban/permanent-bans` (`permanent_bans`).
+- **`GET /system/fail2ban/ban-history`:**
+  - Ban, "Restore Ban" və Unban qeydləri real olaraq qaytarılır, ən yenisi əvvəldə;
+  - `jail` sahəsi `[jail]` adıdır, PID deyil;
+  - `?jail=` yalnız filtrdir, shell-ə ötürülmür;
+  - `?limit=` ən yeni N qeydi saxlayır.
+- **`GET /system/fail2ban/logs`:** Unban sətirləri `"action":"unban"` kimi işarələnir.
+- **`GET /system/fail2ban/whitelist`:** `whitelist`-də yalnız IP, CIDR və host adları qalır; başlıq sözləri və ağac simvolları çıxarılır.
+- **Firewall v1 siyahısı:** "opt" sütunu olmayan iptables (nf_tables) formatı düzgün oxunur, qısa sətirlər panic etmir.

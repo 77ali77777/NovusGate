@@ -177,15 +177,15 @@ Bu siyahı "əskiksiz" tələbinin ölçüsüdür. Yeni sistemdə hər sətir ya
 | B11 | Expiry problemləri: lazy tətbiq; reaktivləşmə peer-i geri qaytarmır; rule sync vaxtı bitmiş peer-ləri bərpa edir | P1 (sync və bərpa üçün aktivlik filtri), P2 (reconciler) |
 | B12 | Host rule delete: frontend və backend method/path uyğun gəlmir | P2 (alias), P6 |
 | B13 | EditNodeModal expiry ilə saxlamağı bloklayır | P6 |
-| B14 | VPNRuleModal `null` gəldikdə çökür | P2 (`[]` qaytarmaq), P6 |
+| B14 | VPNRuleModal `null` gəldikdə çökür | P2 (`[]` qaytarmaq), P6 — **P2a-da bağlandı (`10f49ff`)**: səbəb node siyahısı idi |
 | B15 | Köhnə parol səhv olanda logout baş verir | P4 (`400 invalid_old_password`), P5 (interceptor) |
-| B16 | Fail2ban tarixçəsi boşdur; whitelist parse səhvdir | P2 |
+| B16 | Fail2ban tarixçəsi boşdur; whitelist parse səhvdir | P2 — **P2a-da bağlandı (`7d798ff`)** |
 | B17 | Migrate binary adı səhvdir | P1 |
 | B18 | Center konteyner adları böyük/kiçik hərf uyğunsuzluğu | P1 |
 | B19 | Update `admin-vpn.conf`-u silir | P1 |
 | B20 | Firewall Reset Docker-i və girişləri pozur | P3 (Reset → bizim cədvəli yenidən qurur) |
-| B21 | `/24` sabit yazılıb; broadcast və hub IP ayrılır | P2 |
-| B22 | `GetPublicKey` `=` simvolunu kəsir; `parseRuleLine` panic edir | P2 / P3 |
+| B21 | `/24` sabit yazılıb; broadcast və hub IP ayrılır | P2 — **P2a-da bağlandı (`4fb3ec9`)** |
+| B22 | `GetPublicKey` `=` simvolunu kəsir; `parseRuleLine` panic edir | P2 / P3 — **P2a-da bağlandı (`5802f79`)** |
 | B23 | Mixed content | P4 (nginx proxy) |
 
 **C. Center əlavə → P7:**

@@ -53,3 +53,16 @@
 - **M5.** VPN-only istisnalar (API portları, rezerv portlarda servislər) yalnız DB-dəki şəbəkə interfeyslərinə və `wg0`-a aiddir.
 - **Versiyalar arası yoxlama.** `server/scripts/nft-versions-check.sh` golden ruleset-ləri və nft 1.0.9 snapshot-unu nft 1.0.2, 1.0.6 və 1.0.9-da `nft -c` ilə yoxlayır.
 - **DB testləri:** `server/scripts/test-with-postgres.sh` (`TEST_DATABASE_URL`, `-p 1`).
+
+## Test seam-ləri (P2a)
+- **`api/rest`-də dəyişdirilə bilən funksiyalar:**
+  - `execHostCommand`, `execCommand`: host və konteyner əmrləri;
+  - `generateKeys`: WireGuard açarları;
+  - `readFail2BanLog`: `/var/log/fail2ban.log`;
+  - `legacySSHPorts`, `adminPeers`, `clearLegacyVPNRules`, `checkFirewallHost`, `cutoverIptables`.
+
+  Testlər bunları stub edir, heç bir test host-a toxunmur.
+- **Kontrakt testləri** bax `docs/api.md`. Golden fayllar `.gitattributes` qaydası (`server/**/testdata/** eol=lf`) ilə LF saxlanılır.
+- **Yeni şəbəkənin hub ünvanı:** CIDR-in ilk host-u, CIDR-in öz prefiksi ilə (`hubAddress`).
+- **`AllocateIP`:** network, `.1` və `.2` ünvanlarını ötürür, broadcast-ı heç vaxt vermir.
+- **Startup log-u:** DB URL-dəki parol maskalanır (`maskDatabaseURL`).

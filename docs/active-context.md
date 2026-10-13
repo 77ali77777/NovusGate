@@ -126,6 +126,25 @@
   - `parseRuleLine` 8–9 sahəli sətirdə panic edir və "opt" sütunsuz formatı səhv oxuyur.
 - **Davam:** P2a planının icrası.
 
+### Eyni sessiyanın davamı (2026-10-13): P2a icra olundu
+- **Nəticə:** Task 1–7 commit-ləndi:
+  - `646ce20`: kontrakt snapshot-ları;
+  - `10f49ff`: B14;
+  - `5802f79`: B22;
+  - `7d798ff`: B16;
+  - `4fb3ec9`: B21;
+  - `42f79b2`: DB parolunun maskalanması;
+  - `f816289`: frontend-in hər iki xəta formasını oxuması.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → `ok` `cmd/control-plane`, `api/rest`, `firewall`, `store`, `nft`, `wireguard`;
+  - kontrakt testi iki ardıcıl run-da eyni nəticə verdi;
+  - golden fayllarda açar yoxdur;
+  - web `tsc --noEmit` → exit 0;
+  - biome diaqnostikalarının sayı dəyişməyib (23/4, hamısı köhnə).
+- **Default rejimdə davranış dəyişikliyi:** yalnız spec §3-dəki baq düzəlişləri (`docs/api.md` → "P2a-da dəyişən cavablar").
+- **Davam:** final review, sonra P2b (müşahidə).
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -144,6 +163,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-13 | P2a: kontrakt snapshot testləri, B14/B16/B21/B22, DB parolunun maskalanması, frontend xəta helper-i | api/rest/*, store/store.go, wireguard/manager.go, cmd/control-plane/main.go, web/src/api/errors.ts + 5 səhifə, scripts/update-contracts*.sh | P2a planı · `646ce20`..`f816289` |
 | 2026-10-13 | P3b-2: hazır olma şərti, host yoxlaması, INPUT təhvili, REST minor-ları, legacy SSH qoruması, M5/M10, `setup-firewall.sh` (boot unit, fail2ban, geri qayıdış) | firewall/{engine,cutover}.go, api/rest/*, store/firewall.go, netctl/nft/{compile,validate}.go, scripts/nft-versions-*.sh, deployments/docker/setup-firewall.sh, web/src/api/client.ts | P3b-2 planı · `2854f01`..`f22aaaa` |
 | 2026-10-13 | P3b-1 review fix: retry, legacy VPN sırası, allow/block ziddiyyəti, wg0 endpoint qoruması, runbook | server/internal/controlplane/firewall/{engine,iptables_import}.go, api/rest/{firewall_engine,firewall_handlers}.go, testlər, docs/runbooks/p3b1-firewall-engine.md, docs/api.md, docs/architecture.md, spec §6b | P3b-1 final review Important 1–4 |
 
