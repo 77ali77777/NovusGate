@@ -78,3 +78,28 @@ func TestCustomSSHPortIsProtectedInLegacyMode(t *testing.T) {
 		t.Fatalf("closing a detected SSH port = %d, want 403", rec.Code)
 	}
 }
+
+// B22: short lines must not panic, and iptables without the "opt" column
+// (nf_tables builds) must still map in/out/source/destination correctly.
+func TestParseRuleLine(t *testing.T) {
+	for _, short := range []string{
+		"1 0 0 ACCEPT all -- lo *",
+		"1 0 0 ACCEPT all -- lo * 0.0.0.0/0",
+	} {
+		if r := parseRuleLine(short, "INPUT"); r != nil {
+			t.Errorf("incomplete line %q must be skipped, got %+v", short, r)
+		}
+	}
+	withOpt := parseRuleLine("3 10 600 ACCEPT tcp -- * * 0.0.0.0/0 0.0.0.0/0 tcp dpt:22", "INPUT")
+	noOpt := parseRuleLine("3 10 600 ACCEPT 6 * * 0.0.0.0/0 0.0.0.0/0 tcp dpt:22", "INPUT")
+	wg := parseRuleLine("5 3 180 ACCEPT 6 wg0 * 0.0.0.0/0 0.0.0.0/0 tcp dpt:3007", "INPUT")
+	if withOpt == nil || withOpt.Port != "22" || withOpt.Source != "anywhere" || withOpt.Interface != "" {
+		t.Fatalf("classic format: %+v", withOpt)
+	}
+	if noOpt == nil || noOpt.Port != "22" || noOpt.Source != "anywhere" || noOpt.Destination != "anywhere" || noOpt.Interface != "" {
+		t.Fatalf("format without opt: %+v", noOpt)
+	}
+	if wg == nil || wg.InInterface != "wg0" || wg.Port != "3007" {
+		t.Fatalf("interface without opt: %+v", wg)
+	}
+}

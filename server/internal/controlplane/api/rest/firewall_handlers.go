@@ -200,65 +200,45 @@ func parseIptablesOutput(output string, chainName string) (*ChainInfo, error) {
 
 // parseRuleLine parses a single iptables rule line
 func parseRuleLine(line string, chainName string) *FirewallRule {
-	// Split by whitespace, but be careful with multiple spaces
 	fields := strings.Fields(line)
-	if len(fields) < 8 {
+	// num pkts bytes target prot [opt] in out source destination [options...]
+	// Newer iptables (nf_tables) omits the "opt" column.
+	if len(fields) < 6 {
 		return nil
 	}
-	
-	// Parse line number
+	in := 5
+	if isOptColumn(fields[5]) {
+		in = 6
+	}
+	if len(fields) < in+4 {
+		return nil
+	}
 	lineNum, err := strconv.Atoi(fields[0])
 	if err != nil {
 		return nil
 	}
-	
-	rule := &FirewallRule{
-		Number: lineNum,
-		Chain:  chainName,
+	rule := &FirewallRule{Number: lineNum, Chain: chainName, Target: fields[3], Protocol: fields[4]}
+	if fields[in] != "*" {
+		rule.InInterface = fields[in]
+		rule.Interface = fields[in]
 	}
-	
-	// fields[1] = pkts, fields[2] = bytes (skip these)
-	// fields[3] = target
-	rule.Target = fields[3]
-	
-	// fields[4] = protocol
-	rule.Protocol = fields[4]
-	
-	// fields[5] = opt (skip)
-	
-	// fields[6] = in interface
-	if fields[6] != "*" {
-		rule.InInterface = fields[6]
-		rule.Interface = fields[6]
-	}
-	
-	// fields[7] = out interface
-	if fields[7] != "*" {
-		rule.OutInterface = fields[7]
+	if fields[in+1] != "*" {
+		rule.OutInterface = fields[in+1]
 		if rule.Interface == "" {
-			rule.Interface = fields[7]
+			rule.Interface = fields[in+1]
 		}
 	}
-	
-	// fields[8] = source
-	if len(fields) > 8 {
-		rule.Source = fields[8]
-		if rule.Source == "0.0.0.0/0" {
-			rule.Source = "anywhere"
-		}
+	rule.Source = fields[in+2]
+	if rule.Source == "0.0.0.0/0" {
+		rule.Source = "anywhere"
 	}
-	
-	// fields[9] = destination
-	if len(fields) > 9 {
-		rule.Destination = fields[9]
-		if rule.Destination == "0.0.0.0/0" {
-			rule.Destination = "anywhere"
-		}
+	rule.Destination = fields[in+3]
+	if rule.Destination == "0.0.0.0/0" {
+		rule.Destination = "anywhere"
 	}
-	
-	// Parse remaining fields for port info
+
 	// Look for patterns like "tcp dpt:22" or "tcp dpts:8000:9000" or "multiport dports 80,443"
-	remaining := strings.Join(fields[10:], " ")
+	remaining := strings.Join(fields[in+4:], " ")
 	rule.Options = remaining
 	
 	// Extract port from options

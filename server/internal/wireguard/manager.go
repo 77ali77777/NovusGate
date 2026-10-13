@@ -179,18 +179,7 @@ func (m *Manager) GetPublicKey() (string, error) {
 	}
 	
 	// 2. Parse existing config for PrivateKey
-	lines := strings.Split(string(content), "\n")
-	var privateKey string
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "PrivateKey") {
-			parts := strings.Split(trimmed, "=")
-			if len(parts) >= 2 {
-				privateKey = strings.TrimSpace(parts[1])
-				break
-			}
-		}
-	}
+	privateKey := parsePrivateKey(string(content))
 
 	if privateKey == "" {
 		return "", fmt.Errorf("private key not found in config")
@@ -255,3 +244,15 @@ func (m *Manager) GetPeers() (map[string]PeerStatus, error) {
 }
 
 
+
+// parsePrivateKey returns the PrivateKey value of a wg-quick config. Only
+// the first '=' separates key and value: base64 keys end in '='.
+func parsePrivateKey(config string) string {
+	for _, line := range strings.Split(config, "\n") {
+		k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if ok && strings.TrimSpace(k) == "PrivateKey" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
