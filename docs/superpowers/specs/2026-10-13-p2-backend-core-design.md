@@ -55,3 +55,10 @@ Dəyişənlər:
   - yeni iptables-in "opt" sütunsuz formatı düzgün oxunur (B22).
 - **Yeni şəbəkənin hub ünvanı** CIDR prefiksi ilə yazılır. Node-a broadcast ünvanı verilmir (B21).
 - **Startup log-unda DB parolu** maskalanır (secret log-a yazılmır).
+
+## 4. P2c qərarları (2026-10-14)
+- **`WG_RECONCILER`:** `off` | `shadow` (default) | `enforce`. Səhv dəyər verilsə server başlamır.
+- **Expire addımı** shadow və enforce rejimlərində işləyir: vaxtı keçmiş node-ları DB-də `expired` kimi yazır və peer-lərini silir. Bu, mövcud lazy expiry-nin vaxtında işləyən formasıdır.
+- **Diff addımı** shadow rejimində yalnız log yazır. Enforce rejimində hər dəyişiklikdən əvvəl DB-ni yenidən yoxlayır.
+- **Naməlum peer-lər silinmir** ("adopt" qaydası), allowed-ips daraldılmır.
+- **`wgN.conf`-a `[Peer]` yazılması P2c-2-yə saxlanılıb.** `wg0.conf` installer-indir, reboot bərpasını isə `restorePeers` edir.

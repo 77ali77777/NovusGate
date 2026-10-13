@@ -77,3 +77,8 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 - **`status`:** `healthy` və ya `degraded`. Bunlardan biri olanda `degraded` qaytarılır: DB cavab vermir; bir şəbəkənin interfeysi `down`-dır; nft engine hazır deyil.
 - **`checks.firewall.ready` və `pending`:** yalnız `FIREWALL_ENGINE=nft` olanda görünür.
 - **Reconciler yoxlaması** P2c-də əlavə olunacaq.
+
+## P2c dəyişiklikləri
+- **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi dəyişikliklərin sayıdır. `ok: false` olanda `status: degraded` qaytarılır.
+- **`PUT /nodes/{id}`:** cavab forması dəyişmir. Node aktiv olanda (məsələn gələcək `expires_at` verildikdə) peer əlavə olunur, aktiv olmayanda silinir (B11).
+- **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.

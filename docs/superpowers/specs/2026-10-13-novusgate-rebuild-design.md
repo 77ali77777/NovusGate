@@ -174,7 +174,7 @@ Bu siyahı "əskiksiz" tələbinin ölçüsüdür. Yeni sistemdə hər sətir ya
 | B8 | Birtərəfli qayda işləmir; `node` qaydası bütün şəbəkəyə tətbiq olunur | P3 (siyasət modeli) |
 | B9 | Linux one-line install işləmir | P4 |
 | B10 | join-vpn işləmir | P4, P7 |
-| B11 | Expiry problemləri: lazy tətbiq; reaktivləşmə peer-i geri qaytarmır; rule sync vaxtı bitmiş peer-ləri bərpa edir | P1 (sync və bərpa üçün aktivlik filtri), P2 (reconciler) |
+| B11 | Expiry problemləri: lazy tətbiq; reaktivləşmə peer-i geri qaytarmır; rule sync vaxtı bitmiş peer-ləri bərpa edir | P1 (sync və bərpa üçün aktivlik filtri), P2 (reconciler) — **P2c-də bağlandı (`e5d346a`, `c61bc4a`, `07e63f1`, `149af2f`)** |
 | B12 | Host rule delete: frontend və backend method/path uyğun gəlmir | P2 (alias), P6 |
 | B13 | EditNodeModal expiry ilə saxlamağı bloklayır | P6 |
 | B14 | VPNRuleModal `null` gəldikdə çökür | P2 (`[]` qaytarmaq), P6 — **P2a-da bağlandı (`10f49ff`)**: səbəb node siyahısı idi |

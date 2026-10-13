@@ -212,6 +212,24 @@
 - **Davam:** P2c icrası.
 
 
+### 2026-10-14: P2c icra olundu
+- **Nəticə:** Task 1–6 commit-ləndi:
+  - `e5d346a`: B11 handler-ləri;
+  - `c61bc4a`: `ExpireNodes`;
+  - `07e63f1`: reconciler;
+  - `149af2f`: loop, trigger və `/health`;
+  - `e179bbb`: tək `Up`;
+  - `24a499d`: logging qoruyucusu bütün `internal/`-u əhatə edir.
+- **Yoxlama:** `bash server/scripts/test-with-postgres.sh` → `ok`: `cmd/control-plane`, `api/rest`, `firewall`, `reconciler`, `store`, `nft`, `logging`, `models`, `wireguard`. Kontrakt snapshot-ları dəyişməyib.
+- **Default rejimdə davranış dəyişikliyi:**
+  - `WG_RECONCILER=shadow`: fərq yalnız log-a yazılır;
+  - vaxtı keçmiş node 15 saniyə ərzində `expired` olur və peer-i silinir, panel açılmasa belə;
+  - müddəti uzadılan node-un peer-i geri qayıdır;
+  - yeni şəbəkə yaradılanda yalançı "Failed to bring up" xətası artıq yazılmır.
+- **Yoxlanmayıb:** real WireGuard. `docs/runbooks/p2c-reconciler.md` staging-də icra olunmalıdır.
+- **Davam:** final review, sonra P2c-2 və ya P2d.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -230,6 +248,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
 | 2026-10-13 | P2a: kontrakt snapshot testləri, B14/B16/B21/B22, DB parolunun maskalanması, frontend xəta helper-i | api/rest/*, store/store.go, wireguard/manager.go, cmd/control-plane/main.go, web/src/api/errors.ts + 5 səhifə, scripts/update-contracts*.sh | P2a planı · `646ce20`..`f816289` |
 | 2026-10-13 | P3b-2: hazır olma şərti, host yoxlaması, INPUT təhvili, REST minor-ları, legacy SSH qoruması, M5/M10, `setup-firewall.sh` (boot unit, fail2ban, geri qayıdış) | firewall/{engine,cutover}.go, api/rest/*, store/firewall.go, netctl/nft/{compile,validate}.go, scripts/nft-versions-*.sh, deployments/docker/setup-firewall.sh, web/src/api/client.ts | P3b-2 planı · `2854f01`..`f22aaaa` |

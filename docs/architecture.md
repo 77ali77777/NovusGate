@@ -84,3 +84,26 @@
 - **Runtime kodu yalnız `slog` ilə log yazır.** Mesaj mətnləri əvvəlki kimidir, ona görə runbook grep-ləri işləyir. Bunu `TestRuntimeCodeLogsThroughSlog` qoruyur.
   - CLI çıxışı (`migrate`, `init`, `version`, `firewall preview`) `fmt` olaraq qalır.
   - `migrate` slog-un mətn handler-i ilə yazır.
+
+## Reconciler (P2c)
+- **Paket:** `internal/controlplane/reconciler`. DB WireGuard peer-ləri üçün həqiqət mənbəyidir.
+- **`WG_RECONCILER` rejimləri:**
+  - `off`: köhnə davranış, goroutine işləmir;
+  - `shadow` (default): yalnız log yazır;
+  - `enforce`: fərqi tətbiq edir.
+
+  Səhv dəyər verilsə server başlamır.
+- **Nə vaxt işləyir:** hər 15 saniyədən bir. Node və şəbəkə yazmalarından sonra da trigger olunur (`triggerReconcile`). Ardıcıl trigger-lər bir işləməyə birləşir.
+- **Expire addımı** (shadow və enforce): `ExpireNodes` vaxtı keçmiş node-ları DB-də `expired` kimi yazır və onların peer-ini silir. Bu, panelin lazy expiry-sinin vaxtında işləyən formasıdır, panel bağlı olsa da işləyir.
+- **Diff addımı:**
+  - aktiv node peer olmalıdır və onun `/32` ünvanı allowed-ips siyahısında olmalıdır;
+  - qeyri-aktiv node-un peer-i silinir.
+  - **Shadow:** `reconciler (shadow): would change peer` yazır.
+  - **Enforce:** fərqi tətbiq edir. Hər dəyişiklikdən əvvəl node DB-dən yenidən oxunur, ona görə silinmiş node-un peer-i geri qayıtmır.
+- **Qorumalar:**
+  - DB-də olmayan peer heç vaxt silinmir. Log-a `reconciler: peer not in the database (left alone)` yazılır ("adopt" qaydası).
+  - allowed-ips siyahısı heç vaxt daraldılmır: gateway route-ları qalır.
+- **Aktivlik:** `models.Node.Active(now)`: açar və IP var, status `expired` deyil, `expires_at` keçməyib. `restorePeers`, `PUT /nodes/{id}` (`peerTransition`) və `syncPeerAllowedIPs` eyni tərifi işlədir (B11).
+- **`/health`:** `checks.reconciler {ok, mode, last_run, pending}`.
+- **P2c-2-yə saxlanılıb:** `wgN.conf`-a `[Peer]` bölmələrinin yazılması. `wg0.conf`-u installer yazır və bootstrap açarları ondan oxuyur. Reboot-dan sonra peer-ləri `restorePeers` bərpa edir.
+- **Logging qoruyucusu:** `TestRuntimeCodeLogsThroughSlog` və `TestLogLevelsMatchMessages` artıq bütün `internal/` ağacını yoxlayır və import alias-larını tanıyır.
