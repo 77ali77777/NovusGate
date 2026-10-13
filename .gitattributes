@@ -2,3 +2,5 @@
 *.sh text eol=lf
 # nft rulesets are compared byte for byte by golden tests.
 *.nft text eol=lf
+# gofmt checks in scripts/test-in-docker.sh fail on CRLF checkouts.
+*.go text eol=lf

@@ -123,6 +123,31 @@ func Validate(rs Ruleset) error {
 			return fmt.Errorf("VPN rule %s: unknown action %q", r.ID, r.Action)
 		}
 	}
+	for _, r := range rs.IPRules {
+		if !idRe.MatchString(r.ID) {
+			return fmt.Errorf("invalid IP rule id %q", r.ID)
+		}
+		if !r.Prefix.IsValid() {
+			return fmt.Errorf("IP rule %s: invalid prefix", r.ID)
+		}
+		if r.Action != "block" && r.Action != "allow" {
+			return fmt.Errorf("IP rule %s: action must be block or allow", r.ID)
+		}
+		if r.Proto != "" && r.Proto != TCP && r.Proto != UDP {
+			return fmt.Errorf("IP rule %s: protocol must be tcp, udp or empty", r.ID)
+		}
+		if len(r.Ports) > 0 && r.Proto == "" {
+			return fmt.Errorf("IP rule %s: ports need tcp or udp", r.ID)
+		}
+		if r.Action == "block" && len(r.Ports) == 0 {
+			return fmt.Errorf("IP rule %s: whole-address blocks belong in the blocked set", r.ID)
+		}
+		for _, p := range r.Ports {
+			if p.From == 0 || p.To < p.From {
+				return fmt.Errorf("IP rule %s: invalid port range %s", r.ID, p)
+			}
+		}
+	}
 	for _, a := range rs.Egress {
 		if !a.Is4() {
 			return fmt.Errorf("egress address %s must be IPv4", a)

@@ -66,6 +66,12 @@ func writeInput(b *builder, rs Ruleset) {
 	b.line(2, `iif "lo" accept`)
 	b.line(2, "ip saddr @blocked_v4 counter drop")
 	b.line(2, "ip6 saddr @blocked_v6 counter drop")
+	// Port-scoped blocks also cut existing connections, like whole blocks.
+	for _, r := range rs.IPRules {
+		if r.Action == "block" {
+			b.line(2, ipRuleLine(r, "counter drop"))
+		}
+	}
 	b.line(2, "ct state established,related accept")
 	b.line(2, "ct state invalid drop")
 	b.line(2, "tcp dport @ssh_ports accept")
@@ -78,6 +84,11 @@ func writeInput(b *builder, rs Ruleset) {
 	for _, s := range rs.Services {
 		for _, l := range serviceLines(s) {
 			b.line(2, l)
+		}
+	}
+	for _, r := range rs.IPRules {
+		if r.Action == "allow" {
+			b.line(2, ipRuleLine(r, "accept"))
 		}
 	}
 	b.line(2, "meta l4proto { icmp, ipv6-icmp } accept")
@@ -110,6 +121,24 @@ func serviceLines(s Service) []string {
 		lines = append(lines, prefix+"ip6 saddr { "+strings.Join(v6, ", ")+" } "+tail)
 	}
 	return lines
+}
+
+// ipRuleLine renders one IPRule with the given verdict, e.g.
+// `ip saddr 203.0.113.5 tcp dport { 80, 443 } counter drop comment "ip:x"`.
+func ipRuleLine(r IPRule, verdict string) string {
+	family := "ip"
+	if !r.Prefix.Addr().Is4() {
+		family = "ip6"
+	}
+	parts := []string{family + " saddr " + elemPrefix(r.Prefix.Masked())}
+	switch {
+	case len(r.Ports) > 0:
+		parts = append(parts, fmt.Sprintf("%s dport { %s }", r.Proto, strings.Join(rangeElems(r.Ports), ", ")))
+	case r.Proto != "":
+		parts = append(parts, "meta l4proto "+string(r.Proto))
+	}
+	parts = append(parts, verdict, fmt.Sprintf("comment %q", "ip:"+r.ID))
+	return strings.Join(parts, " ")
 }
 
 func writeForward(b *builder, rs Ruleset) {

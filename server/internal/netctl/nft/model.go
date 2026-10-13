@@ -74,6 +74,16 @@ type VPNRule struct {
 	Action string      // accept, drop or reject
 }
 
+// IPRule is a per-source input rule: a port-scoped block (drop) or an allow
+// (accept). Whole-address blocks without ports belong in Blocked.
+type IPRule struct {
+	ID     string
+	Prefix netip.Prefix
+	Action string      // "block" or "allow"
+	Proto  Protocol    // tcp, udp, or "" for any protocol
+	Ports  []PortRange // empty means every port; requires tcp or udp when set
+}
+
 // Ruleset is the complete desired state of table inet novusgate.
 type Ruleset struct {
 	SSHPorts        []uint16
@@ -83,6 +93,7 @@ type Ruleset struct {
 	Blocked         []BlockedEntry
 	Forwards        []PortForward
 	VPNRules        []VPNRule
+	IPRules         []IPRule
 	Egress          []netip.Addr // full-tunnel nodes allowed to reach the internet
 }
 

@@ -25,6 +25,12 @@ func CheckProtection(rs Ruleset, p Protection, now time.Time) error {
 		}
 	}
 	for _, addr := range p.Addrs {
+		addr = addr.Unmap()
+		for _, r := range rs.IPRules {
+			if r.Action == "block" && r.Prefix.Contains(addr) {
+				return fmt.Errorf("IP rule %s would block the current session from %s", r.ID, addr)
+			}
+		}
 		for _, b := range rs.Blocked {
 			if b.Expires != nil && !b.Expires.After(now) {
 				continue
