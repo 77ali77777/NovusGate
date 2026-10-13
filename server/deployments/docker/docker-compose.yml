@@ -5,6 +5,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: novusgate-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-novusgate}
       POSTGRES_USER: ${DB_USER:-novusgate}
@@ -28,6 +29,7 @@ services:
       context: ../../
       dockerfile: deployments/docker/Dockerfile.control-plane
     container_name: novusgate-control-plane
+    restart: unless-stopped
     # HOST NETWORK MODE: Required for WireGuard VPN to work properly
     # VPN traffic must pass through host network, not Docker bridge
     network_mode: host
@@ -72,6 +74,7 @@ services:
       context: ../../../web
       dockerfile: Dockerfile
     container_name: novusgate-web
+    restart: unless-stopped
     network_mode: host
     environment:
       API_URL: ${API_URL:-http://localhost:8080}
