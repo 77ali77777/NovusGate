@@ -1,0 +1,61 @@
+table inet novusgate
+delete table inet novusgate
+table inet novusgate {
+	set ssh_ports {
+		type inet_service
+		elements = { 22 }
+	}
+	set wg_ports {
+		type inet_service
+		flags interval
+		elements = { 51820-51900 }
+	}
+	set blocked_v4 {
+		type ipv4_addr
+		flags interval, timeout
+	}
+	set blocked_v6 {
+		type ipv6_addr
+		flags interval, timeout
+	}
+	set egress_v4 {
+		type ipv4_addr
+	}
+	chain input {
+		type filter hook input priority filter - 10; policy drop;
+		iif "lo" accept
+		ip saddr @blocked_v4 counter drop
+		ip6 saddr @blocked_v6 counter drop
+		ct state established,related accept
+		ct state invalid drop
+		tcp dport @ssh_ports accept
+		udp dport @wg_ports accept
+		ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"
+		iifname "wg0" tcp dport { 3007, 5432 } accept
+		iifname { "wg0" } tcp dport { 8080, 8443 } accept
+		meta l4proto { icmp, ipv6-icmp } accept
+		counter comment "default drop"
+	}
+	chain forward {
+		type filter hook forward priority filter - 10; policy accept;
+		ip saddr @blocked_v4 counter drop
+		ip6 saddr @blocked_v6 counter drop
+		ct state established,related accept
+		iifname "wg0" meta l4proto tcp ct original proto-dst 5432 ct status dnat accept comment "admin VPN to docker-published postgres"
+		meta l4proto tcp ct original proto-dst 5432 ct status dnat counter drop comment "docker-published postgres"
+		iifname "wg*" jump vpn_policy
+		oifname "wg*" ct status dnat accept
+		oifname "wg*" counter drop
+	}
+	chain vpn_policy {
+		oifname "eth0" ip saddr @egress_v4 accept
+		counter drop comment "vpn default drop"
+	}
+	chain prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+	}
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oifname "eth0" ip saddr @egress_v4 masquerade
+	}
+}

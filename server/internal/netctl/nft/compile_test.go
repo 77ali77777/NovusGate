@@ -85,7 +85,7 @@ func TestCompileKeyBehaviour(t *testing.T) {
 		"elements = { 192.0.2.9 timeout 3600s, 198.51.100.0/24 }", // expired and covered entries dropped
 		"type filter hook input priority filter - 10; policy drop;",
 		`iifname "wg0" tcp dport { 3007, 5432 } accept`,
-		`iifname "wg*" tcp dport { 8080, 8443 } accept`,
+		`iifname { "wg0", "wg1", "wg2" } tcp dport { 8080, 8443 } accept`,
 		`ip saddr { 203.0.113.0/24 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`ip6 saddr { 2001:db8::/32 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`iifname "wg1" udp dport 53 accept comment "svc:vpn-dns"`,
@@ -229,6 +229,57 @@ func TestValidInterfaceName(t *testing.T) {
 		"wg-name-longer-than-15": false, `eth0"`: false} {
 		if ValidInterfaceName(name) != want {
 			t.Errorf("ValidInterfaceName(%q) != %v", name, want)
+		}
+	}
+}
+
+// M5: only interfaces of real NovusGate networks may reach the API ports or
+// open reserved ports; "wg9" from another tool is public.
+func TestReservedPortsOnlyOnNetworkInterfaces(t *testing.T) {
+	rs := fullRuleset()
+	rs.Services = append(rs.Services, Service{ID: "foreign-wg", Proto: TCP, Ports: PortRange{8080, 8080}, Interface: "wg9"})
+	if _, err := Compile(rs, testNow); err == nil {
+		t.Fatal("a reserved port on an interface that is not a NovusGate network must be rejected")
+	}
+}
+
+func edgeRulesets() map[string]Ruleset {
+	return map[string]Ruleset{
+		"empty": {SSHPorts: []uint16{22}, EgressInterface: "eth0"},
+		"v6only": {
+			SSHPorts: []uint16{22}, EgressInterface: "eth0",
+			Services: []Service{{ID: "v6-https", Proto: TCP, Ports: PortRange{443, 443},
+				Sources: []netip.Prefix{netip.MustParsePrefix("2001:db8::/32")}}},
+			Blocked: []BlockedEntry{{Prefix: netip.MustParsePrefix("2001:db8:bad::/48")}},
+		},
+	}
+}
+
+func TestCompileEdgeGoldens(t *testing.T) {
+	for name, rs := range edgeRulesets() {
+		got, err := Compile(rs, testNow)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		path := filepath.Join("testdata", name+".nft")
+		if *update {
+			if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		want, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("%s: %v (run go test -update once)", name, err)
+		}
+		if got != string(want) {
+			t.Errorf("%s: golden mismatch\n%s", name, got)
+		}
+		if os.Getenv("NFT_CHECK") == "1" {
+			cmd := exec.Command("nft", "-c", "-f", "-")
+			cmd.Stdin = strings.NewReader(got)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Errorf("%s: nft -c rejected: %v\n%s", name, err, out)
+			}
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/netip"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -80,7 +81,7 @@ func writeInput(b *builder, rs Ruleset) {
 	// solicit, so conntrack cannot match them as established.
 	b.line(2, `ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"`)
 	b.line(2, fmt.Sprintf(`iifname %q tcp dport { %s } accept`, AdminInterface, joinPorts(AdminPorts)))
-	b.line(2, fmt.Sprintf(`iifname %q tcp dport { %s } accept`, VPNInterfacePattern, joinPorts(APIPorts)))
+	b.line(2, fmt.Sprintf(`iifname { %s } tcp dport { %s } accept`, quoteJoin(vpnInterfaces(rs)), joinPorts(APIPorts)))
 	for _, s := range rs.Services {
 		for _, l := range serviceLines(s) {
 			b.line(2, l)
@@ -365,4 +366,28 @@ func addrElems(addrs []netip.Addr) []string {
 		s[i] = a.String()
 	}
 	return s
+}
+
+// vpnInterfaces lists the WireGuard interfaces of NovusGate's networks plus
+// the admin interface, sorted, so only real VPN networks get the VPN-only
+// exceptions (M5).
+func vpnInterfaces(rs Ruleset) []string {
+	seen := map[string]bool{AdminInterface: true}
+	out := []string{AdminInterface}
+	for _, n := range rs.Networks {
+		if !seen[n.Interface] {
+			seen[n.Interface] = true
+			out = append(out, n.Interface)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func quoteJoin(names []string) string {
+	q := make([]string, len(names))
+	for i, n := range names {
+		q[i] = strconv.Quote(n)
+	}
+	return strings.Join(q, ", ")
 }

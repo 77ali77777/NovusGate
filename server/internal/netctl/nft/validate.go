@@ -61,7 +61,7 @@ func Validate(rs Ruleset) error {
 				return fmt.Errorf("service %s: invalid source", s.ID)
 			}
 		}
-		if s.Proto == TCP && !isVPNInterface(s.Interface) {
+		if s.Proto == TCP && !containsString(vpnInterfaces(rs), s.Interface) {
 			for p := range reserved {
 				if p >= s.Ports.From && p <= s.Ports.To {
 					return fmt.Errorf("service %s: port %d is reserved for VPN-only admin services", s.ID, p)
@@ -156,8 +156,13 @@ func Validate(rs Ruleset) error {
 	return nil
 }
 
-func isVPNInterface(name string) bool {
-	return len(name) >= 2 && name[:2] == "wg"
+func containsString(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(ports []uint16, p uint16) bool {
