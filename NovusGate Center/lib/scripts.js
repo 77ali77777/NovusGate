@@ -14,6 +14,21 @@ clean_install_dir() {
 }
 `;
 
+// Exit code of the install script when NovusGate is already installed.
+const EXIT_ALREADY_INSTALLED = 3;
+
+// A fresh install regenerates the database password and the wg0 server key,
+// which would lock the control plane out of the existing database and break
+// every VPN client. Existing installs must use Update or Reinstall instead.
+const ALREADY_INSTALLED_GUARD = `
+if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ]; then
+  echo "[ERROR] NovusGate is already installed in $INSTALL_DIR."
+  echo "Use Update (keeps everything) or Reinstall (keeps database and .env) instead."
+  rm -f /tmp/NovusGate.tar.gz
+  exit ${EXIT_ALREADY_INSTALLED}
+fi
+`;
+
 const GENERATE_INSTALL_SCRIPT = (config) => `
 #!/bin/bash
 set -e
@@ -23,7 +38,7 @@ RED='\\033[0;31m'
 GREEN='\\033[0;32m'
 YELLOW='\\033[1;33m'
 NC='\\033[0m'
-
+${ALREADY_INSTALLED_GUARD}
 # Configuration Variables
 ADMIN_USERNAME="${config.adminUsername || 'admin'}"
 ADMIN_PASSWORD="${config.adminPassword || ''}" # Empty means auto-generate
@@ -743,6 +758,8 @@ echo "=========================================="
 
 module.exports = {
   CLEAN_INSTALL_DIR_FN,
+  EXIT_ALREADY_INSTALLED,
+  ALREADY_INSTALLED_GUARD,
   GENERATE_INSTALL_SCRIPT,
   GENERATE_REINSTALL_SCRIPT,
   UNINSTALL_SCRIPT,

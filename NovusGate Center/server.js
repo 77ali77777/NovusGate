@@ -12,6 +12,7 @@ const {
   UNINSTALL_SCRIPT,
   UPDATE_SCRIPT,
   DATABASE_MIGRATE_SCRIPT,
+  EXIT_ALREADY_INSTALLED,
 } = require('./lib/scripts');
 
 const app = express();
@@ -693,9 +694,13 @@ app.post('/api/servers/:id/install', async (req, res) => {
       stream.on('close', (code) => {
         conn.end();
         
-        // Update server status
-        server.status = code === 0 ? 'installed' : 'error';
-        server.installedAt = new Date().toISOString();
+        // A refused install on an already-installed server keeps its status.
+        const alreadyInstalled = code === EXIT_ALREADY_INSTALLED && !update && !reinstall && !migrateOnly;
+        if (!alreadyInstalled) {
+          // Update server status
+          server.status = code === 0 ? 'installed' : 'error';
+          server.installedAt = new Date().toISOString();
+        }
         server.history = server.history || [];
         server.history.unshift({
           action: update ? 'update' : (reinstall ? 'reinstall' : 'install'),
