@@ -14,6 +14,7 @@ const {
   DATABASE_MIGRATE_SCRIPT,
   EXIT_ALREADY_INSTALLED,
 } = require('./lib/scripts');
+const { endWithError } = require('./lib/sse');
 
 const app = express();
 app.use(cors());
@@ -739,7 +740,7 @@ app.post('/api/servers/:id/install', async (req, res) => {
     if (archivePath && fs.existsSync(archivePath)) {
       fs.unlinkSync(archivePath);
     }
-    res.status(500).json({ error: err.message });
+    endWithError(res, err);
   }
 });
 
@@ -1011,6 +1012,11 @@ io.on('connection', (socket) => {
     if (conn) conn.end();
     console.log('Client disconnected:', socket.id);
   });
+});
+
+// One failed request must not take down installs running for other servers.
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
 });
 
 const PORT = process.env.PORT || 3017;
