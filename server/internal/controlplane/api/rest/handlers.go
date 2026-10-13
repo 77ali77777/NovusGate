@@ -188,6 +188,26 @@ func (s *Server) loadNetworks() {
 				}
 			}
 		}
+
+		// Restore DB peers missing from the interface. Runtime peers are not
+		// written to wgN.conf (SaveConfig = false), so a host reboot drops them.
+		dbNodes, err := s.store.ListNodes(ctx, network.ID)
+		if err != nil {
+			fmt.Printf("Warning: cannot restore peers for %s: %v\n", network.InterfaceName, err)
+			continue
+		}
+		livePeers, err := mgr.GetPeers()
+		if err != nil {
+			fmt.Printf("Warning: cannot read peers of %s: %v\n", network.InterfaceName, err)
+			continue
+		}
+		restored, restoreErrs := restorePeers(mgr, dbNodes, livePeers, time.Now())
+		if restored > 0 || len(restoreErrs) > 0 {
+			fmt.Printf("Restored %d peers on %s (%d errors)\n", restored, network.InterfaceName, len(restoreErrs))
+		}
+		for _, e := range restoreErrs {
+			fmt.Printf("Warning: %s\n", e)
+		}
 	}
 }
 
@@ -1582,35 +1602,13 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	added := 0
-	skipped := 0
-	errors := []string{}
-	
-	for _, node := range nodes {
-		if node.PublicKey == "" {
-			continue
-		}
-		
-		// Check if already in WireGuard
-		if _, exists := currentPeers[node.PublicKey]; exists {
-			skipped++
-			continue
-		}
-		
-		// Add to WireGuard
-		allowedIPs := node.VirtualIP.String() + "/32"
-		if err := mgr.AddPeer(node.PublicKey, allowedIPs); err != nil {
-			errors = append(errors, fmt.Sprintf("failed to add %s: %v", node.Name, err))
-		} else {
-			added++
-			fmt.Printf("[SYNC] Added peer %s (%s) to WireGuard\n", node.Name, node.PublicKey[:16]+"...")
-		}
-	}
-	
+	// Expired or disabled nodes are not re-added.
+	added, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
+
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"added":   added,
-		"skipped": skipped,
-		"errors":  errors,
+		"skipped": len(nodes) - added - len(errs),
+		"errors":  errs,
 		"total":   len(nodes),
 	})
 }
