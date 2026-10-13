@@ -990,18 +990,19 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove from WireGuard
-	mgr := s.getManager(node.NetworkID)
-	if mgr != nil && node.PublicKey != "" {
-		if err := mgr.RemovePeer(node.PublicKey); err != nil {
-			slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
-			// Continue with deletion anyway
-		}
-	}
-
+	// Delete the row first, then the peer: a reconciler run in between would
+	// otherwise re-add the peer of a node that is about to disappear.
 	if err := s.store.DeleteNode(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to delete node")
 		return
+	}
+
+	// Remove from WireGuard
+	mgr := s.getManager(node.NetworkID)
+	if mgr != nil && node.PublicKey != "" {
+		if err := wgRemovePeer(mgr, node.PublicKey); err != nil {
+			slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
+		}
 	}
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
@@ -1121,9 +1122,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		rc := map[string]interface{}{"ok": rep.OK(), "mode": string(s.reconciler.Mode), "pending": 0, "last_run": nil}
 		if !rep.Time.IsZero() {
 			rc["last_run"] = rep.Time.UTC().Format(time.RFC3339)
-			if rep.Mode != reconciler.ModeEnforce {
-				rc["pending"] = len(rep.Actions) // shadow: changes enforce would make
-			}
+			rc["pending"] = len(rep.Pending) // shadow: adds and updates enforce would make
 		}
 		healthy = healthy && rep.OK()
 		checks["reconciler"] = rc
@@ -1236,6 +1235,9 @@ var generateKeys = wireguard.GenerateKeys
 var wgCreateInterface = func(m *wireguard.Manager, privateKey, address string, port int) error {
 	return m.CreateServerConfigWithKey(privateKey, address, port)
 }
+
+// wgRemovePeer removes a peer from a live interface (replaced in tests).
+var wgRemovePeer = func(m *wireguard.Manager, publicKey string) error { return m.RemovePeer(publicKey) }
 
 // wgInit checks that WireGuard tools exist before a manager touches the
 // host; wgTeardown brings an interface down and removes its config. Tests

@@ -94,11 +94,11 @@
 
   Səhv dəyər verilsə server başlamır.
 - **Nə vaxt işləyir:** hər 15 saniyədən bir. Node və şəbəkə yazmalarından sonra da trigger olunur (`triggerReconcile`). Ardıcıl trigger-lər bir işləməyə birləşir.
-- **Expire addımı** (shadow və enforce): `ExpireNodes` vaxtı keçmiş node-ları DB-də `expired` kimi yazır və onların peer-ini silir. Bu, panelin lazy expiry-sinin vaxtında işləyən formasıdır, panel bağlı olsa da işləyir.
+- **Expire addımı** (shadow və enforce): `ExpireNodes` vaxtı keçmiş node-ları DB-də `expired` kimi yazır. Peer-in silinməsi diff addımında olur. Bu, panelin lazy expiry-sinin vaxtında işləyən formasıdır, panel bağlı olsa da işləyir.
 - **Diff addımı:**
   - aktiv node peer olmalıdır və onun `/32` ünvanı allowed-ips siyahısında olmalıdır;
   - qeyri-aktiv node-un peer-i silinir.
-  - **Shadow:** `reconciler (shadow): would change peer` yazır.
+  - **Shadow:** vaxtı keçmiş node-ların peer-lərini silir (hər iki rejimdə; DB yenidən oxunur, uğursuz silinmə növbəti tick-də təkrarlanır). Əlavə və yeniləmə üçün yalnız `reconciler (shadow): would change peer` yazır.
   - **Enforce:** fərqi tətbiq edir. Hər dəyişiklikdən əvvəl node DB-dən yenidən oxunur, ona görə silinmiş node-un peer-i geri qayıtmır.
 - **Qorumalar:**
   - DB-də olmayan peer heç vaxt silinmir. Log-a `reconciler: peer not in the database (left alone)` yazılır ("adopt" qaydası).

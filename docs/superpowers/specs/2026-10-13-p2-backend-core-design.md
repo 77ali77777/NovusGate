@@ -58,7 +58,7 @@ Dəyişənlər:
 
 ## 4. P2c qərarları (2026-10-14)
 - **`WG_RECONCILER`:** `off` | `shadow` (default) | `enforce`. Səhv dəyər verilsə server başlamır.
-- **Expire addımı** shadow və enforce rejimlərində işləyir: vaxtı keçmiş node-ları DB-də `expired` kimi yazır və peer-lərini silir. Bu, mövcud lazy expiry-nin vaxtında işləyən formasıdır.
-- **Diff addımı** shadow rejimində yalnız log yazır. Enforce rejimində hər dəyişiklikdən əvvəl DB-ni yenidən yoxlayır.
+- **Expire addımı** shadow və enforce rejimlərində işləyir: vaxtı keçmiş node-ları DB-də `expired` kimi yazır. Bu, mövcud lazy expiry-nin vaxtında işləyən formasıdır.
+- **Diff addımı:** vaxtı keçmiş node-ların peer silinməsi hər iki rejimdə tətbiq olunur, DB yenidən oxunur və uğursuz silinmə növbəti tick-də təkrarlanır (final review düzəlişi). Əlavə və yeniləmə shadow-da yalnız log yazır, enforce-da DB yenidən oxunandan sonra tətbiq olunur.
 - **Naməlum peer-lər silinmir** ("adopt" qaydası), allowed-ips daraldılmır.
 - **`wgN.conf`-a `[Peer]` yazılması P2c-2-yə saxlanılıb.** `wg0.conf` installer-indir, reboot bərpasını isə `restorePeers` edir.

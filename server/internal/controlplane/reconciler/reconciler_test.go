@@ -22,8 +22,9 @@ func key(c string) string { return strings.Repeat(c, 43) + "=" }
 type fakeWG struct {
 	mu    sync.Mutex
 	peers map[string]wireguard.PeerStatus
-	calls []string
-	err   error
+	calls      []string
+	err        error
+	failRemove int // RemovePeer fails this many times
 }
 
 func (f *fakeWG) GetPeers() (map[string]wireguard.PeerStatus, error) {
@@ -41,6 +42,10 @@ func (f *fakeWG) GetPeers() (map[string]wireguard.PeerStatus, error) {
 func (f *fakeWG) set(op, k, ips string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if op == "remove" && f.failRemove > 0 {
+		f.failRemove--
+		return errors.New("wg: transient failure")
+	}
 	f.calls = append(f.calls, op+" "+k[:1]+" "+ips)
 	if op == "remove" {
 		delete(f.peers, k)
@@ -140,12 +145,15 @@ func TestShadowExpiresButOnlyLogsTheDiff(t *testing.T) {
 		t.Fatalf("shadow may only remove the expired peer, calls=%v", wg.calls)
 	}
 	kinds := []string{}
-	for _, a := range rep.Actions {
+	for _, a := range rep.Pending {
 		kinds = append(kinds, a.Kind+":"+a.Node)
 	}
 	sort.Strings(kinds)
 	if strings.Join(kinds, ",") != "add:node-b,update:node-d" {
-		t.Fatalf("planned actions = %v", kinds)
+		t.Fatalf("pending (shadow) actions = %v", kinds)
+	}
+	if len(rep.Actions) != 1 || rep.Actions[0].Kind != "remove" || rep.Actions[0].Node != "node-c" {
+		t.Fatalf("applied actions = %+v, want only the expired peer's removal", rep.Actions)
 	}
 	if len(rep.Unknown) != 1 || rep.Unknown[0] != "wg1:"+key("u") || !rep.OK() {
 		t.Fatalf("unknown=%v errors=%v", rep.Unknown, rep.Errors)
@@ -253,5 +261,37 @@ func TestRunLoopTriggersCoalesceAndStop(t *testing.T) {
 	}
 	if st := r.Status(); st.Time.IsZero() || st.Mode != ModeShadow {
 		t.Fatalf("Status after a run = %+v", st)
+	}
+}
+
+// reactivatingStore simulates PUT /nodes extending node c right after the
+// expire step marked it (the handler writes its own copy back).
+type reactivatingStore struct{ *fakeStore }
+
+func (s reactivatingStore) ExpireNodes(ctx context.Context, at time.Time) ([]*models.Node, error) {
+	out, err := s.fakeStore.ExpireNodes(ctx, at)
+	future := at.Add(time.Hour)
+	s.nodes["c"].Status, s.nodes["c"].ExpiresAt = models.NodeStatusOnline, &future
+	return out, err
+}
+
+func TestExpiredPeerIsRemovedOnlyIfStillInactive(t *testing.T) {
+	r, st, wg := setup(ModeShadow)
+	r.Store = reactivatingStore{st}
+	r.RunOnce(context.Background())
+	if _, ok := wg.peers[key("c")]; !ok {
+		t.Fatalf("a node extended right after the expire step must keep its peer, calls=%v", wg.calls)
+	}
+}
+
+func TestFailedExpiredRemovalIsRetried(t *testing.T) {
+	r, _, wg := setup(ModeShadow)
+	wg.failRemove = 1
+	if rep := r.RunOnce(context.Background()); rep.OK() {
+		t.Fatal("the failed removal must be reported")
+	}
+	r.RunOnce(context.Background())
+	if _, ok := wg.peers[key("c")]; ok {
+		t.Fatalf("the next run must retry removing the expired peer, calls=%v", wg.calls)
 	}
 }

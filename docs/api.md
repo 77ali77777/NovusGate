@@ -79,6 +79,6 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 - **Reconciler yoxlaması** P2c-də əlavə olunacaq.
 
 ## P2c dəyişiklikləri
-- **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi dəyişikliklərin sayıdır. `ok: false` olanda `status: degraded` qaytarılır.
+- **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi əlavə və yeniləmələrin sayıdır (vaxtı keçmiş peer-lərin silinməsi hər iki rejimdə edilir). `ok: false` olanda `status: degraded` qaytarılır.
 - **`PUT /nodes/{id}`:** cavab forması dəyişmir. Node aktiv olanda (məsələn gələcək `expires_at` verildikdə) peer əlavə olunur, aktiv olmayanda silinir (B11).
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.

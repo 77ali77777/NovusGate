@@ -64,7 +64,8 @@ type Report struct {
 	Time    time.Time
 	Mode    Mode
 	Expired []string
-	Actions []Action
+	Actions []Action // applied (enforce; expired-peer removals in both modes)
+	Pending []Action // shadow: adds and updates enforce would make
 	Unknown []string
 	Errors  []string
 }
@@ -109,29 +110,16 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 		}
 	}
 
-	// Expire step (shadow and enforce): mark and remove expired nodes' peers.
+	// Expire step (shadow and enforce): mark expired nodes in the database.
+	// Their peers are removed by the diff step below, after a re-check, and
+	// a failed removal is retried on the next run.
 	expired, err := r.Store.ExpireNodes(ctx, now)
 	if err != nil {
 		rep.Errors = append(rep.Errors, fmt.Sprintf("expire nodes: %v", err))
 	}
 	for _, n := range expired {
 		rep.Expired = append(rep.Expired, n.Name)
-		iface, ok := ifaces[n.NetworkID]
-		if !ok {
-			continue
-		}
-		pc := r.Peers(iface)
-		live, err := pc.GetPeers()
-		if err != nil {
-			rep.Errors = append(rep.Errors, fmt.Sprintf("%s: read peers: %v", iface, err))
-			continue
-		}
-		if _, ok := live[n.PublicKey]; ok {
-			if err := pc.RemovePeer(n.PublicKey); err != nil {
-				rep.Errors = append(rep.Errors, fmt.Sprintf("%s: remove expired %s: %v", iface, n.Name, err))
-			}
-		}
-		slog.Info("reconciler: node expired", "node", n.Name, "interface", iface)
+		slog.Info("reconciler: node expired", "node", n.Name, "interface", ifaces[n.NetworkID])
 	}
 
 	// Diff step.
@@ -166,9 +154,12 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 	}
 	for _, p := range plans {
 		for _, a := range p.actions {
-			if r.Mode != ModeEnforce {
+			// Removals only ever target inactive (expired) nodes: they run in
+			// shadow too, as the panel's expiry always did. Adds and updates
+			// wait for enforce.
+			if r.Mode != ModeEnforce && a.Kind != "remove" {
 				slog.Info("reconciler (shadow): would change peer", "kind", a.Kind, "node", a.Node, "interface", a.Interface, "allowed_ips", a.AllowedIPs)
-				rep.Actions = append(rep.Actions, a)
+				rep.Pending = append(rep.Pending, a)
 				continue
 			}
 			if !r.stillValid(ctx, a, now) {
