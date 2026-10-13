@@ -12,15 +12,59 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/netctl/nft"
+	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
 // errNotFound is returned by engine mutations that reference a missing record.
 var errNotFound = errors.New("not found")
 
+// clearLegacyVPNRules removes the iptables novusgate-vpn-* FORWARD rules
+// (replaced in tests).
+var clearLegacyVPNRules = (*Server).clearNovusGateVPNRules
+
+// adminPeers lists the admin network's WireGuard peers (replaced in tests).
+var adminPeers = func() (map[string]wireguard.PeerStatus, error) {
+	return wireguard.NewManager(nft.AdminInterface).GetPeers()
+}
+
 // SetFirewall attaches the nftables engine. Without it, or in iptables mode,
-// the legacy iptables code paths are used everywhere.
+// the legacy iptables code paths are used everywhere. In nft mode every apply
+// keeps the admin peers' WireGuard endpoints reachable, and the legacy
+// iptables VPN rules are removed only after nftables first enforces the VPN
+// policy.
 func (s *Server) SetFirewall(e *firewall.Engine) {
 	s.firewall = e
+	if e == nil || e.Mode != firewall.ModeNft {
+		return
+	}
+	e.Protect = adminEndpoints
+	legacyCleared := false // guarded by the engine lock AfterApply runs under
+	e.AfterApply = func() {
+		if legacyCleared {
+			return
+		}
+		if err := clearLegacyVPNRules(s); err != nil {
+			fmt.Printf("[Firewall] warning: could not remove legacy iptables VPN rules (will retry): %v\n", err)
+			return
+		}
+		legacyCleared = true
+	}
+}
+
+// adminEndpoints returns the public endpoints of the admin network's peers,
+// read live from wg0 so they are known before its manager is registered.
+func adminEndpoints() []netip.Addr {
+	peers, err := adminPeers()
+	if err != nil {
+		return nil
+	}
+	var out []netip.Addr
+	for _, p := range peers {
+		if ap, err := netip.ParseAddrPort(p.Endpoint); err == nil {
+			out = append(out, ap.Addr().Unmap())
+		}
+	}
+	return out
 }
 
 // engineEnforces reports whether nftables (not iptables) enforces the host firewall.
@@ -55,13 +99,12 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 		if n > 0 || len(skipped) > 0 {
 			fmt.Printf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules left alone)\n", n, len(skipped))
 		}
-		if err := s.clearNovusGateVPNRules(); err != nil {
-			fmt.Printf("[Firewall] warning: could not remove legacy iptables VPN rules: %v\n", err)
-		}
-		res, err := s.firewall.Reconcile(ctx, nil)
+		// The legacy iptables VPN rules are removed by AfterApply once this (or
+		// a retried) apply succeeds, so a failure never leaves FORWARD open.
+		res, err := s.firewall.ReconcileOrRetry(ctx)
 		logWarnings(res.Warnings)
 		if err != nil {
-			return fmt.Errorf("initial apply failed: %w", err)
+			return fmt.Errorf("initial apply failed (iptables keeps enforcing, retrying in the background): %w", err)
 		}
 		fmt.Println("[Firewall] nftables engine applied the stored ruleset")
 	}
@@ -70,15 +113,16 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 
 // reconcileFirewall re-applies the stored state after a change that affects
 // the ruleset (networks, nodes, VPN rules). Errors are logged, not returned:
-// the triggering request already succeeded.
+// the triggering request already succeeded; the engine retries in the
+// background.
 func (s *Server) reconcileFirewall(ctx context.Context) {
 	if !s.engineEnforces() {
 		return
 	}
-	res, err := s.firewall.Reconcile(ctx, nil)
+	res, err := s.firewall.ReconcileOrRetry(ctx)
 	logWarnings(res.Warnings)
 	if err != nil {
-		fmt.Printf("[Firewall] reconcile failed: %v\n", err)
+		fmt.Printf("[Firewall] reconcile failed (will retry): %v\n", err)
 	}
 }
 

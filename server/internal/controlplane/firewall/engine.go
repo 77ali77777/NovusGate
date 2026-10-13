@@ -92,11 +92,26 @@ type Engine struct {
 	Persist   func(script string) error // writes the boot-time ruleset on the host
 	Now       func() time.Time
 	AfterFunc func(time.Duration, func()) func() bool
+	// Protect returns addresses every applied ruleset must keep reachable on
+	// top of the requester's (the admin network's WireGuard endpoints), so
+	// startup, expiry and reconcile, which have no requester, are guarded too.
+	Protect func() []netip.Addr
+	// AfterApply runs (under the engine lock) after every change that became
+	// final on the host.
+	AfterApply func()
 
 	mu         sync.Mutex
 	pending    *pendingCommit
 	stopExpiry func() bool
+	stopRetry  func() bool
+	retryDelay time.Duration
 }
+
+// Backoff for reconciles that could not be applied.
+const (
+	retryMin = 15 * time.Second
+	retryMax = 5 * time.Minute
+)
 
 type pendingCommit struct {
 	id     string
@@ -188,6 +203,9 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 			}
 		}
 	}
+	if e.Protect != nil {
+		protect = append(append([]netip.Addr(nil), protect...), e.Protect()...)
+	}
 	if err := nft.CheckProtection(rs, nft.Protection{SSHPorts: host.SSHPorts, Addrs: protect}, e.Now()); err != nil {
 		return Result{Warnings: warnings}, fmt.Errorf("%w: %v", ErrRejected, err)
 	}
@@ -209,6 +227,42 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 // Reconcile re-applies the stored state immediately.
 func (e *Engine) Reconcile(ctx context.Context, protect []netip.Addr) (Result, error) {
 	return e.Propose(ctx, Change{}, false, protect)
+}
+
+// ReconcileOrRetry re-applies the stored state and, when the host cannot be
+// updated (a change waiting for confirmation, an armed rollback timer, a
+// detection failure), retries in the background with backoff until a
+// reconcile succeeds, so expiries and VPN changes are never silently lost.
+func (e *Engine) ReconcileOrRetry(ctx context.Context) (Result, error) {
+	res, err := e.Reconcile(ctx, nil)
+	if err != nil && !errors.Is(err, ErrEngineDisabled) {
+		e.scheduleRetry()
+	}
+	return res, err
+}
+
+func (e *Engine) scheduleRetry() {
+	if e.AfterFunc == nil {
+		return
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.stopRetry != nil {
+		return // one retry at a time
+	}
+	if e.retryDelay == 0 {
+		e.retryDelay = retryMin
+	} else if e.retryDelay *= 2; e.retryDelay > retryMax {
+		e.retryDelay = retryMax
+	}
+	e.stopRetry = e.AfterFunc(e.retryDelay, func() {
+		e.mu.Lock()
+		e.stopRetry = nil
+		e.mu.Unlock()
+		if _, err := e.ReconcileOrRetry(context.Background()); err != nil {
+			log.Printf("firewall: reconcile retry failed: %v", err)
+		}
+	})
 }
 
 // Confirm makes a pending change final and stores it.
@@ -236,6 +290,15 @@ func (e *Engine) PendingChange() (nft.Pending, bool) {
 }
 
 func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State) error {
+	// The stored state is live: a pending retry is no longer needed.
+	if e.stopRetry != nil {
+		e.stopRetry()
+		e.stopRetry = nil
+	}
+	e.retryDelay = 0
+	if e.AfterApply != nil {
+		e.AfterApply()
+	}
 	if commit != nil {
 		if err := commit(ctx); err != nil {
 			// The next reconcile restores the stored state on the host.
@@ -273,8 +336,8 @@ func (e *Engine) scheduleExpiry(st State) {
 		return
 	}
 	e.stopExpiry = e.AfterFunc(next.Sub(now)+time.Second, func() {
-		if _, err := e.Reconcile(context.Background(), nil); err != nil {
-			log.Printf("firewall: reconcile after expiry failed: %v", err)
+		if _, err := e.ReconcileOrRetry(context.Background()); err != nil {
+			log.Printf("firewall: reconcile after expiry failed (will retry): %v", err)
 		}
 	})
 }
@@ -341,6 +404,7 @@ func (e *Engine) desired(ctx context.Context, st State) (nft.Ruleset, HostInfo, 
 		}
 		rs.IPRules = append(rs.IPRules, rule)
 	}
+	warnings = append(warnings, shadowedAllows(rs)...)
 
 	for _, f := range st.Forwards {
 		ip, err := netip.ParseAddr(f.TargetIP)
@@ -371,6 +435,53 @@ func (e *Engine) desired(ctx context.Context, st State) (nft.Ruleset, HostInfo, 
 		rs.Egress = append(rs.Egress, addr.Unmap())
 	}
 	return rs, host, warnings, nil
+}
+
+// shadowedAllows reports allow rules a block covers. Blocks are matched before
+// allows in table inet novusgate, so such an allow has no effect; returning
+// it as a warning makes Propose reject a change that creates the conflict.
+func shadowedAllows(rs nft.Ruleset) []error {
+	var out []error
+	for _, a := range rs.IPRules {
+		if a.Action != "allow" {
+			continue
+		}
+		for _, b := range rs.Blocked {
+			if prefixCovers(b.Prefix, a.Prefix) {
+				out = append(out, fmt.Errorf("allow rule %s (%s) has no effect: %s is blocked", a.ID, a.Prefix, b.Prefix))
+			}
+		}
+		for _, b := range rs.IPRules {
+			if b.Action == "block" && prefixCovers(b.Prefix, a.Prefix) && trafficOverlaps(b.Proto, b.Ports, a.Proto, a.Ports) {
+				out = append(out, fmt.Errorf("allow rule %s (%s) has no effect: block rule %s covers it", a.ID, a.Prefix, b.ID))
+			}
+		}
+	}
+	return out
+}
+
+// prefixCovers reports whether outer contains every address of inner.
+func prefixCovers(outer, inner netip.Prefix) bool {
+	return outer.Addr().Is4() == inner.Addr().Is4() && outer.Bits() <= inner.Bits() && outer.Contains(inner.Addr())
+}
+
+// trafficOverlaps reports whether two protocol/port selectors can match the
+// same packet; an empty protocol or port list matches everything.
+func trafficOverlaps(p1 nft.Protocol, r1 []nft.PortRange, p2 nft.Protocol, r2 []nft.PortRange) bool {
+	if p1 != "" && p2 != "" && p1 != p2 {
+		return false
+	}
+	if len(r1) == 0 || len(r2) == 0 {
+		return true
+	}
+	for _, a := range r1 {
+		for _, b := range r2 {
+			if a.From <= b.To && b.From <= a.To {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // validEntry checks one stored entry against the base ruleset (SSH ports,
@@ -423,6 +534,10 @@ func ImportIptables(ctx context.Context, st ImportStore, r nft.Runner, sshPorts 
 	out, err := r.Run("", "iptables", "-S", "INPUT")
 	if err != nil {
 		return 0, nil, fmt.Errorf("read iptables rules: %w", err)
+	}
+	if conflicts := ShadowedByLaterBlock(out); len(conflicts) > 0 {
+		return 0, nil, fmt.Errorf("import iptables rules: in iptables these allows win over a later block, in nftables the block would win; remove the conflict (iptables mode) and restart: %s",
+			strings.Join(conflicts, "; "))
 	}
 	services, ipRules, skipped := ParseIptablesInput(out, sshPorts)
 	if err := st.ImportFirewallRules(ctx, services, ipRules, ImportedKey, now.UTC().Format(time.RFC3339)); err != nil {

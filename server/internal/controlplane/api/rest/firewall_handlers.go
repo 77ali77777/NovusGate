@@ -1301,7 +1301,7 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		if _, err := execHostCommand("sysctl", "-w", "net.ipv4.ip_forward=1"); err != nil {
 			fmt.Printf("[Firewall] warning: enable ip_forward: %v\n", err)
 		}
-		_, err := s.firewall.Reconcile(ctx, nil)
+		_, err := s.firewall.ReconcileOrRetry(ctx)
 		return err
 	}
 	// First, remove all existing NovusGate VPN rules from FORWARD chain

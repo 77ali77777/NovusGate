@@ -21,6 +21,11 @@
 - **`firewall.Engine`:** `Change.Mutate` ilə dəyişikliyi yaddaşda qurur, tətbiq edir. `Change.Commit` ilə yalnız dəyişiklik canlı olandan sonra (dərhal və ya təsdiqdən sonra) DB-yə yazır, ona görə rollback olan dəyişiklik saxlanmır. Bitmə vaxtı olan IP qaydası üçün reconcile planlaşdırılır.
 - **DB:** `fw_services`, `fw_ip_rules`, `fw_forwards`, `fw_egress`, `fw_meta` (migration 006). Rollback faylı `store/migrations_rollback/`-dadır və embed olunmur.
 - **REST:** `/api/v1/firewall/v2/*` (bax `docs/api.md`). nft rejimində köhnə `/firewall/host/*` endpoint-ləri validasiyadan sonra adapterə keçir (`firewall_v1_nft.go`). Şəbəkə və node dəyişiklikləri reconcile edir.
-- **Startup (nft):** iptables-dən bir dəfəlik idxal (`fw_meta.iptables_imported`), köhnə `novusgate-vpn-*` FORWARD qaydalarının silinməsi, reconcile.
+- **Startup (nft):**
+  - iptables-dən bir dəfəlik idxal (`fw_meta.iptables_imported`). "Əvvəlki ACCEPT sonrakı DROP-u üstələyir" ziddiyyəti olarsa, idxal rədd edilir;
+  - reconcile;
+  - köhnə `novusgate-vpn-*` FORWARD qaydaları yalnız ilk uğurlu apply-dan sonra silinir (`Engine.AfterApply`).
+- **Retry:** uğursuz reconcile (pending təsdiq, aktiv rollback timer, aşkarlama xətası) `ReconcileOrRetry` ilə arxa planda təkrarlanır. Backoff 15 saniyədən başlayır, 5 dəqiqəyə qədər artır. Expiry, şəbəkə/node/VPN dəyişiklikləri və startup bu yoldan keçir.
+- **Qoruma:** hər apply-da sorğu edənin ünvanından əlavə, `wg0` peer-lərinin canlı WireGuard endpoint-ləri də qorunur (`Engine.Protect`).
 - **Boot faylı:** `/etc/novusgate/firewall.nft`. Onu yükləyən unit P3b-2-dədir.
 - **DB testləri:** `server/scripts/test-with-postgres.sh` (`TEST_DATABASE_URL`, `-p 1`).

@@ -63,6 +63,19 @@
 - **Default `FIREWALL_ENGINE=iptables`:** heç bir serverin davranışı dəyişmir.
 - **Davam:** staging-də `docs/runbooks/p3b1-firewall-engine.md`. Sonra P3b-2 planı: iptables `INPUT DROP`-dan keçid, fail2ban nftables, boot unit, installer-in `nftables` paketi, nft-dən iptables-ə geri qayıdanda cədvəlin silinməsi.
 
+### Eyni sessiyanın davamı (2026-10-13): P3b-1 final review
+- **Review (opus):** "With fixes". Critical yoxdur, 4 Important var. Hamısı RED→GREEN ilə düzəldildi:
+  1. Startup-da köhnə `novusgate-vpn-*` FORWARD qaydaları nft tətbiq olunmazdan əvvəl silinirdi. İndi yalnız ilk uğurlu apply-dan sonra silinir (`Engine.AfterApply`).
+  2. Uğursuz reconcile (expiry, VPN, şəbəkə/node, startup) itirdi. İndi `ReconcileOrRetry` 15 saniyədən 5 dəqiqəyə qədər backoff ilə təkrar cəhd edir.
+  3. Allow/block ziddiyyəti:
+     - iptables-də əvvəlki ACCEPT-i sonrakı DROP üstələyən idxal rədd edilir;
+     - blokun içindəki allow hər iki istiqamətdə 400 qaytarır;
+     - `wg0` peer endpoint-ləri hər apply-da qorunur (`Engine.Protect`).
+  4. Runbook-a nft rejiminin məhdudiyyətləri və iptables-ə qayıdışın məcburi addımları yazıldı.
+
+  Suite: `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft`. 7 yeni test `-v` ilə PASS-dır, heç biri skip olmayıb.
+- **Minor-lar:** spec §6b-yə köçürüldü. Əvvəldən mövcud bug da oradadır: panel-in `DELETE /firewall/host/rules` çağırışına uyğun route yoxdur.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -81,6 +94,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-13 | P3b-1 review fix: retry, legacy VPN sırası, allow/block ziddiyyəti, wg0 endpoint qoruması, runbook | server/internal/controlplane/firewall/{engine,iptables_import}.go, api/rest/{firewall_engine,firewall_handlers}.go, testlər, docs/runbooks/p3b1-firewall-engine.md, docs/api.md, docs/architecture.md, spec §6b | P3b-1 final review Important 1–4 |
 
 **Final review sonrası testlər:** Center `# tests 24 · # pass 24 · # fail 0` (fix dalğasının implementer-i icra edib); Go və shell dəyişməyib (final reviewer təkrar icra etdi: yaşıl).
 

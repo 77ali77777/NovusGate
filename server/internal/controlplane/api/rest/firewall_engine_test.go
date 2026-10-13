@@ -78,6 +78,12 @@ func newEngineServer(t *testing.T, mode firewall.Mode) (*Server, *recRunner) {
 		st.DeleteFirewallForward(ctx, f.ID)
 	}
 
+	// Never touch the machine running the tests.
+	origClear, origPeers := clearLegacyVPNRules, adminPeers
+	clearLegacyVPNRules = func(*Server) error { return nil }
+	adminPeers = func() (map[string]wireguard.PeerStatus, error) { return nil, nil }
+	t.Cleanup(func() { clearLegacyVPNRules, adminPeers = origClear, origPeers })
+
 	r := &recRunner{}
 	applier := &nft.SafeApplier{
 		Exec: nft.Executor{Runner: r}, Timer: &recTimer{}, Timeout: time.Minute, Grace: 15 * time.Second,
@@ -286,4 +292,35 @@ func TestV2DisabledOutsideNftMode(t *testing.T) {
 func itoa(n int) string {
 	b, _ := json.Marshal(n)
 	return string(b)
+}
+
+// The legacy iptables VPN rules may only be removed once nftables enforces
+// the VPN policy; otherwise a failed startup apply would leave the FORWARD
+// chain without isolation.
+func TestLegacyVPNRulesStayUntilTheEngineApplies(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	ctx := context.Background()
+	if err := s.store.SetFirewallMeta(ctx, firewall.ImportedKey, "test"); err != nil {
+		t.Fatal(err)
+	}
+	cleared := 0
+	orig := clearLegacyVPNRules
+	clearLegacyVPNRules = func(*Server) error { cleared++; return nil }
+	t.Cleanup(func() { clearLegacyVPNRules = orig })
+
+	timer := s.firewall.Applier.Timer.(*recTimer)
+	timer.active = true // a rollback armed before the restart
+	if err := s.StartFirewall(ctx); err == nil {
+		t.Fatal("startup apply must fail while a rollback timer is armed")
+	}
+	if cleared != 0 || r.last() != "" {
+		t.Fatalf("nothing may change while the engine could not apply (cleared=%d)", cleared)
+	}
+
+	timer.active = false
+	s.reconcileFirewall(ctx)
+	s.reconcileFirewall(ctx)
+	if cleared != 1 || r.last() == "" {
+		t.Fatalf("the legacy rules must be removed once, after the first apply (cleared=%d)", cleared)
+	}
 }

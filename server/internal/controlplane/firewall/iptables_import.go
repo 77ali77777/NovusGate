@@ -65,6 +65,61 @@ func ParseIptablesInput(out string, sshPorts []uint16) ([]*models.FirewallServic
 	return services, ipRules, skipped
 }
 
+// ShadowedByLaterBlock finds sourced ACCEPT rules that a later sourced DROP
+// overlaps. iptables matches top-down, so the earlier ACCEPT wins; in
+// nftables every block is matched first, so importing them as-is would cut
+// the allowed source off (possibly the operator). Each conflict is returned
+// as "<accept line> <- <drop line>".
+func ShadowedByLaterBlock(out string) []string {
+	type accept struct {
+		line   string
+		prefix netip.Prefix
+		r      iptablesRule
+	}
+	var accepts []accept
+	var conflicts []string
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "-A INPUT ") {
+			continue
+		}
+		r := parseIptablesRule(line)
+		if r.source == "" || r.iface != "" || r.module != "" {
+			continue
+		}
+		p, err := netip.ParsePrefix(r.source)
+		if err != nil {
+			continue
+		}
+		switch r.target {
+		case "ACCEPT":
+			accepts = append(accepts, accept{line, p, r})
+		case "DROP":
+			for _, a := range accepts {
+				if p.Overlaps(a.prefix) && iptablesTrafficOverlaps(a.r, r) {
+					conflicts = append(conflicts, a.line+" <- "+line)
+				}
+			}
+		}
+	}
+	return conflicts
+}
+
+func iptablesTrafficOverlaps(a, b iptablesRule) bool {
+	if a.proto != "" && b.proto != "" && a.proto != b.proto {
+		return false
+	}
+	if a.ports == "" || b.ports == "" {
+		return true
+	}
+	ra, errA := ParsePorts(a.ports)
+	rb, errB := ParsePorts(b.ports)
+	if errA != nil || errB != nil {
+		return true // unknown: treat as a conflict
+	}
+	return trafficOverlaps("", ra, "", rb)
+}
+
 type iptablesRule struct {
 	source, proto, ports, target, iface, module string
 }

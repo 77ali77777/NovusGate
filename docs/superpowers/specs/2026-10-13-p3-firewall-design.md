@@ -103,6 +103,23 @@
 - Admin portlarının istisnası `wg*` prefiksinə görə deyil, `rs.Networks`-dəki interfeyslərə görə olmalıdır (M5).
 - Runbook-da qeyd olunmalıdır: istifadəçinin öz Docker bridge konteynerləri host xidmətlərinə və VPN peer-lərinə çata bilməyəcək (M8). Çevrilə bilməyən drop/reject VPN qaydaları atlanır (M9, indiki davranış kimi).
 - CI-a kənar ruleset-lər əlavə edilməlidir: boş, yalnız v6 mənbələr, şəbəkəsiz. Versiyalar arası snapshot yoxlaması da daxil (M10).
+- **P3b-1-dən sonra hələ açıqdır:** M5, M8 runbook qeydi, M10 və installer-in `nftables` paketi. Bunlar P3b-2-də həll olunmalıdır.
+
+## 6b. P3b-1 final review-un minor-ları, P3b-2-yə ötürülür (2026-10-13)
+1. **Forward-un dublikatı.** Eyni `(protocol, public_port)` cütü üçün forward kernel-ə tətbiq olunur, sonra Commit `UNIQUE` şərtində uğursuz olur və 500 qaytarır. Bunu Mutate-də 409 ilə əvvəlcədən yoxlamaq lazımdır.
+2. **Apply-dan sonrakı xətalar.**
+   - Commit request-in `ctx`-i ilə işləyir. Bunun əvəzinə `context.WithoutCancel` istifadə olunmalıdır.
+   - Commit xətası olanda best-effort reconcile edilməlidir.
+   - Persist xətası 500 yox, xəbərdarlıq olmalıdır.
+   - `addServices` tranzaksiyasızdır.
+3. **`wireGuardEndpointFor` ilk uyğun peer-i qaytarır.** Ən uzun prefiks uyğunluğu lazımdır, endpoint yolu üçün test də yazılmalıdır.
+4. **Whole-address Allow IP public mənbə üçün admin portlarını (3007/5432/8080/8443) açır.** Bu legacy davranışla paritetdir, amma §4 ilə ziddiyyət təşkil edir. Qərar istifadəçinindir.
+5. **v1 adapter-lərinin kənar halları.**
+   - Sintetik WireGuard sətri həmişə `51820:51900` göstərir.
+   - `/128` sonluğu kəsilmir.
+   - Expiry və ya SSH aşkarlanması dəyişəndə `line_number` sürüşür.
+6. **Startup idxalı ilə v1 handler-ləri arasında pəncərə var.** İdxaldan əvvəl açılan port idxalda dublikat yarada bilər.
+7. **Əvvəldən mövcud bug.** Panel `DELETE /firewall/host/rules` çağırır (`web/src/api/client.ts`), backend isə yalnız `POST /firewall/host/rules/delete` qeydiyyatdan keçirir. Nəticədə hər iki rejimdə Delete/Unblock işləmir.
 
 ## 7. Açıq risklər
 

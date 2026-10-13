@@ -22,7 +22,11 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 | POST | `/firewall/v2/confirm/{id}` | — | `{"status":"confirmed"}` |
 
 **Status kodları:**
-- **400** — yanlış giriş və ya rədd edilmiş dəyişiklik (`firewall change rejected`): lockout cəhdi, rezerv admin portu, WireGuard portu.
+- **400** — yanlış giriş və ya rədd edilmiş dəyişiklik (`firewall change rejected`). Səbəblər:
+  - lockout cəhdi: sorğu edənin ünvanı və ya admin şəbəkəsi (`wg0`) peer-lərinin WireGuard endpoint-ləri;
+  - rezerv admin portu;
+  - WireGuard portu;
+  - blokun içində qalan allow, hər iki istiqamətdə (bloklar allow-dan əvvəl yoxlanılır).
 - **404** — qeyd tapılmadı.
 - **409** — engine `nft` rejimində deyil, başqa bir dəyişiklik təsdiq gözləyir, və ya əvvəlki rollback timer hələ aktivdir.
 - **410** — dəyişikliyin müddəti bitib və o geri qaytarılıb.

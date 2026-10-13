@@ -93,6 +93,13 @@ type harness struct {
 	persisted []string
 	rollback  func()
 	expiryIn  time.Duration
+	timers    []scheduled
+}
+
+// scheduled is a reconcile the engine asked to run later (expiry or retry).
+type scheduled struct {
+	d time.Duration
+	f func()
 }
 
 func newHarness(mode Mode) *harness {
@@ -117,6 +124,7 @@ func newHarness(mode Mode) *harness {
 		Persist: func(s string) error { h.persisted = append(h.persisted, s); return nil },
 		AfterFunc: func(d time.Duration, f func()) func() bool {
 			h.expiryIn = d
+			h.timers = append(h.timers, scheduled{d, f})
 			return func() bool { return true }
 		},
 	}
@@ -299,5 +307,155 @@ func TestParseMode(t *testing.T) {
 	}
 	if _, err := ParseMode("nftables"); err == nil {
 		t.Error("unknown modes must be rejected")
+	}
+}
+
+// A reconcile that cannot be applied (pending confirmation, armed rollback
+// timer, detection failure) must be retried with backoff, not dropped.
+func TestFailedReconcileIsRetriedWithBackoff(t *testing.T) {
+	h := newHarness(ModeNft)
+	fail := true
+	h.e.Detect = func() (HostInfo, error) {
+		if fail {
+			return HostInfo{}, errors.New("sshd -T failed")
+		}
+		return HostInfo{SSHPorts: []uint16{22}, Egress: "eth0"}, nil
+	}
+
+	if _, err := h.e.ReconcileOrRetry(context.Background()); err == nil {
+		t.Fatal("reconcile must fail while detection fails")
+	}
+	if len(h.timers) != 1 || h.timers[0].d != retryMin {
+		t.Fatalf("a retry must be scheduled after %v, got %+v", retryMin, h.timers)
+	}
+	if _, err := h.e.ReconcileOrRetry(context.Background()); err == nil || len(h.timers) != 1 {
+		t.Fatal("only one retry may be scheduled at a time")
+	}
+
+	h.timers[0].f() // still failing: the next retry backs off
+	if len(h.timers) != 2 || h.timers[1].d != 2*retryMin {
+		t.Fatalf("the retry must back off, got %+v", h.timers)
+	}
+
+	fail = false
+	h.timers[1].f()
+	if len(h.r.applied) != 1 {
+		t.Fatal("the retry must apply the stored state once the host is ready")
+	}
+	fail = true
+	h.e.ReconcileOrRetry(context.Background())
+	if h.timers[len(h.timers)-1].d != retryMin {
+		t.Fatal("a successful apply must reset the backoff")
+	}
+}
+
+// An expiry that fires while a change waits for confirmation must still be
+// applied once the host is free again.
+func TestExpiryDuringPendingChangeIsRetried(t *testing.T) {
+	h := newHarness(ModeNft)
+	soon := engineNow.Add(time.Minute)
+	h.st.ipRules = []*models.FirewallIPRule{{ID: "c1111111-1111-1111-1111-111111111111",
+		Action: "allow", Prefix: "192.0.2.0/24", ExpiresAt: &soon}}
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	expiry := h.timers[len(h.timers)-1]
+
+	commits := 0
+	if _, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), true, nil); err != nil {
+		t.Fatal(err)
+	}
+	engineNow = engineNow.Add(2 * time.Minute)
+	defer func() { engineNow = engineNow.Add(-2 * time.Minute) }()
+	expiry.f() // the host is busy with the pending change
+	retry := h.timers[len(h.timers)-1]
+	if retry.d != retryMin {
+		t.Fatalf("the expiry must be retried, got %+v", h.timers)
+	}
+
+	h.rollback() // nobody confirmed
+	retry.f()
+	if got := h.r.applied[len(h.r.applied)-1]; strings.Contains(got, "192.0.2.0/24") {
+		t.Fatal("the expired allow must be removed after the rollback")
+	}
+}
+
+// Protect guards every apply, including startup, expiry and reconcile, which
+// carry no requester address.
+func TestProtectGuardsReconcile(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.e.Protect = func() []netip.Addr { return []netip.Addr{netip.MustParseAddr("203.0.113.50")} }
+	h.st.ipRules = []*models.FirewallIPRule{{ID: "d1111111-1111-1111-1111-111111111111",
+		Action: "block", Prefix: "203.0.113.0/24"}}
+	if _, err := h.e.Reconcile(context.Background(), nil); !errors.Is(err, ErrRejected) || len(h.r.applied) != 0 {
+		t.Fatalf("a ruleset blocking an admin WireGuard endpoint must not be applied (err=%v)", err)
+	}
+}
+
+// Blocks are matched before allows, so an allow inside a block has no effect;
+// creating that situation is rejected in either order.
+func TestAllowInsideBlockIsRejected(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.st.ipRules = []*models.FirewallIPRule{{ID: "e1111111-1111-1111-1111-111111111111",
+		Action: "block", Prefix: "203.0.113.0/24"}}
+	allow := Change{Mutate: func(st *State) error {
+		st.IPRules = append(st.IPRules, &models.FirewallIPRule{ID: "e2222222-2222-2222-2222-222222222222",
+			Action: "allow", Prefix: "203.0.113.5/32"})
+		return nil
+	}}
+	if _, err := h.e.Propose(context.Background(), allow, false, nil); !errors.Is(err, ErrRejected) {
+		t.Fatalf("an allow inside a block must be rejected, got %v", err)
+	}
+
+	h.st.ipRules = []*models.FirewallIPRule{{ID: "e3333333-3333-3333-3333-333333333333",
+		Action: "allow", Prefix: "198.51.100.5/32"}}
+	block := Change{Mutate: func(st *State) error {
+		st.IPRules = append(st.IPRules, &models.FirewallIPRule{ID: "e4444444-4444-4444-4444-444444444444",
+			Action: "block", Prefix: "198.51.100.0/24", Protocol: "tcp", Ports: "22"})
+		return nil
+	}}
+	if _, err := h.e.Propose(context.Background(), block, false, nil); !errors.Is(err, ErrRejected) {
+		t.Fatalf("a block covering an allow must be rejected, got %v", err)
+	}
+
+	other := Change{Mutate: func(st *State) error {
+		st.IPRules = append(st.IPRules, &models.FirewallIPRule{ID: "e5555555-5555-5555-5555-555555555555",
+			Action: "block", Prefix: "198.51.100.0/24", Protocol: "tcp", Ports: "80"})
+		return nil
+	}}
+	h.st.ipRules[0].Protocol, h.st.ipRules[0].Ports = "tcp", "443"
+	if _, err := h.e.Propose(context.Background(), other, false, nil); err != nil {
+		t.Fatalf("blocks on other ports do not conflict: %v", err)
+	}
+}
+
+func TestAfterApplyRunsOnlyAfterTheHostChanged(t *testing.T) {
+	h := newHarness(ModeNft)
+	calls := 0
+	h.e.AfterApply = func() { calls++ }
+	h.e.Applier.Timer.(*hostTimer).active = true // a rollback from before a restart
+	if _, err := h.e.Reconcile(context.Background(), nil); err == nil || calls != 0 {
+		t.Fatalf("AfterApply must not run when nothing was applied (err=%v, calls=%d)", err, calls)
+	}
+	h.e.Applier.Timer.(*hostTimer).active = false
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil || calls != 1 {
+		t.Fatalf("AfterApply must run after an apply (err=%v, calls=%d)", err, calls)
+	}
+}
+
+// iptables matches top-down: an earlier allow wins over a later block that
+// covers it, but in nft every block wins. Importing that would cut the
+// allowed source off, so the import refuses and changes nothing.
+func TestImportRefusesAllowShadowedByLaterBlock(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.r.iptS = "-A INPUT -s 203.0.113.5/32 -j ACCEPT\n-A INPUT -s 203.0.113.0/24 -j DROP\n"
+	if _, _, err := ImportIptables(context.Background(), h.st, h.r, []uint16{22}, engineNow); err == nil || h.st.imports != 0 {
+		t.Fatalf("a conflicting import must be refused (err=%v, imports=%d)", err, h.st.imports)
+	}
+
+	h.r.iptS = "-A INPUT -s 203.0.113.0/24 -j DROP\n-A INPUT -s 203.0.113.5/32 -j ACCEPT\n" +
+		"-A INPUT -s 192.0.2.7/32 -p tcp -m tcp --dport 443 -j ACCEPT\n-A INPUT -s 192.0.2.0/24 -p tcp -m tcp --dport 22 -j DROP\n"
+	if _, _, err := ImportIptables(context.Background(), h.st, h.r, []uint16{22}, engineNow); err != nil {
+		t.Fatalf("a block before the allow, or on other ports, behaves the same in nft: %v", err)
 	}
 }
