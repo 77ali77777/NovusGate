@@ -1,2 +1,4 @@
 # Shell scripts run on Linux; CRLF breaks bash.
 *.sh text eol=lf
+# nft rulesets are compared byte for byte by golden tests.
+*.nft text eol=lf
