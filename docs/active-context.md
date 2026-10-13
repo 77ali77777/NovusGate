@@ -189,6 +189,29 @@
 - **Davam:** P2c (WireGuard interfeysi, reconciler, expiry).
 
 
+### 2026-10-14: P2c planı
+- **Nəticə:** `docs/superpowers/plans/2026-10-14-p2c-reconciler-and-expiry.md` yazıldı. 7 tapşırıq:
+  1. `Node.Active`, B11-in handler düzəlişləri;
+  2. `ExpireNodes`;
+  3. reconciler (shadow/enforce, expire addımı, DB-ni yenidən yoxlama);
+  4. loop, trigger və `/health`;
+  5. tək `Up`;
+  6. logging qoruyucusu bütün `internal/`-u əhatə edir;
+  7. sənədlər və runbook.
+
+  Kod dəyişməyib.
+- **Kodda təsdiqlənən B11 səbəbləri:**
+  - `handleUpdateNode` DB statusuna baxır, lazy expiry isə statusu saxlamır;
+  - `syncPeerAllowedIPs` vaxtı keçmiş peer-ləri bərpa edir;
+  - `handleCreateNetwork` interfeysi ikinci dəfə `Up` edir (hər dəfə uğursuz olur).
+- **Qərarlar:**
+  - `WG_RECONCILER` default olaraq `shadow`-dur;
+  - expire addımı hər iki rejimdə işləyir;
+  - naməlum peer-lər silinmir, allowed-ips daraldılmır;
+  - `wgN.conf`-a peer yazılması P2c-2-yə saxlanılır.
+- **Davam:** P2c icrası.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
