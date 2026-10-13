@@ -656,14 +656,10 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		serverAddr, addrErr := hubAddress(network.CIDR)
 		if addrErr != nil {
 			slog.Warn(fmt.Sprintf("Warning: invalid CIDR %s: %v", network.CIDR, addrErr))
-		} else if err := mgr.CreateServerConfigWithKey(privateKey, serverAddr, port); err != nil {
+		} else if err := wgCreateInterface(mgr, privateKey, serverAddr, port); err != nil {
 			slog.Error(fmt.Sprintf("Warning: Failed to create WireGuard config for %s: %v", network.Name, err))
 		} else {
 			slog.Info(fmt.Sprintf("WireGuard interface %s created for network %s", network.InterfaceName, network.Name))
-			// Bring up the interface
-			if err := mgr.Up(); err != nil {
-				slog.Error(fmt.Sprintf("Warning: Failed to bring up %s: %v", network.InterfaceName, err))
-			}
 		}
 		
 		// Register manager
@@ -1234,6 +1230,12 @@ var (
 
 // generateKeys creates a WireGuard key pair (replaced in tests).
 var generateKeys = wireguard.GenerateKeys
+
+// wgCreateInterface writes the network's wg-quick config and brings the
+// interface up (SetupInterface ends with Up); replaced in tests.
+var wgCreateInterface = func(m *wireguard.Manager, privateKey, address string, port int) error {
+	return m.CreateServerConfigWithKey(privateKey, address, port)
+}
 
 // wgInit checks that WireGuard tools exist before a manager touches the
 // host; wgTeardown brings an interface down and removes its config. Tests

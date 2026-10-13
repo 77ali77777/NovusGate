@@ -89,7 +89,7 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 		return strings.Repeat("k", 43) + "=", strings.Repeat("K", 43) + "=", nil
 	}
 	legacySSHPorts = func() []uint16 { return []uint16{22} }
-	origInit, origTeardown, origUp := wgInit, wgTeardown, interfaceUp
+	origInit, origTeardown, origUp, origCreate := wgInit, wgTeardown, interfaceUp, wgCreateInterface
 	interfaceUp = func(string) bool { return true }
 	wgCalls = nil
 	wgInit = func(m *wireguard.Manager) error {
@@ -97,7 +97,7 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 		return fmt.Errorf("wireguard is disabled in tests")
 	}
 	wgTeardown = func(iface string) { wgCalls = append(wgCalls, "teardown "+iface) }
-	t.Cleanup(func() { wgInit, wgTeardown, interfaceUp = origInit, origTeardown, origUp })
+	t.Cleanup(func() { wgInit, wgTeardown, interfaceUp, wgCreateInterface = origInit, origTeardown, origUp, origCreate })
 	t.Cleanup(func() {
 		execHostCommand, execCommand, generateKeys, legacySSHPorts, openFail2BanLog = origHost, origCmd, origKeys, origSSH, origLog
 	})
