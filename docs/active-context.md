@@ -151,6 +151,22 @@
 - **Davam:** P2b (müşahidə).
 
 
+### 2026-10-14: P2b planı
+- **Nəticə:** `docs/superpowers/plans/2026-10-14-p2b-observability.md` yazıldı. 5 tapşırıq:
+  1. `slog` logger (`LOG_FORMAT`, `LOG_LEVEL`);
+  2. request log + panic recovery, ikiqat middleware-in aradan qaldırılması;
+  3. `/health`: DB, WireGuard interfeysləri, firewall engine;
+  4. runtime `fmt.Print*`/`log.Print*` → `slog` (mənbə skan edən testlə);
+  5. sənədlər.
+
+  Kod dəyişməyib.
+- **Qərarlar:**
+  - `/health` həmişə 200 qaytarır (kontrakt), `status: degraded` səbəbi `checks`-də göstərir;
+  - log mətnləri dəyişmir (runbook grep-ləri işləyir);
+  - CLI çıxışı `fmt` olaraq qalır.
+- **Davam:** P2b icrası.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
