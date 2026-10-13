@@ -123,3 +123,40 @@ type FirewallAuditLog struct {
 	UserIP    string                 `json:"user_ip,omitempty"`
 	CreatedAt time.Time              `json:"created_at"`
 }
+
+
+// FirewallService opens a host port through the nftables engine.
+type FirewallService struct {
+	ID        string    `json:"id"`
+	Protocol  string    `json:"protocol"` // tcp or udp
+	PortFrom  int       `json:"port_from"`
+	PortTo    int       `json:"port_to"`
+	Sources   []string  `json:"sources"` // IPs or CIDRs; empty means any source
+	Interface string    `json:"interface,omitempty"`
+	Comment   string    `json:"comment,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// FirewallIPRule blocks or allows a source address, optionally on some ports.
+type FirewallIPRule struct {
+	ID        string     `json:"id"`
+	Action    string     `json:"action"`             // block or allow
+	Prefix    string     `json:"prefix"`             // CIDR, e.g. 203.0.113.7/32
+	Protocol  string     `json:"protocol,omitempty"` // tcp, udp or empty
+	Ports     string     `json:"ports,omitempty"`    // e.g. "80,443,8000-8100"
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	Origin    string     `json:"origin"` // panel, fail2ban or import
+	Comment   string     `json:"comment,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+// FirewallForward publishes a VPN node's port on the server's public address.
+type FirewallForward struct {
+	ID         string    `json:"id"`
+	Protocol   string    `json:"protocol"` // tcp or udp
+	PublicPort int       `json:"public_port"`
+	TargetIP   string    `json:"target_ip"`
+	TargetPort int       `json:"target_port"`
+	Comment    string    `json:"comment,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+}

@@ -35,4 +35,5 @@ fi
 
 go vet "${vet_pkgs[@]}"
 go build ./...
-NFT_CHECK=1 go test ./... -count=1
+# -p 1: packages share one test database (TEST_DATABASE_URL) and must not run in parallel.
+NFT_CHECK=1 go test -p 1 ./... -count=1
