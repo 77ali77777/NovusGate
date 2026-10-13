@@ -102,7 +102,7 @@ type Engine struct {
 	// startup, expiry and reconcile, which have no requester, are guarded too.
 	Protect func() []netip.Addr
 	// AfterApply runs (under the engine lock) after every change that became
-	// final on the host.
+	// final on the host, was stored and whose boot-time ruleset was written.
 	AfterApply func()
 
 	mu         sync.Mutex
@@ -319,9 +319,6 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 		e.stopRetry = nil
 	}
 	e.retryDelay = 0
-	if e.AfterApply != nil {
-		e.AfterApply()
-	}
 	if commit != nil {
 		if err := commit(context.WithoutCancel(ctx)); err != nil {
 			// The host runs a change the database does not have; the
@@ -333,8 +330,13 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 	e.scheduleExpiry(st)
 	if e.Persist != nil {
 		if err := e.Persist(script); err != nil {
+			// No hand-over without the boot-time ruleset: after a reboot the
+			// host would start with iptables ACCEPT and no nftables table.
 			return []error{fmt.Errorf("the boot-time ruleset was not written: %w", err)}, nil
 		}
+	}
+	if e.AfterApply != nil {
+		e.AfterApply()
 	}
 	return nil, nil
 }

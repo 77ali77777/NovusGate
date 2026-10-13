@@ -102,6 +102,13 @@
   - panel-in Delete düyməsi işləyir.
 - **Yoxlanmayıb:** real host (reboot, Update, fail2ban, geri qayıdış). `docs/runbooks/p3b2-firewall-cutover.md` staging-də icra olunmalıdır.
 - **Davam:** staging runbook. Sonra P2 və ya P5/P6 (UI kit), istifadəçinin seçiminə görə.
+- **Final review (opus):** "With fixes", 1 Important və 10 Minor. 3 minor effektinə görə Important-a qaldırıldı. Hamısı RED→GREEN ilə düzəldildi:
+  1. INPUT təhvili yalnız boot faylı yazılandan sonra baş verir. Əvvəl `Persist` xətası olsa, reboot-dan sonra host açıq qala bilərdi.
+  2. Qaydalar nömrə ilə yox, spec ilə silinir. Bu, fail2ban ilə yarışın qarşısını alır.
+  3. `REJECT` ban-ları və başqa alətlərin zəncirlərinə jump-lar saxlanılır.
+  4. iptables rejimində apt/systemctl xətası `setup-firewall.sh`-ı dayandırmır, nft rejimində isə dayandırır.
+
+  Qalan 7 minor P3c/P7 üçün ledger-dədir.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

@@ -517,3 +517,23 @@ func TestPersistFailureIsAWarning(t *testing.T) {
 		t.Fatalf("warnings = %v", res.Warnings)
 	}
 }
+
+// The INPUT hand-over (AfterApply) may only happen once the boot-time ruleset
+// is on disk; otherwise a reboot would start with iptables ACCEPT and no
+// nftables table.
+func TestAfterApplyWaitsForTheBootRuleset(t *testing.T) {
+	h := newHarness(ModeNft)
+	calls := 0
+	h.e.AfterApply = func() { calls++ }
+	h.e.Persist = func(string) error { return errors.New("disk full") }
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 0 {
+		t.Fatal("no hand-over without a boot-time ruleset")
+	}
+	h.e.Persist = func(string) error { return nil }
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil || calls != 1 {
+		t.Fatalf("hand-over after the ruleset is written (err=%v, calls=%d)", err, calls)
+	}
+}

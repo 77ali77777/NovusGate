@@ -42,7 +42,7 @@
 - **Hazır olma.** Startup iptables idxalını bitirib `MarkReady` çağırana qədər engine dəyişiklik qəbul etmir (`ErrNotReady`).
 - **INPUT-un təhvili (`firewall.CutoverIptables`).** İlk uğurlu apply-dan sonra (`Engine.AfterApply`, prosesin hər başlanğıcında bir dəfə):
   1. iptables INPUT siyasəti `ACCEPT` olur;
-  2. `f2b-*` sıçrayışlarından başqa bütün INPUT qaydaları silinir;
+  2. INPUT-dakı sadə `ACCEPT`/`DROP` qaydaları öz spec-i ilə silinir (nömrə ilə yox, ona görə fail2ban-ın eyni anda etdiyi dəyişiklik silinəni sürüşdürə bilməz). `REJECT` ban-ları və başqa alətlərin zəncirlərinə jump-lar (fail2ban, CrowdSec) saxlanılır və log-a yazılır;
   3. `netfilter-persistent save` icra olunur.
 
   Köhnə `novusgate-vpn-*` FORWARD qaydaları da eyni anda silinir.

@@ -65,9 +65,12 @@ func versionLess(a, b [3]int) bool {
 // CutoverIptables hands INPUT filtering from iptables to table inet
 // novusgate, which must already be applied. The policy becomes ACCEPT first
 // (nftables already drops by default), so removing the rules never drops an
-// established connection. Then every INPUT rule except fail2ban's jumps is
-// deleted, and the result is saved for boot. It is idempotent, and every
-// control-plane start repeats it. It returns the number of deleted rules.
+// established connection. Then every plain ACCEPT/DROP rule in INPUT is
+// deleted by its own spec, so a jump fail2ban inserts or removes meanwhile
+// can never shift what is deleted. REJECT bans and jumps to other tools'
+// chains (fail2ban, CrowdSec, ...) stay. The result is saved for boot. It is
+// idempotent, and every control-plane start repeats it. It returns the
+// number of deleted rules.
 func CutoverIptables(r nft.Runner) (int, error) {
 	if _, err := r.Run("", "iptables", "-P", "INPUT", "ACCEPT"); err != nil {
 		return 0, fmt.Errorf("set iptables INPUT policy to ACCEPT: %w", err)
@@ -76,27 +79,65 @@ func CutoverIptables(r nft.Runner) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("read iptables INPUT: %w", err)
 	}
-	var nums []int
-	n := 0
+	deleted := 0
 	for _, line := range strings.Split(out, "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, "-A INPUT ") {
 			continue
 		}
-		n++
-		if strings.Contains(line, " -j f2b-") {
+		args := splitIptablesArgs(strings.TrimPrefix(line, "-A INPUT "))
+		if target := ruleTarget(args); target != "ACCEPT" && target != "DROP" {
+			log.Printf("firewall: hand-over keeps iptables rule: %s", line)
 			continue
 		}
-		nums = append(nums, n)
-	}
-	// Delete from the bottom, so the remaining rule numbers stay valid.
-	for i := len(nums) - 1; i >= 0; i-- {
-		if _, err := r.Run("", "iptables", "-D", "INPUT", strconv.Itoa(nums[i])); err != nil {
-			return len(nums) - 1 - i, fmt.Errorf("delete iptables INPUT rule %d: %w", nums[i], err)
+		if _, err := r.Run("", "iptables", append([]string{"-D", "INPUT"}, args...)...); err != nil {
+			return deleted, fmt.Errorf("delete iptables rule %q: %w", line, err)
 		}
+		deleted++
 	}
 	if _, err := r.Run("", "netfilter-persistent", "save"); err != nil {
 		log.Printf("firewall: netfilter-persistent save failed (the next start repeats the hand-over): %v", err)
 	}
-	return len(nums), nil
+	return deleted, nil
+}
+
+// ruleTarget returns the -j target of a rule spec.
+func ruleTarget(args []string) string {
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == "-j" {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
+// splitIptablesArgs splits one `iptables -S` rule into arguments, honouring
+// the double quotes (and \" escapes) iptables prints around comments.
+func splitIptablesArgs(s string) []string {
+	var args []string
+	var cur strings.Builder
+	inQuote, have := false, false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c == '\\' && inQuote && i+1 < len(s):
+			i++
+			cur.WriteByte(s[i])
+		case c == '"':
+			inQuote, have = !inQuote, true
+		case c == ' ' && !inQuote:
+			if have {
+				args = append(args, cur.String())
+				cur.Reset()
+				have = false
+			}
+		default:
+			cur.WriteByte(c)
+			have = true
+		}
+	}
+	if have {
+		args = append(args, cur.String())
+	}
+	return args
 }

@@ -196,6 +196,40 @@ d="$(mktemp -d)"
 )
 assert_has "$d/calls.log" "apt-get install -y nftables" "install_nftables"
 
+# Case 11: default (iptables) mode must not fail when nftables cannot be
+# installed (offline, dpkg lock); nft mode must stop instead.
+# run_offline <FIREWALL_ENGINE> prints "rc=<exit>" and the stub dir.
+run_offline() {
+  local engine="$1" stub rc
+  stub="$(mktemp -d)"
+  mkdir -p "$stub/units" "$stub/jail.d"
+  for cmd in iptables systemctl netfilter-persistent docker-compose sleep debconf-set-selections; do
+    printf '#!/bin/bash\necho "%s $*" >> "%s/calls.log"\n' "$cmd" "$stub" > "$stub/$cmd"
+    chmod +x "$stub/$cmd"
+  done
+  printf '#!/bin/bash\necho "apt-get $*" >> "%s/calls.log"\nexit 100\n' "$stub" > "$stub/apt-get"
+  chmod +x "$stub/apt-get"
+  printf '#!/bin/bash\necho "ii  iptables-persistent"\n' > "$stub/dpkg"
+  chmod +x "$stub/dpkg"
+  printf 'FIREWALL_ENGINE=%s\n' "$engine" > "$stub/.env"
+  (
+    export PATH="$stub:/usr/bin:/bin"
+    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
+    unset SSH_PORT SSH_CONNECTION
+    # shellcheck source=../setup-firewall.sh
+    source "$SCRIPT"
+    main > /dev/null 2>&1
+  )
+  rc=$?
+  echo "rc=$rc $stub"
+}
+out="$(run_offline iptables)"
+d="${out#* }"
+[ "${out%% *}" = "rc=0" ] || fail "iptables mode: an apt failure must not abort the script ($out)"
+assert_has "$d/calls.log" "iptables -P INPUT DROP" "iptables mode, apt offline"
+out="$(run_offline nft)"
+[ "${out%% *}" != "rc=0" ] || fail "nft mode: a missing nftables must stop the script"
+
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"
   exit 1

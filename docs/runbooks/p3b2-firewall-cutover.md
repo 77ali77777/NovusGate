@@ -30,7 +30,7 @@
    - `iptables INPUT handed over to nftables (N rules removed)`.
 
    Yoxla:
-   - `iptables -S INPUT` → `-P INPUT ACCEPT` və yalnız `-j f2b-*` sətirləri;
+   - `iptables -S INPUT` → `-P INPUT ACCEPT`; yalnız `-j f2b-*` (və varsa `REJECT` və ya başqa alətlərin zəncirlərinə jump) sətirləri qalır;
    - `iptables -S FORWARD | grep novusgate-vpn` → boş;
    - `cat /etc/novusgate/firewall.nft` → fayl mövcuddur.
 

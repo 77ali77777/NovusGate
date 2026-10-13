@@ -184,8 +184,15 @@ main() {
   local engine
   engine="$(firewall_engine)"
   echo "[FIREWALL] Engine: $engine"
-  install_nftables
-  install_boot_unit
+  if [ "$engine" = "nft" ]; then
+    install_nftables
+    install_boot_unit
+  else
+    # iptables mode does not need them yet; a failed install (offline, dpkg
+    # lock) must not stop the iptables baseline below.
+    install_nftables || echo "[FIREWALL] Warning: nftables could not be installed; FIREWALL_ENGINE=nft will refuse to start until it is"
+    install_boot_unit || echo "[FIREWALL] Warning: $BOOT_UNIT could not be installed; FIREWALL_ENGINE=nft will refuse to start until it is"
+  fi
   configure_fail2ban "$engine"
   if [ "$engine" = "nft" ] && [ -f "$NFT_RULESET" ]; then
     echo "[FIREWALL] FIREWALL_ENGINE=nft: the control plane owns INPUT filtering; iptables and Docker are left unchanged."

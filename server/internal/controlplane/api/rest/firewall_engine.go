@@ -114,7 +114,7 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 			return err
 		}
 		if n > 0 || len(skipped) > 0 {
-			fmt.Printf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules left alone)\n", n, len(skipped))
+			fmt.Printf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules not imported)\n", n, len(skipped))
 		}
 		s.firewall.MarkReady()
 		// The legacy iptables VPN rules are removed by AfterApply once this (or

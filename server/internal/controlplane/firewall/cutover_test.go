@@ -66,22 +66,36 @@ func TestCutoverAcceptsFirstThenDeletesPanelRules(t *testing.T) {
 	h := &hostTable{out: map[string]string{"iptables -S INPUT": "-P INPUT DROP\n" +
 		"-A INPUT -p tcp -m multiport --dports 22 -j f2b-sshd\n" +
 		"-A INPUT -i lo -j ACCEPT\n" +
-		"-A INPUT -p tcp -m tcp --dport 443 -m comment --comment \"panel port\" -j ACCEPT\n" +
-		"-A INPUT -s 198.51.100.9/32 -j DROP\n"}, fail: map[string]bool{}}
+		`-A INPUT -p tcp -m tcp --dport 443 -m comment --comment "panel \"web\" port" -j ACCEPT` + "\n" +
+		"-A INPUT -s 198.51.100.9/32 -j DROP\n" +
+		"-A INPUT -s 203.0.113.4/32 -j REJECT --reject-with icmp-port-unreachable\n" +
+		"-A INPUT -j CROWDSEC_CHAIN\n"}, fail: map[string]bool{}}
 	n, err := CutoverIptables(h)
 	if err != nil || n != 3 {
 		t.Fatalf("CutoverIptables = %d, %v", n, err)
 	}
+	// Rules are deleted by their own spec, so a fail2ban jump inserted or
+	// removed meanwhile can never shift what is deleted; REJECT bans and
+	// jumps to other tools' chains stay.
 	want := []string{
 		"iptables -P INPUT ACCEPT",
 		"iptables -S INPUT",
-		"iptables -D INPUT 4",
-		"iptables -D INPUT 3",
-		"iptables -D INPUT 2",
+		"iptables -D INPUT -i lo -j ACCEPT",
+		`iptables -D INPUT -p tcp -m tcp --dport 443 -m comment --comment panel "web" port -j ACCEPT`,
+		"iptables -D INPUT -s 198.51.100.9/32 -j DROP",
 		"netfilter-persistent save",
 	}
 	if strings.Join(h.calls, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("calls:\n%s\nwant:\n%s", strings.Join(h.calls, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+// The quoted comment must reach iptables as one argument.
+func TestSplitIptablesArgs(t *testing.T) {
+	got := splitIptablesArgs(`-p tcp -m comment --comment "panel \"web\" port" -j ACCEPT`)
+	want := []string{"-p", "tcp", "-m", "comment", "--comment", `panel "web" port`, "-j", "ACCEPT"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %q", got)
 	}
 }
 
