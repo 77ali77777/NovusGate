@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"bufio"
+	"io"
 	"net"
 	"os"
 	"regexp"
@@ -9,12 +11,9 @@ import (
 
 const fail2banLogPath = "/var/log/fail2ban.log"
 
-// readFail2BanLog returns the fail2ban log the compose file mounts into the
+// openFail2BanLog opens the fail2ban log the compose file mounts into the
 // container (replaced in tests).
-var readFail2BanLog = func() (string, error) {
-	b, err := os.ReadFile(fail2banLogPath)
-	return string(b), err
-}
+var openFail2BanLog = func() (io.ReadCloser, error) { return os.Open(fail2banLogPath) }
 
 // f2bActionRe matches "<date> <time>,<ms> fail2ban.actions [pid]: NOTICE  [jail] (Restore )?(Ban|Unban) <ip>".
 // The jail is the bracketed name directly before the action, not the [pid].
@@ -37,11 +36,15 @@ func fail2banLogAction(line string) string {
 }
 
 // parseFail2BanHistory returns the newest limit ban/unban entries, newest
-// first, optionally only for one jail. It keeps at most limit entries in
-// memory, whatever the log size.
-func parseFail2BanHistory(log, jail string, limit int) []map[string]string {
+// first, optionally only for one jail. It reads the log line by line and
+// keeps at most limit entries in memory, whatever the log size; a line over
+// 1 MiB ends the scan with the entries found so far.
+func parseFail2BanHistory(log io.Reader, jail string, limit int) []map[string]string {
 	ring := []map[string]string{} // no preallocation: limit comes from the request
-	for _, line := range strings.Split(log, "\n") {
+	sc := bufio.NewScanner(log)   // line by line: the log is never held in memory
+	sc.Buffer(make([]byte, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
 		m := f2bActionRe.FindStringSubmatch(strings.TrimSpace(line))
 		if m == nil || (jail != "" && m[2] != jail) {
 			continue

@@ -28,7 +28,7 @@ func TestFail2BanLogAction(t *testing.T) {
 }
 
 func TestParseFail2BanHistory(t *testing.T) {
-	all := parseFail2BanHistory(sampleF2BLog, "", 100)
+	all := parseFail2BanHistory(strings.NewReader(sampleF2BLog), "", 100)
 	if len(all) != 4 {
 		t.Fatalf("want 4 ban/unban entries, got %d: %v", len(all), all)
 	}
@@ -39,20 +39,20 @@ func TestParseFail2BanHistory(t *testing.T) {
 	if all[2]["action"] != "unban" || all[2]["jail"] != "sshd" {
 		t.Fatalf("unban entry: %v (the jail is the [name], not the [pid])", all[2])
 	}
-	if got := parseFail2BanHistory(sampleF2BLog, "recidive", 100); len(got) != 1 || got[0]["ip"] != "198.51.100.7" {
+	if got := parseFail2BanHistory(strings.NewReader(sampleF2BLog), "recidive", 100); len(got) != 1 || got[0]["ip"] != "198.51.100.7" {
 		t.Fatalf("jail filter: %v", got)
 	}
-	if got := parseFail2BanHistory(sampleF2BLog, "sshd", 2); len(got) != 2 || got[0]["ip"] != "192.0.2.4" {
+	if got := parseFail2BanHistory(strings.NewReader(sampleF2BLog), "sshd", 2); len(got) != 2 || got[0]["ip"] != "192.0.2.4" {
 		t.Fatalf("limit keeps the newest: %v", got)
 	}
 	var big strings.Builder
 	for i := 0; i < 5000; i++ {
 		fmt.Fprintf(&big, "2026-10-13 10:00:00,%03d fail2ban.actions [1]: NOTICE  [sshd] Ban 10.0.%d.%d\n", i%1000, i/250, i%250)
 	}
-	if got := parseFail2BanHistory(big.String(), "", 3); len(got) != 3 || got[0]["ip"] != "10.0.19.249" {
+	if got := parseFail2BanHistory(strings.NewReader(big.String()), "", 3); len(got) != 3 || got[0]["ip"] != "10.0.19.249" {
 		t.Fatalf("large log: %d entries, newest %v", len(got), got)
 	}
-	if got := parseFail2BanHistory("", "", 10); got == nil || len(got) != 0 {
+	if got := parseFail2BanHistory(strings.NewReader(""), "", 10); got == nil || len(got) != 0 {
 		t.Fatalf("empty log must give an empty, non-nil list: %#v", got)
 	}
 }

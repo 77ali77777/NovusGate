@@ -96,7 +96,7 @@ func (s *Server) loadNetworks() {
 		}
 		// Initialize manager
 		mgr := wireguard.NewManager(network.InterfaceName)
-		if err := mgr.Init(); err != nil {
+		if err := wgInit(mgr); err != nil {
 			fmt.Printf("Warning: WireGuard tools missing for %s\n", network.Name)
 			continue
 		}
@@ -234,7 +234,7 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	
 	// Create and register manager
 	newMgr := wireguard.NewManager(network.InterfaceName)
-	if err := newMgr.Init(); err != nil {
+	if err := wgInit(newMgr); err != nil {
 		fmt.Printf("Warning: Failed to init WireGuard manager for %s: %v\n", network.Name, err)
 		return nil
 	}
@@ -645,7 +645,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	
 	// 5. Initialize WireGuard Interface
 	mgr := wireguard.NewManager(network.InterfaceName)
-	if err := mgr.Init(); err != nil {
+	if err := wgInit(mgr); err != nil {
 		fmt.Printf("Warning: WireGuard tools not available: %v\n", err)
 	} else {
 		// Create WireGuard config with the generated key
@@ -709,14 +709,8 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	
 	// Bring down WireGuard interface
 	if network.InterfaceName != "" {
-		mgr := wireguard.NewManager(network.InterfaceName)
-		if err := mgr.Down(); err != nil {
-			fmt.Printf("Warning: Failed to bring down %s: %v\n", network.InterfaceName, err)
-		}
-		// Remove config file
-		configPath := fmt.Sprintf("/etc/wireguard/%s.conf", network.InterfaceName)
-		os.Remove(configPath)
-		
+		wgTeardown(network.InterfaceName)
+
 		// Unregister manager
 		s.managersMu.Lock()
 		delete(s.managers, id)
@@ -1187,6 +1181,19 @@ var (
 
 // generateKeys creates a WireGuard key pair (replaced in tests).
 var generateKeys = wireguard.GenerateKeys
+
+// wgInit checks that WireGuard tools exist before a manager touches the
+// host; wgTeardown brings an interface down and removes its config. Tests
+// replace both so no interface is ever created on the machine running them.
+var (
+	wgInit     = func(m *wireguard.Manager) error { return m.Init() }
+	wgTeardown = func(iface string) {
+		if err := wireguard.NewManager(iface).Down(); err != nil {
+			fmt.Printf("Warning: Failed to bring down %s: %v\n", iface, err)
+		}
+		os.Remove(fmt.Sprintf("/etc/wireguard/%s.conf", iface))
+	}
+)
 
 // runCommand runs a command in the container.
 func runCommand(name string, args ...string) (string, error) {
@@ -2138,11 +2145,11 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// The log is read directly; nothing from the request reaches a shell.
-	log, err := readFail2BanLog()
-	if err != nil {
-		log = "" // no log yet: empty history, as before
+	history := []map[string]string{} // no log yet: empty history, as before
+	if f, err := openFail2BanLog(); err == nil {
+		history = parseFail2BanHistory(f, jail, limit)
+		f.Close()
 	}
-	history := parseFail2BanHistory(log, jail, limit)
 
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"history": history,

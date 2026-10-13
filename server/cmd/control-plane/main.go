@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -370,15 +369,20 @@ func runMigrationSQL(db *store.Store) error {
 	return nil
 }
 
-var dsnPasswordRe = regexp.MustCompile(`(password=)\S+`)
+var (
+	// urlPasswordRe matches the userinfo password up to the last '@', so an
+	// unencoded '#', '/' or '@' in it (compose builds the URL from .env
+	// unencoded) is still covered; url.Parse would fail on those.
+	urlPasswordRe = regexp.MustCompile(`^([a-zA-Z][a-zA-Z0-9+.-]*://[^:/?#@\s]*:).*@`)
+	// kvPasswordRe matches password=... in a DSN or a URL query, quoted or not.
+	kvPasswordRe = regexp.MustCompile(`(password\s*=\s*)('(?:[^'\\]|\\.)*'|[^\s&]+)`)
+)
 
 // maskDatabaseURL hides the password in a postgres URL or key=value DSN so
 // it never reaches the logs.
 func maskDatabaseURL(raw string) string {
-	if u, err := url.Parse(raw); err == nil && u.Scheme != "" && u.User != nil {
-		return u.Redacted()
-	}
-	return dsnPasswordRe.ReplaceAllString(raw, "${1}xxxxx")
+	masked := urlPasswordRe.ReplaceAllString(raw, "${1}xxxxx@")
+	return kvPasswordRe.ReplaceAllString(masked, "${1}xxxxx")
 }
 
 func bootstrapSystem(db *store.Store) error {

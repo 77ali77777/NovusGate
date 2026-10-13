@@ -58,11 +58,12 @@
 - **`api/rest`-də dəyişdirilə bilən funksiyalar:**
   - `execHostCommand`, `execCommand`: host və konteyner əmrləri;
   - `generateKeys`: WireGuard açarları;
-  - `readFail2BanLog`: `/var/log/fail2ban.log`;
+  - `openFail2BanLog`: `/var/log/fail2ban.log` (sətir-sətir oxunur);
+  - `wgInit`, `wgTeardown`: WireGuard interfeysinə toxunan yerlər;
   - `legacySSHPorts`, `adminPeers`, `clearLegacyVPNRules`, `checkFirewallHost`, `cutoverIptables`.
 
   Testlər bunları stub edir, heç bir test host-a toxunmur.
 - **Kontrakt testləri** bax `docs/api.md`. Golden fayllar `.gitattributes` qaydası (`server/**/testdata/** eol=lf`) ilə LF saxlanılır.
 - **Yeni şəbəkənin hub ünvanı:** CIDR-in ilk host-u, CIDR-in öz prefiksi ilə (`hubAddress`).
 - **`AllocateIP`:** network, `.1` və `.2` ünvanlarını ötürür, broadcast-ı heç vaxt vermir.
-- **Startup log-u:** DB URL-dəki parol maskalanır (`maskDatabaseURL`).
+- **Startup log-u:** DB URL-dəki parol maskalanır (`maskDatabaseURL`): userinfo (kodlaşdırılmamış `#`, `/`, `@` daxil), `?password=` və DSN-dəki `password=` (dırnaqlı da).

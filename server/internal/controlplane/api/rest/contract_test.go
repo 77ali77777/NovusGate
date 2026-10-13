@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http/httptest"
 	"os"
@@ -23,6 +24,9 @@ import (
 )
 
 var updateContract = flag.Bool("update", false, "rewrite testdata/contract snapshots")
+
+// wgCalls records what the stubbed WireGuard seams were asked to do.
+var wgCalls []string
 
 var (
 	uuidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
@@ -78,15 +82,23 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 	})
 
 	stub := &hostStub{out: map[string]string{}}
-	origHost, origCmd, origKeys, origSSH, origLog := execHostCommand, execCommand, generateKeys, legacySSHPorts, readFail2BanLog
+	origHost, origCmd, origKeys, origSSH, origLog := execHostCommand, execCommand, generateKeys, legacySSHPorts, openFail2BanLog
 	execHostCommand, execCommand = stub.run, stub.run
-	readFail2BanLog = func() (string, error) { return "", os.ErrNotExist }
+	openFail2BanLog = func() (io.ReadCloser, error) { return nil, os.ErrNotExist }
 	generateKeys = func() (string, string, error) {
 		return strings.Repeat("k", 43) + "=", strings.Repeat("K", 43) + "=", nil
 	}
 	legacySSHPorts = func() []uint16 { return []uint16{22} }
+	origInit, origTeardown := wgInit, wgTeardown
+	wgCalls = nil
+	wgInit = func(m *wireguard.Manager) error {
+		wgCalls = append(wgCalls, "init "+m.InterfaceName)
+		return fmt.Errorf("wireguard is disabled in tests")
+	}
+	wgTeardown = func(iface string) { wgCalls = append(wgCalls, "teardown "+iface) }
+	t.Cleanup(func() { wgInit, wgTeardown = origInit, origTeardown })
 	t.Cleanup(func() {
-		execHostCommand, execCommand, generateKeys, legacySSHPorts, readFail2BanLog = origHost, origCmd, origKeys, origSSH, origLog
+		execHostCommand, execCommand, generateKeys, legacySSHPorts, openFail2BanLog = origHost, origCmd, origKeys, origSSH, origLog
 	})
 
 	s := &Server{store: st, router: mux.NewRouter(), managers: map[string]*wireguard.Manager{},
@@ -193,7 +205,7 @@ func TestContract(t *testing.T) {
 	s, st, stub := newContractServer(t)
 	seed := seedContract(t, st)
 	stub.out["fail2ban-client get sshd ignoreip"] = fail2banIgnoreTree
-	readFail2BanLog = func() (string, error) { return sampleF2BLog, nil }
+	openFail2BanLog = func() (io.ReadCloser, error) { return io.NopCloser(strings.NewReader(sampleF2BLog)), nil }
 	n, e, node := seed.network.ID, seed.empty.ID, seed.node.ID
 	missing := "00000000-0000-4000-8000-000000000000"
 
@@ -256,5 +268,28 @@ func TestEmptyCollectionsAreArrays(t *testing.T) {
 		if got := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(got, key) {
 			t.Errorf("GET %s = %s, want %s", path, got, key)
 		}
+	}
+}
+
+// Network create/delete must reach WireGuard only through the wgInit and
+// wgTeardown seams, so tests never create an interface on the machine
+// running them, even where wg is installed.
+func TestNetworkHandlersUseWireGuardSeams(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seedContract(t, st) // the first network would be wg0, the undeletable admin network
+	rec := callAs(t, s, "POST", "/api/v1/networks", `{"name":"contract-seam","cidr":"10.75.0.0/24"}`, true)
+	if rec.Code != 201 {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	var n models.Network
+	if err := json.Unmarshal(rec.Body.Bytes(), &n); err != nil {
+		t.Fatal(err)
+	}
+	if rec := callAs(t, s, "DELETE", "/api/v1/networks/"+n.ID, "", true); rec.Code != 204 {
+		t.Fatalf("delete = %d %s", rec.Code, rec.Body)
+	}
+	want := []string{"init " + n.InterfaceName, "teardown " + n.InterfaceName}
+	if strings.Join(wgCalls, ",") != strings.Join(want, ",") {
+		t.Fatalf("WireGuard calls = %v, want %v", wgCalls, want)
 	}
 }
