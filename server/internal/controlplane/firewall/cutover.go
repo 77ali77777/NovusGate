@@ -2,7 +2,7 @@ package firewall
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -87,7 +87,7 @@ func CutoverIptables(r nft.Runner) (int, error) {
 		}
 		args := splitIptablesArgs(strings.TrimPrefix(line, "-A INPUT "))
 		if target := ruleTarget(args); target != "ACCEPT" && target != "DROP" {
-			log.Printf("firewall: hand-over keeps iptables rule: %s", line)
+			slog.Info(fmt.Sprintf("firewall: hand-over keeps iptables rule: %s", line))
 			continue
 		}
 		if _, err := r.Run("", "iptables", append([]string{"-D", "INPUT"}, args...)...); err != nil {
@@ -96,7 +96,7 @@ func CutoverIptables(r nft.Runner) (int, error) {
 		deleted++
 	}
 	if _, err := r.Run("", "netfilter-persistent", "save"); err != nil {
-		log.Printf("firewall: netfilter-persistent save failed (the next start repeats the hand-over): %v", err)
+		slog.Error(fmt.Sprintf("firewall: netfilter-persistent save failed (the next start repeats the hand-over): %v", err))
 	}
 	return deleted, nil
 }

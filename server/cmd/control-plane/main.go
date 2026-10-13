@@ -152,9 +152,9 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("database connection string is required (--database or DATABASE_URL)")
 	}
 
-	fmt.Printf("Starting novusgate Control Plane v%s\n", version)
-	fmt.Printf("  HTTP Listen: %s\n", listenAddr)
-	fmt.Printf("  Database: %s\n", maskDatabaseURL(databaseURL))
+	slog.Info(fmt.Sprintf("Starting novusgate Control Plane v%s", version))
+	slog.Info(fmt.Sprintf("  HTTP Listen: %s", listenAddr))
+	slog.Info(fmt.Sprintf("  Database: %s", maskDatabaseURL(databaseURL)))
 
 	// Connect to database
 	db, err := store.New(databaseURL)
@@ -162,18 +162,18 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
-	fmt.Println("  Database: Connected")
+	slog.Info("  Database: Connected")
 
 	// Run migrations
-	fmt.Println("  Database: Running migrations...")
+	slog.Info("  Database: Running migrations...")
 	if err := db.Migrate(context.Background()); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
-	fmt.Println("  Database: Migrations applied")
+	slog.Info("  Database: Migrations applied")
 
 	// Bootstrap System (Admin User & Network)
 	if err := bootstrapSystem(db); err != nil {
-		fmt.Printf("Warning: Failed to bootstrap system: %v\n", err)
+		slog.Error(fmt.Sprintf("Warning: Failed to bootstrap system: %v", err))
 	}
 
 	// Create REST API server (WireGuard managers are initialized internally by loadNetworks)
@@ -188,10 +188,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 		apiServer.SetFirewall(firewall.NewHostEngine(fwMode, db))
 		go func() {
 			if err := apiServer.StartFirewall(context.Background()); err != nil {
-				fmt.Fprintf(os.Stderr, "[Firewall] startup failed: %v\n", err)
+				slog.Error(fmt.Sprintf("[Firewall] startup failed: %v", err))
 			}
 		}()
-		fmt.Printf("  Firewall engine: %s\n", fwMode)
+		slog.Info(fmt.Sprintf("  Firewall engine: %s", fwMode))
 	}
 
 	// Ensure Admin Network manager is registered after bootstrap
@@ -207,7 +207,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 			if net.InterfaceName == "wg0" {
 				// Force re-registration by calling the API server's internal method
 				// This is a workaround - ideally loadNetworks should be called after bootstrap
-				fmt.Printf("Ensuring wg0 manager is registered for Admin Network...\n")
+				slog.Info("Ensuring wg0 manager is registered for Admin Network...")
 				break
 			}
 		}
@@ -224,9 +224,9 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Start server in goroutine
 	go func() {
-		fmt.Printf("HTTP server listening on %s\n", listenAddr)
+		slog.Info(fmt.Sprintf("HTTP server listening on %s", listenAddr))
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "HTTP server error: %v\n", err)
+			slog.Info(fmt.Sprintf("HTTP server error: %v", err))
 		}
 	}()
 
@@ -235,7 +235,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	fmt.Println("\nShutting down server...")
+	slog.Info("\nShutting down server...")
 
 	// Graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -245,11 +245,14 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("server shutdown error: %w", err)
 	}
 
-	fmt.Println("Server stopped")
+	slog.Info("Server stopped")
 	return nil
 }
 
 func runMigrations(cmd *cobra.Command, args []string) error {
+	// The store logs migration progress through slog; keep this CLI's output
+	// readable for the person running it.
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	databaseURL, _ := cmd.Flags().GetString("database")
 	if databaseURL == "" {
 		databaseURL = viper.GetString("database_url")
@@ -418,7 +421,7 @@ func bootstrapSystem(db *store.Store) error {
 			return fmt.Errorf("ADMIN_PASSWORD environment variable is required for first-time setup")
 		}
 
-		fmt.Printf("Bootstrapping admin user: %s\n", username)
+		slog.Info(fmt.Sprintf("Bootstrapping admin user: %s", username))
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("failed to hash password: %w", err)
@@ -432,7 +435,7 @@ func bootstrapSystem(db *store.Store) error {
 		if err := db.CreateUser(ctx, user); err != nil {
 			return fmt.Errorf("failed to create admin user: %w", err)
 		}
-		fmt.Println("Admin user created successfully")
+		slog.Info("Admin user created successfully")
 	}
 
 	// 2. Bootstrap Admin Network (wg0)
@@ -458,7 +461,7 @@ func bootstrapSystem(db *store.Store) error {
 
 	if adminNet == nil {
 		// Create new
-		fmt.Printf("Bootstrapping Admin Network (wg0) on %s...\n", cidr)
+		slog.Info(fmt.Sprintf("Bootstrapping Admin Network (wg0) on %s...", cidr))
 
 		// CRITICAL: We MUST read keys from existing wg0.conf created by installer
 		// The installer creates wg0 on the HOST before starting Docker containers
@@ -468,7 +471,7 @@ func bootstrapSystem(db *store.Store) error {
 		configPath := "/etc/wireguard/wg0.conf"
 		if privKeyBytes, err := os.ReadFile(configPath); err == nil {
 			config := string(privKeyBytes)
-			fmt.Printf("Found existing wg0.conf, reading keys...\n")
+			slog.Info("Found existing wg0.conf, reading keys...")
 			
 			// Parse PrivateKey
 			if idx := strings.Index(config, "PrivateKey = "); idx != -1 {
@@ -476,11 +479,11 @@ func bootstrapSystem(db *store.Store) error {
 				end := strings.Index(config[start:], "\n")
 				if end != -1 {
 					privateKey = strings.TrimSpace(config[start : start+end])
-					fmt.Printf("Read private key from wg0.conf\n")
+					slog.Info("Read private key from wg0.conf")
 				}
 			}
 		} else {
-			fmt.Printf("Warning: Could not read %s: %v\n", configPath, err)
+			slog.Warn(fmt.Sprintf("Warning: Could not read %s: %v", configPath, err))
 		}
 
 		// Step 2: Derive public key from private key (or get from running interface)
@@ -491,9 +494,9 @@ func bootstrapSystem(db *store.Store) error {
 			output, err := cmd.Output()
 			if err == nil {
 				publicKey = strings.TrimSpace(string(output))
-				fmt.Printf("Derived public key: %s\n", publicKey)
+				slog.Info(fmt.Sprintf("Derived public key: %s", publicKey))
 			} else {
-				fmt.Printf("Warning: Failed to derive public key: %v\n", err)
+				slog.Error(fmt.Sprintf("Warning: Failed to derive public key: %v", err))
 			}
 		}
 		
@@ -503,15 +506,15 @@ func bootstrapSystem(db *store.Store) error {
 			if err := mgr.Init(); err == nil {
 				if existingPubKey, err := mgr.GetPublicKey(); err == nil && existingPubKey != "" {
 					publicKey = existingPubKey
-					fmt.Printf("Got public key from running wg0 interface: %s\n", publicKey)
+					slog.Info(fmt.Sprintf("Got public key from running wg0 interface: %s", publicKey))
 				}
 			}
 		}
 
 		// Step 4: Last resort - generate new keys (this should NOT happen in normal flow)
 		if privateKey == "" || publicKey == "" {
-			fmt.Println("WARNING: Could not read existing keys, generating new ones...")
-			fmt.Println("This may cause connection issues if wg0 was already configured by installer!")
+			slog.Warn("WARNING: Could not read existing keys, generating new ones...")
+			slog.Info("This may cause connection issues if wg0 was already configured by installer!")
 			privateKey, publicKey, err = wireguard.GenerateKeys()
 			if err != nil {
 				return fmt.Errorf("failed to generate WireGuard keys: %w", err)
@@ -532,11 +535,11 @@ func bootstrapSystem(db *store.Store) error {
 		if err := db.CreateNetwork(ctx, network); err != nil {
 			return fmt.Errorf("failed to create admin network: %w", err)
 		}
-		fmt.Printf("Admin Network (wg0) created successfully with public key: %s\n", publicKey)
+		slog.Info(fmt.Sprintf("Admin Network (wg0) created successfully with public key: %s", publicKey))
 
 	} else {
 		// Admin Network already exists - verify and sync keys if needed
-		fmt.Printf("Admin Network (wg0) already exists in DB with public key: %s\n", adminNet.ServerPublicKey)
+		slog.Info(fmt.Sprintf("Admin Network (wg0) already exists in DB with public key: %s", adminNet.ServerPublicKey))
 		
 		// Read actual keys from wg0.conf to verify they match
 		configPath := "/etc/wireguard/wg0.conf"
@@ -565,30 +568,30 @@ func bootstrapSystem(db *store.Store) error {
 			
 			// Check if DB keys match actual wg0 keys
 			if actualPublicKey != "" && actualPublicKey != adminNet.ServerPublicKey {
-				fmt.Printf("WARNING: DB public key (%s) does not match wg0.conf key (%s)\n", 
-					adminNet.ServerPublicKey, actualPublicKey)
-				fmt.Println("Updating DB with correct keys from wg0.conf...")
+				slog.Warn(fmt.Sprintf("WARNING: DB public key (%s) does not match wg0.conf key (%s)",
+					adminNet.ServerPublicKey, actualPublicKey))
+				slog.Info("Updating DB with correct keys from wg0.conf...")
 				
 				// Update network with correct keys
 				if err := db.UpdateNetworkKeys(ctx, adminNet.ID, actualPrivateKey, actualPublicKey); err != nil {
-					fmt.Printf("Failed to update network keys: %v\n", err)
+					slog.Error(fmt.Sprintf("Failed to update network keys: %v", err))
 				} else {
-					fmt.Printf("SUCCESS: Network keys synced with wg0.conf. New public key: %s\n", actualPublicKey)
+					slog.Info(fmt.Sprintf("SUCCESS: Network keys synced with wg0.conf. New public key: %s", actualPublicKey))
 				}
 			} else if actualPublicKey != "" {
-				fmt.Println("Keys are in sync ✓")
+				slog.Info("Keys are in sync ✓")
 			}
 		}
 		
 		// Also check CIDR mismatch
 		if adminNet.CIDR != cidr {
-			fmt.Printf("CORRECTION: Existing Admin Network (wg0) CIDR (%s) mismatches ENV config (%s).\n", adminNet.CIDR, cidr)
-			fmt.Println("Applying correction to Database...")
+			slog.Info(fmt.Sprintf("CORRECTION: Existing Admin Network (wg0) CIDR (%s) mismatches ENV config (%s).", adminNet.CIDR, cidr))
+			slog.Info("Applying correction to Database...")
 			
 			if err := db.UpdateNetworkCIDR(ctx, adminNet.ID, cidr); err != nil {
-				fmt.Printf("failed to update network CIDR: %v\n", err)
+				slog.Error(fmt.Sprintf("failed to update network CIDR: %v", err))
 			} else {
-				fmt.Println("SUCCESS: Network configuration updated. Please restart the service or reboot if issues persist.")
+				slog.Info("SUCCESS: Network configuration updated. Please restart the service or reboot if issues persist.")
 			}
 		}
 	}

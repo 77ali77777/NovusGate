@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"path"
 	"strings"
 	"sync"
@@ -108,7 +108,7 @@ func (s *SafeApplier) Apply(script string, confirm bool) (Pending, error) {
 	}
 	if err := s.Exec.Apply(script); err != nil {
 		if derr := s.Timer.Disarm(); derr != nil {
-			log.Printf("firewall: disarm after failed apply: %v", derr)
+			slog.Error(fmt.Sprintf("firewall: disarm after failed apply: %v", derr))
 		}
 		return Pending{}, err
 	}
@@ -163,13 +163,13 @@ func (s *SafeApplier) rollback(id string) {
 	}
 	if err := s.Exec.Apply(s.pending.snapshot); err != nil {
 		// The host timer is still armed and will retry the restore.
-		log.Printf("firewall: rollback failed, host timer will restore: %v", err)
+		slog.Error(fmt.Sprintf("firewall: rollback failed, host timer will restore: %v", err))
 		s.pending = nil
 		return
 	}
 	s.pending = nil
 	if err := s.Timer.Disarm(); err != nil {
-		log.Printf("firewall: disarm after rollback: %v", err)
+		slog.Info(fmt.Sprintf("firewall: disarm after rollback: %v", err))
 	}
 }
 
@@ -254,6 +254,6 @@ func (t SystemdTimer) Active() (bool, error) {
 // nothing to clear.
 func (t SystemdTimer) resetFailed() {
 	if _, err := t.Runner.Run("", "systemctl", "reset-failed", t.Unit+".service"); err != nil && !strings.Contains(err.Error(), "not loaded") {
-		log.Printf("firewall: reset-failed %s: %v", t.Unit, err)
+		slog.Error(fmt.Sprintf("firewall: reset-failed %s: %v", t.Unit, err))
 	}
 }

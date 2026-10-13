@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -86,7 +87,7 @@ func (s *Server) loadNetworks() {
 	ctx := context.Background()
 	networks, err := s.store.ListNetworks(ctx)
 	if err != nil {
-		fmt.Printf("Error loading networks: %v\n", err)
+		slog.Error(fmt.Sprintf("Error loading networks: %v", err))
 		return
 	}
 	
@@ -97,7 +98,7 @@ func (s *Server) loadNetworks() {
 		// Initialize manager
 		mgr := wireguard.NewManager(network.InterfaceName)
 		if err := wgInit(mgr); err != nil {
-			fmt.Printf("Warning: WireGuard tools missing for %s\n", network.Name)
+			slog.Warn(fmt.Sprintf("Warning: WireGuard tools missing for %s", network.Name))
 			continue
 		}
 		
@@ -114,20 +115,20 @@ func (s *Server) loadNetworks() {
 		
 		// Ensure interface is UP
 		if err := mgr.Up(); err != nil {
-			fmt.Printf("Note: Interface %s might already be up: %v\n", network.InterfaceName, err)
+			slog.Info(fmt.Sprintf("Note: Interface %s might already be up: %v", network.InterfaceName, err))
 		} else {
-			fmt.Printf("Network %s (%s) is UP on port %d\n", network.Name, network.InterfaceName, port)
+			slog.Info(fmt.Sprintf("Network %s (%s) is UP on port %d", network.Name, network.InterfaceName, port))
 		}
 
 		// SYNC: Import existing peers from WireGuard into DB
 		peers, err := mgr.GetPeers()
 		if err == nil && len(peers) > 0 {
-			fmt.Printf("Syncing %d peers from %s to database...\n", len(peers), network.InterfaceName)
+			slog.Info(fmt.Sprintf("Syncing %d peers from %s to database...", len(peers), network.InterfaceName))
 			
 			// Get existing DB nodes to avoid duplicates
 			dbNodes, err := s.store.ListNodes(ctx, network.ID)
 			if err != nil {
-				fmt.Printf("Failed to list DB nodes: %v\n", err)
+				slog.Error(fmt.Sprintf("Failed to list DB nodes: %v", err))
 				continue
 			}
 			
@@ -139,12 +140,12 @@ func (s *Server) loadNetworks() {
 			for pubKey, peer := range peers {
 				if !existingKeys[pubKey] {
 					// Import this peer
-					fmt.Printf("Importing peer %s...\n", pubKey)
+					slog.Info(fmt.Sprintf("Importing peer %s...", pubKey))
 					
 					// Parse IP from AllowedIPs (first one if comma separated)
 					ips := strings.Split(peer.AllowedIPs, ",")
 					if len(ips) == 0 {
-						fmt.Printf("Warning: No AllowedIPs for peer %s, skipping import\n", pubKey)
+						slog.Warn(fmt.Sprintf("Warning: No AllowedIPs for peer %s, skipping import", pubKey))
 						continue
 					}
 					
@@ -156,7 +157,7 @@ func (s *Server) loadNetworks() {
 					
 					virtualIP := net.ParseIP(ipStr)
 					if virtualIP == nil {
-						fmt.Printf("Warning: Invalid IP %s for peer %s, skipping import\n", ipStr, pubKey)
+						slog.Warn(fmt.Sprintf("Warning: Invalid IP %s for peer %s, skipping import", ipStr, pubKey))
 						continue
 					}
 
@@ -183,9 +184,9 @@ func (s *Server) loadNetworks() {
 					}
 					
 					if err := s.store.CreateNode(ctx, node); err != nil {
-						fmt.Printf("Failed to import node %s: %v\n", pubKey, err)
+						slog.Error(fmt.Sprintf("Failed to import node %s: %v", pubKey, err))
 					} else {
-						fmt.Printf("Successfully imported node %s (%s)\n", hostname, ipStr)
+						slog.Info(fmt.Sprintf("Successfully imported node %s (%s)", hostname, ipStr))
 						existingKeys[pubKey] = true // Mark as done
 					}
 				}
@@ -196,20 +197,20 @@ func (s *Server) loadNetworks() {
 		// written to wgN.conf (SaveConfig = false), so a host reboot drops them.
 		dbNodes, err := s.store.ListNodes(ctx, network.ID)
 		if err != nil {
-			fmt.Printf("Warning: cannot restore peers for %s: %v\n", network.InterfaceName, err)
+			slog.Warn(fmt.Sprintf("Warning: cannot restore peers for %s: %v", network.InterfaceName, err))
 			continue
 		}
 		livePeers, err := mgr.GetPeers()
 		if err != nil {
-			fmt.Printf("Warning: cannot read peers of %s: %v\n", network.InterfaceName, err)
+			slog.Warn(fmt.Sprintf("Warning: cannot read peers of %s: %v", network.InterfaceName, err))
 			continue
 		}
 		restored, restoreErrs := restorePeers(mgr, dbNodes, livePeers, time.Now())
 		if restored > 0 || len(restoreErrs) > 0 {
-			fmt.Printf("Restored %d peers on %s (%d errors)\n", restored, network.InterfaceName, len(restoreErrs))
+			slog.Info(fmt.Sprintf("Restored %d peers on %s (%d errors)", restored, network.InterfaceName, len(restoreErrs)))
 		}
 		for _, e := range restoreErrs {
-			fmt.Printf("Warning: %s\n", e)
+			slog.Warn(fmt.Sprintf("Warning: %s", e))
 		}
 	}
 }
@@ -235,7 +236,7 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	// Create and register manager
 	newMgr := wireguard.NewManager(network.InterfaceName)
 	if err := wgInit(newMgr); err != nil {
-		fmt.Printf("Warning: Failed to init WireGuard manager for %s: %v\n", network.Name, err)
+		slog.Error(fmt.Sprintf("Warning: Failed to init WireGuard manager for %s: %v", network.Name, err))
 		return nil
 	}
 	
@@ -248,7 +249,7 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	s.managers[networkID] = newMgr
 	s.managersMu.Unlock()
 	
-	fmt.Printf("Lazily initialized WireGuard manager for network %s (%s)\n", network.Name, network.InterfaceName)
+	slog.Info(fmt.Sprintf("Lazily initialized WireGuard manager for network %s (%s)", network.Name, network.InterfaceName))
 	return newMgr
 }
 
@@ -646,20 +647,20 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	// 5. Initialize WireGuard Interface
 	mgr := wireguard.NewManager(network.InterfaceName)
 	if err := wgInit(mgr); err != nil {
-		fmt.Printf("Warning: WireGuard tools not available: %v\n", err)
+		slog.Warn(fmt.Sprintf("Warning: WireGuard tools not available: %v", err))
 	} else {
 		// Create WireGuard config with the generated key
 		// Calculate server IP (first usable IP in CIDR)
 		serverAddr, addrErr := hubAddress(network.CIDR)
 		if addrErr != nil {
-			fmt.Printf("Warning: invalid CIDR %s: %v\n", network.CIDR, addrErr)
+			slog.Warn(fmt.Sprintf("Warning: invalid CIDR %s: %v", network.CIDR, addrErr))
 		} else if err := mgr.CreateServerConfigWithKey(privateKey, serverAddr, port); err != nil {
-			fmt.Printf("Warning: Failed to create WireGuard config for %s: %v\n", network.Name, err)
+			slog.Error(fmt.Sprintf("Warning: Failed to create WireGuard config for %s: %v", network.Name, err))
 		} else {
-			fmt.Printf("WireGuard interface %s created for network %s\n", network.InterfaceName, network.Name)
+			slog.Info(fmt.Sprintf("WireGuard interface %s created for network %s", network.InterfaceName, network.Name))
 			// Bring up the interface
 			if err := mgr.Up(); err != nil {
-				fmt.Printf("Warning: Failed to bring up %s: %v\n", network.InterfaceName, err)
+				slog.Error(fmt.Sprintf("Warning: Failed to bring up %s: %v", network.InterfaceName, err))
 			}
 		}
 		
@@ -723,7 +724,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	fmt.Printf("Network %s (%s) deleted\n", network.Name, network.InterfaceName)
+	slog.Info(fmt.Sprintf("Network %s (%s) deleted", network.Name, network.InterfaceName))
 	s.reconcileFirewall(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -793,7 +794,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 			mgr := s.getManager(node.NetworkID)
 			if mgr != nil && peers != nil {
 				if _, ok := peers[node.PublicKey]; ok {
-					fmt.Printf("Enforcing expiration for node %s (%s)\n", node.Name, node.ID)
+					slog.Info(fmt.Sprintf("Enforcing expiration for node %s (%s)", node.Name, node.ID))
 					mgr.RemovePeer(node.PublicKey)
 				}
 			}
@@ -928,9 +929,9 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 		if node.Status == models.NodeStatusExpired && newStatus != models.NodeStatusExpired {
 			mgr := s.getManager(node.NetworkID)
 			if mgr != nil {
-				fmt.Printf("Reactivating node %s, adding to WireGuard\n", node.Name)
+				slog.Info(fmt.Sprintf("Reactivating node %s, adding to WireGuard", node.Name))
 				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
-					fmt.Printf("Warning: failed to add reactivated peer to WireGuard: %v\n", err)
+					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
 				}
 			}
 		}
@@ -940,7 +941,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 			mgr := s.getManager(node.NetworkID)
 			if mgr != nil {
 				if err := mgr.RemovePeer(node.PublicKey); err != nil {
-					fmt.Printf("Warning: failed to remove peer from WireGuard: %v\n", err)
+					slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
 				}
 			}
 		}
@@ -952,10 +953,10 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 			// Node was expired but got new expiration - reactivate it
 			mgr := s.getManager(node.NetworkID)
 			if mgr != nil {
-				fmt.Printf("Extending expired node %s, reactivating and adding to WireGuard\n", node.Name)
+				slog.Info(fmt.Sprintf("Extending expired node %s, reactivating and adding to WireGuard", node.Name))
 				node.Status = models.NodeStatusPending
 				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
-					fmt.Printf("Warning: failed to add reactivated peer to WireGuard: %v\n", err)
+					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
 				}
 			}
 		}
@@ -1010,7 +1011,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 	mgr := s.getManager(node.NetworkID)
 	if mgr != nil && node.PublicKey != "" {
 		if err := mgr.RemovePeer(node.PublicKey); err != nil {
-			fmt.Printf("Warning: failed to remove peer from WireGuard: %v\n", err)
+			slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
 			// Continue with deletion anyway
 		}
 	}
@@ -1241,7 +1242,7 @@ var (
 	wgInit     = func(m *wireguard.Manager) error { return m.Init() }
 	wgTeardown = func(iface string) {
 		if err := wireguard.NewManager(iface).Down(); err != nil {
-			fmt.Printf("Warning: Failed to bring down %s: %v\n", iface, err)
+			slog.Error(fmt.Sprintf("Warning: Failed to bring down %s: %v", iface, err))
 		}
 		os.Remove(fmt.Sprintf("/etc/wireguard/%s.conf", iface))
 	}

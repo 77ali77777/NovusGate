@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/netip"
 	"strings"
 	"sync"
@@ -278,7 +278,7 @@ func (e *Engine) scheduleRetryLocked() {
 		e.stopRetry = nil
 		e.mu.Unlock()
 		if _, err := e.ReconcileOrRetry(context.Background()); err != nil {
-			log.Printf("firewall: reconcile retry failed: %v", err)
+			slog.Error(fmt.Sprintf("firewall: reconcile retry failed: %v", err))
 		}
 	})
 }
@@ -301,7 +301,7 @@ func (e *Engine) Confirm(ctx context.Context, id string) error {
 	}
 	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state)
 	for _, w := range extra {
-		log.Printf("firewall: %v", w)
+		slog.Info(fmt.Sprintf("firewall: %v", w))
 	}
 	return err
 }
@@ -367,7 +367,7 @@ func (e *Engine) scheduleExpiry(st State) {
 	}
 	e.stopExpiry = e.AfterFunc(next.Sub(now)+time.Second, func() {
 		if _, err := e.ReconcileOrRetry(context.Background()); err != nil {
-			log.Printf("firewall: reconcile after expiry failed (will retry): %v", err)
+			slog.Warn(fmt.Sprintf("firewall: reconcile after expiry failed (will retry): %v", err))
 		}
 	})
 }

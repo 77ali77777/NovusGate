@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -52,15 +53,15 @@ func (s *Server) SetFirewall(e *firewall.Engine) {
 			return
 		}
 		if err := clearLegacyVPNRules(s); err != nil {
-			fmt.Printf("[Firewall] warning: could not remove legacy iptables VPN rules (will retry): %v\n", err)
+			slog.Warn(fmt.Sprintf("[Firewall] warning: could not remove legacy iptables VPN rules (will retry): %v", err))
 			return
 		}
 		n, err := cutoverIptables()
 		if err != nil {
-			fmt.Printf("[Firewall] warning: iptables INPUT hand-over failed (will retry): %v\n", err)
+			slog.Warn(fmt.Sprintf("[Firewall] warning: iptables INPUT hand-over failed (will retry): %v", err))
 			return
 		}
-		fmt.Printf("[Firewall] iptables INPUT handed over to nftables (%d rules removed)\n", n)
+		slog.Info(fmt.Sprintf("[Firewall] iptables INPUT handed over to nftables (%d rules removed)", n))
 		handedOver = true
 	}
 }
@@ -100,7 +101,7 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("shadow check failed: %w", err)
 		}
-		fmt.Println("[Firewall] shadow mode: nftables ruleset compiles and passes nft -c")
+		slog.Info("[Firewall] shadow mode: nftables ruleset compiles and passes nft -c")
 	case firewall.ModeNft:
 		if err := checkFirewallHost(); err != nil {
 			return fmt.Errorf("host not ready for FIREWALL_ENGINE=nft (iptables keeps enforcing): %w", err)
@@ -114,7 +115,7 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 			return err
 		}
 		if n > 0 || len(skipped) > 0 {
-			fmt.Printf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules not imported)\n", n, len(skipped))
+			slog.Info(fmt.Sprintf("[Firewall] imported %d panel rules from iptables (%d installer/foreign rules not imported)", n, len(skipped)))
 		}
 		s.firewall.MarkReady()
 		// The legacy iptables VPN rules are removed by AfterApply once this (or
@@ -124,7 +125,7 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("initial apply failed (iptables keeps enforcing, retrying in the background): %w", err)
 		}
-		fmt.Println("[Firewall] nftables engine applied the stored ruleset")
+		slog.Info("[Firewall] nftables engine applied the stored ruleset")
 	}
 	return nil
 }
@@ -140,13 +141,13 @@ func (s *Server) reconcileFirewall(ctx context.Context) {
 	res, err := s.firewall.ReconcileOrRetry(ctx)
 	logWarnings(res.Warnings)
 	if err != nil {
-		fmt.Printf("[Firewall] reconcile failed (will retry): %v\n", err)
+		slog.Warn(fmt.Sprintf("[Firewall] reconcile failed (will retry): %v", err))
 	}
 }
 
 func logWarnings(warnings []error) {
 	for _, w := range warnings {
-		fmt.Printf("[Firewall] warning: %v\n", w)
+		slog.Warn(fmt.Sprintf("[Firewall] warning: %v", w))
 	}
 }
 

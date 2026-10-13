@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"regexp"
@@ -1056,7 +1057,7 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 	if rule.Enabled {
 		if err := s.applyVPNFirewallRule(r.Context(), rule); err != nil {
 			// Log error but don't fail - rule is saved in DB
-			fmt.Printf("Warning: failed to apply VPN firewall rule to iptables: %v\n", err)
+			slog.Error(fmt.Sprintf("Warning: failed to apply VPN firewall rule to iptables: %v", err))
 		}
 	}
 	
@@ -1130,7 +1131,7 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 	
 	// Re-apply all VPN firewall rules to iptables
 	if err := s.syncVPNFirewallRules(r.Context()); err != nil {
-		fmt.Printf("Warning: failed to sync VPN firewall rules to iptables: %v\n", err)
+		slog.Error(fmt.Sprintf("Warning: failed to sync VPN firewall rules to iptables: %v", err))
 	}
 	
 	// Create audit log
@@ -1171,7 +1172,7 @@ func (s *Server) handleVPNFirewallDeleteRule(w http.ResponseWriter, r *http.Requ
 	
 	// Re-sync all VPN firewall rules to iptables (removes deleted rule)
 	if err := s.syncVPNFirewallRules(r.Context()); err != nil {
-		fmt.Printf("Warning: failed to sync VPN firewall rules to iptables: %v\n", err)
+		slog.Error(fmt.Sprintf("Warning: failed to sync VPN firewall rules to iptables: %v", err))
 	}
 	
 	// Create audit log
@@ -1306,7 +1307,7 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	if s.engineEnforces() {
 		// The engine enforces VPN rules in table inet novusgate.
 		if _, err := execHostCommand("sysctl", "-w", "net.ipv4.ip_forward=1"); err != nil {
-			fmt.Printf("[Firewall] warning: enable ip_forward: %v\n", err)
+			slog.Warn(fmt.Sprintf("[Firewall] warning: enable ip_forward: %v", err))
 		}
 		_, err := s.firewall.ReconcileOrRetry(ctx)
 		return err
@@ -1330,14 +1331,14 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		}
 		
 		if err := s.applyVPNFirewallRule(ctx, rule); err != nil {
-			fmt.Printf("Warning: failed to apply VPN rule %s: %v\n", rule.Name, err)
+			slog.Error(fmt.Sprintf("Warning: failed to apply VPN rule %s: %v", rule.Name, err))
 			// Continue with other rules
 		}
 	}
 	
 	// Update WireGuard peer AllowedIPs based on VPN firewall rules
 	if err := s.syncPeerAllowedIPs(ctx, rules); err != nil {
-		fmt.Printf("Warning: failed to sync peer AllowedIPs: %v\n", err)
+		slog.Error(fmt.Sprintf("Warning: failed to sync peer AllowedIPs: %v", err))
 	}
 	
 	// Save rules with netfilter-persistent
@@ -1477,11 +1478,11 @@ func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFire
 			// The routing happens via iptables FORWARD rules
 			// But we need to ensure IP forwarding is enabled
 			if err := mgr.UpdatePeerAllowedIPs(node.PublicKey, nodeAllowedIPs); err != nil {
-				fmt.Printf("Warning: failed to update peer %s AllowedIPs: %v\n", node.Name, err)
+				slog.Error(fmt.Sprintf("Warning: failed to update peer %s AllowedIPs: %v", node.Name, err))
 			}
 		}
 		
-		fmt.Printf("[VPN Firewall] Network %s can now route to: %s\n", network.Name, allowedIPsStr)
+		slog.Info(fmt.Sprintf("[VPN Firewall] Network %s can now route to: %s", network.Name, allowedIPsStr))
 	}
 	
 	// Ensure IP forwarding is enabled

@@ -2,6 +2,7 @@ package wireguard
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -148,7 +149,7 @@ func (m *Manager) GetPublicKey() (string, error) {
 	content, err := os.ReadFile(m.ConfigPath)
 	if err != nil {
 		// Config doesn't exist - generate keys and create minimal config
-		fmt.Printf("[INFO] Config file not found, generating new server keys...\n")
+		slog.Info("[INFO] Config file not found, generating new server keys...")
 		privateKey, err := m.generatePrivateKey()
 		if err != nil {
 			return "", fmt.Errorf("failed to generate private key: %w", err)

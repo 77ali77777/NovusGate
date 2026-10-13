@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 )
@@ -58,7 +59,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 	newCount := 0
 	for _, filename := range filenames {
 		if applied[filename] {
-			fmt.Printf("Skipping (already applied): %s\n", filename)
+			slog.Info(fmt.Sprintf("Skipping (already applied): %s", filename))
 			continue
 		}
 
@@ -67,7 +68,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 			return fmt.Errorf("failed to read migration %s: %w", filename, err)
 		}
 
-		fmt.Printf("Applying migration: %s\n", filename)
+		slog.Info(fmt.Sprintf("Applying migration: %s", filename))
 		if _, err := s.db.ExecContext(ctx, string(content)); err != nil {
 			return fmt.Errorf("failed to execute migration %s: %w", filename, err)
 		}
@@ -81,9 +82,9 @@ func (s *Store) Migrate(ctx context.Context) error {
 	}
 
 	if newCount == 0 {
-		fmt.Println("Database is up to date, no new migrations.")
+		slog.Info("Database is up to date, no new migrations.")
 	} else {
-		fmt.Printf("Applied %d new migration(s).\n", newCount)
+		slog.Info(fmt.Sprintf("Applied %d new migration(s).", newCount))
 	}
 
 	return nil

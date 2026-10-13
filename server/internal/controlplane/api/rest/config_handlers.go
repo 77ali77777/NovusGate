@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -307,15 +308,15 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	mgr := s.getManager(networkID)
 	if mgr != nil {
 		allowedIPs := node.VirtualIP.String() + "/32"
-		fmt.Printf("[WG] Adding peer to interface: PublicKey=%s, AllowedIPs=%s\n", publicKey, allowedIPs)
+		slog.Info(fmt.Sprintf("[WG] Adding peer to interface: PublicKey=%s, AllowedIPs=%s", publicKey, allowedIPs))
 		if err := mgr.AddPeer(publicKey, allowedIPs); err != nil {
 			// Log error but continue (soft failure)
-			fmt.Printf("[WG] ERROR adding peer to interface: %v\n", err)
+			slog.Error(fmt.Sprintf("[WG] ERROR adding peer to interface: %v", err))
 		} else {
-			fmt.Printf("[WG] SUCCESS: Peer added to WireGuard interface\n")
+			slog.Info("[WG] SUCCESS: Peer added to WireGuard interface")
 		}
 	} else {
-		fmt.Printf("[WG] WARNING: No manager found for network %s - peer NOT added to WireGuard!\n", networkID)
+		slog.Warn(fmt.Sprintf("[WG] WARNING: No manager found for network %s - peer NOT added to WireGuard!", networkID))
 	}
 
 	// 4. Generate Config - Use server's public key from network

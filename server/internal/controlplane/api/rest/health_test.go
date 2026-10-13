@@ -11,7 +11,9 @@ type healthBody struct {
 	Status  string `json:"status"`
 	Version string `json:"version"`
 	Checks  struct {
-		Database  struct{ OK bool `json:"ok"` } `json:"database"`
+		Database struct {
+			OK bool `json:"ok"`
+		} `json:"database"`
 		WireGuard struct {
 			OK         bool              `json:"ok"`
 			Interfaces map[string]string `json:"interfaces"`
