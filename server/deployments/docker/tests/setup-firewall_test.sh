@@ -77,6 +77,18 @@ if grep -q -- "--dport abc" "$log"; then fail "invalid SSH_PORT was used"; fi
 log="$(run_case none "2022" "")"
 assert_rule "$log" "-A INPUT -p tcp --dport 2022 -j ACCEPT" "SSH_PORT"
 
+# Case 4b: out-of-range ports are ignored; 22 stays open and INPUT DROP is still last
+for bad in 0 70000; do
+  log="$(run_case none "$bad" "")"
+  if grep -q -- "--dport $bad " "$log"; then fail "out-of-range SSH_PORT $bad was used"; fi
+  assert_rule "$log" "-A INPUT -p tcp --dport 22 -j ACCEPT" "SSH_PORT=$bad"
+  assert_drop_last "$log" "SSH_PORT=$bad"
+done
+log="$(run_case none "" "203.0.113.9 51000 198.51.100.4 99999")"
+if grep -q -- "--dport 99999 " "$log"; then fail "out-of-range SSH_CONNECTION port was used"; fi
+assert_rule "$log" "-A INPUT -p tcp --dport 22 -j ACCEPT" "SSH_CONNECTION 99999"
+assert_drop_last "$log" "SSH_CONNECTION 99999"
+
 # Case 5: every original NovusGate rule is still present
 log="$(run_case none "" "")"
 for rule in \

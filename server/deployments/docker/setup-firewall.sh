@@ -15,7 +15,7 @@ detect_ssh_ports() {
     if command -v sshd > /dev/null 2>&1; then
       sshd -T 2> /dev/null | awk '$1 == "port" {print $2}'
     fi
-  } | grep -E '^[0-9]+$' | sort -un
+  } | grep -E '^[0-9]+$' | awk '$1 >= 1 && $1 <= 65535' | sort -un
 }
 
 install_persistence() {
