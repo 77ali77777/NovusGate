@@ -692,3 +692,28 @@ func nextIP(ip net.IP) net.IP {
 func (s *Store) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
 }
+
+// ExpireNodes marks every node whose expires_at is before now as expired and
+// returns the nodes it changed (ID, NetworkID, Name, PublicKey, VirtualIP).
+// A node is reported only once: the next call skips it.
+func (s *Store) ExpireNodes(ctx context.Context, now time.Time) ([]*models.Node, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		UPDATE nodes SET status = 'expired'
+		WHERE expires_at IS NOT NULL AND expires_at < $1 AND status IS DISTINCT FROM 'expired'
+		RETURNING id, network_id, name, public_key, host(virtual_ip)`, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*models.Node{}
+	for rows.Next() {
+		n := &models.Node{Status: models.NodeStatusExpired}
+		var ip string
+		if err := rows.Scan(&n.ID, &n.NetworkID, &n.Name, &n.PublicKey, &ip); err != nil {
+			return nil, err
+		}
+		n.VirtualIP = net.ParseIP(ip)
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
