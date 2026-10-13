@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { errorBodyMessage } from './api/errors'
 import { Layout } from './components/Layout'
 import { DashboardPage } from './pages/Dashboard/Dashboard'
 import { Fail2BanPage } from './pages/Fail2Ban/Fail2Ban'
@@ -40,7 +41,7 @@ const LoginPage = () => {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Login failed')
+        throw new Error(errorBodyMessage(data) ?? 'Login failed')
       }
 
       const data = await response.json()

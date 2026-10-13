@@ -27,6 +27,7 @@ import {
   useUpdateVPNFirewallRule,
   useVPNFirewallRules,
 } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
 import { Button, Card, Modal } from '@/components/ui'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
@@ -140,7 +141,7 @@ export const Firewall: React.FC = () => {
     try {
       await closePortMutation.mutateAsync({ port, protocol })
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Unknown error'
+      const errorMessage = apiErrorMessage(error, 'Unknown error')
       console.error('Failed to close port:', error)
       alert(`Failed to close port: ${errorMessage}`)
     }

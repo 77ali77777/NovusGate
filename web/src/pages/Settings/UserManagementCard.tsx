@@ -1,4 +1,5 @@
 import { useCreateUser, useDeleteUser, useUsers } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { Shield, Trash2, User, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 
@@ -21,7 +22,7 @@ export const UserManagementCard: React.FC = () => {
       setNewPassword('')
       setIsAdding(false)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create user')
+      setError(apiErrorMessage(err, 'Failed to create user'))
     }
   }
 

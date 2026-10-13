@@ -3,6 +3,7 @@ import { Activity, Network, Plus, Search, Shield, Trash2 } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
 import type { CreateNetworkForm } from '@/types'
 
@@ -32,7 +33,7 @@ export const Networks = () => {
     } catch (error: any) {
       console.error('Failed to create network:', error)
       // Extract error message from response
-      const message = error?.response?.data?.error || error?.message || 'Failed to create network'
+      const message = apiErrorMessage(error, 'Failed to create network')
       setErrorMessage(message)
     }
   }

@@ -1,4 +1,5 @@
 import { useUpdatePassword } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { Key } from 'lucide-react'
 import { useState } from 'react'
 
@@ -40,7 +41,7 @@ export const ChangePasswordCard: React.FC = () => {
       setNewPassword('')
       setConfirmPassword('')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update password')
+      setError(apiErrorMessage(err, 'Failed to update password'))
     }
   }
 
