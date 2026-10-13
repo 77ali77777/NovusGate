@@ -116,6 +116,9 @@ type Engine struct {
 // MarkReady lets Propose run; StartFirewall calls it after the import.
 func (e *Engine) MarkReady() { e.ready.Store(true) }
 
+// Ready reports whether startup finished and changes are accepted.
+func (e *Engine) Ready() bool { return e.ready.Load() }
+
 // Backoff for reconciles that could not be applied.
 const (
 	retryMin = 15 * time.Second

@@ -1080,12 +1080,64 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 
 
 
-// Health check
+// interfaceUp reports whether a network interface exists and is up. The
+// control plane shares the host's network namespace (replaced in tests).
+var interfaceUp = func(name string) bool {
+	ifc, err := net.InterfaceByName(name)
+	return err == nil && ifc.Flags&net.FlagUp != 0
+}
+
+// handleHealth always answers 200 (API contract); "status" is "healthy" or
+// "degraded" and "checks" says why. It is public, so it reports states only,
+// never error texts.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	jsonResponse(w, http.StatusOK, map[string]string{
-		"status":  "healthy",
-		"version": "0.1.0",
-	})
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	healthy := true
+	checks := map[string]interface{}{}
+
+	if s.store.Ping(ctx) != nil {
+		healthy = false
+		checks["database"] = map[string]interface{}{"ok": false}
+	} else {
+		checks["database"] = map[string]interface{}{"ok": true}
+		wgOK := true
+		interfaces := map[string]string{}
+		if networks, err := s.store.ListNetworks(ctx); err != nil {
+			wgOK = false
+		} else {
+			for _, n := range networks {
+				if n.InterfaceName == "" {
+					continue
+				}
+				state := "up"
+				if !interfaceUp(n.InterfaceName) {
+					state, wgOK = "down", false
+				}
+				interfaces[n.InterfaceName] = state
+			}
+		}
+		healthy = healthy && wgOK
+		checks["wireguard"] = map[string]interface{}{"ok": wgOK, "interfaces": interfaces}
+	}
+
+	fw := map[string]interface{}{"ok": true, "mode": string(firewall.ModeIptables)}
+	if s.firewall != nil {
+		fw["mode"] = string(s.firewall.Mode)
+		if s.firewall.Mode == firewall.ModeNft {
+			ready := s.firewall.Ready()
+			_, pending := s.firewall.PendingChange()
+			fw["ok"], fw["ready"], fw["pending"] = ready, ready, pending
+			healthy = healthy && ready
+		}
+	}
+	checks["firewall"] = fw
+
+	status := "healthy"
+	if !healthy {
+		status = "degraded"
+	}
+	jsonResponse(w, http.StatusOK, map[string]interface{}{"status": status, "version": "0.1.0", "checks": checks})
 }
 
 // System Info - CPU, RAM, Disk

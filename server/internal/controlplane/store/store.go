@@ -687,3 +687,8 @@ func nextIP(ip net.IP) net.IP {
 	}
 	return next
 }
+
+// Ping checks that the database answers (used by /health).
+func (s *Store) Ping(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}
