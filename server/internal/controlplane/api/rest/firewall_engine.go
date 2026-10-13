@@ -22,6 +22,11 @@ var errNotFound = errors.New("not found")
 // (replaced in tests).
 var clearLegacyVPNRules = (*Server).clearNovusGateVPNRules
 
+// checkFirewallHost and cutoverIptables run on the host (replaced in tests).
+var checkFirewallHost = func() error { return firewall.CheckHost(nft.NsenterRunner{}) }
+
+var cutoverIptables = func() (int, error) { return firewall.CutoverIptables(nft.NsenterRunner{}) }
+
 // adminPeers lists the admin network's WireGuard peers (replaced in tests).
 var adminPeers = func() (map[string]wireguard.PeerStatus, error) {
 	return wireguard.NewManager(nft.AdminInterface).GetPeers()
@@ -30,24 +35,30 @@ var adminPeers = func() (map[string]wireguard.PeerStatus, error) {
 // SetFirewall attaches the nftables engine. Without it, or in iptables mode,
 // the legacy iptables code paths are used everywhere. In nft mode every apply
 // keeps the admin peers' WireGuard endpoints reachable, and the legacy
-// iptables VPN rules are removed only after nftables first enforces the VPN
-// policy.
+// iptables VPN rules and INPUT filtering are handed over only after nftables
+// first applies.
 func (s *Server) SetFirewall(e *firewall.Engine) {
 	s.firewall = e
 	if e == nil || e.Mode != firewall.ModeNft {
 		return
 	}
 	e.Protect = adminEndpoints
-	legacyCleared := false // guarded by the engine lock AfterApply runs under
+	handedOver := false // guarded by the engine lock AfterApply runs under
 	e.AfterApply = func() {
-		if legacyCleared {
+		if handedOver {
 			return
 		}
 		if err := clearLegacyVPNRules(s); err != nil {
 			fmt.Printf("[Firewall] warning: could not remove legacy iptables VPN rules (will retry): %v\n", err)
 			return
 		}
-		legacyCleared = true
+		n, err := cutoverIptables()
+		if err != nil {
+			fmt.Printf("[Firewall] warning: iptables INPUT hand-over failed (will retry): %v\n", err)
+			return
+		}
+		fmt.Printf("[Firewall] iptables INPUT handed over to nftables (%d rules removed)\n", n)
+		handedOver = true
 	}
 }
 
@@ -88,6 +99,9 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 		}
 		fmt.Println("[Firewall] shadow mode: nftables ruleset compiles and passes nft -c")
 	case firewall.ModeNft:
+		if err := checkFirewallHost(); err != nil {
+			return fmt.Errorf("host not ready for FIREWALL_ENGINE=nft (iptables keeps enforcing): %w", err)
+		}
 		host, err := s.firewall.Detect()
 		if err != nil {
 			return err

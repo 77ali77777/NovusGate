@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -83,6 +84,10 @@ func newEngineServer(t *testing.T, mode firewall.Mode) (*Server, *recRunner) {
 	clearLegacyVPNRules = func(*Server) error { return nil }
 	adminPeers = func() (map[string]wireguard.PeerStatus, error) { return nil, nil }
 	t.Cleanup(func() { clearLegacyVPNRules, adminPeers = origClear, origPeers })
+	origCheck, origCutover := checkFirewallHost, cutoverIptables
+	checkFirewallHost = func() error { return nil }
+	cutoverIptables = func() (int, error) { return 0, nil }
+	t.Cleanup(func() { checkFirewallHost, cutoverIptables = origCheck, origCutover })
 
 	r := &recRunner{}
 	applier := &nft.SafeApplier{
@@ -309,20 +314,38 @@ func TestLegacyVPNRulesStayUntilTheEngineApplies(t *testing.T) {
 	orig := clearLegacyVPNRules
 	clearLegacyVPNRules = func(*Server) error { cleared++; return nil }
 	t.Cleanup(func() { clearLegacyVPNRules = orig })
+	handed := 0
+	cutoverIptables = func() (int, error) { handed++; return 2, nil }
 
 	timer := s.firewall.Applier.Timer.(*recTimer)
 	timer.active = true // a rollback armed before the restart
 	if err := s.StartFirewall(ctx); err == nil {
 		t.Fatal("startup apply must fail while a rollback timer is armed")
 	}
-	if cleared != 0 || r.last() != "" {
+	if cleared != 0 || handed != 0 || r.last() != "" {
 		t.Fatalf("nothing may change while the engine could not apply (cleared=%d)", cleared)
 	}
 
 	timer.active = false
 	s.reconcileFirewall(ctx)
 	s.reconcileFirewall(ctx)
-	if cleared != 1 || r.last() == "" {
+	if cleared != 1 || handed != 1 || r.last() == "" {
 		t.Fatalf("the legacy rules must be removed once, after the first apply (cleared=%d)", cleared)
+	}
+}
+
+func TestStartFirewallRefusesUnreadyHost(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	old := s.firewall
+	s.SetFirewall(&firewall.Engine{Mode: firewall.ModeNft, Store: old.Store, Applier: old.Applier, Now: old.Now, Detect: old.Detect})
+	checkFirewallHost = func() error { return errors.New("host nftables v0.9.3 is older than 1.0.2") }
+	if err := s.StartFirewall(context.Background()); err == nil {
+		t.Fatal("startup must refuse an unready host")
+	}
+	if rec := call(t, s, "POST", "/api/v1/firewall/host/port/open", `{"port":443,"protocol":"tcp"}`); rec.Code != http.StatusConflict {
+		t.Fatalf("changes must wait for a ready engine, got %d", rec.Code)
+	}
+	if r.last() != "" {
+		t.Fatal("nothing may be applied on an unready host")
 	}
 }
