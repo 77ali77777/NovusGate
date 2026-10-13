@@ -109,6 +109,93 @@ for rule in \
   assert_rule "$log" "$rule" "original rules"
 done
 
+# --- P3b-2: engine-aware main ---
+# run_main <FIREWALL_ENGINE or ""> <create ruleset: yes|no> <nft has table: yes|no>
+# Prints the stub dir; calls.log has every host command in order.
+run_main() {
+  local engine="$1" ruleset="$2" has_table="$3" stub
+  stub="$(mktemp -d)"
+  mkdir -p "$stub/units" "$stub/jail.d"
+  for cmd in iptables systemctl apt-get netfilter-persistent docker-compose sleep debconf-set-selections; do
+    printf '#!/bin/bash\necho "%s $*" >> "%s/calls.log"\n' "$cmd" "$stub" > "$stub/$cmd"
+    chmod +x "$stub/$cmd"
+  done
+  if [ "$has_table" = "yes" ]; then
+    printf '#!/bin/bash\necho "nft $*" >> "%s/calls.log"\nexit 0\n' "$stub" > "$stub/nft"
+  else
+    printf '#!/bin/bash\necho "nft $*" >> "%s/calls.log"\n[ "$1" = "list" ] && exit 1\nexit 0\n' "$stub" > "$stub/nft"
+  fi
+  chmod +x "$stub/nft"
+  printf '#!/bin/bash\necho "ii  iptables-persistent"\n' > "$stub/dpkg"
+  chmod +x "$stub/dpkg"
+  printf 'port 22\nport 2222\n' > "$stub/sshd.out"
+  printf '#!/bin/bash\ncat "%s/sshd.out"\n' "$stub" > "$stub/sshd"
+  chmod +x "$stub/sshd"
+  if [ -n "$engine" ]; then printf 'POSTGRES_PASSWORD=x\nFIREWALL_ENGINE=%s\n' "$engine" > "$stub/.env"; fi
+  if [ "$ruleset" = "yes" ]; then echo "table inet novusgate {}" > "$stub/firewall.nft"; fi
+  (
+    export PATH="$stub:/usr/bin:/bin"
+    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
+    unset SSH_PORT SSH_CONNECTION
+    # shellcheck source=../setup-firewall.sh
+    source "$SCRIPT"
+    main > /dev/null
+  )
+  echo "$stub"
+}
+
+assert_has() { grep -q -F -- "$2" "$1" 2> /dev/null || fail "$3: missing '$2'"; }
+assert_not() { if grep -q -F -- "$2" "$1" 2> /dev/null; then fail "$3: unexpected '$2'"; fi; }
+
+# Case 6: default (no FIREWALL_ENGINE) = iptables mode; reverts a leftover nft engine after DROP
+d="$(run_main "" yes yes)"
+assert_has "$d/calls.log" "iptables -P INPUT DROP" "iptables mode"
+assert_has "$d/calls.log" "nft delete table inet novusgate" "iptables mode reverts"
+drop_at="$(grep -n -F "iptables -P INPUT DROP" "$d/calls.log" | cut -d: -f1)"
+del_at="$(grep -n -F "nft delete table inet novusgate" "$d/calls.log" | cut -d: -f1)"
+[ -n "$drop_at" ] && [ -n "$del_at" ] && [ "$drop_at" -lt "$del_at" ] || fail "iptables mode: the nft table must be removed only after INPUT DROP is back"
+[ ! -f "$d/firewall.nft" ] || fail "iptables mode: the boot ruleset must be removed"
+assert_has "$d/calls.log" "systemctl restart docker" "iptables mode"
+assert_has "$d/jail.d/novusgate.local" "port = 22,2222" "fail2ban ports"
+assert_not "$d/jail.d/novusgate.local" "banaction" "iptables mode fail2ban"
+
+# Case 7: nft mode with a ruleset = control plane owns INPUT; iptables and Docker untouched
+d="$(run_main nft yes yes)"
+assert_not "$d/calls.log" "iptables " "nft mode"
+assert_not "$d/calls.log" "systemctl restart docker" "nft mode"
+assert_not "$d/calls.log" "nft delete table" "nft mode"
+assert_has "$d/jail.d/novusgate.local" "banaction = nftables-multiport" "nft mode fail2ban"
+assert_has "$d/jail.d/novusgate.local" "port = 22,2222" "nft mode fail2ban"
+
+# Case 8: nft mode before the first apply = iptables baseline stays (control plane hands over later)
+d="$(run_main nft no no)"
+assert_has "$d/calls.log" "iptables -P INPUT DROP" "nft mode, no ruleset yet"
+assert_not "$d/calls.log" "nft delete table" "nft mode, no ruleset yet"
+
+# Case 9: boot unit and nftables in every mode; nftables.service is never enabled
+for mode in "" nft; do
+  d="$(run_main "$mode" yes yes)"
+  unit="$d/units/novusgate-firewall.service"
+  [ -f "$unit" ] || { fail "boot unit missing ($mode)"; continue; }
+  assert_has "$unit" "ConditionPathExists=$d/firewall.nft" "boot unit"
+  assert_has "$unit" "Before=network-pre.target docker.service" "boot unit"
+  assert_has "$unit" "ExecStart=/usr/sbin/nft -f $d/firewall.nft" "boot unit"
+  assert_has "$d/calls.log" "systemctl enable novusgate-firewall.service" "boot unit"
+  assert_not "$d/calls.log" "enable nftables" "boot unit"
+done
+
+# Case 10: nft missing -> installed
+d="$(mktemp -d)"
+(
+  export PATH="$d:/usr/bin:/bin"
+  printf '#!/bin/bash\necho "apt-get $*" >> "%s/calls.log"\n' "$d" > "$d/apt-get"
+  chmod +x "$d/apt-get"
+  # shellcheck source=../setup-firewall.sh
+  source "$SCRIPT"
+  install_nftables > /dev/null
+)
+assert_has "$d/calls.log" "apt-get install -y nftables" "install_nftables"
+
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"
   exit 1

@@ -4,6 +4,12 @@ set -e
 # setup-firewall.sh
 # Configures iptables to secure NovusGate admin access via VPN
 
+ENV_FILE="${ENV_FILE:-/opt/NovusGate/server/deployments/docker/.env}"
+NFT_RULESET="${NFT_RULESET:-/etc/novusgate/firewall.nft}"
+UNIT_DIR="${UNIT_DIR:-/etc/systemd/system}"
+F2B_JAIL_DIR="${F2B_JAIL_DIR:-/etc/fail2ban/jail.d}"
+BOOT_UNIT=novusgate-firewall.service
+
 # detect_ssh_ports prints every TCP port SSH must stay reachable on, one per line.
 # Sources: port 22 (always, as before), SSH_PORT env, the port of the current
 # SSH session (SSH_CONNECTION) and the ports reported by `sshd -T`.
@@ -16,6 +22,80 @@ detect_ssh_ports() {
       sshd -T 2> /dev/null | awk '$1 == "port" {print $2}'
     fi
   } | grep -E '^[0-9]+$' | awk '$1 >= 1 && $1 <= 65535' | sort -un
+}
+
+# firewall_engine prints FIREWALL_ENGINE from the compose .env (iptables when unset).
+firewall_engine() {
+  local v=""
+  if [ -f "$ENV_FILE" ]; then
+    v="$(grep -E '^FIREWALL_ENGINE=' "$ENV_FILE" | tail -n1 | cut -d= -f2- | tr -d "\"' \r" | tr '[:upper:]' '[:lower:]')"
+  fi
+  echo "${v:-iptables}"
+}
+
+# install_nftables installs the nft CLI the boot unit and the control plane's
+# host-side rollback need. nftables.service is never enabled: its default
+# config flushes the whole ruleset, including Docker's.
+install_nftables() {
+  if ! command -v nft > /dev/null 2>&1; then
+    echo "[FIREWALL] Installing nftables..."
+    apt-get update -qq
+    apt-get install -y nftables
+  fi
+}
+
+# install_boot_unit loads the control plane's ruleset before Docker on every
+# boot; without the ruleset file (iptables mode) it does nothing.
+install_boot_unit() {
+  cat > "$UNIT_DIR/$BOOT_UNIT" <<UNIT
+[Unit]
+Description=NovusGate nftables firewall (table inet novusgate)
+DefaultDependencies=no
+Wants=network-pre.target
+Before=network-pre.target docker.service
+After=local-fs.target
+ConditionPathExists=$NFT_RULESET
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f $NFT_RULESET
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable "$BOOT_UNIT"
+}
+
+# configure_fail2ban makes the sshd jail cover every SSH port and, in nft
+# mode, ban through nftables instead of iptables.
+configure_fail2ban() {
+  local engine="$1" ports
+  [ -d "$F2B_JAIL_DIR" ] || return 0
+  ports="$(detect_ssh_ports | paste -sd, -)"
+  {
+    echo "# Managed by NovusGate setup-firewall.sh"
+    echo "[sshd]"
+    echo "port = $ports"
+    if [ "$engine" = "nft" ]; then
+      echo "banaction = nftables-multiport"
+      echo "banaction_allports = nftables-allports"
+    fi
+  } > "$F2B_JAIL_DIR/novusgate.local"
+  if systemctl is-active --quiet fail2ban 2> /dev/null; then
+    systemctl reload fail2ban || echo "[FIREWALL] Warning: fail2ban reload failed; check 'fail2ban-client status'"
+  fi
+}
+
+# remove_nft_engine undoes FIREWALL_ENGINE=nft; call it only after the
+# iptables baseline (INPUT DROP) is back.
+remove_nft_engine() {
+  if nft list table inet novusgate > /dev/null 2>&1; then
+    echo "[FIREWALL] Removing table inet novusgate (FIREWALL_ENGINE is not nft)..."
+    nft delete table inet novusgate
+  fi
+  rm -f "$NFT_RULESET"
 }
 
 install_persistence() {
@@ -101,9 +181,22 @@ restart_docker_stack() {
 }
 
 main() {
+  local engine
+  engine="$(firewall_engine)"
+  echo "[FIREWALL] Engine: $engine"
+  install_nftables
+  install_boot_unit
+  configure_fail2ban "$engine"
+  if [ "$engine" = "nft" ] && [ -f "$NFT_RULESET" ]; then
+    echo "[FIREWALL] FIREWALL_ENGINE=nft: the control plane owns INPUT filtering; iptables and Docker are left unchanged."
+    return 0
+  fi
   echo "[FIREWALL] Configuring iptables rules..."
   install_persistence
   apply_rules
+  if [ "$engine" != "nft" ]; then
+    remove_nft_engine
+  fi
   echo "[FIREWALL] Saving rules..."
   netfilter-persistent save
   restart_docker_stack
