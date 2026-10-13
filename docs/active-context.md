@@ -181,7 +181,12 @@
   - `docker logs` JSON yazır (`LOG_FORMAT=text` ilə köhnə görünüş);
   - `/health`-ə `checks` əlavə olundu, `status` `degraded` ola bilər;
   - handler panic-i 500 cavabına çevrilir.
-- **Davam:** final review, sonra P2c.
+- **Final review (opus):** "With fixes", 1 Important (+2 Important-a qaldırıldı). Hamısı RED→GREEN ilə düzəldildi (`db48c2a`):
+  - xəta və xəbərdarlıqlar düzgün səviyyədə yazılır;
+  - net/http xətaları Error səviyyəsində yazılır.
+
+  Minor-lar ledger-də. Qoruyucu testin əhatəsinin genişləndirilməsi P2c-yə saxlanılıb.
+- **Davam:** P2c (WireGuard interfeysi, reconciler, expiry).
 
 
 ## Son Dəyişikliklər
