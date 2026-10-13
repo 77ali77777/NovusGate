@@ -216,7 +216,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	// Create HTTP server
 	httpServer := &http.Server{
 		Addr:         listenAddr,
-		Handler:      rest.LoggingMiddleware(rest.AuthMiddleware(apiServer.Router())),
+		Handler:      apiServer.Router(),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

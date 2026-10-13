@@ -259,9 +259,9 @@ func (s *Server) Router() http.Handler {
 
 func (s *Server) setupRoutes() {
 	// Apply global middleware
-	s.router.Use(LoggingMiddleware)
-	s.router.Use(APIKeyMiddleware)
-	s.router.Use(AuthMiddleware)
+	// Order: the request log wraps everything (it records the 500 that
+	// RecoverMiddleware writes), then panic recovery, then auth.
+	s.router.Use(LoggingMiddleware, RecoverMiddleware, APIKeyMiddleware, AuthMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -1707,18 +1707,6 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
-	})
-}
-
-// LoggingMiddleware logs requests
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		duration := time.Since(start)
-		
-		// Log request
-		_ = duration // TODO: proper logging
 	})
 }
 
