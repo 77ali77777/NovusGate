@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -368,10 +370,15 @@ func runMigrationSQL(db *store.Store) error {
 	return nil
 }
 
-func maskDatabaseURL(url string) string {
-	// Hide password in connection string for logging
-	// Simple masking - in production use proper URL parsing
-	return url
+var dsnPasswordRe = regexp.MustCompile(`(password=)\S+`)
+
+// maskDatabaseURL hides the password in a postgres URL or key=value DSN so
+// it never reaches the logs.
+func maskDatabaseURL(raw string) string {
+	if u, err := url.Parse(raw); err == nil && u.Scheme != "" && u.User != nil {
+		return u.Redacted()
+	}
+	return dsnPasswordRe.ReplaceAllString(raw, "${1}xxxxx")
 }
 
 func bootstrapSystem(db *store.Store) error {
