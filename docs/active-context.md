@@ -27,6 +27,13 @@
 - **Aşkarlanan:** WSL docker shim-i argumentlərdəki `$`-ı genişləndirir, ona görə konteyner daxilində `$?` etibarsızdır. Test məntiqi `server/scripts/test-in-docker.sh` faylında olmalıdır.
 - **Davam:** P3a planını icra etmək (icra üsulu istifadəçinin seçimidir), sonra P3b. PR üçün push-u istifadəçi edir.
 
+### Eyni sessiyanın davamı (2026-10-13): P3a icra olundu
+- **Tapşırıq:** `docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md` (inline, executing-plans)
+- **Nəticə:** Task 1–6 commit-ləndi (`76b8e1b` … Task 6). Tam yoxlama (`bash scripts/test-in-docker.sh`, Docker, `NFT_CHECK=1`) → `ok …/api/rest`, `ok …/controlplane/firewall`, `ok …/netctl/nft`; exit 0. Golden ruleset Ubuntu 22.04-də (nft 1.0.2) `KERNEL-CHECK-OK` verdi. Control-plane image yığıldı, içində `nftables v1.0.9` var.
+- **End-to-end yoxlama:** real Postgres-də migration-lar icra olundu, şəbəkə, node və VPN qaydası əlavə edildi, `firewall preview --check` işlədildi. Nəticə: `nft -c: OK`, SSH portları `{ 22, 2222 }` real `sshd -T`-dən aşkarlandı, qayda düzgün çevrildi.
+- **Davranış dəyişikliyi:** yoxdur. Hostda heç nə avtomatik tətbiq olunmur.
+- **Davam:** P3b planı (DB cədvəlləri, `/firewall/v2`, iptables-dən import, `FIREWALL_ENGINE` bayrağı, boot unit, fail2ban nftables).
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -44,6 +51,7 @@
 | 2026-10-13 | DB var, `.env` yoxdursa reinstall dayanır (exit 4) | lib/scripts.js, test/reinstall-db-guard.test.js | final review: yeni secret DB-ni kilidləyərdi · `e43fa22` |
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
+| 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
 
 **Final review sonrası testlər:** Center `# tests 24 · # pass 24 · # fail 0` (fix dalğasının implementer-i icra edib); Go və shell dəyişməyib (final reviewer təkrar icra etdi: yaşıl).
 
