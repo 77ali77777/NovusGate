@@ -67,3 +67,18 @@
 - **Yeni şəbəkənin hub ünvanı:** CIDR-in ilk host-u, CIDR-in öz prefiksi ilə (`hubAddress`).
 - **`AllocateIP`:** network, `.1` və `.2` ünvanlarını ötürür, broadcast-ı heç vaxt vermir.
 - **Startup log-u:** DB URL-dəki parol maskalanır (`maskDatabaseURL`): userinfo (kodlaşdırılmamış `#`, `/`, `@` daxil), `?password=` və DSN-dəki `password=` (dırnaqlı da).
+
+## Log və müşahidə (P2b)
+- **Logger:** `log/slog`, `internal/shared/logging.New`.
+  - `LOG_FORMAT`: `json` (default) və ya `text`.
+  - `LOG_LEVEL`: `debug`, `info` (default), `warn`, `error`.
+  - Səhv dəyər verilsə server dayanmır: JSON/info-ya keçir və bir xəbərdarlıq yazır.
+  - `slog.SetDefault` standart `log` paketini də bu logger-ə yönləndirir.
+- **Request log-u (`LoggingMiddleware`):** hər sorğu üçün bir `http request` sətri yazılır: `method`, `path`, `status`, `bytes`, `duration_ms`, `remote`.
+  - Query, header və body heç vaxt log-a düşmür.
+  - `/health` `debug` səviyyəsində, 5xx cavablar `error` səviyyəsində yazılır.
+- **`RecoverMiddleware`:** panic 500 (`{"error":"internal server error"}`) cavabına çevrilir və stack ilə log-a yazılır. `http.ErrAbortHandler` yenidən panic edilir.
+- **Middleware sırası:** Logging → Recover → API key → Auth. Hər biri bir dəfə işləyir; `main.go`-dakı ikiqat bükmə silindi.
+- **Runtime kodu yalnız `slog` ilə log yazır.** Mesaj mətnləri əvvəlki kimidir, ona görə runbook grep-ləri işləyir. Bunu `TestRuntimeCodeLogsThroughSlog` qoruyur.
+  - CLI çıxışı (`migrate`, `init`, `version`, `firewall preview`) `fmt` olaraq qalır.
+  - `migrate` slog-un mətn handler-i ilə yazır.

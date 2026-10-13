@@ -64,3 +64,16 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 - **`GET /system/fail2ban/logs`:** Unban sətirləri `"action":"unban"` kimi işarələnir.
 - **`GET /system/fail2ban/whitelist`:** `whitelist`-də yalnız IP, CIDR və host adları qalır; başlıq sözləri və ağac simvolları çıxarılır.
 - **Firewall v1 siyahısı:** "opt" sütunu olmayan iptables (nf_tables) formatı düzgün oxunur, qısa sətirlər panic etmir.
+
+## `GET /health` (P2b)
+Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `status` sahəsindədir, səbəbi `checks` göstərir. Xəta mətni qaytarılmır.
+
+```json
+{"status":"healthy","version":"0.1.0","checks":{
+  "database":{"ok":true},
+  "wireguard":{"ok":true,"interfaces":{"wg0":"up","wg1":"up"}},
+  "firewall":{"ok":true,"mode":"nft","ready":true,"pending":false}}}
+```
+- **`status`:** `healthy` və ya `degraded`. Bunlardan biri olanda `degraded` qaytarılır: DB cavab vermir; bir şəbəkənin interfeysi `down`-dır; nft engine hazır deyil.
+- **`checks.firewall.ready` və `pending`:** yalnız `FIREWALL_ENGINE=nft` olanda görünür.
+- **Reconciler yoxlaması** P2c-də əlavə olunacaq.

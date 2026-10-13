@@ -167,6 +167,23 @@
 - **Davam:** P2b icrası.
 
 
+### 2026-10-14: P2b icra olundu
+- **Nəticə:** Task 1–4 commit-ləndi:
+  - `b1fda2b`: logger;
+  - `2683b73`: request log + recover, ikiqat middleware silindi;
+  - `a626459`: `/health`;
+  - `bdbce97`: runtime log-ları `slog`-a keçdi, 101 çağırış.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → `ok`: `cmd/control-plane`, `api/rest`, `firewall`, `store`, `nft`, `logging`, `wireguard`;
+  - `health` kontraktına yalnız `checks` əlavə olundu;
+  - runbook mesajları dəyişməyib.
+- **Davranış dəyişikliyi:**
+  - `docker logs` JSON yazır (`LOG_FORMAT=text` ilə köhnə görünüş);
+  - `/health`-ə `checks` əlavə olundu, `status` `degraded` ola bilər;
+  - handler panic-i 500 cavabına çevrilir.
+- **Davam:** final review, sonra P2c.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -185,6 +202,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
 | 2026-10-13 | P2a: kontrakt snapshot testləri, B14/B16/B21/B22, DB parolunun maskalanması, frontend xəta helper-i | api/rest/*, store/store.go, wireguard/manager.go, cmd/control-plane/main.go, web/src/api/errors.ts + 5 səhifə, scripts/update-contracts*.sh | P2a planı · `646ce20`..`f816289` |
 | 2026-10-13 | P3b-2: hazır olma şərti, host yoxlaması, INPUT təhvili, REST minor-ları, legacy SSH qoruması, M5/M10, `setup-firewall.sh` (boot unit, fail2ban, geri qayıdış) | firewall/{engine,cutover}.go, api/rest/*, store/firewall.go, netctl/nft/{compile,validate}.go, scripts/nft-versions-*.sh, deployments/docker/setup-firewall.sh, web/src/api/client.ts | P3b-2 planı · `2854f01`..`f22aaaa` |
 | 2026-10-13 | P3b-1 review fix: retry, legacy VPN sırası, allow/block ziddiyyəti, wg0 endpoint qoruması, runbook | server/internal/controlplane/firewall/{engine,iptables_import}.go, api/rest/{firewall_engine,firewall_handlers}.go, testlər, docs/runbooks/p3b1-firewall-engine.md, docs/api.md, docs/architecture.md, spec §6b | P3b-1 final review Important 1–4 |

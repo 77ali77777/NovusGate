@@ -4,6 +4,8 @@
 
 **Necə yazılır:** hər addımın əmri və real çıxışı bu faylın sonundakı "Nəticələr" bölməsinə yazılır. Nəticə uydurulmur. Gözlənilən nəticə alınmasa, işi dayandır və çıxışı olduğu kimi qeyd et.
 
+**Log formatı (P2b):** control-plane log-u JSON-dur (`LOG_FORMAT=json`). `docker logs novusgate-control-plane | grep '<mətn>'` əvvəlki kimi işləyir. Oxumaq asan olsun deyə `.env`-ə `LOG_FORMAT=text` yazmaq olar.
+
 ## Hazırlıq
 1. **Staging VM:** Ubuntu 24.04, P1 və P3b-1 runbook-larından keçmiş.
 2. **SSH iki portda dinləyir:**
