@@ -227,7 +227,13 @@
   - müddəti uzadılan node-un peer-i geri qayıdır;
   - yeni şəbəkə yaradılanda yalançı "Failed to bring up" xətası artıq yazılmır.
 - **Yoxlanmayıb:** real WireGuard. `docs/runbooks/p2c-reconciler.md` staging-də icra olunmalıdır.
-- **Davam:** final review, sonra P2c-2 və ya P2d.
+- **Final review (opus):** "With fixes", 2 Important (+1 Important-a qaldırıldı). Hamısı RED→GREEN ilə düzəldildi:
+  - vaxtı keçmiş peer DB yenidən oxunandan sonra silinir;
+  - uğursuz silinmə növbəti tick-də təkrarlanır;
+  - node silinəndə əvvəl DB sətri, sonra peer silinir.
+
+  Minor-lar ledger-də.
+- **Davam:** P2c-2 (`wgN.conf` peer-ləri) və ya P2d.
 
 
 ## Son Dəyişikliklər
