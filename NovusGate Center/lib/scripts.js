@@ -29,6 +29,22 @@ if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ]; then
 fi
 `;
 
+// Exit code of the reinstall script when a database exists without its .env.
+const EXIT_DB_WITHOUT_ENV = 4;
+
+// Reinstall keeps server/data, so it must also keep the credentials that
+// database was created with. Without .env (or its /tmp backup) new secrets
+// would lock the control plane out of the existing database.
+const REINSTALL_DB_GUARD = `
+if [ -f "$INSTALL_DIR/server/data/postgres/PG_VERSION" ] \\
+  && [ ! -f "$INSTALL_DIR/server/deployments/docker/.env" ] \\
+  && [ ! -f /tmp/NovusGate.env.bak ]; then
+  echo "[ERROR] An existing database was found in $INSTALL_DIR/server/data but no .env to go with it."
+  echo "Restore server/deployments/docker/.env (or /tmp/NovusGate.env.bak) first, or remove server/data to start fresh."
+  exit ${EXIT_DB_WITHOUT_ENV}
+fi
+`;
+
 const GENERATE_INSTALL_SCRIPT = (config) => `
 #!/bin/bash
 set -e
@@ -337,7 +353,7 @@ const GENERATE_REINSTALL_SCRIPT = (config) => {
 set -e
 
 INSTALL_DIR="/opt/NovusGate"
-
+${REINSTALL_DB_GUARD}
 echo "=========================================="
 echo "  NovusGate REINSTALL"
 echo "=========================================="
@@ -761,6 +777,8 @@ module.exports = {
   CLEAN_INSTALL_DIR_FN,
   EXIT_ALREADY_INSTALLED,
   ALREADY_INSTALLED_GUARD,
+  EXIT_DB_WITHOUT_ENV,
+  REINSTALL_DB_GUARD,
   GENERATE_INSTALL_SCRIPT,
   GENERATE_REINSTALL_SCRIPT,
   UNINSTALL_SCRIPT,
