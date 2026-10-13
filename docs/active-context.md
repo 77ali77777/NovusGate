@@ -45,6 +45,19 @@
   Fix-dən sonra suite exit 0, golden nft 1.0.2-də yüklənir. Minor-lar P3 spec §6a-ya köçürüldü.
 - **Davam:** P3b planı (DB cədvəlləri, `/firewall/v2`, iptables-dən import, `FIREWALL_ENGINE` bayrağı, boot unit, fail2ban nftables).
 
+### Eyni sessiyanın davamı (2026-10-13): P3b-1 planı
+- **Nəticə:** `docs/superpowers/plans/2026-10-13-p3b1-firewall-backend.md` yazıldı. 5 tapşırıq var:
+  1. IP qaydaları;
+  2. DB cədvəlləri (006) + store;
+  3. Engine + iptables idxalı;
+  4. REST v2 + v1 adapterləri + `FIREWALL_ENGINE`;
+  5. sənədlər və runbook.
+
+  Kodun hamısı əvvəlcə scratchpad-da yazıldı. `bash scripts/test-with-postgres.sh` → `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft` (real Postgres 16 və `nft -c` ilə). Repo-da kod dəyişməyib.
+- **Davranış qərarı:** nft rejimində rezerv admin portlarını (3007, 5432, 8080, 8443) publik açmaq 400 ilə rədd olunur. Köhnə iptables yolu buna icazə verirdi. Default `iptables` rejimində heç nə dəyişmir.
+- **Yoxlanmayıb:** privileged konteynerdə real kernel end-to-end sınağı. İstifadəçi bu sınağı rədd etdi, ona görə o, P3b-1 runbook-una (staging) köçürüldü.
+- **Davam:** P3b-1 icrası, sonra P3b-2 (iptables → nft keçidi, fail2ban nftables, boot unit, installer).
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
