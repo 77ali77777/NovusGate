@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/exec"
 	"strconv"
@@ -649,12 +650,10 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Create WireGuard config with the generated key
 		// Calculate server IP (first usable IP in CIDR)
-		_, ipNet, _ := net.ParseCIDR(network.CIDR)
-		serverIP := ipNet.IP
-		serverIP[len(serverIP)-1]++ // .1
-		serverAddr := fmt.Sprintf("%s/24", serverIP.String())
-		
-		if err := mgr.CreateServerConfigWithKey(privateKey, serverAddr, port); err != nil {
+		serverAddr, addrErr := hubAddress(network.CIDR)
+		if addrErr != nil {
+			fmt.Printf("Warning: invalid CIDR %s: %v\n", network.CIDR, addrErr)
+		} else if err := mgr.CreateServerConfigWithKey(privateKey, serverAddr, port); err != nil {
 			fmt.Printf("Warning: Failed to create WireGuard config for %s: %v\n", network.Name, err)
 		} else {
 			fmt.Printf("WireGuard interface %s created for network %s\n", network.InterfaceName, network.Name)
@@ -2150,4 +2149,15 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 		"count":   len(history),
 		"jail":    jail,
 	})
+}
+
+// hubAddress returns the hub's interface address for a network: the first
+// host of cidr, with cidr's own prefix length (B21: not a fixed /24).
+func hubAddress(cidr string) (string, error) {
+	p, err := netip.ParsePrefix(cidr)
+	if err != nil {
+		return "", err
+	}
+	p = p.Masked()
+	return netip.PrefixFrom(p.Addr().Next(), p.Bits()).String(), nil
 }

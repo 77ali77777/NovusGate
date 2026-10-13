@@ -330,13 +330,18 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 		allocated[ip] = true
 	}
 	
-	// Find next available IP (skip network and broadcast addresses)
+	// Find the next free IP: skip network, .1 (hub) and .2 as before; never the broadcast
 	ip := ipNet.IP.Mask(ipNet.Mask)
+	// The broadcast address (all host bits set) is never a valid peer.
+	broadcast := make(net.IP, len(ip))
+	for i := range ip {
+		broadcast[i] = ip[i] | ^ipNet.Mask[i]
+	}
 	for i := 0; i < 3; i++ { // Skip first 3 IPs (network, gateway, reserved)
 		ip = nextIP(ip)
 	}
-	
-	for ipNet.Contains(ip) {
+
+	for ipNet.Contains(ip) && !ip.Equal(broadcast) {
 		if !allocated[ip.String()] {
 			return ip, nil
 		}
