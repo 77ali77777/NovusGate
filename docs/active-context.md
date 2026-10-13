@@ -76,6 +76,19 @@
   Suite: `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft`. 7 yeni test `-v` ilə PASS-dır, heç biri skip olmayıb.
 - **Minor-lar:** spec §6b-yə köçürüldü. Əvvəldən mövcud bug da oradadır: panel-in `DELETE /firewall/host/rules` çağırışına uyğun route yoxdur.
 
+### Eyni sessiyanın davamı (2026-10-13): P3b-2 planı
+- **Nəticə:** `docs/superpowers/plans/2026-10-13-p3b2-firewall-cutover.md` yazıldı. 7 tapşırıq:
+  1. engine-in hazır olma şərti;
+  2. host yoxlaması və iptables INPUT-un nftables-ə təhvili;
+  3. REST minor-ları;
+  4. legacy rejimdə xüsusi SSH portunun qorunması;
+  5. M5 və M10;
+  6. `setup-firewall.sh` (boot unit, fail2ban, revert);
+  7. sənədlər və runbook.
+
+  Kod dəyişməyib.
+- **Davam:** planın icrası. Spec §6b.4 (Allow IP-nin admin portlarını açması) istifadəçinin qərarını gözləyir.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
