@@ -3,6 +3,7 @@ package firewall
 import (
 	"net"
 	"testing"
+	"time"
 
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -69,5 +70,36 @@ func TestParsePorts(t *testing.T) {
 	got, err := ParsePorts("80,443,8000-8100")
 	if err != nil || len(got) != 3 || got[2] != (nft.PortRange{From: 8000, To: 8100}) {
 		t.Fatalf("ParsePorts = %v, %v", got, err)
+	}
+}
+
+// One rule or network the engine cannot express must become a warning, never
+// a failure of the whole ruleset.
+func TestUnsupportedEntriesBecomeWarnings(t *testing.T) {
+	networks, nwarn := NetworksFromModels([]*models.Network{
+		{Name: "ok", CIDR: "10.20.0.0/24", InterfaceName: "wg1"},
+		{Name: "v6", CIDR: "fd00::/64", InterfaceName: "wg2"},
+		{Name: "long-iface", CIDR: "10.40.0.0/24", InterfaceName: "wg-name-longer-than-15"},
+	})
+	if len(networks) != 1 || len(nwarn) != 2 {
+		t.Fatalf("networks=%+v warnings=%v", networks, nwarn)
+	}
+
+	rules, rwarn := VPNRulesFromModels([]*models.VPNFirewallRule{
+		{ID: "v6", Name: "v6-host", SourceType: "custom", SourceIP: "2001:db8::1", DestType: "any",
+			Protocol: "all", Action: "accept", Enabled: true},
+		{ID: "mapped", Name: "mapped-host", SourceType: "custom", SourceIP: "::ffff:10.20.0.9", DestType: "any",
+			Protocol: "all", Action: "accept", Enabled: true},
+	}, nil, nil)
+	if len(rules) != 1 || len(rwarn) != 1 {
+		t.Fatalf("rules=%+v warnings=%v", rules, rwarn)
+	}
+	if rules[0].Src.String() != "10.20.0.9/32" {
+		t.Fatalf("IPv4-mapped address must be unmapped, got %s", rules[0].Src)
+	}
+
+	rs := nft.Ruleset{SSHPorts: []uint16{22}, EgressInterface: "eth0", Networks: networks, VPNRules: rules}
+	if _, err := nft.Compile(rs, time.Now()); err != nil {
+		t.Fatalf("the remaining entries must compile: %v", err)
 	}
 }

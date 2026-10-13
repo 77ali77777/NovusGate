@@ -21,8 +21,16 @@ func NetworksFromModels(networks []*models.Network) ([]nft.VPNNetwork, []error) 
 			errs = append(errs, fmt.Errorf("network %s has no interface", n.Name))
 			continue
 		}
+		if !nft.ValidInterfaceName(n.InterfaceName) {
+			errs = append(errs, fmt.Errorf("network %s: unsupported interface name %q", n.Name, n.InterfaceName))
+			continue
+		}
 		prefix, err := netip.ParsePrefix(n.CIDR)
 		if err != nil {
+			errs = append(errs, fmt.Errorf("network %s: %v", n.Name, err))
+			continue
+		}
+		if prefix, err = ipv4Prefix(prefix); err != nil {
 			errs = append(errs, fmt.Errorf("network %s: %v", n.Name, err))
 			continue
 		}
@@ -52,6 +60,14 @@ func VPNRulesFromModels(rules []*models.VPNFirewallRule, networks map[string]*mo
 		}
 		dst, err := endpoint(r.DestType, r.DestNetworkID, r.DestNodeID, r.DestIP, networks, nodes)
 		if err != nil {
+			errs = append(errs, fmt.Errorf("rule %s destination: %v", r.Name, err))
+			continue
+		}
+		if src, err = ipv4Prefix(src); err != nil {
+			errs = append(errs, fmt.Errorf("rule %s source: %v", r.Name, err))
+			continue
+		}
+		if dst, err = ipv4Prefix(dst); err != nil {
 			errs = append(errs, fmt.Errorf("rule %s destination: %v", r.Name, err))
 			continue
 		}
@@ -102,6 +118,23 @@ func endpoint(kind string, networkID, nodeID *string, custom string, networks ma
 		return netip.PrefixFrom(addr, addr.BitLen()), nil
 	}
 	return netip.Prefix{}, fmt.Errorf("unknown endpoint type %q", kind)
+}
+
+// ipv4Prefix unmaps IPv4-mapped IPv6 prefixes (::ffff:a.b.c.d) and rejects
+// real IPv6: VPN subnets and their rules are IPv4 only.
+func ipv4Prefix(p netip.Prefix) (netip.Prefix, error) {
+	addr := p.Addr()
+	if addr.Is4In6() {
+		bits := p.Bits() - 96
+		if bits < 0 {
+			return netip.Prefix{}, fmt.Errorf("IPv4-mapped prefix %s is too wide", p)
+		}
+		return netip.PrefixFrom(addr.Unmap(), bits).Masked(), nil
+	}
+	if !addr.Is4() {
+		return netip.Prefix{}, fmt.Errorf("IPv6 %s is not supported for VPN networks and rules", p)
+	}
+	return p, nil
 }
 
 // ParsePorts accepts "22", "80,443" and ranges written "8000-9000" or "8000:9000".
