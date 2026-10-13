@@ -871,6 +871,9 @@ function createProjectArchive() {
       '--exclude=.env',
       '--exclude=.idea',
       '--exclude=.vscode',
+      // A local compose run creates server/data (the Postgres data dir); shipping it
+      // would overwrite the preserved production database on reinstall.
+      '--exclude=server/data',
       '--exclude=server/start_dev.sh', // Exclude dev scripts
       '--exclude=installer/node_modules' // Exclude installer modules from archive
     ].join(' ');
