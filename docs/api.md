@@ -28,7 +28,12 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
   - WireGuard portu;
   - blokun içində qalan allow, hər iki istiqamətdə (bloklar allow-dan əvvəl yoxlanılır).
 - **404** — qeyd tapılmadı.
-- **409** — engine `nft` rejimində deyil, başqa bir dəyişiklik təsdiq gözləyir, və ya əvvəlki rollback timer hələ aktivdir.
+- **409** — dəyişiklik indi qəbul oluna bilmir. Səbəblər:
+  - engine `nft` rejimində deyil;
+  - engine hələ başlayır (`firewall engine is starting`), yəni iptables idxalı bitməyib və ya host hazır deyil;
+  - başqa bir dəyişiklik təsdiq gözləyir;
+  - əvvəlki rollback timer hələ aktivdir;
+  - eyni `protocol` və `public_port` üçün forward artıq var (`… is already forwarded`).
 - **410** — dəyişikliyin müddəti bitib və o geri qaytarılıb.
 - **500** — host-da tətbiq xətası.
 
@@ -38,3 +43,8 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 - `GET /firewall/host/rules` INPUT zəncirini sintetik qurur. Struktur qaydalar (SSH, WireGuard, admin portları) `protected: true` olur və `force` ilə də silinmir.
 - Rezerv admin portlarını (3007, 5432, 8080, 8443) publik açmaq 400 qaytarır.
 - `POST /firewall/host/import` 409 qaytarır. `GET /firewall/host/export` `nft list table inet novusgate` çıxışını verir.
+- Siyahıda 51820–51900 aralığından kənarda olan şəbəkə portları ayrıca qorunan WireGuard sətri kimi görünür. Tək IPv6 ünvanı `/128`-siz göstərilir.
+
+## Köhnə firewall endpoint-ləri `FIREWALL_ENGINE=iptables` rejimində
+- Close Port və Delete aşkarlanan bütün SSH portlarını (`sshd -T`, `ss`) qoruyur və `force` olmadan **403** qaytarır. Əvvəllər yalnız 22 qorunurdu.
+- Panel qaydanı `POST /firewall/host/rules/delete` ilə silir. Əvvəllər panel qeydiyyatdan keçməmiş `DELETE /firewall/host/rules` route-unu çağırırdı.

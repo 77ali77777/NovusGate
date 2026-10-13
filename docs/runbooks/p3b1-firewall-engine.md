@@ -1,5 +1,7 @@
 # P3b-1 Staging Runbook — nftables firewall engine
 
+> **Köhnəlib:** bu runbook-un yerini `docs/runbooks/p3b2-firewall-cutover.md` tutur. P3b-2-də iptables INPUT nftables-ə təhvil verilir, boot unit və geri qayıdış avtomatlaşdırılıb. Aşağıdakı "P3b-2-yə qədər" məhdudiyyətləri artıq qüvvədə deyil.
+
 Staging: P1 runbook-dan keçmiş Ubuntu 24.04 VM. Hər addımın əmrini və çıxışını bu faylın sonuna yaz. Nəticə uydurulmur.
 
 > ⚠️ **`FIREWALL_ENGINE=nft` P3b-2-yə qədər yalnız staging üçündür.** iptables `INPUT DROP` siyasəti və idxal olunmuş iptables qaydaları kernel-də qalır. Ona görə bu panel əməliyyatları uğurlu cavab qaytarır, amma hostda real effekti yoxdur:

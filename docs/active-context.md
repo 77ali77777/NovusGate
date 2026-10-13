@@ -89,6 +89,20 @@
   Kod dəyişməyib.
 - **Davam:** planın icrası. Spec §6b.4 (Allow IP-nin admin portlarını açması) istifadəçinin qərarını gözləyir.
 
+### Eyni sessiyanın davamı (2026-10-13): P3b-2 icra olundu
+- **Nəticə:** 7 tapşırığın hamısı commit-ləndi (`2854f01`, `d3972ba`, `033d080`, `d252b87`, `331dc34`, `f22aaaa` + sənədlər).
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft`;
+  - `setup-firewall_test.sh` → `OK`;
+  - `nft-versions-check.sh` → `NFT-VERSIONS-OK` (nft 1.0.2, 1.0.6, 1.0.9, snapshot daxil);
+  - web `tsc --noEmit` → exit 0.
+- **Default iptables rejimində davranış dəyişikliyi:**
+  - Close Port/Delete aşkarlanan SSH portlarını qoruyur (403);
+  - `setup-firewall.sh` `nftables` paketini və boot unit-i quraşdırır (ruleset faylı olmadan unit heç nə etmir) və fail2ban `jail.d/novusgate.local` faylını yazır;
+  - panel-in Delete düyməsi işləyir.
+- **Yoxlanmayıb:** real host (reboot, Update, fail2ban, geri qayıdış). `docs/runbooks/p3b2-firewall-cutover.md` staging-də icra olunmalıdır.
+- **Davam:** staging runbook. Sonra P2 və ya P5/P6 (UI kit), istifadəçinin seçiminə görə.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -107,6 +121,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-13 | P3b-2: hazır olma şərti, host yoxlaması, INPUT təhvili, REST minor-ları, legacy SSH qoruması, M5/M10, `setup-firewall.sh` (boot unit, fail2ban, geri qayıdış) | firewall/{engine,cutover}.go, api/rest/*, store/firewall.go, netctl/nft/{compile,validate}.go, scripts/nft-versions-*.sh, deployments/docker/setup-firewall.sh, web/src/api/client.ts | P3b-2 planı · `2854f01`..`f22aaaa` |
 | 2026-10-13 | P3b-1 review fix: retry, legacy VPN sırası, allow/block ziddiyyəti, wg0 endpoint qoruması, runbook | server/internal/controlplane/firewall/{engine,iptables_import}.go, api/rest/{firewall_engine,firewall_handlers}.go, testlər, docs/runbooks/p3b1-firewall-engine.md, docs/api.md, docs/architecture.md, spec §6b | P3b-1 final review Important 1–4 |
 
 **Final review sonrası testlər:** Center `# tests 24 · # pass 24 · # fail 0` (fix dalğasının implementer-i icra edib); Go və shell dəyişməyib (final reviewer təkrar icra etdi: yaşıl).

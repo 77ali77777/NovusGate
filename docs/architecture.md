@@ -27,5 +27,29 @@
   - köhnə `novusgate-vpn-*` FORWARD qaydaları yalnız ilk uğurlu apply-dan sonra silinir (`Engine.AfterApply`).
 - **Retry:** uğursuz reconcile (pending təsdiq, aktiv rollback timer, aşkarlama xətası) `ReconcileOrRetry` ilə arxa planda təkrarlanır. Backoff 15 saniyədən başlayır, 5 dəqiqəyə qədər artır. Expiry, şəbəkə/node/VPN dəyişiklikləri və startup bu yoldan keçir.
 - **Qoruma:** hər apply-da sorğu edənin ünvanından əlavə, `wg0` peer-lərinin canlı WireGuard endpoint-ləri də qorunur (`Engine.Protect`).
-- **Boot faylı:** `/etc/novusgate/firewall.nft`. Onu yükləyən unit P3b-2-dədir.
+- **Boot faylı:** `/etc/novusgate/firewall.nft`. Onu `novusgate-firewall.service` yükləyir:
+  - unit-i `setup-firewall.sh` qurur;
+  - `Before=network-pre.target docker.service`;
+  - fayl olmayanda unit heç nə etmir.
+
+### Keçid (P3b-2)
+- **Host yoxlaması (`firewall.CheckHost`).** nft rejiminin şərtləri:
+  - host nft ≥ 1.0.2;
+  - `novusgate-firewall.service` aktivdir (`enabled`);
+  - iptables nf_tables backend-dədir.
+
+  Şərt ödənmirsə, startup dayanır, iptables işləməyə davam edir və firewall dəyişiklikləri 409 qaytarır. Ubuntu 20.04 bu şərtlərə görə dəstəklənmir.
+- **Hazır olma.** Startup iptables idxalını bitirib `MarkReady` çağırana qədər engine dəyişiklik qəbul etmir (`ErrNotReady`).
+- **INPUT-un təhvili (`firewall.CutoverIptables`).** İlk uğurlu apply-dan sonra (`Engine.AfterApply`, prosesin hər başlanğıcında bir dəfə):
+  1. iptables INPUT siyasəti `ACCEPT` olur;
+  2. `f2b-*` sıçrayışlarından başqa bütün INPUT qaydaları silinir;
+  3. `netfilter-persistent save` icra olunur.
+
+  Köhnə `novusgate-vpn-*` FORWARD qaydaları da eyni anda silinir.
+- **`setup-firewall.sh`:**
+  - hər rejimdə `nftables` paketini quraşdırır (`nftables.service` heç vaxt aktiv edilmir), boot unit-i qurur və fail2ban üçün `jail.d/novusgate.local` faylını yazır (bütün SSH portları; nft rejimində `nftables-multiport`);
+  - nft rejimində, ruleset faylı mövcuddursa, iptables-ə və Docker-ə toxunmur;
+  - iptables rejimində əvvəl baseline-ı qurur, sonra `table inet novusgate` cədvəlini və boot faylını silir. Geri qayıdış budur.
+- **M5.** VPN-only istisnalar (API portları, rezerv portlarda servislər) yalnız DB-dəki şəbəkə interfeyslərinə və `wg0`-a aiddir.
+- **Versiyalar arası yoxlama.** `server/scripts/nft-versions-check.sh` golden ruleset-ləri və nft 1.0.9 snapshot-unu nft 1.0.2, 1.0.6 və 1.0.9-da `nft -c` ilə yoxlayır.
 - **DB testləri:** `server/scripts/test-with-postgres.sh` (`TEST_DATABASE_URL`, `-p 1`).

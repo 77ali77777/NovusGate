@@ -103,9 +103,25 @@
 - Admin portlarının istisnası `wg*` prefiksinə görə deyil, `rs.Networks`-dəki interfeyslərə görə olmalıdır (M5).
 - Runbook-da qeyd olunmalıdır: istifadəçinin öz Docker bridge konteynerləri host xidmətlərinə və VPN peer-lərinə çata bilməyəcək (M8). Çevrilə bilməyən drop/reject VPN qaydaları atlanır (M9, indiki davranış kimi).
 - CI-a kənar ruleset-lər əlavə edilməlidir: boş, yalnız v6 mənbələr, şəbəkəsiz. Versiyalar arası snapshot yoxlaması da daxil (M10).
-- **P3b-1-dən sonra hələ açıqdır:** M5, M8 runbook qeydi, M10 və installer-in `nftables` paketi. Bunlar P3b-2-də həll olunmalıdır.
+- **P3b-2-də bağlandı (2026-10-13):**
+  - M5 (`331dc34`);
+  - M8 runbook qeydi (`docs/runbooks/p3b2-firewall-cutover.md`, addım 11);
+  - M10: kənar golden-lar və `scripts/nft-versions-check.sh` (`331dc34`);
+  - installer-in `nftables` paketi: `setup-firewall.sh` (`f22aaaa`).
 
 ## 6b. P3b-1 final review-un minor-ları, P3b-2-yə ötürülür (2026-10-13)
+
+**Status (P3b-2):**
+- **Bağlandı:**
+  - 1: 409 (`033d080`);
+  - 2: commit `WithoutCancel`, uğursuz commit-dən sonra reconcile, Persist xəbərdarlıq kimi (`2854f01`), servislər bir tranzaksiyada (`033d080`);
+  - 3: ən uzun prefiks (`033d080`);
+  - 5: WireGuard portları və `/128` (`033d080`);
+  - 6: hazır olma şərti (`2854f01`);
+  - 7: panel-in delete sorğusu (`033d080`).
+- **Açıq qalır:**
+  - 4: istifadəçinin qərarıdır. Hazırda legacy paritet saxlanılır;
+  - 5-in `line_number` sürüşməsi: v1 API-nin nömrəyə əsaslanan məhdudiyyətidir, P3c UI v2 ID-lərindən istifadə edir.
 1. **Forward-un dublikatı.** Eyni `(protocol, public_port)` cütü üçün forward kernel-ə tətbiq olunur, sonra Commit `UNIQUE` şərtində uğursuz olur və 500 qaytarır. Bunu Mutate-də 409 ilə əvvəlcədən yoxlamaq lazımdır.
 2. **Apply-dan sonrakı xətalar.**
    - Commit request-in `ctx`-i ilə işləyir. Bunun əvəzinə `context.WithoutCancel` istifadə olunmalıdır.
