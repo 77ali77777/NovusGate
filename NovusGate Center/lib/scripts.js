@@ -1,5 +1,19 @@
 // ============ INSTALL SCRIPTS ============
 
+// Bash function that empties the install dir while keeping persistent state:
+// the Postgres data directory (server/data, bind-mounted by docker-compose),
+// a legacy top-level data/ directory and the admin VPN client config.
+const CLEAN_INSTALL_DIR_FN = `
+clean_install_dir() {
+  local dir="$1"
+  [ -d "$dir" ] || return 0
+  find "$dir" -mindepth 1 -maxdepth 1 ! -name 'server' ! -name 'data' ! -name 'admin-vpn.conf' -exec rm -rf {} +
+  if [ -d "$dir/server" ]; then
+    find "$dir/server" -mindepth 1 -maxdepth 1 ! -name 'data' -exec rm -rf {} +
+  fi
+}
+`;
+
 const GENERATE_INSTALL_SCRIPT = (config) => `
 #!/bin/bash
 set -e
@@ -317,6 +331,9 @@ echo "=========================================="
 if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ]; then
   echo "Preserving old config..."
   cp "$INSTALL_DIR/server/deployments/docker/.env" /tmp/NovusGate.env.bak
+  if [ -f "$INSTALL_DIR/web/.env" ]; then
+    cp "$INSTALL_DIR/web/.env" /tmp/NovusGate.web.env.bak
+  fi
 fi
 
 # Stop and remove existing
@@ -326,11 +343,10 @@ if [ -f "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" ]; then
   docker-compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
 fi
 
-# Remove files but KEEP the data directory
-if [ -d "$INSTALL_DIR" ]; then
-  echo "Cleaning files (preserving data)..."
-  find "$INSTALL_DIR" -maxdepth 1 ! -name 'data' ! -name '.' -exec rm -rf {} +
-fi
+# Remove files but KEEP the database (server/data) and admin-vpn.conf
+${CLEAN_INSTALL_DIR_FN}
+echo "Cleaning files (preserving server/data and admin-vpn.conf)..."
+clean_install_dir "$INSTALL_DIR"
 
 # Extract new
 mkdir -p "$INSTALL_DIR"
@@ -347,7 +363,11 @@ if [ -f "/tmp/NovusGate.env.bak" ]; then
   # Creating directory structure if missing after clean
   mkdir -p server/deployments/docker
   mv /tmp/NovusGate.env.bak server/deployments/docker/.env
-  
+  if [ -f /tmp/NovusGate.web.env.bak ]; then
+    mkdir -p web
+    mv /tmp/NovusGate.web.env.bak web/.env
+  fi
+
   # Ensure WG_SERVER_ENDPOINT exists
   if ! grep -q "WG_SERVER_ENDPOINT" server/deployments/docker/.env; then
     SERVER_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 icanhazip.com 2>/dev/null || hostname -I | awk '{print $1}')
@@ -722,6 +742,7 @@ echo "=========================================="
 `;
 
 module.exports = {
+  CLEAN_INSTALL_DIR_FN,
   GENERATE_INSTALL_SCRIPT,
   GENERATE_REINSTALL_SCRIPT,
   UNINSTALL_SCRIPT,
