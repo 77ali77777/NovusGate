@@ -8,7 +8,7 @@ Staging: təzə Ubuntu 24.04 VM, root SSH. Hər addımın nəticəsini (əmr + �
    - `docker ps` → 3 konteyner `Up` (restart policy)
    - `wg show wg1 peers` → hər iki aktiv peer var
    - client yenidən qoşulur, panel açılır
-   - `systemctl is-enabled docker` → `enabled` (restart policy needs the docker service at boot)
+   - `systemctl is-enabled docker` → `enabled` (restart siyasəti boot zamanı docker servisinin aktiv olmasını tələb edir)
 4. Center → Reinstall. Gözlənilən:
    - `ls /opt/NovusGate/server/data/postgres/PG_VERSION` var
    - `ls /opt/NovusGate/admin-vpn.conf` var

@@ -3,10 +3,14 @@
 ## Son Sessiya
 - **Tarix:** 2026-10-13
 - **Tapşırıq:** P1 Stabilizasiya (`docs/superpowers/plans/2026-10-13-p1-stabilization.md`)
-- **Nəticə:** Task 1–10 commit-lənib (`abdb7b5` … `3fbfd54`, 13 commit). Step 1 avtomatik testlər: Go `ok` (`internal/controlplane/api/rest`; digər paketlərdə test faylı yoxdur) · Center `node --test` 19/19 PASS (fail 0) · shell `setup-firewall_test.sh` → `OK`. Staging qəbulu icra olunmadı, səbəb: staging VM yoxdur — runbook istifadəçi tərəfindən icra olunmalıdır.
+- **Nəticə:** Task 1–10 commit-lənib (`cde27c5^..70216b9`, 13 commit: `cde27c5` `3fbfd54` `abdb7b5` `1bb5700` `1bbc4c2` `63cf05f` `2ddf730` `f7efd76` `7e1abd1` `b58853c` `dc582ea` `8e9a449` `70216b9`). Step 1 avtomatik testlər (Docker, `MSYS_NO_PATHCONV=1`):
+  - Go — `docker run … golang:1.23 go test ./...` → `ok  github.com/novusgate/novusgate/internal/controlplane/api/rest 0.019s`; digər paketlər `[no test files]`; exit 0.
+  - Center — `docker run … node:20-bookworm sh -c 'node --test test/*.test.js'` → `# tests 19` · `# pass 19` · `# fail 0`; exit 0.
+  - Shell — `docker run … ubuntu:24.04 bash tests/setup-firewall_test.sh` → `OK`; exit 0.
+  - Staging qəbulu icra olunmadı, səbəb: staging VM yoxdur — runbook istifadəçi tərəfindən icra olunmalıdır.
 - **Davam:** P2 Backend nüvəsi planı yazılmalıdır (növbəti addım). İstifadəçinin tərəfində qalanlar:
   1. `.github/workflows/ci.yml` yaradılmalıdır — `.github` altına yazma icazə ayarlarına görə rədd edildi; YAML P1 planında Task 1 Step 5-dədir.
-  2. `setup-firewall.sh` faylının LF ilə yenidən checkout-u rədd edildi — Task 5 faylı artıq LF ilə yazdığı üçün məsələ bağlıdır (`cde27c5`).
+  2. `setup-firewall.sh` faylının LF ilə yenidən checkout-u rədd edildi — Task 5 (`63cf05f`) faylı artıq LF ilə yazdığı üçün məsələ bağlıdır.
   3. `docs/runbooks/p1-staging-acceptance.md` staging VM-də (təzə Ubuntu 24.04, root SSH) icra olunmalıdır; hər addımın əmr və çıxışı həmin faylın sonuna yazılmalıdır.
 
 ## Son Dəyişikliklər
