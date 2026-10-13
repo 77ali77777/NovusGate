@@ -461,39 +461,56 @@ func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// findRuleLineNumber finds the line number of a rule matching the criteria
+// protoNumbers maps protocol names to the numeric form newer iptables prints with -n.
+var protoNumbers = map[string]string{"tcp": "6", "udp": "17"}
+
+// isOptColumn reports whether a field is the iptables "opt" column, which
+// newer iptables versions omit from `-L -n -v` output.
+func isOptColumn(field string) bool {
+	return field == "--" || field == "-f" || field == "!f"
+}
+
+// findRuleLineNumber returns the line number of an INPUT rule created by
+// handleFirewallOpenPort (no input-interface restriction) for the given
+// protocol and port, or 0 if none matches. Port matching is exact, so
+// closing port 3 never touches a rule for 3007, and port ranges never match.
 func findRuleLineNumber(output string, protocol string, port int, target string) int {
-	lines := strings.Split(output, "\n")
-	portStr := strconv.Itoa(port)
-	
-	for _, line := range lines {
+	wantPort := "dpt:" + strconv.Itoa(port)
+	for _, line := range strings.Split(output, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 4 {
+		// num pkts bytes target prot [opt] in out source destination [options...]
+		if len(fields) < 9 {
 			continue
 		}
-		
-		// Check if this line matches our criteria
 		lineNum, err := strconv.Atoi(fields[0])
 		if err != nil {
 			continue
 		}
-		
-		// Check target
 		if fields[3] != target {
 			continue
 		}
-		
-		// Check protocol
-		if fields[4] != protocol {
+		if fields[4] != protocol && fields[4] != protoNumbers[protocol] {
 			continue
 		}
-		
-		// Check port in the options
-		if strings.Contains(line, "dpt:"+portStr) || strings.Contains(line, "dpts:"+portStr) {
-			return lineNum
+		inIdx := 5
+		if isOptColumn(fields[5]) {
+			inIdx = 6
+		}
+		optionsIdx := inIdx + 4
+		if len(fields) <= optionsIdx {
+			continue
+		}
+		// Open Port never sets an input interface; interface-scoped rules
+		// (wg0 admin panel, wg+ API) belong to the installer and must stay.
+		if fields[inIdx] != "*" {
+			continue
+		}
+		for _, opt := range fields[optionsIdx:] {
+			if opt == wantPort {
+				return lineNum
+			}
 		}
 	}
-	
 	return 0
 }
 
