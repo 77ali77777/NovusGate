@@ -142,7 +142,13 @@
   - web `tsc --noEmit` → exit 0;
   - biome diaqnostikalarının sayı dəyişməyib (23/4, hamısı köhnə).
 - **Default rejimdə davranış dəyişikliyi:** yalnız spec §3-dəki baq düzəlişləri (`docs/api.md` → "P2a-da dəyişən cavablar").
-- **Davam:** final review, sonra P2b (müşahidə).
+- **Final review (opus):** "With fixes", 2 Important (+1 Important-a qaldırıldı). Hamısı RED→GREEN ilə düzəldildi (`30bdeb9`):
+  - testlər WireGuard-a yalnız `wgInit` və `wgTeardown` seam-ləri vasitəsilə çatır;
+  - fail2ban log-u axınla oxunur;
+  - DB parolu bütün formalarda maskalanır.
+
+  7 minor ledger-də, P2b–P2d üçün.
+- **Davam:** P2b (müşahidə).
 
 
 ## Son Dəyişikliklər
