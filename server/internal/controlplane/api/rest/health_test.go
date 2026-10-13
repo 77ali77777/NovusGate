@@ -1,10 +1,14 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
+	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
 type healthBody struct {
@@ -82,3 +86,39 @@ func TestHealthReportsFirewallEngine(t *testing.T) {
 		t.Fatalf("an engine that is not ready is degraded: %+v", h)
 	}
 }
+
+func TestHealthReportsReconciler(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seedContract(t, st)
+	rec := reconciler.New(reconciler.ModeShadow, st, func(string) reconciler.PeerControl { return brokenPeers{} })
+	s.SetReconciler(rec)
+	rec.RunOnce(context.Background())
+	var body struct {
+		Status string `json:"status"`
+		Checks struct {
+			Reconciler struct {
+				OK      bool   `json:"ok"`
+				Mode    string `json:"mode"`
+				LastRun string `json:"last_run"`
+				Pending int    `json:"pending"`
+			} `json:"reconciler"`
+		} `json:"checks"`
+	}
+	r := callAs(t, s, "GET", "/health", "", false)
+	if err := json.Unmarshal(r.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Checks.Reconciler.Mode != "shadow" || body.Checks.Reconciler.OK || body.Checks.Reconciler.LastRun == "" || body.Status != "degraded" {
+		t.Fatalf("a reconciler that cannot read interfaces is degraded: %+v", body)
+	}
+}
+
+// brokenPeers fails like an interface that is down.
+type brokenPeers struct{}
+
+func (brokenPeers) GetPeers() (map[string]wireguard.PeerStatus, error) {
+	return nil, fmt.Errorf("Unable to access interface")
+}
+func (brokenPeers) AddPeer(string, string) error              { return nil }
+func (brokenPeers) UpdatePeerAllowedIPs(string, string) error { return nil }
+func (brokenPeers) RemovePeer(string) error                   { return nil }

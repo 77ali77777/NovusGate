@@ -357,6 +357,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		"config": config,
 	}
 	
+	s.triggerReconcile()
 	jsonResponse(w, http.StatusCreated, response)
 }
 

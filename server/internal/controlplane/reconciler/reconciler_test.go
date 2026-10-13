@@ -218,3 +218,40 @@ func TestOneBrokenInterfaceDoesNotStopTheOthers(t *testing.T) {
 		t.Fatal("wg2 must still be reconciled")
 	}
 }
+
+func TestRunLoopTriggersCoalesceAndStop(t *testing.T) {
+	r, _, _ := setup(ModeShadow)
+	var mu sync.Mutex
+	runs := 0
+	r.beforeApply = func() { mu.Lock(); runs++; mu.Unlock() }
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { r.Run(ctx, time.Hour); close(done) }()
+	for i := 0; i < 50; i++ {
+		r.Trigger() // must never block, however many arrive
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		mu.Lock()
+		n := runs
+		mu.Unlock()
+		if n >= 1 || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run must return after the context is cancelled")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if runs < 1 || runs > 2 {
+		t.Fatalf("50 triggers must coalesce into 1-2 runs, got %d", runs)
+	}
+	if st := r.Status(); st.Time.IsZero() || st.Mode != ModeShadow {
+		t.Fatalf("Status after a run = %+v", st)
+	}
+}

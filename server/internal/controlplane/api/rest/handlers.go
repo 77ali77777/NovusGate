@@ -20,6 +20,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -62,6 +63,7 @@ type Server struct {
 	managersMu sync.RWMutex
 	peerActivity map[string]*PeerActivity
 	firewall     *firewall.Engine // nil, or engine for FIREWALL_ENGINE=shadow|nft
+	reconciler   *reconciler.Reconciler // nil when WG_RECONCILER=off
 	activityMu   sync.RWMutex
 }
 
@@ -671,6 +673,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	s.reconcileFirewall(r.Context())
+	s.triggerReconcile()
 	jsonResponse(w, http.StatusCreated, network)
 }
 
@@ -726,6 +729,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	
 	slog.Info(fmt.Sprintf("Network %s (%s) deleted", network.Name, network.InterfaceName))
 	s.reconcileFirewall(r.Context())
+	s.triggerReconcile()
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -972,6 +976,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 		peers, _ = mgr.GetPeers()
 	}
 	s.enrichNode(node, peers)
+	s.triggerReconcile()
 	jsonResponse(w, http.StatusOK, node)
 }
 
@@ -1003,6 +1008,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.reconcileFirewall(r.Context())
+	s.triggerReconcile()
 	jsonResponse(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -1113,6 +1119,18 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 			fw["ok"], fw["ready"], fw["pending"] = ready, ready, pending
 			healthy = healthy && ready
 		}
+	}
+	if s.reconciler != nil {
+		rep := s.reconciler.Status()
+		rc := map[string]interface{}{"ok": rep.OK(), "mode": string(s.reconciler.Mode), "pending": 0, "last_run": nil}
+		if !rep.Time.IsZero() {
+			rc["last_run"] = rep.Time.UTC().Format(time.RFC3339)
+			if rep.Mode != reconciler.ModeEnforce {
+				rc["pending"] = len(rep.Actions) // shadow: changes enforce would make
+			}
+		}
+		healthy = healthy && rep.OK()
+		checks["reconciler"] = rc
 	}
 	checks["firewall"] = fw
 
@@ -1658,6 +1676,7 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 	// Expired or disabled nodes are not re-added.
 	added, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
 
+	s.triggerReconcile()
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"added":   added,
 		"skipped": len(nodes) - added - len(errs),

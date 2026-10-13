@@ -16,6 +16,7 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -179,6 +180,20 @@ func runServer(cmd *cobra.Command, args []string) error {
 	// Create REST API server (WireGuard managers are initialized internally by loadNetworks)
 	apiServer := rest.NewServer(db)
 
+	// WireGuard reconciler: off | shadow (default: report only) | enforce.
+	wgMode, err := reconciler.ParseMode(os.Getenv("WG_RECONCILER"))
+	if err != nil {
+		return err
+	}
+	recCtx, stopReconciler := context.WithCancel(context.Background())
+	defer stopReconciler()
+	if wgMode != reconciler.ModeOff {
+		rec := reconciler.New(wgMode, db, func(iface string) reconciler.PeerControl { return wireguard.NewManager(iface) })
+		apiServer.SetReconciler(rec)
+		go rec.Run(recCtx, 15*time.Second)
+		slog.Info(fmt.Sprintf("  WireGuard reconciler: %s", wgMode))
+	}
+
 	// Firewall engine: iptables (default, legacy paths), shadow (check only) or nft.
 	fwMode, err := firewall.ParseMode(os.Getenv("FIREWALL_ENGINE"))
 	if err != nil {
@@ -228,6 +243,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	stopReconciler()
 
 	slog.Info("\nShutting down server...")
 

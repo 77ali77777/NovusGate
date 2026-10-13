@@ -52,6 +52,7 @@ services:
       FIREWALL_ENGINE: ${FIREWALL_ENGINE:-iptables}
       LOG_FORMAT: ${LOG_FORMAT:-json}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      WG_RECONCILER: ${WG_RECONCILER:-shadow}
     cap_add:
       - NET_ADMIN
       - SYS_MODULE

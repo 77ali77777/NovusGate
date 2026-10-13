@@ -219,3 +219,35 @@ func (r *Reconciler) finish(rep Report) {
 	r.last = rep
 	r.mu.Unlock()
 }
+
+// Run reconciles every interval and whenever Trigger is called, until ctx
+// is cancelled. The first run happens after one interval (or a trigger), so
+// startup (loadNetworks bringing interfaces up and adopting peers) goes first.
+func (r *Reconciler) Run(ctx context.Context, every time.Duration) {
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		case <-r.trigger:
+		}
+		r.RunOnce(ctx)
+	}
+}
+
+// Trigger asks for a run soon; it never blocks and repeated calls coalesce.
+func (r *Reconciler) Trigger() {
+	select {
+	case r.trigger <- struct{}{}:
+	default:
+	}
+}
+
+// Status returns the last run's report.
+func (r *Reconciler) Status() Report {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.last
+}
