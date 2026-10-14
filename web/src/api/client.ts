@@ -360,6 +360,26 @@ class ApiClient {
     return data
   }
 
+  // Manual backups (P8): database dump + WireGuard configs, kept on the server.
+  async listBackups(): Promise<{ backups: BackupInfo[] }> {
+    const { data } = await this.client.get('/backups')
+    return data
+  }
+
+  async createBackup(): Promise<BackupInfo> {
+    const { data } = await this.client.post<BackupInfo>('/backups')
+    return data
+  }
+
+  async deleteBackup(name: string): Promise<void> {
+    await this.client.delete(`/backups/${encodeURIComponent(name)}`)
+  }
+
+  async downloadBackup(name: string): Promise<Blob> {
+    const { data } = await this.client.get(`/backups/${encodeURIComponent(name)}`, { responseType: 'blob' })
+    return data
+  }
+
   // Traffic history of a node: bytes per interval over the range.
   async getNodeTraffic(
     id: string,
@@ -430,6 +450,7 @@ export const api = new ApiClient()
 // React Query hooks
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
+import type { BackupInfo } from '@/types'
 
 // Export hooks
 
@@ -486,6 +507,28 @@ export function useNode(id: string) {
     queryKey: ['nodes', 'detail', id],
     queryFn: () => api.getNode(id),
     enabled: !!id,
+  })
+}
+
+export function useBackups() {
+  return useQuery({ queryKey: ['backups'], queryFn: () => api.listBackups() })
+}
+
+export function useCreateBackup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'Failed to create the backup', successTitle: 'Backup created' },
+    mutationFn: () => api.createBackup(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
+  })
+}
+
+export function useDeleteBackup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'Failed to delete the backup', successTitle: 'Backup deleted' },
+    mutationFn: (name: string) => api.deleteBackup(name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
   })
 }
 

@@ -12,6 +12,21 @@
         },
         "type": "object"
       },
+      "BackupListResponse": {
+        "properties": {
+          "backups": {
+            "items": {
+              "$ref": "#/components/schemas/Info"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "backups"
+        ],
+        "type": "object"
+      },
       "BlockIPRequest": {
         "properties": {
           "ip": {
@@ -973,6 +988,26 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "Info": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created_at",
+          "name",
+          "size"
+        ],
         "type": "object"
       },
       "LoginRequest": {
@@ -2177,6 +2212,139 @@
         "summary": "Change a password",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "operationId": "get_backups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupListResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the manual backups, newest first",
+        "tags": [
+          "backups"
+        ]
+      },
+      "post": {
+        "operationId": "post_backups",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Make a backup now (database dump and WireGuard configs)",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/v1/backups/{name}": {
+      "delete": {
+        "operationId": "delete_backups_by_name",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a backup",
+        "tags": [
+          "backups"
+        ]
+      },
+      "get": {
+        "operationId": "get_backups_by_name",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/gzip": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Download a backup",
+        "tags": [
+          "backups"
         ]
       }
     },

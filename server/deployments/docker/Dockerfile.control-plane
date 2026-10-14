@@ -18,7 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o novusgate-server 
 # Runtime stage
 FROM alpine:3.19
 
-RUN apk add --no-cache ca-certificates curl wireguard-tools iptables nftables util-linux
+# postgresql16-client: pg_dump for the panel backups (matches postgres:16)
+RUN apk add --no-cache ca-certificates curl wireguard-tools iptables nftables util-linux postgresql16-client
 
 WORKDIR /app
 

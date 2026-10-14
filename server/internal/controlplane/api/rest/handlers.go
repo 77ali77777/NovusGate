@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
@@ -53,6 +54,7 @@ type Server struct {
 	peerActivity map[string]*PeerActivity
 	firewall     *firewall.Engine // nil, or engine for FIREWALL_ENGINE=shadow|nft
 	reconciler   *reconciler.Reconciler // nil when WG_RECONCILER=off
+	backups      *backup.Service        // nil: the backup endpoints answer 503
 	activityMu   sync.RWMutex
 }
 
@@ -279,6 +281,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/nodes/{id}/qrcode", s.handleGetQRCode).Methods("GET")
 	api.HandleFunc("/nodes/{id}/install.sh", s.handleNodeInstallScript).Methods("GET")
 	api.HandleFunc("/nodes/{id}/traffic", s.handleNodeTraffic).Methods("GET")
+	s.registerBackupRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check

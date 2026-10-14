@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/Layout'
+import { BackupsCard } from './BackupsCard'
 import { ChangePasswordCard } from './ChangePasswordCard'
 import { UserManagementCard } from './UserManagementCard'
 
@@ -10,6 +11,7 @@ export const SettingsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ChangePasswordCard />
         <UserManagementCard />
+        <BackupsCard />
       </div>
     </div>
   )

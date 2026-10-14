@@ -215,3 +215,16 @@ Node-un trafik tarixçəsi, intervallar üzrə baytlar.
   - `rx` və `tx` həmin intervalda ötürülən baytlardır, hub-un saydığı kimi.
   - Nümunə olmayan intervallar `0` göstərir.
 - **Xətalar:** 400 `invalid_range`, 404 `node not found`.
+
+## Backup-lar — `/api/v1/backups` (P8, 2026-10-15)
+Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) və `wireguard/*.conf`. Fayllar serverdə `/var/backups/novusgate/panel`-də saxlanılır (qovluq 0700, fayl 0600).
+
+| Method | Path | Cavab |
+|---|---|---|
+| GET | `/backups` | `{"backups":[{"name","size","created_at"}]}`, ən yenisi birinci |
+| POST | `/backups` | 201 `{"name","size","created_at"}`; 409 `backup_running`; 500 (`pg_dump` xətası control-plane log-undadır) |
+| GET | `/backups/{name}` | `application/gzip` yükləmə; 404 |
+| DELETE | `/backups/{name}` | 204; 404 |
+
+- Ad yalnız `novusgate-backup-YYYYMMDD-HHMMSS.tar.gz` ola bilər, başqa fayl açılmır.
+- Backup servisi qurulmayıbsa 503 `backups_disabled` qaytarılır.

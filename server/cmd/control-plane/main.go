@@ -16,6 +16,7 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/traffic"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
@@ -204,6 +205,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 		go rec.Run(recCtx, 15*time.Second)
 		slog.Info(fmt.Sprintf("  WireGuard reconciler: %s", wgMode))
 	}
+
+	// Manual backups from the panel (P8): database dump + WireGuard configs.
+	// /var/backups/novusgate is a host bind mount; uninstall keeps it.
+	apiServer.SetBackups(&backup.Service{
+		Dir:          "/var/backups/novusgate/panel",
+		WireGuardDir: "/etc/wireguard",
+		Dump:         backup.PgDump(databaseURL),
+		Now:          time.Now,
+	})
 
 	// Traffic history (P8): every node's counters every 5 minutes, 30 days kept.
 	sampler := &traffic.Sampler{

@@ -296,6 +296,13 @@ export interface VPNFirewallRuleRequest {
   enabled: boolean
 }
 
+// Manual backup (P8): /api/v1/backups
+export interface BackupInfo {
+  name: string
+  size: number
+  created_at: string
+}
+
 // Firewall v2 (nftables engine, /api/v1/firewall/v2/*)
 export type FirewallEngineMode = 'iptables' | 'shadow' | 'nft'
 

@@ -68,6 +68,8 @@ services:
       - /etc/wireguard:/etc/wireguard:rw
       # Mount fail2ban log for reading
       - /var/log/fail2ban.log:/var/log/fail2ban.log:ro
+      # Panel backups (P8) and Center update backups; uninstall keeps them
+      - /var/backups/novusgate:/var/backups/novusgate
     # Note: With host network, ports are automatically exposed on host
     # Port 8080 (HTTP API), 8443 (gRPC), 51820 (WireGuard UDP)
     depends_on:

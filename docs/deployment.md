@@ -60,3 +60,12 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 - **Join VPN:** paneldə Nodes → Connect → Linux → "Generate install script" düyməsini basın, skripti Center-də Join VPN pəncərəsinə yapışdırın. Skript bir dəfə və 15 dəqiqə ərzində işləyir, serverdə root kimi icra olunur.
 - **Non-root SSH istifadəçisi:** Center əmrləri `sudo -n` ilə işlədir, ona görə həmin istifadəçinin parolsuz sudo hüququ olmalıdır.
 - **Eyni server üçün iki əməliyyat:** ikincisi 409 alır və birincinin bitməsini gözləməlidir.
+
+## Panel backup-ları və restore (P8)
+- **Yaratmaq:** Settings → Backups → "Backup now". Fayl `/var/backups/novusgate/panel/` qovluğundadır. Backup private açarları saxlayır; yüklənmiş faylı təhlükəsiz yerdə saxlayın.
+- **Restore (əl ilə):**
+  1. `tar -xzf novusgate-backup-....tar.gz -C /tmp/ng-restore`
+  2. WireGuard: `cp /tmp/ng-restore/wireguard/*.conf /etc/wireguard/ && chmod 600 /etc/wireguard/*.conf`
+  3. DB: `docker exec -i novusgate-postgres psql -U <DB_USER> -d <DB_NAME> < /tmp/ng-restore/db.sql`. Bunu boş bazaya edin (təzə install-dan sonra), çünki dump mövcud cədvəllərin üzərinə yazmır.
+  4. `docker compose up -d --force-recreate control-plane`
+- Restore üçün eyni `MASTER_KEY` lazımdır (`.env`): node açarları onunla şifrələnib. Backup-da `.env` yoxdur.

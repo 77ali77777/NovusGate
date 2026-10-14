@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -89,6 +90,10 @@ var docOps = []docOp{
 	{"GET", "/api/v1/nodes/{id}/qrcode", "Client config as a QR code", "nodes", nil, 200, mediaType("image/png"), false},
 	{"GET", "/api/v1/nodes/{id}/install.sh", "Linux install script for the node", "nodes", nil, 200, mediaType("text/x-shellscript"), false},
 	{"GET", "/api/v1/nodes/{id}/traffic", "Traffic history of the node (bytes per interval)", "nodes", nil, 200, NodeTrafficResponse{}, false},
+	{"GET", "/api/v1/backups", "List the manual backups, newest first", "backups", nil, 200, BackupListResponse{}, false},
+	{"POST", "/api/v1/backups", "Make a backup now (database dump and WireGuard configs)", "backups", nil, 201, backup.Info{}, false},
+	{"GET", "/api/v1/backups/{name}", "Download a backup", "backups", nil, 200, mediaType("application/gzip"), false},
+	{"DELETE", "/api/v1/backups/{name}", "Delete a backup", "backups", nil, 204, nil, false},
 	{"GET", "/api/v1/debug/wireguard/{networkId}", "Compare DB nodes with live peers", "networks", nil, 200, DebugWireGuardResponse{}, false},
 	{"GET", "/api/v1/stats/overview", "Dashboard counters", "system", nil, 200, StatsOverviewResponse{}, false},
 	{"GET", "/api/v1/system/info", "Host CPU, memory, disk, uptime", "system", nil, 200, SystemInfoResponse{}, false},
