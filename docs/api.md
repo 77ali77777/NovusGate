@@ -101,8 +101,11 @@ Bütün `/api` xəta cavabları bu formadadır:
 | Kod | Status | Harada |
 |---|---|---|
 | `invalid_request_body` | 400 | oxunmayan JSON body |
-| `invalid_credentials` | 401 | login, istifadəçi tapılmayanda parol dəyişmə |
-| `invalid_old_password` | 401 | parol dəyişmə, köhnə parol səhvdir (status P4-də 400 olacaq, B15) |
+| `invalid_credentials` | 401 | login: istifadəçi və ya parol səhvdir |
+| `invalid_token` | 401 | sessiya tokeni tapılmadı, vaxtı bitib və ya ləğv olunub |
+| `too_many_attempts` | 429 | login: bu IP-dən 15 dəqiqədə 10 uğursuz cəhd (`Retry-After` başlığı ilə) |
+| `invalid_old_password` | 400 | parol dəyişmə, köhnə parol səhvdir (P4a-da 401-dən 400-ə keçdi, B15) |
+| `forbidden` | 403 | parol dəyişmə: body-dəki `username` sessiya istifadəçisi deyil |
 | `cidr_overlap` | 409 | şəbəkə yaratma |
 | `admin_network_protected` | 403 | wg0-ın silinməsi |
 | `protected_rule` | 403 | Close Port / Delete: qorunan port və ya qayda |
@@ -138,3 +141,17 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **Mövcud yol, səhv method:** 405 `method_not_allowed` və `Allow` başlığı, məsələn `Allow: GET, POST`.
 - **Token olmadan:** auth middleware əvvəl cavab verir (401).
 - **SPA-nın öz `Invalid path` 400 cavabı** plain text olaraq qalır. `/health` `/api`-dən kənardadır.
+
+## Sessiyalar və login (P4a)
+- **`POST /api/v1/auth/login`** (`{username, password}`): yeni sessiya yaradır və `{token, username}` qaytarır. `username` daxil olan istifadəçinin adıdır; əvvəl həmişə env-dəki admin adı qayıdırdı.
+- **Token:** 64 simvol hex. `Authorization: Bearer <token>` ilə göndərilir. Sessiya 24 saat yaşayır və istifadə ilə uzanmır. Control-plane restart olanda sessiyalar qalır, çünki DB-də saxlanılır.
+- **`POST /api/v1/auth/logout`** → 204: cari sessiyanı ləğv edir.
+- **Sessiyanın ləğv olunduğu hallar:**
+  - logout;
+  - istifadəçinin silinməsi (bütün sessiyaları gedir);
+  - parol dəyişməsi (həmin istifadəçinin digər sessiyaları gedir, dəyişikliyi edən sessiya qalır).
+
+  Ləğv olunmuş və ya vaxtı bitmiş token `401 invalid_token` alır.
+- **`PUT /api/v1/auth/password`** (`{oldPassword, newPassword}`, `username` isteğe bağlıdır): parol həmişə sessiya istifadəçisinin parolu dəyişir. Body-də başqa `username` göndərilsə, `403 forbidden` qayıdır. Səhv köhnə parol `400 invalid_old_password` qaytarır.
+- **Login limiti:** bir IP-dən 15 dəqiqədə 10 uğursuz login olandan sonra `429 too_many_attempts` qayıdır, düzgün parol olsa belə. `Retry-After` neçə saniyə gözləmək lazım olduğunu deyir. Uğurlu login həmin IP-nin sayğacını sıfırlayır. Sayğac yaddaşdadır, restartda sıfırlanır.
+- **Açıq (auth tələb etməyən) yollar:** yalnız `/health` və `/api/v1/auth/login`, dəqiq uyğunluqla. Əvvəl `/login` ilə bitən istənilən yol auth-dan keçirdi.

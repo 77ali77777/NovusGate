@@ -324,6 +324,28 @@
 - **Davam:** P2c-2 və ya P5.
 
 
+### 2026-10-14: P4a planı və icrası (sessiyalar)
+- **Qərarlar (istifadəçi):** P4 master spec §4.3-dəki kimi icra olunur. P5 npm paketləri təsdiqləndi. P2c-2 ləğv olundu.
+- **Bölgü:** P4a (sessiyalar), P4b (enrollment, nginx proxy, B10/B23), P4c (açarların şifrələnməsi, `user_id` audit).
+- **Plan:** `docs/superpowers/plans/2026-10-14-p4a-sessions.md`.
+- **Commit-lər:**
+  - `d4f41fc`: `sessions` cədvəli (007) və store;
+  - `0314302`: sessiya auth-u, login/logout, dəqiq açıq yollar;
+  - `de0925b`: login limiti;
+  - `8917c80`: parol yalnız sessiya istifadəçisi üçün (B15 → 400), digər sessiyaların ləğvi, web logout.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → 9 paket `ok`;
+  - web (node:20 konteyneri): `tsc --noEmit` exit 0; biome sayı dəyişmədi (100/31).
+- **Davranış dəyişikliyi:**
+  - token istifadəçi başına verilir, restartda itmir;
+  - logout serverdə sessiyanı ləğv edir;
+  - login cavabı real istifadəçi adını qaytarır;
+  - parol dəyişməsi başqa hesaba təsir edə bilmir (əvvəl edə bilirdi);
+  - səhv köhnə parol 400 qaytarır;
+  - 10 uğursuz login-dən sonra 429 qayıdır.
+- **Təhlükəsizlik tapıntısı:** `web/.env` git-də izlənir və build zamanı bundle-a düşür. Bax `docs/security.md`.
+- **Davam:** final review, sonra P4b.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -344,6 +366,7 @@
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
 | 2026-10-14 | P2d-2: OpenAPI sənədi (reflection), /api/v1/openapi.json, route coverage, kontrakt-sxem yoxlaması, /api JSON 404/405 | api/rest/{openapi,api_fallback}.go, testdata | P2d-2 planı · `ceb50b5`..`56d5462` |
 | 2026-10-14 | P2d-3: request və response DTO-ları, tipli OpenAPI, 206 sənədləşdi, host/firewall cavabları snapshot-da | api/rest/{dto_*,handlers,config_handlers,firewall_*,openapi,fail2ban_parse}.go, testdata | P2d-3 planı · `b761eef`..`8d33280` |
+| 2026-10-14 | P4a: sessions cədvəli, sessiya auth-u, logout, login limiti, parol yalnız sessiya istifadəçisi üçün (B15) | store/{sessions.go,migrations_*/007_*}, api/rest/{auth,handlers,openapi}.go, web/src/{App.tsx,api/client.ts,components/Layout.tsx}, docs/{api,security,data-model}.md | P4a planı · `d4f41fc`..`8917c80` |
 | 2026-10-14 | P2d-1: vahid xəta body-si, sabit kodlar, PUT /nodes validasiyası | api/rest/*, testdata/contract | P2d-1 planı · `761dbc6`..`8325276` |
 | 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
