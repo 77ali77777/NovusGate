@@ -303,6 +303,18 @@ export interface BackupInfo {
   created_at: string
 }
 
+// Telegram notifications (P8). The bot token is never returned; token_set
+// says whether one is stored.
+export interface NotificationSettings {
+  enabled: boolean
+  chat_id: string
+  token_set: boolean
+  node_offline: boolean
+  node_expired: boolean
+  fail2ban_ban: boolean
+  firewall_change: boolean
+}
+
 // Firewall v2 (nftables engine, /api/v1/firewall/v2/*)
 export type FirewallEngineMode = 'iptables' | 'shadow' | 'nft'
 

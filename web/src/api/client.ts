@@ -380,6 +380,21 @@ class ApiClient {
     return data
   }
 
+  // Telegram notifications (P8).
+  async getNotificationSettings(): Promise<NotificationSettings> {
+    const { data } = await this.client.get<NotificationSettings>('/notifications/settings')
+    return data
+  }
+
+  async updateNotificationSettings(req: NotificationSettingsRequest): Promise<NotificationSettings> {
+    const { data } = await this.client.put<NotificationSettings>('/notifications/settings', req)
+    return data
+  }
+
+  async testNotification(): Promise<void> {
+    await this.client.post('/notifications/test')
+  }
+
   // Traffic history of a node: bytes per interval over the range.
   async getNodeTraffic(
     id: string,
@@ -450,7 +465,8 @@ export const api = new ApiClient()
 // React Query hooks
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
-import type { BackupInfo } from '@/types'
+import type { BackupInfo, NotificationSettings } from '@/types'
+import type { NotificationSettingsRequest } from '@/lib/notifications'
 
 // Export hooks
 
@@ -529,6 +545,26 @@ export function useDeleteBackup() {
     meta: { errorTitle: 'Failed to delete the backup', successTitle: 'Backup deleted' },
     mutationFn: (name: string) => api.deleteBackup(name),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
+  })
+}
+
+export function useNotificationSettings() {
+  return useQuery({ queryKey: ['notifications'], queryFn: () => api.getNotificationSettings() })
+}
+
+export function useUpdateNotificationSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'Failed to save the notification settings', successTitle: 'Notification settings saved' },
+    mutationFn: (req: NotificationSettingsRequest) => api.updateNotificationSettings(req),
+    onSuccess: (data) => queryClient.setQueryData(['notifications'], data),
+  })
+}
+
+export function useTestNotification() {
+  return useMutation({
+    meta: { errorTitle: 'Test message not sent', successTitle: 'Test message sent' },
+    mutationFn: () => api.testNotification(),
   })
 }
 
