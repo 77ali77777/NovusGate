@@ -27,3 +27,12 @@ Migration-lar `server/internal/controlplane/store/migrations_sql/` qovluğundad�
 
 - **İndeks:** `idx_enrollment_tokens_node (node_id)`.
 - **Rollback:** `migrations_rollback/008_enrollment_tokens.down.sql`. İşlənməmiş install skriptləri işləməz olur.
+
+## 009 (P4c): node key-ləri və audit istifadəçisi
+- **`nodes.private_key_enc` TEXT NULL:** node-un WireGuard private key-i. Format: `v1:…` (AES-GCM) və ya `plain:…` (master açar yoxdursa). Node JSON-da əvəzinə `has_config` (`private_key_enc IS NOT NULL`) qaytarılır.
+- **`firewall_audit_log.user_id` UUID NULL:** `users(id)`, `ON DELETE SET NULL`.
+- **Rollback (sıra vacibdir):**
+  1. yeni binary və eyni master açarla `novusgate-server keys-to-labels` işə salınır, key-lər label-ə geri yazılır;
+  2. sonra `migrations_rollback/009_node_keys_and_audit_user.down.sql` işə salınır.
+
+  Sıra pozulsa, node key-ləri itir.

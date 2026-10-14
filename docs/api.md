@@ -175,3 +175,8 @@ Bütün `/api` xəta cavabları bu formadadır:
   - panel API-ni öz nginx-i üzərindən `/api/v1` kimi çağırır;
   - control-plane artıq `Access-Control-*` başlıqları göndərmir;
   - `OPTIONS` sorğusu digər səhv method-lar kimi `405` alır.
+
+## Node cavabları (P4c)
+- **`labels.wireguard_private_key` artıq qaytarılmır.** Key şifrələnmiş ayrıca sütunda saxlanılır.
+- **Yeni sahə `has_config` (bool):** server node-un private key-ini saxlayırsa `true` olur. Belə node üçün `GET /nodes/{id}/config`, `/qrcode` və `/install.sh` işləyir. İmport olunmuş peer-lər üçün `false`-dur.
+- **Checkin** `wireguard_*` label-lərini qəbul etmir (P4b), ona görə key label vasitəsilə yazıla bilməz.
