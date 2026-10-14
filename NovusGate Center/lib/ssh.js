@@ -50,4 +50,18 @@ function connect(server, ClientClass = require('ssh2').Client) {
   });
 }
 
-module.exports = { sshConfig, asRoot, ptyWindow, connect };
+// uploadText writes text to a remote file with the given mode over SFTP.
+function uploadText(conn, remotePath, text, mode) {
+  return new Promise((resolve, reject) => {
+    conn.sftp((err, sftp) => {
+      if (err) return reject(err);
+      sftp.writeFile(remotePath, text, { mode }, (writeErr) => {
+        sftp.end();
+        if (writeErr) reject(writeErr);
+        else resolve();
+      });
+    });
+  });
+}
+
+module.exports = { sshConfig, asRoot, ptyWindow, connect, uploadText };

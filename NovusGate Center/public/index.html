@@ -915,6 +915,24 @@
     </div>
   </div>
   
+  <!-- Join VPN Modal: runs the node install script from the panel -->
+  <div class="modal" id="joinVpnModal">
+    <div class="modal-content" style="max-width: 760px;">
+      <h2 class="modal-title" style="margin-bottom: 12px;">🔐 Join VPN</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">
+        In the NovusGate panel open <strong>Nodes → Connect → Linux → Generate install script</strong>,
+        copy it and paste it here. It works once, for 15 minutes; it runs on this server as root.
+      </p>
+      <label for="joinVpnScript" style="font-size: 0.85rem; font-weight: 600;">Install script</label>
+      <textarea id="joinVpnScript" rows="8" spellcheck="false" placeholder="#!/bin/bash&#10;# NovusGate node installer. ..." style="width: 100%; margin-top: 6px; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary, #111); color: inherit; box-sizing: border-box;"></textarea>
+      <div class="output-log" id="joinVpnLog" style="display: none; margin-top: 12px; max-height: 260px; overflow-y: auto;"></div>
+      <div class="modal-actions" style="margin-top: 16px; padding-top: 12px;">
+        <button class="btn btn-info" onclick="closeModal('joinVpnModal')">Close</button>
+        <button class="btn btn-primary" id="joinVpnRun" onclick="runJoinVpn()">Run on server</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Output Modal -->
   <div class="modal" id="outputModal">
     <div class="modal-content" style="max-width: 1000px; padding: 20px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh;">
@@ -1384,6 +1402,9 @@
               <button class="action-btn-compact" onclick="reinstallServer()">
                 <span>🔄</span> Reinstall
               </button>
+              <button class="action-btn-compact" onclick="openJoinVpn()">
+                <span>🔐</span> Join VPN
+              </button>
               <button class="action-btn-compact danger" onclick="uninstallNovusGate()">
                 <span>🗑️</span> Uninstall
               </button>
@@ -1542,6 +1563,63 @@
       }
     }
     
+    // Join VPN (B10): run the panel's node install script on this server.
+    function openJoinVpn() {
+      if (!selectedServer) return;
+      document.getElementById('joinVpnScript').value = '';
+      const log = document.getElementById('joinVpnLog');
+      log.textContent = '';
+      log.style.display = 'none';
+      document.getElementById('joinVpnRun').disabled = false;
+      document.getElementById('joinVpnModal').classList.add('active');
+    }
+
+    async function runJoinVpn() {
+      const script = document.getElementById('joinVpnScript').value;
+      const log = document.getElementById('joinVpnLog');
+      const button = document.getElementById('joinVpnRun');
+      log.style.display = 'block';
+      log.textContent = '';
+      button.disabled = true;
+      try {
+        const res = await fetch(`/api/servers/${selectedServer.id}/join-vpn`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ script })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          log.textContent = '[ERROR] ' + (err.error || `Request failed (${res.status})`);
+          button.disabled = false;
+          return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop();
+          for (const ev of events) {
+            if (!ev.startsWith('data: ')) continue;
+            const data = JSON.parse(ev.slice(6));
+            if (data.text) log.textContent += data.text;
+            if (data.error) log.textContent += '\n[ERROR] ' + data.error + '\n';
+            if (data.done) {
+              log.textContent += data.success ? '\n✅ Joined the VPN.\n' : '\n❌ ' + (data.message || 'Failed') + '\n';
+            }
+            log.scrollTop = log.scrollHeight;
+          }
+        }
+      } catch (err) {
+        log.textContent += '\n[ERROR] ' + err.message + '\n';
+      }
+      button.disabled = false;
+      loadServers();
+    }
+
     async function streamResponse(response, outputElement) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

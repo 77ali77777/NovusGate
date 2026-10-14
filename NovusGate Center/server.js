@@ -3,6 +3,7 @@ const { Client } = require('ssh2');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const logService = require('./modules/log_service'); // Import Log Service
 const fail2banModule = require('./modules/fail2ban'); // Import Fail2ban Module
 const {
@@ -19,7 +20,8 @@ const { validateInstallConfig } = require('./lib/validate');
 const { createStore } = require('./lib/store');
 const { createJobLock } = require('./lib/jobs');
 const { createProjectArchive } = require('./lib/archive');
-const { connect: connectSSH, sshConfig, ptyWindow } = require('./lib/ssh');
+const { connect: connectSSH, sshConfig, ptyWindow, uploadText } = require('./lib/ssh');
+const { validateJoinScript, normalizeScript, joinCommand } = require('./lib/join');
 
 const app = express();
 app.use(cors());
@@ -720,84 +722,48 @@ app.post('/api/servers/:id/command', async (req, res) => {
   }
 });
 
-// POST /api/servers/:id/join-vpn - Join server to VPN
+// POST /api/servers/:id/join-vpn - Join a server to the VPN (B10).
+// Body: { script }: the node install script the panel generates
+// (Nodes → Connect → Linux → Generate install script). It is uploaded as a
+// 0700 file (the enrollment token never shows in `ps`), run as root and
+// removed; the output streams as SSE like an install.
 app.post('/api/servers/:id/join-vpn', async (req, res) => {
-  const { networkId, controlPlaneUrl, apiKey } = req.body;
-  
-  if (!networkId || !controlPlaneUrl || !apiKey) {
-    return res.status(400).json({ error: 'NetworkId, ControlPlaneUrl and ApiKey are required' });
-  }
-
   const data = loadServers();
   const server = data.servers.find(s => s.id === req.params.id);
-  
   if (!server) {
-    return res.status(404).json({ error: 'Server tapılmadı' });
+    return res.status(404).json({ error: 'Server not found' });
   }
+  const invalid = validateJoinScript(req.body && req.body.script);
+  if (invalid) {
+    return res.status(400).json({ error: invalid });
+  }
+  const release = startJob(res, server, 'join-vpn');
+  if (!release) return;
 
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  const sendLog = (text) => res.write(`data: ${JSON.stringify({ text: text + '\n' })}\n\n`);
+
+  let conn = null;
   try {
-    const conn = await createSSHConnection(server);
-    
-    // 1. Install WireGuard
-    await execSSH(conn, 'apt-get update && apt-get install -y wireguard curl');
-    
-    // 2. Generate Keys
-    const privKeyResult = await execSSH(conn, 'wg genkey');
-    const privateKey = privKeyResult.stdout.trim();
-    const pubKeyResult = await execSSH(conn, `echo "${privateKey}" | wg pubkey`);
-    const publicKey = pubKeyResult.stdout.trim();
-    
-    // 3. Register with Control Plane
-    // We need to make an HTTP request from the Installer Service to the Control Plane
-    // Or we can do it via curl from the target server? 
-    // Let's do it from the Installer Service using fetch/axios (need to install axios or use fetch if node 18+)
-    // But easier via curl on target to avoid connectivity issues from Installer -> CP
-    
-    // Construct curl command to register and get config
-    // POST /api/v1/networks/{networkId}/servers
-    const registerCmd = `curl -s -X POST "${controlPlaneUrl}/api/v1/networks/${networkId}/servers" \
-      -H "X-API-Key: ${apiKey}" \
-      -H "Content-Type: application/json" \
-      -d '{"name":"${server.name}","publicKey":"${publicKey}","labels":{"installer":"true"}}'`;
-      
-    const registerResult = await execSSH(conn, registerCmd);
-    if (registerResult.code !== 0) {
-      throw new Error(`Registration failed: ${registerResult.stderr}`);
-    }
-    
-    const response = JSON.parse(registerResult.stdout);
-    if (!response.config) {
-        // Access config via dedicated endpoint if not returned directly (our API returns full object?)
-        // Our config_handlers.go createServerWithConfig returns: { node: ..., config: ... }
-        throw new Error('No config received from Control Plane');
-    }
-    
-    const wgConfig = response.config;
-    
-    // 4. Write Config
-    await execSSH(conn, `echo "${wgConfig}" > /etc/wireguard/wg0.conf`);
-    
-    // 5. Enable IP Forwarding
-    await execSSH(conn, 'sysctl -w net.ipv4.ip_forward=1');
-    await execSSH(conn, 'echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf');
-    
-    // 6. Start WireGuard
-    await execSSH(conn, 'systemctl enable --now wg-quick@wg0');
-    
-    conn.end();
-    
-    server.history = server.history || [];
-    server.history.unshift({
-      action: 'join-vpn',
-      timestamp: new Date().toISOString(),
-      success: true
-    });
-    saveServers(data);
-    
-    res.json({ success: true, message: 'Successfully joined VPN!' });
-
+    sendLog(`[INFO] Connecting to ${server.host}...`);
+    conn = await createSSHConnection(server);
+    const remotePath = `/tmp/novusgate-join-${crypto.randomBytes(6).toString('hex')}.sh`;
+    await uploadText(conn, remotePath, normalizeScript(req.body.script), 0o700);
+    sendLog('[INFO] Running the node install script...');
+    runScript(conn, joinCommand(remotePath), res, (code) => {
+      release();
+      addHistory(server.id, { action: 'join-vpn', success: code === 0 });
+      const message = code === 0 ? '' : `The install script stopped with exit code ${code}. A used or expired token needs a new script from the panel.`;
+      res.write(`data: ${JSON.stringify({ done: true, success: code === 0, message })}\n\n`);
+      res.end();
+    }, release);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    release();
+    if (conn) conn.end();
+    endWithError(res, err);
   }
 });
 
