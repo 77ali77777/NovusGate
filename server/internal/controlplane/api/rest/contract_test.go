@@ -245,7 +245,9 @@ func TestContract(t *testing.T) {
 		{"node_delete", "DELETE", "/api/v1/nodes/" + node, "", true},
 	}
 	for _, c := range cases {
-		assertContract(t, c.name, callAs(t, s, c.method, c.path, c.body, c.auth))
+		rec := callAs(t, s, c.method, c.path, c.body, c.auth)
+		assertContract(t, c.name, rec)
+		assertMatchesSpec(t, s, c.method, c.path, rec)
 	}
 }
 
