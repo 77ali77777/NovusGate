@@ -60,6 +60,33 @@
         },
         "type": "object"
       },
+      "ClosePortResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "rules_deleted": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "port",
+          "protocol",
+          "rules_deleted",
+          "status"
+        ],
+        "type": "object"
+      },
       "CreateServerRequest": {
         "properties": {
           "expires_at": {
@@ -230,6 +257,33 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      },
+      "DeleteRuleResponse": {
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "deleted_rule": {
+            "$ref": "#/components/schemas/FirewallRule"
+          },
+          "line_number": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain",
+          "deleted_rule",
+          "line_number",
+          "message",
+          "status"
+        ],
         "type": "object"
       },
       "Error": {
@@ -631,6 +685,83 @@
         ],
         "type": "object"
       },
+      "FirewallForward": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "public_port": {
+            "type": "integer"
+          },
+          "target_ip": {
+            "type": "string"
+          },
+          "target_port": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "protocol",
+          "public_port",
+          "target_ip",
+          "target_port"
+        ],
+        "type": "object"
+      },
+      "FirewallIPRule": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "ports": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "created_at",
+          "id",
+          "origin",
+          "prefix"
+        ],
+        "type": "object"
+      },
       "FirewallRule": {
         "properties": {
           "chain": {
@@ -680,6 +811,48 @@
           "protocol",
           "source",
           "target"
+        ],
+        "type": "object"
+      },
+      "FirewallService": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "interface": {
+            "type": "string"
+          },
+          "port_from": {
+            "type": "integer"
+          },
+          "port_to": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "port_from",
+          "port_to",
+          "protocol",
+          "sources"
         ],
         "type": "object"
       },
@@ -757,6 +930,29 @@
           "checks",
           "status",
           "version"
+        ],
+        "type": "object"
+      },
+      "IPRuleResponse": {
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "ports": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ip",
+          "message",
+          "ports",
+          "status"
         ],
         "type": "object"
       },
@@ -1030,6 +1226,49 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "OpenPortResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "port",
+          "protocol",
+          "source",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PendingChange": {
+        "properties": {
+          "deadline": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "deadline",
+          "id"
+        ],
         "type": "object"
       },
       "PermanentBan": {
@@ -1325,6 +1564,132 @@
           "created_at",
           "id",
           "username"
+        ],
+        "type": "object"
+      },
+      "V2ChangeResponse": {
+        "properties": {
+          "item": {},
+          "pending": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PendingChange"
+              }
+            ],
+            "nullable": true
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "item",
+          "pending",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "V2PreviewResponse": {
+        "properties": {
+          "script": {
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "script",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "V2StateResponse": {
+        "properties": {
+          "egress_interface": {
+            "nullable": true,
+            "type": "string"
+          },
+          "egress_node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "forwards": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/FirewallForward"
+                }
+              ],
+              "nullable": true
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "host_error": {
+            "type": "string"
+          },
+          "ip_rules": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/FirewallIPRule"
+                }
+              ],
+              "nullable": true
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "pending": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PendingChange"
+              }
+            ],
+            "nullable": true
+          },
+          "services": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/FirewallService"
+                }
+              ],
+              "nullable": true
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "ssh_ports": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "egress_node_ids",
+          "forwards",
+          "ip_rules",
+          "mode",
+          "pending",
+          "services"
         ],
         "type": "object"
       },
@@ -1749,7 +2114,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
@@ -1790,7 +2155,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/IPRuleResponse"
                 }
               }
             },
@@ -1831,7 +2196,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/IPRuleResponse"
                 }
               }
             },
@@ -1872,7 +2237,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/ClosePortResponse"
                 }
               }
             },
@@ -1913,7 +2278,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/OpenPortResponse"
                 }
               }
             },
@@ -1944,7 +2309,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
@@ -2016,7 +2381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/DeleteRuleResponse"
                 }
               }
             },
@@ -2057,7 +2422,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusResponse"
                 }
               }
             },
@@ -2098,7 +2463,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2137,7 +2502,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2178,7 +2543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2219,7 +2584,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2260,7 +2625,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2301,7 +2666,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2332,7 +2697,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2PreviewResponse"
                 }
               }
             },
@@ -2373,7 +2738,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2414,7 +2779,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2ChangeResponse"
                 }
               }
             },
@@ -2445,7 +2810,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/V2StateResponse"
                 }
               }
             },
@@ -2476,7 +2841,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },

@@ -147,12 +147,12 @@ func (s *Server) handleFirewallOpenPortNft(w http.ResponseWriter, r *http.Reques
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":   "success",
-		"message":  fmt.Sprintf("Port %d/%s opened successfully", req.Port, req.Protocol),
-		"port":     req.Port,
-		"protocol": req.Protocol,
-		"source":   req.Source,
+	jsonResponse(w, http.StatusOK, OpenPortResponse{
+		Status:   "success",
+		Message:  fmt.Sprintf("Port %d/%s opened successfully", req.Port, req.Protocol),
+		Port:     req.Port,
+		Protocol: req.Protocol,
+		Source:   req.Source,
 	})
 }
 
@@ -187,12 +187,12 @@ func (s *Server) handleFirewallClosePortNft(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":        "success",
-		"message":       fmt.Sprintf("Port %d/%s closed successfully", req.Port, req.Protocol),
-		"port":          req.Port,
-		"protocol":      req.Protocol,
-		"rules_deleted": len(ids),
+	jsonResponse(w, http.StatusOK, ClosePortResponse{
+		Status:       "success",
+		Message:      fmt.Sprintf("Port %d/%s closed successfully", req.Port, req.Protocol),
+		Port:         req.Port,
+		Protocol:     req.Protocol,
+		RulesDeleted: len(ids),
 	})
 }
 
@@ -211,11 +211,11 @@ func (s *Server) handleFirewallIPRuleNft(w http.ResponseWriter, r *http.Request,
 	if action == "allow" {
 		verb = "allowed"
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": fmt.Sprintf("IP %s %s successfully", ip, verb),
-		"ip":      ip,
-		"ports":   ports,
+	jsonResponse(w, http.StatusOK, IPRuleResponse{
+		Status:  "success",
+		Message: fmt.Sprintf("IP %s %s successfully", ip, verb),
+		IP:      ip,
+		Ports:   ports,
 	})
 }
 
@@ -247,12 +247,12 @@ func (s *Server) handleFirewallDeleteRuleNft(w http.ResponseWriter, r *http.Requ
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":       "success",
-		"message":      fmt.Sprintf("Rule %d deleted from chain %s", req.LineNumber, req.Chain),
-		"chain":        req.Chain,
-		"line_number":  req.LineNumber,
-		"deleted_rule": e.rule,
+	jsonResponse(w, http.StatusOK, DeleteRuleResponse{
+		Status:      "success",
+		Message:     fmt.Sprintf("Rule %d deleted from chain %s", req.LineNumber, req.Chain),
+		Chain:       req.Chain,
+		LineNumber:  req.LineNumber,
+		DeletedRule: e.rule,
 	})
 }
 
@@ -279,9 +279,9 @@ func (s *Server) handleFirewallResetNft(w http.ResponseWriter, r *http.Request) 
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": "Firewall reset to default NovusGate configuration",
+	jsonResponse(w, http.StatusOK, StatusMessageResponse{
+		Status:  "success",
+		Message: "Firewall reset to default NovusGate configuration",
 	})
 }
 

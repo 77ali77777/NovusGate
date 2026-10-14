@@ -41,22 +41,20 @@ func (s *Server) handleFirewallV2State(w http.ResponseWriter, r *http.Request) {
 		engineError(w, err)
 		return
 	}
-	resp := map[string]interface{}{
-		"mode":            s.firewall.Mode,
-		"services":        st.Services,
-		"ip_rules":        st.IPRules,
-		"forwards":        st.Forwards,
-		"egress_node_ids": st.EgressNodeIDs,
-		"pending":         nil,
+	resp := V2StateResponse{
+		Mode:          s.firewall.Mode,
+		Services:      st.Services,
+		IPRules:       st.IPRules,
+		Forwards:      st.Forwards,
+		EgressNodeIDs: st.EgressNodeIDs,
 	}
 	if p, ok := s.firewall.PendingChange(); ok {
-		resp["pending"] = map[string]interface{}{"id": p.ID, "deadline": p.Deadline}
+		resp.Pending = &PendingChange{ID: p.ID, Deadline: p.Deadline}
 	}
 	if host, err := s.firewall.Detect(); err != nil {
-		resp["host_error"] = err.Error()
+		resp.HostError = err.Error()
 	} else {
-		resp["ssh_ports"] = host.SSHPorts
-		resp["egress_interface"] = host.Egress
+		resp.SSHPorts, resp.EgressInterface = &host.SSHPorts, &host.Egress
 	}
 	jsonResponse(w, http.StatusOK, resp)
 }
@@ -71,7 +69,7 @@ func (s *Server) handleFirewallV2Preview(w http.ResponseWriter, r *http.Request)
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{"script": script, "warnings": warningStrings(warnings)})
+	jsonResponse(w, http.StatusOK, V2PreviewResponse{Script: script, Warnings: warningStrings(warnings)})
 }
 
 // proposeV2 runs a change and writes the common response.
@@ -86,15 +84,11 @@ func (s *Server) proposeV2(w http.ResponseWriter, r *http.Request, item interfac
 		engineError(w, err)
 		return
 	}
-	var pending interface{}
+	resp := V2ChangeResponse{Item: item, Warnings: warningStrings(res.Warnings)}
 	if res.Pending != nil {
-		pending = map[string]interface{}{"id": res.Pending.ID, "deadline": res.Pending.Deadline}
+		resp.Pending = &PendingChange{ID: res.Pending.ID, Deadline: res.Pending.Deadline}
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"item":     item,
-		"pending":  pending,
-		"warnings": warningStrings(res.Warnings),
-	})
+	jsonResponse(w, http.StatusOK, resp)
 }
 
 type v2ServiceRequest struct {
@@ -192,7 +186,7 @@ func removeServices(s *Server, ids ...string) firewall.Change {
 
 func (s *Server) handleFirewallV2DeleteService(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	s.proposeV2(w, r, map[string]string{"id": id}, removeServices(s, id))
+	s.proposeV2(w, r, IDItem{ID: id}, removeServices(s, id))
 }
 
 type v2IPRuleRequest struct {
@@ -290,7 +284,7 @@ func removeIPRules(s *Server, ids ...string) firewall.Change {
 
 func (s *Server) handleFirewallV2DeleteIPRule(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	s.proposeV2(w, r, map[string]string{"id": id}, removeIPRules(s, id))
+	s.proposeV2(w, r, IDItem{ID: id}, removeIPRules(s, id))
 }
 
 type v2ForwardRequest struct {
@@ -338,7 +332,7 @@ func (s *Server) handleFirewallV2CreateForward(w http.ResponseWriter, r *http.Re
 
 func (s *Server) handleFirewallV2DeleteForward(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	s.proposeV2(w, r, map[string]string{"id": id}, firewall.Change{
+	s.proposeV2(w, r, IDItem{ID: id}, firewall.Change{
 		Mutate: func(st *firewall.State) error {
 			for i, f := range st.Forwards {
 				if f.ID == id {
@@ -360,7 +354,7 @@ func (s *Server) handleFirewallV2SetEgress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	enable := r.Method == http.MethodPut
-	s.proposeV2(w, r, map[string]interface{}{"node_id": nodeID, "egress": enable}, firewall.Change{
+	s.proposeV2(w, r, EgressItem{NodeID: nodeID, Egress: enable}, firewall.Change{
 		Mutate: func(st *firewall.State) error {
 			kept := st.EgressNodeIDs[:0:0]
 			for _, id := range st.EgressNodeIDs {
@@ -387,5 +381,5 @@ func (s *Server) handleFirewallV2Confirm(w http.ResponseWriter, r *http.Request)
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "confirmed"})
+	jsonResponse(w, http.StatusOK, StatusResponse{Status: "confirmed"})
 }

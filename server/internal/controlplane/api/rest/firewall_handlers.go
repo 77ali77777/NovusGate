@@ -393,12 +393,12 @@ func (s *Server) handleFirewallOpenPort(w http.ResponseWriter, r *http.Request) 
 	// Save rules with netfilter-persistent
 	execHostCommand("netfilter-persistent", "save")
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":   "success",
-		"message":  fmt.Sprintf("Port %d/%s opened successfully", req.Port, req.Protocol),
-		"port":     req.Port,
-		"protocol": req.Protocol,
-		"source":   req.Source,
+	jsonResponse(w, http.StatusOK, OpenPortResponse{
+		Status: "success",
+		Message: fmt.Sprintf("Port %d/%s opened successfully", req.Port, req.Protocol),
+		Port: req.Port,
+		Protocol: req.Protocol,
+		Source: req.Source,
 	})
 }
 
@@ -476,12 +476,12 @@ func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request)
 	// Save rules with netfilter-persistent
 	execHostCommand("netfilter-persistent", "save")
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":        "success",
-		"message":       fmt.Sprintf("Port %d/%s closed successfully", req.Port, req.Protocol),
-		"port":          req.Port,
-		"protocol":      req.Protocol,
-		"rules_deleted": deletedCount,
+	jsonResponse(w, http.StatusOK, ClosePortResponse{
+		Status: "success",
+		Message: fmt.Sprintf("Port %d/%s closed successfully", req.Port, req.Protocol),
+		Port: req.Port,
+		Protocol: req.Protocol,
+		RulesDeleted: deletedCount,
 	})
 }
 
@@ -594,11 +594,11 @@ func (s *Server) handleFirewallBlockIP(w http.ResponseWriter, r *http.Request) {
 	// Save rules with netfilter-persistent
 	execHostCommand("netfilter-persistent", "save")
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": fmt.Sprintf("IP %s blocked successfully", req.IP),
-		"ip":      req.IP,
-		"ports":   req.Ports,
+	jsonResponse(w, http.StatusOK, IPRuleResponse{
+		Status: "success",
+		Message: fmt.Sprintf("IP %s blocked successfully", req.IP),
+		IP: req.IP,
+		Ports: req.Ports,
 	})
 }
 
@@ -653,11 +653,11 @@ func (s *Server) handleFirewallAllowIP(w http.ResponseWriter, r *http.Request) {
 	// Save rules with netfilter-persistent
 	execHostCommand("netfilter-persistent", "save")
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": fmt.Sprintf("IP %s allowed successfully", req.IP),
-		"ip":      req.IP,
-		"ports":   req.Ports,
+	jsonResponse(w, http.StatusOK, IPRuleResponse{
+		Status: "success",
+		Message: fmt.Sprintf("IP %s allowed successfully", req.IP),
+		IP: req.IP,
+		Ports: req.Ports,
 	})
 }
 
@@ -732,12 +732,12 @@ func (s *Server) handleFirewallDeleteRule(w http.ResponseWriter, r *http.Request
 	// Save rules with netfilter-persistent
 	execHostCommand("netfilter-persistent", "save")
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":      "success",
-		"message":     fmt.Sprintf("Rule %d deleted from chain %s", req.LineNumber, req.Chain),
-		"chain":       req.Chain,
-		"line_number": req.LineNumber,
-		"deleted_rule": targetRule,
+	jsonResponse(w, http.StatusOK, DeleteRuleResponse{
+		Status: "success",
+		Message: fmt.Sprintf("Rule %d deleted from chain %s", req.LineNumber, req.Chain),
+		Chain: req.Chain,
+		LineNumber: req.LineNumber,
+		DeletedRule: *targetRule,
 	})
 }
 
@@ -804,9 +804,9 @@ func (s *Server) handleFirewallImport(w http.ResponseWriter, r *http.Request) {
 	// Clean up temp file
 	execHostCommand("rm", "-f", tmpFile)
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": "Firewall rules imported successfully",
+	jsonResponse(w, http.StatusOK, StatusMessageResponse{
+		Status: "success",
+		Message: "Firewall rules imported successfully",
 	})
 }
 
@@ -884,9 +884,9 @@ COMMIT
 	// Clean up temp file
 	execHostCommand("rm", "-f", tmpFile)
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": "Firewall reset to default NovusGate configuration",
+	jsonResponse(w, http.StatusOK, StatusMessageResponse{
+		Status: "success",
+		Message: "Firewall reset to default NovusGate configuration",
 	})
 }
 
@@ -1197,9 +1197,9 @@ func (s *Server) handleVPNFirewallApply(w http.ResponseWriter, r *http.Request) 
 		"action": "full_sync",
 	}, r.RemoteAddr)
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "success",
-		"message": "VPN firewall rules applied successfully",
+	jsonResponse(w, http.StatusOK, StatusMessageResponse{
+		Status: "success",
+		Message: "VPN firewall rules applied successfully",
 	})
 }
 
