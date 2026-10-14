@@ -1156,16 +1156,27 @@
             term.onData((data) => {
                 socket.emit('input', data);
             });
-            
+
+            // The remote shell follows the terminal's size.
+            term.onResize(({ cols, rows }) => {
+                if (socket) socket.emit('resize', { cols, rows });
+            });
+
             socket.on('output', (data) => {
                 term.write(data);
             });
         }
-        
+
         fitAddon.fit();
         term.clear();
+        // Send the size first: the shell opens at it.
+        socket.emit('resize', { cols: term.cols, rows: term.rows });
         socket.emit('start-session', selectedServer.id);
     }
+
+    window.addEventListener('resize', () => {
+        if (term && fitAddon) fitAddon.fit();
+    });
     
     function closeTerminal() {
         document.getElementById('terminalModal').classList.remove('active');

@@ -60,3 +60,14 @@ test('doneMessage explains why a run failed', () => {
   assert.match(doneMessage(EXIT_DB_WITHOUT_ENV, { install: false }), /database .* without its \.env/);
   assert.match(doneMessage(1, { install: false }), /exit code 1/);
 });
+
+// The install route releases its per-server job lock in onError, so an exec
+// failure must not leave the server locked.
+test('an exec error calls onError and not onClose', () => {
+  const res = fakeRes();
+  let closed = false;
+  let failed = null;
+  runScript(fakeConn(new Error('boom')), 'true', res, () => { closed = true; }, (err) => { failed = err; });
+  assert.strictEqual(closed, false);
+  assert.match(String(failed && failed.message), /boom/);
+});

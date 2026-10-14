@@ -3,7 +3,6 @@ const { Client } = require('ssh2');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
 const logService = require('./modules/log_service'); // Import Log Service
 const fail2banModule = require('./modules/fail2ban'); // Import Fail2ban Module
 const {
@@ -17,6 +16,10 @@ const {
 const { endWithError } = require('./lib/sse');
 const { runScript, doneMessage } = require('./lib/run');
 const { validateInstallConfig } = require('./lib/validate');
+const { createStore } = require('./lib/store');
+const { createJobLock } = require('./lib/jobs');
+const { createProjectArchive } = require('./lib/archive');
+const { connect: connectSSH, sshConfig, ptyWindow } = require('./lib/ssh');
 
 const app = express();
 app.use(cors());
@@ -33,22 +36,28 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initialize servers.json if not exists
-if (!fs.existsSync(SERVERS_FILE)) {
-  fs.writeFileSync(SERVERS_FILE, JSON.stringify({ servers: [] }, null, 2));
-}
+// servers.json: every change re-reads the file and writes it atomically, so a
+// long job that records its result at the end keeps changes made meanwhile.
+const store = createStore(SERVERS_FILE);
+const loadServers = () => store.load();
 
-// Load/Save servers
-function loadServers() {
-  try {
-    return JSON.parse(fs.readFileSync(SERVERS_FILE, 'utf8'));
-  } catch {
-    return { servers: [] };
+// One long operation per server at a time. startJob answers 409 and returns
+// null when another one runs; otherwise it returns the release function.
+const jobs = createJobLock();
+function startJob(res, server, action) {
+  const release = jobs.tryStart(server.id, action);
+  if (!release) {
+    res.status(409).json({ error: `${jobs.running(server.id)} is still running on ${server.name}; wait for it to finish` });
   }
+  return release;
 }
 
-function saveServers(data) {
-  fs.writeFileSync(SERVERS_FILE, JSON.stringify(data, null, 2));
+// addHistory records an action on a server (newest first, last 50 kept).
+function addHistory(id, entry, change = () => {}) {
+  return store.updateServer(id, (s) => {
+    change(s);
+    s.history = [{ ...entry, timestamp: new Date().toISOString() }, ...(s.history || [])].slice(0, 50);
+  });
 }
 
 function generateId() {
@@ -56,30 +65,8 @@ function generateId() {
 }
 
 // SSH Connection helper
-function createSSHConnection(server) {
-  return new Promise((resolve, reject) => {
-    const conn = new Client();
-    
-    conn.on('ready', () => resolve(conn));
-    conn.on('error', reject);
-    
-    const config = {
-      host: server.host,
-      port: server.port || 22,
-      username: server.username,
-      readyTimeout: 30000
-    };
-    
-    if (server.privateKey) {
-      config.privateKey = server.privateKey;
-      if (server.passphrase) config.passphrase = server.passphrase;
-    } else if (server.password) {
-      config.password = server.password;
-    }
-    
-    conn.connect(config);
-  });
-}
+// Commands run as root: a non-root SSH user goes through sudo -n (lib/ssh).
+const createSSHConnection = (server) => connectSSH(server);
 
 // Execute SSH command
 function execSSH(conn, command) {
@@ -127,7 +114,6 @@ app.post('/api/servers', (req, res) => {
     return res.status(400).json({ error: 'Name, host, and username are required' });
   }
   
-  const data = loadServers();
   const server = {
     id: generateId(),
     name,
@@ -143,17 +129,16 @@ app.post('/api/servers', (req, res) => {
     history: []
   };
   
-  data.servers.push(server);
-  saveServers(data);
-  
+  store.update((data) => data.servers.push(server));
+
   res.json({ id: server.id, message: 'Server added' });
 });
 
 // DELETE /api/servers/:id
 app.delete('/api/servers/:id', (req, res) => {
-  const data = loadServers();
-  data.servers = data.servers.filter(s => s.id !== req.params.id);
-  saveServers(data);
+  store.update((data) => {
+    data.servers = data.servers.filter(s => s.id !== req.params.id);
+  });
   res.json({ message: 'Server deleted' });
 });
 
@@ -208,8 +193,11 @@ app.get('/api/servers/:id/status', async (req, res) => {
     // Update server status
     server.status = isInstalled ? 'installed' : 'not_installed';
     server.lastCheck = new Date().toISOString();
-    saveServers(data);
-    
+    store.updateServer(server.id, (s) => {
+      s.status = server.status;
+      s.lastCheck = server.lastCheck;
+    });
+
     res.json({
       id: server.id,
       name: server.name,
@@ -233,10 +221,11 @@ app.get('/api/servers/:id/status', async (req, res) => {
     });
     
   } catch (err) {
-    server.status = 'offline';
-    server.lastCheck = new Date().toISOString();
-    saveServers(data);
-    
+    store.updateServer(server.id, (s) => {
+      s.status = 'offline';
+      s.lastCheck = new Date().toISOString();
+    });
+
     res.status(500).json({ error: 'Unable to connect to server: ' + err.message });
   }
 });
@@ -317,16 +306,7 @@ app.post('/api/servers/:id/docker/:action', async (req, res) => {
     const result = await execSSH(conn, command);
     conn.end();
     
-    // Add to history
-    server.history = server.history || [];
-    server.history.unshift({
-      action: `docker_${action}`,
-      container,
-      timestamp: new Date().toISOString(),
-      success: result.code === 0
-    });
-    server.history = server.history.slice(0, 50); // Keep last 50
-    saveServers(data);
+    addHistory(server.id, { action: `docker_${action}`, container, success: result.code === 0 });
     
     if (action === 'logs') {
       res.json({ logs: result.stdout + result.stderr });
@@ -378,9 +358,11 @@ app.post('/api/servers/:id/prune', async (req, res) => {
     return res.status(404).json({ error: 'Server not found' });
   }
   
+  const release = startJob(res, server, 'prune');
+  if (!release) return;
   try {
     const conn = await createSSHConnection(server);
-    
+
     let command;
     switch (type) {
       case 'images':
@@ -399,17 +381,13 @@ app.post('/api/servers/:id/prune', async (req, res) => {
     const result = await execSSH(conn, command);
     conn.end();
     
-    server.history = server.history || [];
-    server.history.unshift({
-      action: `prune_${type}`,
-      timestamp: new Date().toISOString(),
-      success: result.code === 0
-    });
-    saveServers(data);
-    
+    addHistory(server.id, { action: `prune_${type}`, success: result.code === 0 });
+
     res.json({ success: result.code === 0, output: result.stdout + result.stderr });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  } finally {
+    release();
   }
 });
 
@@ -570,26 +548,22 @@ app.post('/api/servers/:id/uninstall', async (req, res) => {
     return res.status(404).json({ error: 'Server not found' });
   }
   
-// Use the shared UNINSTALL_SCRIPT
-  // const UNINSTALL_SCRIPT = ... (defined below)
-
+  const release = startJob(res, server, 'uninstall');
+  if (!release) return;
   try {
     const conn = await createSSHConnection(server);
     const result = await execSSH(conn, UNINSTALL_SCRIPT);
     conn.end();
-    
-    server.status = 'not_installed';
-    server.history = server.history || [];
-    server.history.unshift({
-      action: 'uninstall',
-      timestamp: new Date().toISOString(),
-      success: result.code === 0
+
+    addHistory(server.id, { action: 'uninstall', success: result.code === 0 }, (s) => {
+      s.status = 'not_installed';
     });
-    saveServers(data);
-    
+
     res.json({ success: result.code === 0, output: result.stdout + result.stderr });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  } finally {
+    release();
   }
 });
 
@@ -608,7 +582,10 @@ app.post('/api/servers/:id/install', async (req, res) => {
   if (invalid) {
     return res.status(400).json({ error: invalid });
   }
-  
+  const jobAction = migrateOnly ? 'migrate' : update ? 'update' : reinstall ? 'reinstall' : 'install';
+  const release = startJob(res, server, jobAction);
+  if (!release) return;
+
   // STREAM RESPONSE IMMEDIATELY
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -630,9 +607,10 @@ app.post('/api/servers/:id/install', async (req, res) => {
     if (source === 'local') {
       sendLog('[INFO] Creating project archive...');
       try {
-        archivePath = await createProjectArchive();
+        archivePath = await createProjectArchive(PROJECT_ROOT);
         sendLog('[INFO] Archive created successfully.');
       } catch (err) {
+        release();
         endWithError(res, new Error(`Failed to create archive: ${err.message}`));
         return;
       }
@@ -683,27 +661,23 @@ app.post('/api/servers/:id/install', async (req, res) => {
     // calls the API through its own nginx, which adds the key.
     const isInstall = !update && !reinstall && !migrateOnly;
     runScript(conn, `${envs}\n${script}`, res, (code) => {
+      release();
       // A refused install on an already-installed server keeps its status.
       const alreadyInstalled = code === EXIT_ALREADY_INSTALLED && isInstall;
-      if (!alreadyInstalled) {
-        // Update server status
-        server.status = code === 0 ? 'installed' : 'error';
-        server.installedAt = new Date().toISOString();
-      }
-      server.history = server.history || [];
-      server.history.unshift({
-        action: update ? 'update' : (reinstall ? 'reinstall' : 'install'),
-        source,
-        timestamp: new Date().toISOString(),
-        success: code === 0
+      const action = update ? 'update' : (reinstall ? 'reinstall' : 'install');
+      addHistory(server.id, { action, source, success: code === 0 }, (s) => {
+        if (!alreadyInstalled) {
+          s.status = code === 0 ? 'installed' : 'error';
+          s.installedAt = new Date().toISOString();
+        }
       });
-      saveServers(data);
 
       res.write(`data: ${JSON.stringify({ done: true, success: code === 0, message: doneMessage(code, { install: isInstall }) })}\n\n`);
       res.end();
-    });
+    }, release);
 
   } catch (err) {
+    release();
     try {
       if (archivePath && fs.existsSync(archivePath)) fs.unlinkSync(archivePath);
     } catch (cleanupErr) {
@@ -827,38 +801,6 @@ app.post('/api/servers/:id/join-vpn', async (req, res) => {
   }
 });
 
-function createProjectArchive() {
-  return new Promise((resolve, reject) => {
-    const archivePath = path.join(__dirname, 'NovusGate.tar.gz');
-    
-    const excludes = [
-      '--exclude=node_modules',
-      '--exclude=.git',
-      '--exclude=*.exe',
-      '--exclude=*.tar.gz',
-      '--exclude=*.log',
-      '--exclude=.env',
-      '--exclude=.idea',
-      '--exclude=.vscode',
-      // A local compose run creates server/data (the Postgres data dir); shipping it
-      // would overwrite the preserved production database on reinstall.
-      '--exclude=server/data',
-      '--exclude=server/start_dev.sh', // Exclude dev scripts
-      '--exclude=installer/node_modules' // Exclude installer modules from archive
-    ].join(' ');
-    
-    const tarCommand = `tar -czf "${archivePath}" -C "${PROJECT_ROOT}" ${excludes} server web`;
-    
-    exec(tarCommand, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error((stderr || error.message).trim())); // no trailing blank line in the log
-      } else {
-        resolve(archivePath);
-      }
-    });
-  });
-}
-
 function uploadFile(conn, localPath, remotePath) {
   return new Promise((resolve, reject) => {
     conn.sftp((err, sftp) => {
@@ -900,6 +842,7 @@ io.on('connection', (socket) => {
   console.log('Client connected to terminal:', socket.id);
   let conn = null;
   let stream = null;
+  let lastWindow = null; // latest valid size from the browser
 
   socket.on('start-session', async (serverId) => {
     try {
@@ -918,7 +861,9 @@ io.on('connection', (socket) => {
       conn.on('ready', () => {
         socket.emit('output', '\r\nConnected! Opening shell...\r\n');
         
-        conn.shell((err, s) => {
+        // Open the shell at the browser's size; a resize sent before the
+        // shell existed would otherwise be lost (80x24 until the next one).
+        conn.shell({ term: 'xterm-256color', ...(lastWindow || {}) }, (err, s) => {
           if (err) {
             socket.emit('output', `\r\nShell error: ${err.message}\r\n`);
             return;
@@ -947,21 +892,8 @@ io.on('connection', (socket) => {
         socket.emit('output', '\r\nDisconnected.\r\n');
       });
 
-      // Prepare config
-      const config = {
-        host: serverConfig.host,
-        port: serverConfig.port || 22,
-        username: serverConfig.username,
-        readyTimeout: 30000
-      };
-      
-      if (serverConfig.privateKey) {
-        config.privateKey = serverConfig.privateKey;
-      } else if (serverConfig.password) {
-        config.password = serverConfig.password;
-      }
-
-      conn.connect(config);
+      // Same authentication as installs (the key passphrase included).
+      conn.connect(sshConfig(serverConfig));
 
     } catch (err) {
       socket.emit('output', `\r\nError: ${err.message}\r\n`);
@@ -976,8 +908,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('resize', (size) => {
+    const win = ptyWindow(size);
+    if (!win) return;
+    lastWindow = win;
     if (stream) {
-      stream.setWindow(size.rows, size.cols, size.height, size.width);
+      stream.setWindow(win.rows, win.cols, win.height, win.width);
     }
   });
 

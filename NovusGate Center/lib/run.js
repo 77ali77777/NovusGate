@@ -6,12 +6,13 @@ const send = (res, event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
 // runScript runs a script over an ssh2-style connection and streams its
 // stdout and stderr to res as SSE events. The connection is closed in every
 // case. onClose(code, output) runs when the script finished; an exec error
-// ends the request instead, with its reason.
-function runScript(conn, script, res, onClose) {
+// ends the request instead, with its reason, and calls onError(err).
+function runScript(conn, script, res, onClose, onError = () => {}) {
   conn.exec(script, (err, stream) => {
     if (err) {
       conn.end();
       endWithError(res, new Error(`Execution failed: ${err.message}`));
+      onError(err);
       return;
     }
     let output = '';
