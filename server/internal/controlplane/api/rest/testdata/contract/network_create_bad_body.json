@@ -1,6 +1,9 @@
 {
   "body": {
-    "error": "invalid request body"
+    "error": {
+      "code": "bad_request",
+      "message": "invalid request body"
+    }
   },
   "content_type": "application/json",
   "status": 400

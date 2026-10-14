@@ -52,7 +52,7 @@ func TestRecoverMiddleware(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, httptest.NewRequest("GET", "/boom", nil))
-	if rec.Code != 500 || strings.TrimSpace(rec.Body.String()) != `{"error":"internal server error"}` {
+	if rec.Code != 500 || strings.TrimSpace(rec.Body.String()) != `{"error":{"code":"internal_error","message":"internal server error"}}` {
 		t.Fatalf("panic must become a 500 JSON error, got %d %s", rec.Code, rec.Body)
 	}
 	out := logs.String()

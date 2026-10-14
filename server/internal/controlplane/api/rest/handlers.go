@@ -387,8 +387,48 @@ func jsonResponse(w http.ResponseWriter, status int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
+// apiError is the unified error body: {"error":{"code","message"}}. The code
+// is stable snake_case for clients to act on; the message is for people.
+type apiError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// errorWithCode writes an error with a specific code.
+func errorWithCode(w http.ResponseWriter, status int, code, message string) {
+	jsonResponse(w, status, map[string]apiError{"error": {Code: code, Message: message}})
+}
+
+// errorResponse writes an error whose code follows the HTTP status.
 func errorResponse(w http.ResponseWriter, status int, message string) {
-	jsonResponse(w, status, map[string]string{"error": message})
+	errorWithCode(w, status, defaultErrorCode(status), message)
+}
+
+// defaultErrorCode names an HTTP status as a stable error code.
+func defaultErrorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "bad_request"
+	case http.StatusUnauthorized:
+		return "unauthorized"
+	case http.StatusForbidden:
+		return "forbidden"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusMethodNotAllowed:
+		return "method_not_allowed"
+	case http.StatusConflict:
+		return "conflict"
+	case http.StatusGone:
+		return "gone"
+	case http.StatusInternalServerError:
+		return "internal_error"
+	case http.StatusBadGateway:
+		return "bad_gateway"
+	case http.StatusServiceUnavailable:
+		return "unavailable"
+	}
+	return "error"
 }
 
 // Login handler

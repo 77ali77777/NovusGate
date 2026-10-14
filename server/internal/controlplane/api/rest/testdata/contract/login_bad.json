@@ -1,6 +1,9 @@
 {
   "body": {
-    "error": "invalid credentials"
+    "error": {
+      "code": "unauthorized",
+      "message": "invalid credentials"
+    }
   },
   "content_type": "application/json",
   "status": 401

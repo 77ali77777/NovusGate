@@ -1,6 +1,9 @@
 {
   "body": {
-    "error": "CIDR 10.66.0.0/25 overlaps with existing network 'contract-net' (10.66.0.0/24)"
+    "error": {
+      "code": "conflict",
+      "message": "CIDR 10.66.0.0/25 overlaps with existing network 'contract-net' (10.66.0.0/24)"
+    }
   },
   "content_type": "application/json",
   "status": 409
