@@ -295,7 +295,12 @@
   - naməlum `/api` yolu 404 JSON qaytarır;
   - səhv method 405 JSON və `Allow` başlığı qaytarır;
   - yeni endpoint: `/api/v1/openapi.json`.
-- **Davam:** final review, sonra P2d-3 (servis qatı + DTO-lar) və ya P5.
+- **Final review (opus):** 2 Important tapıldı, hər ikisi RED→GREEN ilə düzəldildi:
+  - request sxemlərində məcburi sahə yoxdur;
+  - method-suz route-lar da coverage testinə düşür.
+
+  9 minor ledger-də (HEAD 405, 206 sənədsiz, query parametrləri, X-API-Key sxemi və s.).
+- **Davam:** P2d-3 (servis qatı + DTO-lar) və ya P5.
 
 
 ## Son Dəyişikliklər
