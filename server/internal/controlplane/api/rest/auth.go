@@ -102,7 +102,8 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// loginLimiter counts failed logins per client IP in a sliding window.
+// loginLimiter counts login attempts per client IP in a sliding window; a
+// successful login clears them, so in effect it limits failures.
 type loginLimiter struct {
 	mu     sync.Mutex
 	max    int
@@ -136,26 +137,24 @@ func (l *loginLimiter) recent(ip string, now time.Time) []time.Time {
 	return kept
 }
 
-// blocked reports whether ip is over the limit and how long until it is not.
-func (l *loginLimiter) blocked(ip string, now time.Time) (time.Duration, bool) {
+// begin counts a login attempt from ip unless ip is over the limit, in which
+// case it reports how long until it is not. Checking and counting happen
+// under one lock, so concurrent attempts cannot all pass while bcrypt runs;
+// a successful login clears the count with reset.
+func (l *loginLimiter) begin(ip string, now time.Time) (time.Duration, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	f := l.recent(ip, now)
-	if len(f) < l.max {
-		return 0, false
-	}
-	return l.window - now.Sub(f[0]), true
-}
-
-func (l *loginLimiter) fail(ip string, now time.Time) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if len(l.fails) > maxTrackedIPs { // many distinct IPs: drop the ones whose failures expired
+	if len(l.fails) > maxTrackedIPs { // many distinct IPs: drop the ones whose attempts expired
 		for other := range l.fails {
 			l.recent(other, now)
 		}
 	}
-	l.fails[ip] = append(l.recent(ip, now), now)
+	f := l.recent(ip, now)
+	if len(f) >= l.max {
+		return l.window - now.Sub(f[len(f)-l.max]), false
+	}
+	l.fails[ip] = append(f, now)
+	return 0, true
 }
 
 func (l *loginLimiter) reset(ip string) {

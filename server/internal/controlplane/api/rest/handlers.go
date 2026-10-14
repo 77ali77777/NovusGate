@@ -435,7 +435,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ip, now := clientIP(r), authNow()
-	if wait, blocked := loginLimit.blocked(ip, now); blocked {
+	if wait, ok := loginLimit.begin(ip, now); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		errorWithCode(w, http.StatusTooManyRequests, "too_many_attempts", "too many failed logins, try again later")
 		return
@@ -456,13 +456,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if user == nil {
-		loginLimit.fail(ip, now)
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		loginLimit.fail(ip, now)
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}

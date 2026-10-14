@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -163,5 +165,37 @@ func TestDeletingUserRevokesSessions(t *testing.T) {
 	adminToken = victim
 	if rec := callAs(t, s, "GET", "/api/v1/networks", "", true); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("deleted user's session = %d, want 401", rec.Code)
+	}
+}
+
+// Concurrent failures must not slip past the limit while bcrypt runs.
+func TestLoginRateLimitHoldsUnderConcurrency(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	loginLimit = newLoginLimiter(3, 15*time.Minute) // newContractServer restores it
+	bad := `{"username":"contract-user","password":"wrong"}`
+	const n = 20
+	codes := make(chan int, n)
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req := httptest.NewRequest("POST", "/api/v1/auth/login", strings.NewReader(bad))
+			req.RemoteAddr = "198.51.100.201:5555"
+			rec := httptest.NewRecorder()
+			s.router.ServeHTTP(rec, req)
+			codes <- rec.Code
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	evaluated := 0
+	for c := range codes {
+		if c == http.StatusUnauthorized {
+			evaluated++
+		}
+	}
+	if evaluated > 3 {
+		t.Fatalf("%d passwords were checked concurrently, want at most 3", evaluated)
 	}
 }
