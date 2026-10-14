@@ -923,7 +923,13 @@
       "HealthResponse": {
         "properties": {
           "checks": {
-            "$ref": "#/components/schemas/HealthChecks"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HealthChecks"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "status": {
             "type": "string"
@@ -933,7 +939,6 @@
           }
         },
         "required": [
-          "checks",
           "status",
           "version"
         ],

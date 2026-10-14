@@ -31,9 +31,9 @@ type SyncPeersResponse struct {
 }
 
 type HealthResponse struct {
-	Status  string       `json:"status"` // healthy | degraded
-	Version string       `json:"version"`
-	Checks  HealthChecks `json:"checks"`
+	Status  string        `json:"status"` // healthy | degraded
+	Version string        `json:"version"`
+	Checks  *HealthChecks `json:"checks,omitempty"` // only with a session or the API key
 }
 
 type HealthChecks struct {

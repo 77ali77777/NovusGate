@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
@@ -33,7 +34,7 @@ type healthBody struct {
 
 func getHealth(t *testing.T, s *Server) healthBody {
 	t.Helper()
-	rec := callAs(t, s, "GET", "/health", "", false)
+	rec := callAs(t, s, "GET", "/health", "", true)
 	if rec.Code != 200 {
 		t.Fatalf("/health = %d %s (it always answers 200)", rec.Code, rec.Body)
 	}
@@ -104,7 +105,7 @@ func TestHealthReportsReconciler(t *testing.T) {
 			} `json:"reconciler"`
 		} `json:"checks"`
 	}
-	r := callAs(t, s, "GET", "/health", "", false)
+	r := callAs(t, s, "GET", "/health", "", true)
 	if err := json.Unmarshal(r.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +134,42 @@ func TestContractHealthBranches(t *testing.T) {
 	es, _ := newEngineServer(t, firewall.ModeNft)
 	old := es.firewall
 	s.SetFirewall(&firewall.Engine{Mode: firewall.ModeNft, Store: old.Store, Applier: old.Applier, Now: old.Now, Detect: old.Detect})
-	rec := callAs(t, s, "GET", "/health", "", false)
+	rec := callAs(t, s, "GET", "/health", "", true)
 	assertContract(t, "health_idle_reconciler_nft_not_ready", rec)
 	assertMatchesSpec(t, s, "GET", "/health", rec)
+}
+
+// /health is public, but only callers with a panel session or the API key
+// see the component checks; others get the status and version.
+func TestHealthDetailsNeedAuth(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seedContract(t, st)
+	interfaceUp = func(name string) bool { return name == "wg66" } // degraded
+
+	keys := func(rec interface{ Bytes() []byte }) map[string]json.RawMessage {
+		t.Helper()
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal(rec.Bytes(), &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	anon := callAs(t, s, "GET", "/health", "", false)
+	m := keys(anon.Body)
+	if anon.Code != 200 || len(m) != 2 || string(m["status"]) != `"degraded"` || string(m["version"]) != `"0.1.0"` {
+		t.Fatalf("anonymous /health = %d %s, want only status (still degraded) and version", anon.Code, anon.Body)
+	}
+
+	orig := apiKey
+	apiKey = "health-test-key"
+	defer func() { apiKey = orig }()
+	for key, want := range map[string]bool{"health-test-key": true, "wrong-key": false} {
+		req := httptest.NewRequest("GET", "/health", nil)
+		req.Header.Set("X-API-Key", key)
+		rec := httptest.NewRecorder()
+		s.router.ServeHTTP(rec, req)
+		if _, got := keys(rec.Body)["checks"]; got != want {
+			t.Errorf("X-API-Key %q: checks shown = %v, want %v", key, got, want)
+		}
+	}
 }

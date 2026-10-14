@@ -1159,14 +1159,15 @@ var interfaceUp = func(name string) bool {
 }
 
 // handleHealth always answers 200 (API contract); "status" is "healthy" or
-// "degraded" and "checks" says why. It is public, so it reports states only,
-// never error texts.
+// "degraded" and "checks" says why. It is public: everyone gets the status,
+// only callers with a panel session or the API key get the checks. They
+// report states only, never error texts.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	healthy := true
 	resp := HealthResponse{Status: "healthy", Version: "0.1.0",
-		Checks: HealthChecks{Firewall: FirewallCheck{OK: true, Mode: string(firewall.ModeIptables)}}}
+		Checks: &HealthChecks{Firewall: FirewallCheck{OK: true, Mode: string(firewall.ModeIptables)}}}
 
 	if s.store.Ping(ctx) != nil {
 		healthy = false
@@ -1213,7 +1214,24 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if !healthy {
 		resp.Status = "degraded"
 	}
+	if !s.healthDetailsAllowed(r) {
+		resp.Checks = nil
+	}
 	jsonResponse(w, http.StatusOK, resp)
+}
+
+// healthDetailsAllowed reports whether the caller may see the health checks:
+// the configured API key or the bearer token of an unexpired panel session.
+func (s *Server) healthDetailsAllowed(r *http.Request) bool {
+	if apiKey != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get("X-API-Key")), []byte(apiKey)) == 1 {
+		return true
+	}
+	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !ok || token == "" {
+		return false
+	}
+	user, err := s.store.SessionUser(r.Context(), hashToken(token), authNow())
+	return err == nil && user != nil
 }
 
 // System Info - CPU, RAM, Disk

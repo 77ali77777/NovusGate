@@ -1,21 +1,5 @@
 {
   "body": {
-    "checks": {
-      "database": {
-        "ok": true
-      },
-      "firewall": {
-        "mode": "iptables",
-        "ok": true
-      },
-      "wireguard": {
-        "interfaces": {
-          "wg66": "up",
-          "wg68": "up"
-        },
-        "ok": true
-      }
-    },
     "status": "healthy",
     "version": "0.1.0"
   },

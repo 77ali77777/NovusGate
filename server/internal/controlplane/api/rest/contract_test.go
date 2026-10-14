@@ -242,6 +242,7 @@ func TestContract(t *testing.T) {
 		auth                     bool
 	}{
 		{"health", "GET", "/health", "", false},
+		{"health_authenticated", "GET", "/health", "", true},
 		{"unauthorized", "GET", "/api/v1/networks", "", false},
 		{"login_ok", "POST", "/api/v1/auth/login", `{"username":"contract-user","password":"contract-pw-1"}`, false},
 		{"login_bad", "POST", "/api/v1/auth/login", `{"username":"contract-user","password":"wrong"}`, false},
