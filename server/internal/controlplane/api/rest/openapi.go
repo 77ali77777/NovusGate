@@ -57,7 +57,7 @@ var docOps = []docOp{
 	{"PUT", "/api/v1/nodes/{id}", "Update a node", "nodes", UpdateNodeRequest{}, 200, models.Node{}, false},
 	{"PATCH", "/api/v1/nodes/{id}", "Update a node (same as PUT)", "nodes", UpdateNodeRequest{}, 200, models.Node{}, false},
 	{"DELETE", "/api/v1/nodes/{id}", "Delete a node", "nodes", nil, 200, StatusResponse{}, false},
-	{"POST", "/api/v1/nodes/{id}/checkin", "Report node information", "nodes", NodeCheckInRequest{}, 200, models.Node{}, false},
+	{"POST", "/api/v1/nodes/{id}/checkin", "Report node information (panel session, or the install script's X-Enrollment-Token)", "nodes", NodeCheckInRequest{}, 200, models.Node{}, false},
 	{"GET", "/api/v1/nodes/{id}/config", "Download the client WireGuard config", "nodes", nil, 200, mediaType("text/plain"), false},
 	{"GET", "/api/v1/nodes/{id}/qrcode", "Client config as a QR code", "nodes", nil, 200, mediaType("image/png"), false},
 	{"GET", "/api/v1/nodes/{id}/install.sh", "Linux install script for the node", "nodes", nil, 200, mediaType("text/x-shellscript"), false},

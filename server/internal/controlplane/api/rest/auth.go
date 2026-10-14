@@ -62,7 +62,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		if publicPaths[r.URL.Path] {
+		if publicPaths[r.URL.Path] || isEnrollmentCheckin(r) { // the checkin handler validates the token
 			next.ServeHTTP(w, r)
 			return
 		}

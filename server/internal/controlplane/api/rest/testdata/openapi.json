@@ -3600,7 +3600,7 @@
             "description": "Error"
           }
         },
-        "summary": "Report node information",
+        "summary": "Report node information (panel session, or the install script's X-Enrollment-Token)",
         "tags": [
           "nodes"
         ]

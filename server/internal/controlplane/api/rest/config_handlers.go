@@ -363,8 +363,18 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 
 	// 1. Get Config
 	privateKey := node.Labels["wireguard_private_key"]
-	network, _ := s.store.GetNetwork(r.Context(), node.NetworkID)
-	
+	network, err := s.store.GetNetwork(r.Context(), node.NetworkID)
+	if err != nil || network == nil {
+		errorResponse(w, http.StatusNotFound, "network not found")
+		return
+	}
+	hub, err := hubAddress(network.CIDR)
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "invalid network CIDR")
+		return
+	}
+	hub, _, _ = strings.Cut(hub, "/")
+
 	serverEndpoint := network.ServerEndpoint
 	if serverEndpoint == "" {
 		port := network.ListenPort
@@ -402,54 +412,17 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		allowedIPsStr,
 	)
 
-	// 2. Build the enhanced install script
-	apiURL := fmt.Sprintf("http://%s/api/v1", r.Host) // Use host from request
-	
-	script := fmt.Sprintf(`#!/bin/bash
-set -e
-
-echo "Starting novusgate Client Installation..."
-
-# 1. Install WireGuard
-if ! command -v wg &> /dev/null; then
-    apt-get update && apt-get install -y wireguard wireguard-tools curl
-fi
-
-# 2. Write Configuration
-mkdir -p /etc/wireguard
-cat <<EOF > /etc/wireguard/wg0.conf
-%s
-EOF
-
-# 3. Collect Metadata
-OS="Linux"
-ARCH=$(uname -m)
-HOSTNAME=$(hostname)
-MAC=$(cat /sys/class/net/$(ip route get 8.8.8.8 | grep -oP 'dev \K\S+')/address 2>/dev/null || echo "unknown")
-
-echo "Reporting device info: $HOSTNAME ($OS $ARCH)..."
-
-# 4. Report to Server (Check-in)
-curl -s -X POST %s/nodes/%s/checkin \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"node_info\": {
-      \"os\": \"$OS\",
-      \"architecture\": \"$ARCH\",
-      \"hostname\": \"$HOSTNAME\"
-    },
-    \"labels\": {
-      \"mac_address\": \"$MAC\",
-      \"auto_captured\": \"true\"
-    }
-  }"
-
-# 5. Start Service
-systemctl enable wg-quick@wg0
-systemctl restart wg-quick@wg0
-
-echo "Installation complete! Device is now connected to the VPN network."
-`, config, apiURL, node.ID)
+	// 2. A fresh one-time token lets the script check in over the VPN.
+	token, err := newSessionToken()
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to create enrollment token")
+		return
+	}
+	if err := s.store.CreateEnrollmentToken(r.Context(), node.ID, hashToken(token), authNow(), enrollmentTTL); err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to create enrollment token")
+		return
+	}
+	script := installScript(config, "http://"+hub+":8080/api/v1/nodes/"+node.ID+"/checkin", token)
 
 	w.Header().Set("Content-Type", "text/x-shellscript")
 	w.Write([]byte(script))

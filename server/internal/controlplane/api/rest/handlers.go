@@ -1056,6 +1056,17 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
+	if user, _ := sessionFrom(r); user == nil { // a node enrolling with its install script's token
+		ok, err := s.store.ConsumeEnrollmentToken(r.Context(), id, hashToken(r.Header.Get(enrollmentHeader)), authNow())
+		if err != nil {
+			errorResponse(w, http.StatusInternalServerError, "failed to check enrollment token")
+			return
+		}
+		if !ok {
+			errorWithCode(w, http.StatusUnauthorized, "invalid_enrollment_token", "invalid or expired enrollment token")
+			return
+		}
+	}
 	var req NodeCheckInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1091,6 +1102,9 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 			node.Labels = make(map[string]string)
 		}
 		for k, v := range req.Labels {
+			if strings.HasPrefix(k, "wireguard_") { // keys and WireGuard settings are not the node's to report
+				continue
+			}
 			node.Labels[k] = v
 		}
 	}
@@ -1715,7 +1729,7 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Public paths that don't need API Key
-		if publicPaths[r.URL.Path] {
+		if publicPaths[r.URL.Path] || isEnrollmentCheckin(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
