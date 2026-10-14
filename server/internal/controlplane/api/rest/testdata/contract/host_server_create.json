@@ -4,11 +4,9 @@
     "node": {
       "created_at": "<time>",
       "endpoints": null,
-      "has_config": false,
+      "has_config": true,
       "id": "<uuid>",
-      "labels": {
-        "wireguard_private_key": "<key>"
-      },
+      "labels": {},
       "last_seen": "<time>",
       "name": "contract-srv",
       "network_id": "<uuid>",

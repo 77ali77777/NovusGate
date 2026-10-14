@@ -123,8 +123,11 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get node's private key from labels
-	privateKey := node.Labels["wireguard_private_key"]
+	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
+		return
+	}
 	if privateKey == "" {
 		errorResponse(w, http.StatusBadRequest, "private key not found for this node")
 		return
@@ -193,7 +196,11 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	privateKey := node.Labels["wireguard_private_key"]
+	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
+		return
+	}
 	if privateKey == "" {
 		errorResponse(w, http.StatusBadRequest, "private key not found")
 		return
@@ -291,13 +298,18 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	if node.Labels == nil {
 		node.Labels = make(map[string]string)
 	}
-	// Store Private Key in Labels for MVP (Not secure for production!)
-	node.Labels["wireguard_private_key"] = privateKey
 
 	if err := s.store.CreateNode(r.Context(), node); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to create node")
 		return
 	}
+	// The private key is kept sealed in its own column, never in labels.
+	if err := s.store.SetNodePrivateKey(r.Context(), node.ID, privateKey); err != nil {
+		s.store.DeleteNode(r.Context(), node.ID) // a node whose key is lost would have no usable config
+		errorResponse(w, http.StatusInternalServerError, "failed to store the node's private key")
+		return
+	}
+	node.HasConfig = true
 
 	// 3. Add to WireGuard interface
 	mgr := s.getManager(networkID)
@@ -362,7 +374,15 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 1. Get Config
-	privateKey := node.Labels["wireguard_private_key"]
+	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
+		return
+	}
+	if privateKey == "" {
+		errorResponse(w, http.StatusBadRequest, "private key not found for this node")
+		return
+	}
 	network, err := s.store.GetNetwork(r.Context(), node.NetworkID)
 	if err != nil || network == nil {
 		errorResponse(w, http.StatusNotFound, "network not found")

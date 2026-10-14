@@ -171,3 +171,11 @@ func clientIP(r *http.Request) string {
 	}
 	return host
 }
+
+// sessionUserID is the panel user's ID, or "" without a session.
+func sessionUserID(r *http.Request) string {
+	if user, _ := sessionFrom(r); user != nil {
+		return user.ID
+	}
+	return ""
+}

@@ -8,7 +8,6 @@ import (
 	"github.com/novusgate/novusgate/internal/shared/secretbox"
 )
 
-
 // SetKeyBox sets the master-key box node private keys are sealed with; nil
 // stores them with a "plain:" prefix.
 func (s *Store) SetKeyBox(b *secretbox.Box) {

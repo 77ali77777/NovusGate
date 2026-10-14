@@ -138,10 +138,14 @@ func seedContract(t *testing.T, st *store.Store) contractSeed {
 		}
 	}
 	node := &models.Node{NetworkID: n.ID, Name: "contract-node", VirtualIP: net.ParseIP("10.66.0.3"),
-		PublicKey: key("N"), Labels: map[string]string{"wireguard_private_key": key("P")}, Status: models.NodeStatusOnline}
+		PublicKey: key("N"), Labels: map[string]string{}, Status: models.NodeStatusOnline}
 	if err := st.CreateNode(ctx, node); err != nil {
 		t.Fatal(err)
 	}
+	if err := st.SetNodePrivateKey(ctx, node.ID, key("P")); err != nil {
+		t.Fatal(err)
+	}
+	node.HasConfig = true
 	return contractSeed{network: n, empty: e, node: node}
 }
 

@@ -100,6 +100,7 @@ func init() {
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(keysToLabelsCmd)
 }
 
 func initConfig() {
@@ -171,6 +172,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	slog.Info("  Database: Migrations applied")
+
+	if err := setupNodeKeys(context.Background(), db); err != nil {
+		return err
+	}
 
 	// Bootstrap System (Admin User & Network)
 	if err := bootstrapSystem(db); err != nil {
