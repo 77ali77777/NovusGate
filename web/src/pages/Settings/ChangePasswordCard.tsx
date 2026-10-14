@@ -23,19 +23,8 @@ export const ChangePasswordCard: React.FC = () => {
     }
 
     try {
-      // Get current username from local storage or context if available,
-      // otherwise assume 'admin' or get from decode token.
-      // For MVP we assume the user knows their username or we use a stored one.
-      // Ideally client logic should track logged in user.
-      // Let's assume 'admin' for now or handle it better.
-      // Update: The login page stores 'username' in localStorage usually?
-      // The current implementation of LoginPage doesn't store username, only token.
-      // We will need to ask the user to input username or fetch it.
-      // BUT, let's auto-fill 'admin' as default or add a username field.
-
-      const username = localStorage.getItem('auth_username') || 'admin'
-
-      await updatePassword.mutateAsync({ username, oldPass: oldPassword, newPass: newPassword })
+      // The server changes the password of the session's user.
+      await updatePassword.mutateAsync({ oldPass: oldPassword, newPass: newPassword })
       setSuccess('Password updated successfully')
       setOldPassword('')
       setNewPassword('')
@@ -74,7 +63,7 @@ export const ChangePasswordCard: React.FC = () => {
             <input
               type="text"
               disabled
-              value={localStorage.getItem('auth_username') || 'admin'}
+              value={localStorage.getItem('auth_username') || ''}
               className="w-full px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 dark:border-gray-600 text-gray-500"
             />
           </div>

@@ -424,8 +424,8 @@ func defaultErrorCode(status int) string {
 
 // Login handler
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	ip, now := clientIP(r), authNow()
-	if wait, ok := loginLimit.begin(ip, now); !ok {
+	key, now := limiterKey(clientIP(r)), authNow()
+	if wait, ok := loginLimit.begin(key, now); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		errorWithCode(w, http.StatusTooManyRequests, "too_many_attempts", "too many failed logins, try again later")
 		return
@@ -446,16 +446,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if user == nil {
+		comparePassword(dummyPasswordHash, []byte(req.Password)) // same cost as a wrong password
+		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
+		return
+	}
+
+	if err := comparePassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
-		return
-	}
-	
-	loginLimit.reset(ip)
+	loginLimit.succeed(key)
 	s.store.DeleteExpiredSessions(r.Context(), authNow()) // housekeeping; a failure only leaves old rows
 	token, err := newSessionToken()
 	if err != nil {
@@ -481,17 +482,25 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	// The password changed is always the session user's; a body username
 	// is accepted only when it names that user.
 	current, hash := sessionFrom(r)
+	if current == nil {
+		errorWithCode(w, http.StatusUnauthorized, "invalid_token", "invalid token")
+		return
+	}
 	if req.Username != "" && req.Username != current.Username {
 		errorWithCode(w, http.StatusForbidden, "forbidden", "you can only change your own password")
 		return
 	}
 	user, err := s.store.GetUserByUsername(r.Context(), current.Username)
-	if err != nil || user == nil {
+	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to check user")
 		return
 	}
+	if user == nil { // deleted after this request was authenticated
+		errorWithCode(w, http.StatusUnauthorized, "invalid_token", "invalid token")
+		return
+	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
+	if err := comparePassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_old_password", "invalid old password") // 400: a 401 logs the panel out (B15)
 		return
 	}
@@ -503,14 +512,10 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update password
-	if err := s.store.UpdateUserPassword(r.Context(), user.Username, string(hashedPassword)); err != nil {
+	// One transaction: the new password and the end of the user's other
+	// logins (the session that changed it stays) happen together or not at all.
+	if err := s.store.ChangePassword(r.Context(), user.ID, string(hashedPassword), hash); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to update password")
-		return
-	}
-	// Other logins of this user end; the session that changed it stays.
-	if err := s.store.DeleteUserSessions(r.Context(), user.ID, hash); err != nil {
-		errorResponse(w, http.StatusInternalServerError, "password changed, but other sessions could not be revoked")
 		return
 	}
 
@@ -1698,7 +1703,6 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 
 // Middleware
 
-// AuthMiddleware validates authentication
 // APIKeyMiddleware validates the X-API-Key header
 func APIKeyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

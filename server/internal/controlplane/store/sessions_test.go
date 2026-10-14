@@ -68,3 +68,30 @@ func TestSessionsLifecycle(t *testing.T) {
 		t.Fatal("user deletion must remove its sessions")
 	}
 }
+
+func TestChangePasswordRevokesOtherSessions(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "DELETE FROM users WHERE username = 'sess-pw'")
+	u := &models.User{Username: "sess-pw", PasswordHash: "old"}
+	if err := s.CreateUser(ctx, u); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.DeleteUser(context.Background(), u.ID) })
+	now := time.Now()
+	s.CreateSession(ctx, u.ID, "keep", now, time.Hour)
+	s.CreateSession(ctx, u.ID, "drop", now, time.Hour)
+	if err := s.ChangePassword(ctx, u.ID, "new-hash", "keep"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.GetUserByUsername(ctx, "sess-pw")
+	if got.PasswordHash != "new-hash" {
+		t.Fatalf("hash = %q", got.PasswordHash)
+	}
+	if u, _ := s.SessionUser(ctx, "drop", now); u != nil {
+		t.Fatal("other sessions must be revoked")
+	}
+	if u, _ := s.SessionUser(ctx, "keep", now); u == nil {
+		t.Fatal("the current session must stay")
+	}
+}

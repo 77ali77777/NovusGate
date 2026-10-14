@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -221,5 +222,70 @@ func TestNoCORSHeaders(t *testing.T) {
 	rec := callAs(t, s, "GET", "/api/v1/networks", "", true)
 	if v := rec.Header().Get("Access-Control-Allow-Origin"); v != "" {
 		t.Fatalf("Access-Control-Allow-Origin = %q, want none", v)
+	}
+}
+
+// Handlers reached without a session (or whose user vanished) answer 401.
+func TestAuthHandlersWithoutSessionUser(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	ghost := &models.User{ID: "00000000-0000-4000-8000-000000000001", Username: "ghost"}
+	for name, h := range map[string]http.HandlerFunc{"password": s.handleUpdatePassword, "logout": s.handleLogout} {
+		for _, ctx := range []context.Context{context.Background(), context.WithValue(context.Background(), sessionKey{}, session{ghost, "h"})} {
+			req := httptest.NewRequest("PUT", "/x", strings.NewReader(`{"oldPassword":"a","newPassword":"b"}`)).WithContext(ctx)
+			rec := httptest.NewRecorder()
+			h(rec, req)
+			if name == "logout" && ctx != context.Background() {
+				continue // a vanished user's logout just deletes nothing
+			}
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("%s without a session user = %d %s, want 401", name, rec.Code, rec.Body)
+			}
+		}
+	}
+}
+
+// A success only removes its own attempt; earlier failures still count.
+func TestSuccessfulLoginKeepsFailures(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	loginLimit = newLoginLimiter(3, 15*time.Minute) // newContractServer restores it
+	good := `{"username":"contract-user","password":"contract-pw-1"}`
+	bad := `{"username":"contract-user","password":"wrong"}`
+	for _, body := range []string{bad, bad, good, bad} {
+		callAs(t, s, "POST", "/api/v1/auth/login", body, false)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/auth/login", good, false); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("after 3 failures and a success in between = %d, want 429", rec.Code)
+	}
+}
+
+func TestLimiterKeysIPv6By64AndPrunes(t *testing.T) {
+	l := newLoginLimiter(2, time.Minute)
+	now := time.Now()
+	l.begin(limiterKey("2001:db8:1:2::5"), now)
+	l.begin(limiterKey("2001:db8:1:2::9"), now)
+	if _, ok := l.begin(limiterKey("2001:db8:1:2:ffff::1"), now); ok {
+		t.Fatal("addresses in one /64 share a counter")
+	}
+	if limiterKey("198.51.100.7") != "198.51.100.7" {
+		t.Fatal("IPv4 keys are the address")
+	}
+	for i := 0; i < maxTrackedIPs+50; i++ {
+		l.begin(fmt.Sprintf("10.%d.%d.%d", i>>16&255, i>>8&255, i&255), now)
+	}
+	if n := len(l.fails); n > maxTrackedIPs {
+		t.Fatalf("tracked = %d, want at most %d", n, maxTrackedIPs)
+	}
+}
+
+// Unknown usernames still run bcrypt, so they answer as slowly as known ones.
+func TestUnknownUserRunsBcrypt(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	orig := comparePassword
+	t.Cleanup(func() { comparePassword = orig })
+	calls := 0
+	comparePassword = func(hash, pw []byte) error { calls++; return orig(hash, pw) }
+	callAs(t, s, "POST", "/api/v1/auth/login", `{"username":"nobody-here","password":"x"}`, false)
+	if calls != 1 {
+		t.Fatalf("bcrypt calls for an unknown user = %d, want 1", calls)
 	}
 }

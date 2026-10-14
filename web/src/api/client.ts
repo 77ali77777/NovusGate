@@ -133,9 +133,9 @@ class ApiClient {
   }
 
   // User Management
-  async updatePassword(username: string, oldPass: string, newPass: string): Promise<void> {
+  // Changes the logged-in user's password; the server takes the user from the session.
+  async updatePassword(oldPass: string, newPass: string): Promise<void> {
     await this.client.put('/auth/password', {
-      username,
       oldPassword: oldPass,
       newPassword: newPass,
     })
@@ -458,8 +458,8 @@ export function useUpdateNode() {
 // User Management hooks
 export function useUpdatePassword() {
   return useMutation({
-    mutationFn: (data: { username: string; oldPass: string; newPass: string }) =>
-      api.updatePassword(data.username, data.oldPass, data.newPass),
+    mutationFn: (data: { oldPass: string; newPass: string }) =>
+      api.updatePassword(data.oldPass, data.newPass),
   })
 }
 

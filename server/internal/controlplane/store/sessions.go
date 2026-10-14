@@ -57,3 +57,26 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context, now time.Time) error 
 	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, now)
 	return err
 }
+
+// ChangePassword sets a user's password hash and revokes the user's other
+// sessions (all but keepHash) in one transaction.
+func (s *Store) ChangePassword(ctx context.Context, userID, passwordHash, keepHash string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // no-op after Commit
+	res, err := tx.ExecContext(ctx, `UPDATE users SET password_hash = $2 WHERE id = $1`, userID, passwordHash)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return sql.ErrNoRows
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2`, userID, keepHash); err != nil {
+		return err
+	}
+	return tx.Commit()
+}

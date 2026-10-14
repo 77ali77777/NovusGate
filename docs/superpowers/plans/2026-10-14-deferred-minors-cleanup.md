@@ -19,17 +19,17 @@
 - **P2d-2 M-2** (206 undocumented): `docExtraResponses` (P2d-3).
 
 ## Batch A — Auth (P4a review)
-- [ ] A1: the password update and the revocation of other sessions run in one transaction (`store.ChangePassword`).
-- [ ] A2: a session user deleted mid-request gets 401 `invalid_token`, not 500.
-- [ ] A3: `handleUpdatePassword` and `handleLogout` without a session → 401 (explicit guard).
-- [ ] A4: limiter memory and CPU:
+- [x] A1: the password update and the revocation of other sessions run in one transaction (`store.ChangePassword`).
+- [x] A2: a session user deleted mid-request gets 401 `invalid_token`, not 500.
+- [x] A3: `handleUpdatePassword` and `handleLogout` without a session → 401 (explicit guard).
+- [x] A4: limiter memory and CPU:
   - prune expired entries at most once a minute, in O(n);
   - hard cap the tracked keys (oldest dropped);
   - key IPv6 by its /64.
-- [ ] A5: a successful login removes only its own attempt; it no longer clears the IP's failures.
-- [ ] A6: web `ChangePasswordCard` stops sending `username`.
-- [ ] A7: remove the stale `AuthMiddleware` comments.
-- [ ] A8: unknown usernames run bcrypt against a dummy hash, so their timing matches.
+- [x] A5: a successful login removes only its own attempt; it no longer clears the IP's failures.
+- [x] A6: web `ChangePasswordCard` stops sending `username`.
+- [x] A7: remove the stale `AuthMiddleware` comments.
+- [x] A8: unknown usernames run bcrypt against a dummy hash, so their timing matches.
 
 ## Batch B — Enrollment (P4b review)
 - [ ] B1: checkin decodes and validates the body and finds the node **before** it consumes the token; the script stops at once on 401 with "token used or expired".
