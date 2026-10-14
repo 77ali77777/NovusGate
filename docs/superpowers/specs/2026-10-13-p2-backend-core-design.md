@@ -76,4 +76,5 @@ Dəyişənlər:
   - istifadəçiyə görünən faydası yoxdur, regressiya riski isə realdır.
 
   Ehtiyac yarananda (P6 və ya ayrıca P2 davamı) ayrıca plan olacaq.
-- **P2-nin vəziyyəti:** P2c-2-dən (`wgN.conf`-a `[Peer]`) başqa hər şey bağlandı.
+- **P2c-2 ləğv olundu (istifadəçi qərarı, 2026-10-14):** reboot bərpasını `restorePeers` və reconciler edir, host-dakı `wgN.conf` fayllarına peer yazılmır.
+- **P2-nin vəziyyəti:** bağlandı.
