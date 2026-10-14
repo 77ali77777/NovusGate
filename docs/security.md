@@ -28,7 +28,7 @@
 
 ## Node private key-ləri və audit (P4c)
 - **Saxlanma:** node-un WireGuard private key-i artıq `labels`-də deyil, `nodes.private_key_enc` sütunundadır.
-  - **Format:** `v1:<base64(nonce|ciphertext)>`, AES-256-GCM ilə şifrələnir.
+  - **Format:** `v1:<base64(nonce|ciphertext)>`, AES-256-GCM ilə şifrələnir. Node-un ID-si AES-GCM-ə əlavə (autentifikasiya olunan) data kimi verilir, ona görə dəyər başqa node-un sətrinə köçürülsə açılmır.
   - **Master açar:** `NOVUSGATE_MASTER_KEY` (64 hex simvol, compose-da `.env`-dəki `MASTER_KEY`-dən).
   - **Açar yoxdursa:** dəyər `plain:` prefiksi ilə saxlanılır və server startup-da xəbərdarlıq verir. Açar sonradan təyin olunsa, növbəti startup bu dəyərləri şifrələyir.
   - **Açar səhvdirsə** (uzunluq və ya hex xətası): server başlamır.

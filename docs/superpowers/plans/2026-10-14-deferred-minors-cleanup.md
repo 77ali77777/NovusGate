@@ -46,12 +46,12 @@
 - [x] B9: `web/DEVELOPER_GUIDE*.md` drop `VITE_API_URL`/`VITE_API_KEY`; `useWebSocket` defaults to the page's own origin. `web/.env.example` → **user** (`.env*` writes are machine-denied).
 
 ## Batch C — Node keys (P4c review)
-- [ ] C1: an empty legacy label is not migrated (it is dropped from labels, no column value).
-- [ ] C2: the reseal counter counts `RowsAffected`.
-- [ ] C3: the ciphertext is bound to its node ID as AES-GCM additional data (`v1` format unchanged otherwise; not deployed yet).
-- [ ] C4: Center `MASTER_KEY` falls back to `/dev/urandom`; an empty `MASTER_KEY=` line is replaced.
-- [ ] C5: create-server writes the node and its sealed key in one INSERT.
-- [ ] C6: `secretbox.IsPlain` is removed (unused).
+- [x] C1: an empty legacy label is not migrated (it is dropped from labels, no column value).
+- [x] C2: the reseal counter counts `RowsAffected`.
+- [x] C3: the ciphertext is bound to its node ID as AES-GCM additional data (`v1` format unchanged otherwise; not deployed yet).
+- [x] C4: Center `MASTER_KEY` falls back to `/dev/urandom`; an empty `MASTER_KEY=` line is replaced.
+- [x] C5: create-server writes the node and its sealed key in one INSERT.
+- [x] C6: `secretbox.IsPlain` is removed (unused).
 
 ## Batch D — API surface and OpenAPI (P2d reviews)
 - [ ] D1 (M-3): `GET /debug/wireguard/{id}` 404 uses the unified error body.

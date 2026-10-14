@@ -1,5 +1,18 @@
 // ============ INSTALL SCRIPTS ============
 
+// Shell expression for a new MASTER_KEY (64 hex characters, seals node
+// private keys); falls back to /dev/urandom when openssl is missing.
+const MASTER_KEY_GEN = "$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -t x1 | tr -d ' \\n')";
+
+// Shell block that gives envFile a MASTER_KEY when it has none or an empty
+// one. An existing key is never replaced: keys sealed with it would be lost.
+const ensureMasterKey = (envFile) => `
+if [ -f "${envFile}" ] && ! grep -q "^MASTER_KEY=." "${envFile}"; then
+  sed -i '/^MASTER_KEY=$/d' "${envFile}"
+  echo "MASTER_KEY=${MASTER_KEY_GEN}" >> "${envFile}"
+fi
+`;
+
 // Bash function that empties the install dir while keeping persistent state:
 // the Postgres data directory (server/data, bind-mounted by docker-compose),
 // a legacy top-level data/ directory and the admin VPN client config.
@@ -110,7 +123,7 @@ generate_secret() {
 API_KEY=$(generate_secret)
 JWT_SECRET=$(generate_secret)
 # Seals node private keys in the database (64 hex characters).
-MASTER_KEY=$(openssl rand -hex 32)
+MASTER_KEY=${MASTER_KEY_GEN}
 
 if [ -z "$DB_PASSWORD" ]; then
   DB_PASSWORD=$(generate_secret)
@@ -409,16 +422,14 @@ if [ -f "/tmp/NovusGate.env.bak" ]; then
   fi
 
   # Ensure MASTER_KEY exists (seals node private keys; added in P4c)
-  if ! grep -q "^MASTER_KEY=" server/deployments/docker/.env; then
-    echo "MASTER_KEY=$(openssl rand -hex 32)" >> server/deployments/docker/.env
-  fi
+${ensureMasterKey('server/deployments/docker/.env')}
 else
   echo "Generating new keys (Config provided)..."
   generate_secret() { openssl rand -hex 16 2>/dev/null || head -c 16 /dev/urandom | od -An -t x1 | tr -d ' \\n'; }
   
   API_KEY=$(generate_secret)
   JWT_SECRET=$(generate_secret)
-  MASTER_KEY=$(openssl rand -hex 32)
+  MASTER_KEY=${MASTER_KEY_GEN}
 
   # Use provided or generate
   DB_PASSWORD="${DB_PASS}"
@@ -589,10 +600,7 @@ INSTALL_DIR="/opt/NovusGate"
 TEMP_DIR="/tmp/NovusGate_update"
 
 # Ensure MASTER_KEY exists (seals node private keys; added in P4c)
-if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ] \\
-  && ! grep -q "^MASTER_KEY=" "$INSTALL_DIR/server/deployments/docker/.env"; then
-  echo "MASTER_KEY=$(openssl rand -hex 32)" >> "$INSTALL_DIR/server/deployments/docker/.env"
-fi
+${ensureMasterKey('$INSTALL_DIR/server/deployments/docker/.env')}
 
 echo "=========================================="
 echo "  NovusGate SMART UPDATE v2.0"
@@ -790,6 +798,8 @@ echo "=========================================="
 `;
 
 module.exports = {
+  MASTER_KEY_GEN,
+  ensureMasterKey,
   CLEAN_INSTALL_DIR_FN,
   EXIT_ALREADY_INSTALLED,
   ALREADY_INSTALLED_GUARD,

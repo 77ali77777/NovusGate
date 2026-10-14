@@ -27,8 +27,8 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 ## Master açar (P4c)
 - **`.env`-dəki `MASTER_KEY`** (64 hex simvol) compose ilə control-plane-ə `NOVUSGATE_MASTER_KEY` kimi ötürülür və node private key-lərini şifrələyir.
 - **Center:**
-  - yeni quraşdırmada açarı özü yaradır (`openssl rand -hex 32`);
-  - reinstall və update `.env`-də açar yoxdursa əlavə edir.
+  - yeni quraşdırmada açarı özü yaradır (`openssl rand -hex 32`, `openssl` yoxdursa `/dev/urandom`);
+  - reinstall və update `.env`-də açar yoxdursa və ya boşdursa əlavə edir; mövcud açarı heç vaxt dəyişmir.
 - **Əl ilə quraşdırma:** `MASTER_KEY=$(openssl rand -hex 32)` sətrini `server/deployments/docker/.env`-ə əlavə edin.
 - **Açar dəyişdirilməməlidir:** dəyişsə, köhnə key-lər açılmır. Açarı `.env` ilə birlikdə yedəkləyin.
 - **Rollback:** `docs/data-model.md`, 009 bölməsi.

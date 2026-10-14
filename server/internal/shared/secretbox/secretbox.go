@@ -60,8 +60,9 @@ func FromEnv() (*Box, error) {
 }
 
 // Seal returns the stored form of plaintext: "v1:<base64(nonce|ciphertext)>"
-// with a box, "plain:<plaintext>" without one.
-func Seal(b *Box, plaintext string) (string, error) {
+// with a box, "plain:<plaintext>" without one. context (the owning row's ID)
+// is authenticated but not stored, so a value only opens for that row.
+func Seal(b *Box, plaintext, context string) (string, error) {
 	if b == nil {
 		return prefixPlain + plaintext, nil
 	}
@@ -69,13 +70,14 @@ func Seal(b *Box, plaintext string) (string, error) {
 	if _, err := rand.Read(nonce); err != nil {
 		return "", err
 	}
-	sealed := b.aead.Seal(nonce, nonce, []byte(plaintext), nil)
+	sealed := b.aead.Seal(nonce, nonce, []byte(plaintext), []byte(context))
 	return prefixV1 + base64.StdEncoding.EncodeToString(sealed), nil
 }
 
 // Open returns the plaintext of a stored value. A "v1:" value needs the box
-// that sealed it; a "plain:" value opens with or without one.
-func Open(b *Box, stored string) (string, error) {
+// and the context it was sealed with; a "plain:" value opens with or
+// without one.
+func Open(b *Box, stored, context string) (string, error) {
 	if rest, ok := strings.CutPrefix(stored, prefixPlain); ok {
 		return rest, nil
 	}
@@ -94,14 +96,9 @@ func Open(b *Box, stored string) (string, error) {
 	if len(raw) < n {
 		return "", errors.New("secret is too short")
 	}
-	plain, err := b.aead.Open(nil, raw[:n], raw[n:], nil)
+	plain, err := b.aead.Open(nil, raw[:n], raw[n:], []byte(context))
 	if err != nil {
-		return "", errors.New("secret cannot be decrypted with this master key")
+		return "", errors.New("secret cannot be decrypted with this master key (or it belongs to another row)")
 	}
 	return string(plain), nil
-}
-
-// IsPlain reports whether a stored value is unencrypted.
-func IsPlain(stored string) bool {
-	return strings.HasPrefix(stored, prefixPlain)
 }

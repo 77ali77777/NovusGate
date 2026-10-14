@@ -301,17 +301,11 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		node.Labels = make(map[string]string)
 	}
 
-	if err := s.store.CreateNode(r.Context(), node); err != nil {
+	// The node and its sealed private key (never in labels) are written together.
+	if err := s.store.CreateNodeWithKey(r.Context(), node, privateKey); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to create node")
 		return
 	}
-	// The private key is kept sealed in its own column, never in labels.
-	if err := s.store.SetNodePrivateKey(r.Context(), node.ID, privateKey); err != nil {
-		s.store.DeleteNode(r.Context(), node.ID) // a node whose key is lost would have no usable config
-		errorResponse(w, http.StatusInternalServerError, "failed to store the node's private key")
-		return
-	}
-	node.HasConfig = true
 
 	// 3. Add to WireGuard interface
 	mgr := s.getManager(networkID)

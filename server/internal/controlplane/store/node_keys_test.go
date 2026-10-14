@@ -231,3 +231,37 @@ func TestRollback009RefusesToLoseKeys(t *testing.T) {
 		t.Fatalf("key after refused rollback = %q", key)
 	}
 }
+
+// An empty legacy label is dropped, not sealed as an empty key.
+func TestMigrateNodeKeysSkipsEmptyLabel(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	n := keyNode(t, s, map[string]string{"wireguard_private_key": ""})
+	if _, _, err := s.MigrateNodeKeys(ctx); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.GetNode(ctx, n.ID)
+	if got.HasConfig {
+		t.Fatal("an empty legacy key must not count as a config")
+	}
+	if _, ok := got.Labels["wireguard_private_key"]; ok {
+		t.Fatalf("the empty label must be removed: %v", got.Labels)
+	}
+}
+
+// A node and its sealed key are written together.
+func TestCreateNodeWithKey(t *testing.T) {
+	s := newTestStore(t)
+	box, _ := secretbox.New(testMasterKey)
+	s.SetKeyBox(box)
+	ctx := context.Background()
+	nw := keyNode(t, s, map[string]string{}) // reuse its network
+	n := &models.Node{NetworkID: nw.NetworkID, Name: "keys-node-2", VirtualIP: net.ParseIP("10.72.0.3"),
+		PublicKey: strings.Repeat("L", 43) + "=", Labels: map[string]string{}, Status: models.NodeStatusPending}
+	if err := s.CreateNodeWithKey(ctx, n, "created-key"); err != nil {
+		t.Fatal(err)
+	}
+	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "created-key" {
+		t.Fatalf("key = %q", key)
+	}
+}

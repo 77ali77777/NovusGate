@@ -149,20 +149,30 @@ func (s *Store) UpdateNetworkKeys(ctx context.Context, id, privateKey, publicKey
 
 // CreateNode creates a new node
 func (s *Store) CreateNode(ctx context.Context, node *models.Node) error {
+	prepareNode(node)
+	return s.insertNode(ctx, node, nil)
+}
+
+// prepareNode assigns the ID and creation time of a new node.
+func prepareNode(node *models.Node) {
 	if node.ID == "" {
 		node.ID = uuid.New().String()
 	}
 	node.CreatedAt = time.Now()
-	
+}
+
+// insertNode writes a prepared node; sealedKey is its private_key_enc (nil
+// for nodes whose key the server does not hold).
+func (s *Store) insertNode(ctx context.Context, node *models.Node, sealedKey *string) error {
 	labelsJSON, _ := json.Marshal(node.Labels)
 	nodeInfoJSON, _ := json.Marshal(node.NodeInfo)
-	
+
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO nodes (id, network_id, name, virtual_ip, public_key, labels, status, node_info, expires_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, node.ID, node.NetworkID, node.Name, node.VirtualIP.String(), node.PublicKey, 
-	   labelsJSON, node.Status, nodeInfoJSON, node.ExpiresAt, node.CreatedAt)
-	
+		INSERT INTO nodes (id, network_id, name, virtual_ip, public_key, labels, status, node_info, expires_at, created_at, private_key_enc)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, node.ID, node.NetworkID, node.Name, node.VirtualIP.String(), node.PublicKey,
+		labelsJSON, node.Status, nodeInfoJSON, node.ExpiresAt, node.CreatedAt, sealedKey)
+
 	return err
 }
 
