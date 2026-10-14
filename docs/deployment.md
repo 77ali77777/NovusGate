@@ -37,6 +37,11 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 ## API açarının formatı
 `API_KEY` (control-plane-də `novusgate_API_KEY`) yalnız hərf, rəqəm və `. _ ~ -` simvollarından ibarət ola bilər. Səbəb: açar panelin nginx konfiqurasiyasına dırnaq içində yazılır. Başqa simvol olsa, control-plane başlamır. Center açarı hex yaradır.
 
+## Mövcud serverlərdə 2026-10-14 dəyişiklikləri
+- **Postgres portu:** compose indi `127.0.0.1:5432` publish edir. Konteyner yenidən yaradılmalıdır: Center Update compose faylı dəyişdiyini görüb tam rebuild edir. Əl ilə: `docker compose up -d postgres`.
+- **Admin port guard-ı (iptables rejimi):** `setup-firewall.sh` yenidən işə salınmalıdır. Center Update bunu server və ya compose faylları dəyişəndə edir (bu buraxılışda hər ikisi dəyişib). Docker-i qısa müddətə restart edir. Yoxlamaq üçün: `iptables -t mangle -S NOVUSGATE-ADMIN` və `ip6tables -t mangle -S NOVUSGATE-ADMIN`. nft rejimində guard kompilyatordadır, control-plane yenilənəndə tətbiq olunur.
+- **`/health`:** monitorinq yalnız `status`-a baxırsa, heç nə dəyişmir. Detallar üçün `X-API-Key` göndərin.
+
 ## Yeniləmə qaydası (buraxılış qeydi)
 - **Web və control-plane birlikdə yenilənməlidir:**
   - P2a-dan əvvəlki web köhnə xəta formasını gözləyir və yeni control-plane ilə `[object Object]` göstərə bilər;

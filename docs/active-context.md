@@ -278,9 +278,45 @@
   - Center-də formdakı dəyərlərin yoxlanması.
 - **Davam:** P5 (UI kit). Vizual maketin təsdiqi lazımdır.
 
+### 2026-10-14: Açıq qərarlar və hand-off hazırlığı
+- **Tapşırıq:** "hamısını hazırla, düzəlişləri et, sonra report ver". İstifadəçinin qərarları:
+  - Postgres yalnız loopback-də;
+  - Allow IP admin portlarını açmır (§6b.4);
+  - `/health` detalları yalnız auth ilə.
+- **Commit-lər:** `3bb858c`, `5510657`, `2b374d8`, `8d4b700`, `b1320ea`, `1840033`.
+- **Nəticə:**
+  - `web/.env` və `NovusGate Center/.env` git-dən çıxarıldı və ignore olundu; `server/deployments/docker/.env` də ignore olunur;
+  - compose `127.0.0.1:5432:5432`;
+  - CI faylı `docs/ci/ci.yml`-dədir, kopyalanmalıdır;
+  - Allow IP: nft guard sətri, iptables mangle `NOVUSGATE-ADMIN` (IPv4 və IPv6), API 400, Center uninstall IPv6 guard-ı silir;
+  - `/health` anonim çağırışa `{status, version}` qaytarır.
+- **P5 mockup:** https://claude.ai/artifact/T3qJP3n5KZBgunekRtTSi1. Dörd artboard:
+  - Foundations;
+  - Components (light/dark tweak, işləyən dialog, tablar, switch);
+  - Nodes (light);
+  - Nodes (dark).
+
+  Təsdiq gözləyir.
+- **Yoxlamalar:**
+  - Go 10/10 (`NFT_CHECK=1`);
+  - `NFT-VERSIONS-OK`;
+  - shell `OK`;
+  - Center 38/38;
+  - real iptables (nft və legacy backend) guard-ı yükləyir, iki dəfə işə salındıqdan sonra bir jump qalır;
+  - WSL kernel-ində legacy ip6tables `mangle` yoxdur, skript xəbərdarlıq verib davam edir.
+- **İcra olunmayıb:**
+  - real hostda port bloklanmasının funksional testi;
+  - CI-nin GitHub-da işə salınması.
+- **Davam:** mockup təsdiqi → P5 planı.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-14 | `.env` faylları git-dən çıxarıldı və ignore olundu | web/.gitignore, server/.gitignore, NovusGate Center/.gitignore | secret sızması · `3bb858c`, `5510657` |
+| 2026-10-14 | Postgres yalnız `127.0.0.1:5432` | docker-compose.yml, docs/security.md | publish olunmuş port iptables INPUT-dan keçmir · `2b374d8` |
+| 2026-10-14 | CI workflow `docs/ci/ci.yml`-də hazırlandı; `VITE_WS_URL` qeydi | docs/ci/ci.yml, web/.env.example | `.github` agentə bağlıdır · `8d4b700` |
+| 2026-10-14 | Allow IP admin/API portlarını açmır (nft guard, iptables mangle guard, API 400) | nft/compile.go, api/rest/firewall_*.go, setup-firewall.sh (+test), Center scripts.js, docs/api.md, P3 spec §6b | §6b.4 istifadəçi qərarı · `b1320ea` |
+| 2026-10-14 | `/health` detalları yalnız API key və ya sessiya ilə | api/rest/{handlers,dto_system}.go, testdata, docs/api.md | istifadəçi qərarı · `1840033` |
 | 2026-10-13 | Close Port dəqiq uyğunluq | firewall_handlers.go, firewall_portmatch_test.go | A6 lockout · `abdb7b5` |
 | 2026-10-13 | Startup-da peer bərpası, sync expired-i qaytarmır | peer_restore.go, handlers.go | A3, B11 · `1bb5700` |
 | 2026-10-13 | Konteyner restart siyasəti | docker-compose.yml | A3 · `1bbc4c2` |
