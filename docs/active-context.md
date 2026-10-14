@@ -320,7 +320,8 @@
 - **Snapshot-la qorunmayanlar:**
   - `POST /networks/{id}/sync` 200 cavabı (`wg show`-un seam-i yoxdur);
   - iptables rejimində v1 firewall cavabları (eyni açarlar nft yolunda qorunur).
-- **Davam:** final review, sonra P2c-2 və ya P5.
+- **Final review (opus):** wire formatında regressiya tapılmadı. 1 Important RED→GREEN düzəldildi (`ecf44bb`): POST /networks və node request-ləri response komponentlərinin `required` siyahısını miras alırdı, indi `NetworkInput`/`NodeInfoInput` ayrıdır (`TestRequestBodiesReachNoRequiredFields`). 2 minor ledger-də.
+- **Davam:** P2c-2 və ya P5.
 
 
 ## Son Dəyişikliklər
