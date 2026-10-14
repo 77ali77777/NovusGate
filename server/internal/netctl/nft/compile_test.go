@@ -244,6 +244,7 @@ func TestReservedPortsOnlyOnNetworkInterfaces(t *testing.T) {
 }
 
 func edgeRulesets() map[string]Ruleset {
+	edgeHour := testNow.Add(time.Hour)
 	return map[string]Ruleset{
 		"empty": {SSHPorts: []uint16{22}, EgressInterface: "eth0"},
 		"v6only": {
@@ -251,6 +252,20 @@ func edgeRulesets() map[string]Ruleset {
 			Services: []Service{{ID: "v6-https", Proto: TCP, Ports: PortRange{443, 443},
 				Sources: []netip.Prefix{netip.MustParsePrefix("2001:db8::/32")}}},
 			Blocked: []BlockedEntry{{Prefix: netip.MustParsePrefix("2001:db8:bad::/48")}},
+		},
+		// "rules": port-scoped IP rules, a UDP forward, a reject VPN rule and an
+		// IPv6 block with a timeout, none of which the full ruleset has.
+		"rules": {
+			SSHPorts: []uint16{22}, EgressInterface: "eth0",
+			Networks: []VPNNetwork{{Interface: "wg1", CIDR: netip.MustParsePrefix("10.20.0.0/24"), ListenPort: 51821}},
+			IPRules: []IPRule{
+				{ID: "no-ssh-from-lab", Prefix: netip.MustParsePrefix("192.0.2.0/24"), Action: "block", Proto: TCP, Ports: []PortRange{{22, 22}}},
+				{ID: "vpn-udp-v6", Prefix: netip.MustParsePrefix("2001:db8:1::/48"), Action: "allow", Proto: UDP, Ports: []PortRange{{1194, 1194}}},
+			},
+			Blocked:  []BlockedEntry{{Prefix: netip.MustParsePrefix("2001:db8:2::/48"), Expires: &edgeHour}},
+			Forwards: []PortForward{{ID: "game", Proto: UDP, PublicPort: 27015, TargetIP: netip.MustParseAddr("10.20.0.9"), TargetPort: 27015}},
+			VPNRules: []VPNRule{{ID: "reject-smb", Src: netip.MustParsePrefix("10.20.0.0/24"), Dst: netip.MustParsePrefix("0.0.0.0/0"),
+				Proto: TCP, Ports: []PortRange{{445, 445}}, Action: "reject"}},
 		},
 	}
 }
