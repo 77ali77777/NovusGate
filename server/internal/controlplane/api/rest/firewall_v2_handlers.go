@@ -109,7 +109,7 @@ type v2ServiceRequest struct {
 func (s *Server) handleFirewallV2CreateService(w http.ResponseWriter, r *http.Request) {
 	var req v2ServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	svc, err := validateService(req)
@@ -207,7 +207,7 @@ type v2IPRuleRequest struct {
 func (s *Server) handleFirewallV2CreateIPRule(w http.ResponseWriter, r *http.Request) {
 	var req v2IPRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	rule, err := validateIPRule(req, "panel", time.Now())
@@ -304,7 +304,7 @@ type v2ForwardRequest struct {
 func (s *Server) handleFirewallV2CreateForward(w http.ResponseWriter, r *http.Request) {
 	var req v2ForwardRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	if req.Protocol != "tcp" && req.Protocol != "udp" {

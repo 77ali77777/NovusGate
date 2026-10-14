@@ -164,7 +164,7 @@ func (s *Server) handleFirewallClosePortNft(w http.ResponseWriter, r *http.Reque
 	}
 	for _, p := range host.SSHPorts {
 		if int(p) == req.Port && !req.Force {
-			errorResponse(w, http.StatusForbidden, fmt.Sprintf("port %d (SSH) is protected. Set force=true to override", req.Port))
+			errorWithCode(w, http.StatusForbidden, "protected_rule", fmt.Sprintf("port %d (SSH) is protected. Set force=true to override", req.Port))
 			return
 		}
 	}
@@ -236,7 +236,7 @@ func (s *Server) handleFirewallDeleteRuleNft(w http.ResponseWriter, r *http.Requ
 	e := entries[req.LineNumber-1]
 	if e.rule.Protected {
 		// Structural rules are part of every compiled ruleset; force cannot remove them.
-		errorResponse(w, http.StatusForbidden, fmt.Sprintf("rule %d is protected (SSH/WireGuard/Admin) and managed by NovusGate", req.LineNumber))
+		errorWithCode(w, http.StatusForbidden, "protected_rule", fmt.Sprintf("rule %d is protected (SSH/WireGuard/Admin) and managed by NovusGate", req.LineNumber))
 		return
 	}
 	ch := removeServices(s, e.serviceID)

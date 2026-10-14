@@ -1,7 +1,7 @@
 {
   "body": {
     "error": {
-      "code": "unauthorized",
+      "code": "invalid_credentials",
       "message": "invalid credentials"
     }
   },

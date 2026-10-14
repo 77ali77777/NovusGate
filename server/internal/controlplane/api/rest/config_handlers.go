@@ -265,7 +265,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		ExpiresAt *time.Time        `json:"expires_at,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 

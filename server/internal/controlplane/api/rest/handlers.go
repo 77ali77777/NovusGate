@@ -449,7 +449,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -461,12 +461,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if user == nil {
-		errorResponse(w, http.StatusUnauthorized, "invalid credentials")
+		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		errorResponse(w, http.StatusUnauthorized, "invalid credentials")
+		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
@@ -486,7 +486,7 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -497,12 +497,12 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user == nil {
-		errorResponse(w, http.StatusUnauthorized, "invalid credentials")
+		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
-		errorResponse(w, http.StatusUnauthorized, "invalid old password")
+		errorWithCode(w, http.StatusUnauthorized, "invalid_old_password", "invalid old password")
 		return
 	}
 
@@ -544,7 +544,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -601,7 +601,7 @@ func (s *Server) handleListNetworks(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	var network models.Network
 	if err := json.NewDecoder(r.Body).Decode(&network); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -628,7 +628,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		
 		// Check if networks overlap
 		if networksOverlap(newNet, existingCIDR) {
-			errorResponse(w, http.StatusConflict, fmt.Sprintf(
+			errorWithCode(w, http.StatusConflict, "cidr_overlap", fmt.Sprintf(
 				"CIDR %s overlaps with existing network '%s' (%s)",
 				network.CIDR, existingNet.Name, existingNet.CIDR,
 			))
@@ -743,7 +743,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	
 	// Prevent deleting Admin Network (wg0)
 	if network.InterfaceName == "wg0" {
-		errorResponse(w, http.StatusForbidden, "cannot delete Admin Management Network")
+		errorWithCode(w, http.StatusForbidden, "admin_network_protected", "cannot delete Admin Management Network")
 		return
 	}
 	
@@ -933,7 +933,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 		NodeInfo  *models.NodeInfo `json:"node_info"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -1056,7 +1056,7 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 		Labels   map[string]string `json:"labels"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 
@@ -1501,7 +1501,7 @@ func (s *Server) handleFail2BanUnban(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -1817,7 +1817,7 @@ func (s *Server) handleFail2BanManualBan(w http.ResponseWriter, r *http.Request)
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -1912,7 +1912,7 @@ func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -1995,7 +1995,7 @@ func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Re
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -2092,7 +2092,7 @@ func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -2139,7 +2139,7 @@ func (s *Server) handleFail2BanJailControl(w http.ResponseWriter, r *http.Reques
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	

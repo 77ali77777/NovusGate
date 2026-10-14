@@ -209,24 +209,28 @@ func endpointForAddr(peers []wireguard.PeerStatus, addr netip.Addr) (netip.Addr,
 	return best, bestBits >= 0
 }
 
-// engineError writes the HTTP status that matches an engine error.
+// engineError writes the HTTP status and stable code that match an engine error.
 func engineError(w http.ResponseWriter, err error) {
+	status, code := http.StatusInternalServerError, "internal_error"
 	switch {
 	case errors.Is(err, errNotFound):
-		errorResponse(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, firewall.ErrEngineDisabled),
-		errors.Is(err, firewall.ErrNotReady),
-		errors.Is(err, errConflict),
-		errors.Is(err, nft.ErrPendingConfirmation),
-		errors.Is(err, nft.ErrRollbackArmed):
-		errorResponse(w, http.StatusConflict, err.Error())
+		status, code = http.StatusNotFound, "not_found"
+	case errors.Is(err, firewall.ErrEngineDisabled):
+		status, code = http.StatusConflict, "firewall_disabled"
+	case errors.Is(err, firewall.ErrNotReady):
+		status, code = http.StatusConflict, "firewall_not_ready"
+	case errors.Is(err, errConflict):
+		status, code = http.StatusConflict, "conflict"
+	case errors.Is(err, nft.ErrPendingConfirmation):
+		status, code = http.StatusConflict, "firewall_change_pending"
+	case errors.Is(err, nft.ErrRollbackArmed):
+		status, code = http.StatusConflict, "firewall_rollback_armed"
 	case errors.Is(err, firewall.ErrRejected):
-		errorResponse(w, http.StatusBadRequest, err.Error())
+		status, code = http.StatusBadRequest, "firewall_rejected"
 	case errors.Is(err, nft.ErrExpired), errors.Is(err, nft.ErrNoPending):
-		errorResponse(w, http.StatusGone, err.Error())
-	default:
-		errorResponse(w, http.StatusInternalServerError, err.Error())
+		status, code = http.StatusGone, "firewall_change_expired"
 	}
+	errorWithCode(w, status, code, err.Error())
 }
 
 func warningStrings(warnings []error) []string {

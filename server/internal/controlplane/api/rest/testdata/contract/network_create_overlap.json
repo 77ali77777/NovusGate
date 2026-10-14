@@ -1,7 +1,7 @@
 {
   "body": {
     "error": {
-      "code": "conflict",
+      "code": "cidr_overlap",
       "message": "CIDR 10.66.0.0/25 overlaps with existing network 'contract-net' (10.66.0.0/24)"
     }
   },

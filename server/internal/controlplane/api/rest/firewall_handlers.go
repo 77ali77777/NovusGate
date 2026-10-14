@@ -337,7 +337,7 @@ func (s *Server) handleFirewallGetRules(w http.ResponseWriter, r *http.Request) 
 func (s *Server) handleFirewallOpenPort(w http.ResponseWriter, r *http.Request) {
 	var req OpenPortRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -407,7 +407,7 @@ func (s *Server) handleFirewallOpenPort(w http.ResponseWriter, r *http.Request) 
 func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request) {
 	var req ClosePortRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -419,11 +419,11 @@ func (s *Server) handleFirewallClosePort(w http.ResponseWriter, r *http.Request)
 	
 	// Check if this is a protected port
 	if portName, isProtected := protectedPorts[req.Port]; isProtected && !req.Force {
-		errorResponse(w, http.StatusForbidden, fmt.Sprintf("port %d (%s) is protected. Set force=true to override", req.Port, portName))
+		errorWithCode(w, http.StatusForbidden, "protected_rule", fmt.Sprintf("port %d (%s) is protected. Set force=true to override", req.Port, portName))
 		return
 	}
 	if isSSHPort(strconv.Itoa(req.Port), legacySSHPorts()) && !req.Force {
-		errorResponse(w, http.StatusForbidden, fmt.Sprintf("port %d (SSH) is protected. Set force=true to override", req.Port))
+		errorWithCode(w, http.StatusForbidden, "protected_rule", fmt.Sprintf("port %d (SSH) is protected. Set force=true to override", req.Port))
 		return
 	}
 	
@@ -543,7 +543,7 @@ func findRuleLineNumber(output string, protocol string, port int, target string)
 func (s *Server) handleFirewallBlockIP(w http.ResponseWriter, r *http.Request) {
 	var req BlockIPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -606,7 +606,7 @@ func (s *Server) handleFirewallBlockIP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleFirewallAllowIP(w http.ResponseWriter, r *http.Request) {
 	var req AllowIPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -666,7 +666,7 @@ func (s *Server) handleFirewallAllowIP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleFirewallDeleteRule(w http.ResponseWriter, r *http.Request) {
 	var req DeleteRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -718,7 +718,7 @@ func (s *Server) handleFirewallDeleteRule(w http.ResponseWriter, r *http.Request
 	
 	// Check if protected
 	if targetRule.Protected && !req.Force {
-		errorResponse(w, http.StatusForbidden, fmt.Sprintf("rule %d is protected (SSH/WireGuard/Admin). Set force=true to override", req.LineNumber))
+		errorWithCode(w, http.StatusForbidden, "protected_rule", fmt.Sprintf("rule %d is protected (SSH/WireGuard/Admin). Set force=true to override", req.LineNumber))
 		return
 	}
 	
@@ -768,7 +768,7 @@ func (s *Server) handleFirewallImport(w http.ResponseWriter, r *http.Request) {
 	}
 	var req ImportRulesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -1019,7 +1019,7 @@ func (s *Server) handleVPNFirewallGetRules(w http.ResponseWriter, r *http.Reques
 func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Request) {
 	var req VPNFirewallRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
@@ -1094,7 +1094,7 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 	
 	var req VPNFirewallRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	
