@@ -82,3 +82,38 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 - **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi əlavə və yeniləmələrin sayıdır (vaxtı keçmiş peer-lərin silinməsi hər iki rejimdə edilir). `ok: false` olanda `status: degraded` qaytarılır.
 - **`PUT /nodes/{id}`:** cavab forması dəyişmir. Node aktiv olanda (məsələn gələcək `expires_at` verildikdə) peer əlavə olunur, aktiv olmayanda silinir (B11).
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.
+
+## Xəta formatı (P2d-1)
+Bütün xəta cavabları bu formadadır:
+
+```json
+{"error":{"code":"cidr_overlap","message":"CIDR 10.66.0.0/25 overlaps with existing network 'office' (10.66.0.0/24)"}}
+```
+
+- **`code`** sabit snake_case dəyərdir, client ona görə qərar verir. Bir dəfə buraxılan kod heç vaxt adını dəyişmir.
+- **`message`** insan üçündür, mətni əvvəlki kimidir.
+- **Köhnə `{"error":"..."}` forması artıq qaytarılmır.** Web hər iki formanı oxuyur (`web/src/api/errors.ts`). Center server qeydiyyatında yalnız `config` sahəsini oxuyur, xəta body-sinə baxmır.
+
+**Default kodlar (HTTP statusa görə):** 400 `bad_request` · 401 `unauthorized` · 403 `forbidden` · 404 `not_found` · 405 `method_not_allowed` · 409 `conflict` · 410 `gone` · 500 `internal_error` · 502 `bad_gateway` · 503 `unavailable` · digərləri `error`.
+
+**Xüsusi kodlar:**
+
+| Kod | Status | Harada |
+|---|---|---|
+| `invalid_request_body` | 400 | oxunmayan JSON body |
+| `invalid_credentials` | 401 | login, istifadəçi tapılmayanda parol dəyişmə |
+| `invalid_old_password` | 401 | parol dəyişmə, köhnə parol səhvdir (status P4-də 400 olacaq, B15) |
+| `cidr_overlap` | 409 | şəbəkə yaratma |
+| `admin_network_protected` | 403 | wg0-ın silinməsi |
+| `protected_rule` | 403 | Close Port / Delete: qorunan port və ya qayda |
+| `invalid_status` | 400 | `PUT /nodes/{id}`: status `pending`, `online`, `offline` və ya `expired` olmalıdır |
+| `invalid_expires_at` | 400 | `PUT /nodes/{id}`: RFC 3339 vaxtı olmalıdır (`toISOString()` qəbul olunur) |
+| `firewall_disabled` | 409 | engine `nft` rejimində deyil |
+| `firewall_not_ready` | 409 | engine hələ başlayır |
+| `firewall_change_pending` | 409 | başqa dəyişiklik təsdiq gözləyir |
+| `firewall_rollback_armed` | 409 | əvvəlki rollback timer aktivdir |
+| `conflict` | 409 | dublikat forward |
+| `firewall_rejected` | 400 | lockout qoruması, rezerv port, blokun içində allow |
+| `firewall_change_expired` | 410 | dəyişiklik təsdiqsiz geri qaytarılıb və ya id tapılmadı |
+
+200 cavablarının içindəki `error` sahələri (fail2ban, `/health`, `host_error`, sync `errors`) bu formata aid deyil.

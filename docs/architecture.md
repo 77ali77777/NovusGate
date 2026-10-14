@@ -54,6 +54,9 @@
 - **Versiyalar arası yoxlama.** `server/scripts/nft-versions-check.sh` golden ruleset-ləri və nft 1.0.9 snapshot-unu nft 1.0.2, 1.0.6 və 1.0.9-da `nft -c` ilə yoxlayır.
 - **DB testləri:** `server/scripts/test-with-postgres.sh` (`TEST_DATABASE_URL`, `-p 1`).
 
+## Xəta formatı (P2d-1)
+- Handler-lər xətanı `errorResponse(w, status, message)` (kod statusdan götürülür) və ya `errorWithCode(w, status, code, message)` ilə yazır. Body: `{"error":{"code","message"}}`. Kodlar sabitdir, siyahısı `docs/api.md`-dədir.
+
 ## Test seam-ləri (P2a)
 - **`api/rest`-də dəyişdirilə bilən funksiyalar:**
   - `execHostCommand`, `execCommand`: host və konteyner əmrləri;

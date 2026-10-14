@@ -249,6 +249,19 @@
 - **Davam:** P2d-1 icrası.
 
 
+### 2026-10-14: P2d-1 icra olundu
+- **Nəticə:** Task 1–3 commit-ləndi:
+  - `761dbc6`: vahid xəta body-si;
+  - `b450921`: sabit xəta kodları;
+  - `8325276`: node validasiyası.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → hamısı `ok`;
+  - kontrakt fərqləri yalnız xəta body-lərindədir, iki yeni 400 snapshot əlavə olunub;
+  - web-də `data.error`-u birbaşa oxuyan yer yoxdur.
+- **API dəyişikliyi:** xəta body-si `{"error":{"code","message"}}` oldu. Bu, istifadəçinin "davam" təsdiqi ilə edilib.
+- **Davam:** final review, sonra P2d-2 (OpenAPI).
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -267,6 +280,7 @@
 | 2026-10-13 | Runbook: Update yolu və DB guard yoxlaması | docs/runbooks/p1-staging-acceptance.md | final review · `322ad1d` |
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
+| 2026-10-14 | P2d-1: vahid xəta body-si, sabit kodlar, PUT /nodes validasiyası | api/rest/*, testdata/contract | P2d-1 planı · `761dbc6`..`8325276` |
 | 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
 | 2026-10-13 | P2a: kontrakt snapshot testləri, B14/B16/B21/B22, DB parolunun maskalanması, frontend xəta helper-i | api/rest/*, store/store.go, wireguard/manager.go, cmd/control-plane/main.go, web/src/api/errors.ts + 5 səhifə, scripts/update-contracts*.sh | P2a planı · `646ce20`..`f816289` |

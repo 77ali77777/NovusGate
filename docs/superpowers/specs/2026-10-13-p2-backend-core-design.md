@@ -62,3 +62,12 @@ Dəyişənlər:
 - **Diff addımı:** vaxtı keçmiş node-ların peer silinməsi hər iki rejimdə tətbiq olunur, DB yenidən oxunur və uğursuz silinmə növbəti tick-də təkrarlanır (final review düzəlişi). Əlavə və yeniləmə shadow-da yalnız log yazır, enforce-da DB yenidən oxunandan sonra tətbiq olunur.
 - **Naməlum peer-lər silinmir** ("adopt" qaydası), allowed-ips daraldılmır.
 - **`wgN.conf`-a `[Peer]` yazılması P2c-2-yə saxlanılıb.** `wg0.conf` installer-indir, reboot bərpasını isə `restorePeers` edir.
+
+## 5. P2d bölgüsü (2026-10-14)
+- **P2d-1 (bağlandı):**
+  - vahid xəta body-si `{"error":{"code","message"}}` və sabit kodlar;
+  - `PUT /nodes/{id}`-də `status` və `expires_at` validasiyası.
+- **P2d-2:**
+  - kontrakt snapshot-larından OpenAPI 3 sənədi;
+  - qeydiyyatdan keçmiş hər route-un sənəddə olduğunu yoxlayan test.
+- **P2d-3:** servis qatı (handler → service → store).
