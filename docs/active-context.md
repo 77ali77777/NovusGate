@@ -259,7 +259,11 @@
   - kontrakt fərqləri yalnız xəta body-lərindədir, iki yeni 400 snapshot əlavə olunub;
   - web-də `data.error`-u birbaşa oxuyan yer yoxdur.
 - **API dəyişikliyi:** xəta body-si `{"error":{"code","message"}}` oldu. Bu, istifadəçinin "davam" təsdiqi ilə edilib.
-- **Davam:** final review, sonra P2d-2 (OpenAPI).
+- **Final review (opus):** Critical və Important yoxdur, 5 minor var. P2d-2-də ediləcəklər:
+  - iptables import-un `conflict` kodu dəqiqləşdirilməlidir;
+  - `/api` üçün NotFound və MethodNotAllowed handler-ləri əlavə olunmalıdır;
+  - release qeydi: web və control-plane birlikdə yenilənməli, brauzer yenidən yüklənməlidir.
+- **Davam:** P2d-2 (OpenAPI).
 
 
 ## Son Dəyişikliklər
