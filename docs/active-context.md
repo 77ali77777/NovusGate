@@ -249,6 +249,35 @@
   6 minor ledger-də.
 - **Davam:** P5 (UI kit). Vizual maket istifadəçinin təsdiqini tələb edir.
 
+### 2026-10-14: Təxirə salınmış bütün kiçik məsələlərin bağlanması
+- **Tapşırıq:** "heç bir kiçik heç nə qalmasın". P1–P4 final review-larından qalan bütün `minor (deferred)` bəndləri transkriptdən toplandı.
+- **Plan:** `docs/superpowers/plans/2026-10-14-deferred-minors-cleanup.md`. 8 batch (A–H), 75 bənd. Bəziləri əvvəlki fazalarda artıq həll olunmuşdu, onlar `verified-closed` kimi qeyd olunub. Üç bənd səbəbi yazılmaqla bağlanıb:
+  - ölçülməmiş performans dəyişikliyi;
+  - reboot-da timeout-ların yenidən başlaması;
+  - `Allow`-da OPTIONS.
+- **Commit-lər:** `a79dfc4`..`3639795` (təxminən 20 commit).
+- **Final review (opus):** 3 Important bağlandı:
+  - geniş route-un node peer-ini bloklaması;
+  - checkin body-sinin limitsiz oxunması;
+  - `v1` key-lərlə uyğunluq.
+
+  Minor-ların hamısı ya düzəldildi, ya da səbəbi yazılmaqla bağlandı.
+- **Yoxlamalar:**
+  - Go: `test-with-postgres.sh` → 10 paket `ok` (`NFT_CHECK=1` daxil);
+  - `nft-versions-check.sh` → 1.0.2, 1.0.6, 1.0.9 `NFT-VERSIONS-OK`;
+  - `setup-firewall_test.sh` → `OK`;
+  - Center → 36/36;
+  - web → `tsc` 0, biome 99/31, `vite build` ok.
+- **Davranış dəyişiklikləri** (ətraflı siyahı plan faylındadır):
+  - HEAD dəstəyi;
+  - debug 404-ün vahid xəta formatına keçməsi;
+  - `/30`-dan kiçik şəbəkələrin rədd edilməsi;
+  - API açarının simvol yoxlaması;
+  - IPv6 və səhv portlu VPN qaydalarının rədd edilməsi;
+  - Center-in `web/.env`-ə açar yazmaması;
+  - Center-də formdakı dəyərlərin yoxlanması.
+- **Davam:** P5 (UI kit). Vizual maketin təsdiqi lazımdır.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -272,6 +301,7 @@
 | 2026-10-14 | P4a: sessions cədvəli, sessiya auth-u, logout, login limiti, parol yalnız sessiya istifadəçisi üçün (B15) | store/{sessions.go,migrations_*/007_*}, api/rest/{auth,handlers,openapi}.go, web/src/{App.tsx,api/client.ts,components/Layout.tsx}, docs/{api,security,data-model}.md | P4a planı · `d4f41fc`..`8917c80` |
 | 2026-10-14 | P4b: enrollment tokenləri, tokenli install skripti (VPN üzərindən checkin), nginx `/api` proxy-si, CORS çıxarıldı, bundle-da API açarı yoxdur | store/{enrollment.go,migrations_*/008_*}, api/rest/{enrollment,auth,handlers,config_handlers,openapi}.go, web/{nginx,Dockerfile,.dockerignore,src}, compose, docs | P4b planı · `ae025ba`..`532d37d` |
 | 2026-10-14 | P4c: node private key-ləri AES-GCM ilə ayrıca sütunda, API-də `has_config`, audit `user_id`, `MASTER_KEY` (compose, Center) | shared/secretbox, store/{node_keys.go,store.go,009_*}, api/rest/{config_handlers,firewall_handlers,auth}.go, cmd/control-plane/node_keys.go, web, Center/lib/scripts.js, docs | P4c planı · `f56afd5`..`24df425` |
+| 2026-10-14 | Təxirə salınmış kiçik məsələlərin hamısı bağlandı (A–H) və final review düzəlişləri | server, web, NovusGate Center, setup-firewall.sh, docs | cleanup planı · `a79dfc4`..`3639795` |
 | 2026-10-14 | P2d-1: vahid xəta body-si, sabit kodlar, PUT /nodes validasiyası | api/rest/*, testdata/contract | P2d-1 planı · `761dbc6`..`8325276` |
 | 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
