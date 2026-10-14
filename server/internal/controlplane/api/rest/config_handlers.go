@@ -429,6 +429,10 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		allowedIPsStr,
 	)
 
+	if isHead(r) { // no token for a HEAD: only the headers are wanted
+		w.Header().Set("Content-Type", "text/x-shellscript")
+		return
+	}
 	// 2. A fresh one-time token lets the script check in over the VPN.
 	token, err := newSessionToken()
 	if err != nil {

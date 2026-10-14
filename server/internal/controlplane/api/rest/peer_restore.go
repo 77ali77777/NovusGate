@@ -45,8 +45,10 @@ func allowedIPList(s string) []string {
 	return out
 }
 
-// routedElsewhere names the peer other than key whose allowed-ips already
-// cover own, or "" when none does; adding own to key would take it away.
+// routedElsewhere names the peer other than key that already holds exactly
+// own, or "" when none does. Only an identical prefix moves between peers
+// when it is added to another one; a broader route (an exit gateway's
+// 0.0.0.0/0, a site subnet) stays and loses to the /32 by longest prefix.
 func routedElsewhere(live map[string]wireguard.PeerStatus, key, own string) string {
 	addr, err := netip.ParsePrefix(own)
 	if err != nil {
@@ -57,7 +59,7 @@ func routedElsewhere(live map[string]wireguard.PeerStatus, key, own string) stri
 			continue
 		}
 		for _, cidr := range allowedIPList(p.AllowedIPs) {
-			if pfx, err := netip.ParsePrefix(cidr); err == nil && pfx.Contains(addr.Addr()) {
+			if pfx, err := netip.ParsePrefix(cidr); err == nil && pfx.Masked() == addr.Masked() {
 				return k
 			}
 		}

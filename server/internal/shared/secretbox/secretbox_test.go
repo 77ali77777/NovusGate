@@ -1,6 +1,7 @@
 package secretbox
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 )
@@ -18,8 +19,8 @@ func TestSecretboxRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	s2, _ := Seal(b, "wg-private-key", "n")
-	if !strings.HasPrefix(s1, "v1:") || strings.Contains(s1, "wg-private-key") || s1 == s2 {
-		t.Fatalf("sealed = %q / %q: want v1:, no plaintext, a fresh nonce each time", s1, s2)
+	if !strings.HasPrefix(s1, "v2:") || strings.Contains(s1, "wg-private-key") || s1 == s2 {
+		t.Fatalf("sealed = %q / %q: want v2:, no plaintext, a fresh nonce each time", s1, s2)
 	}
 	if got, err := Open(b, s1, "n"); err != nil || got != "wg-private-key" {
 		t.Fatalf("open = %q, %v", got, err)
@@ -89,4 +90,28 @@ func TestSecretboxBindsContext(t *testing.T) {
 	if got, err := Open(b, sealed, "node-a"); err != nil || got != "secret" {
 		t.Fatalf("open = %q, %v", got, err)
 	}
+}
+
+// Values sealed before the node-ID binding (v1, no additional data) still
+// open, so existing databases keep working; new values are v2.
+func TestSecretboxOpensLegacyV1(t *testing.T) {
+	b, _ := New(keyA)
+	sealed, _ := Seal(b, "secret", "node-a")
+	if !strings.HasPrefix(sealed, "v2:") {
+		t.Fatalf("new values must be v2, got %q", sealed[:3])
+	}
+	legacy := legacySealV1(t, b, "old-secret")
+	if got, err := Open(b, legacy, "any-node"); err != nil || got != "old-secret" {
+		t.Fatalf("a v1 value must still open: %q, %v", got, err)
+	}
+	if !IsLegacy(legacy) || IsLegacy(sealed) {
+		t.Fatal("IsLegacy must tell v1 from v2")
+	}
+}
+
+// legacySealV1 seals like the first P4c build: no additional data.
+func legacySealV1(t *testing.T, b *Box, plaintext string) string {
+	t.Helper()
+	nonce := make([]byte, b.aead.NonceSize())
+	return "v1:" + base64.StdEncoding.EncodeToString(b.aead.Seal(nonce, nonce, []byte(plaintext), nil))
 }

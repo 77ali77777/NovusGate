@@ -77,7 +77,8 @@ func (s *Store) queryPairs(ctx context.Context, query string) (map[string]string
 }
 
 // MigrateNodeKeys moves private keys from labels into the sealed column and,
-// once a master key is set, re-seals keys stored as plain text. It is safe
+// once a master key is set, re-seals keys stored as plain text or as v1
+// (not yet bound to their node). It is safe
 // to run on every start.
 func (s *Store) MigrateNodeKeys(ctx context.Context) (moved, resealed int, err error) {
 	legacy, err := s.queryPairs(ctx, `
@@ -108,7 +109,7 @@ func (s *Store) MigrateNodeKeys(ctx context.Context) (moved, resealed int, err e
 	if s.box == nil {
 		return moved, 0, nil
 	}
-	plain, err := s.queryPairs(ctx, `SELECT id, private_key_enc FROM nodes WHERE private_key_enc LIKE 'plain:%'`)
+	plain, err := s.queryPairs(ctx, `SELECT id, private_key_enc FROM nodes WHERE private_key_enc LIKE 'plain:%' OR private_key_enc LIKE 'v1:%'`)
 	if err != nil {
 		return moved, 0, err
 	}
@@ -162,7 +163,7 @@ func (s *Store) RestoreNodeKeysToLabels(ctx context.Context) (int, error) {
 func (s *Store) CheckNodeKeys(ctx context.Context) error {
 	var id, stored string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, private_key_enc FROM nodes WHERE private_key_enc LIKE 'v1:%' LIMIT 1`).Scan(&id, &stored)
+		SELECT id, private_key_enc FROM nodes WHERE private_key_enc LIKE 'v1:%' OR private_key_enc LIKE 'v2:%' LIMIT 1`).Scan(&id, &stored)
 	if err == sql.ErrNoRows {
 		return nil
 	}

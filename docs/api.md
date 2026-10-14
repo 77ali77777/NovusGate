@@ -186,7 +186,7 @@ Forma:
 - **Checkin və server yaratma** `wireguard_*` label-lərini qəbul etmir, ona görə key label vasitəsilə yazıla bilməz. Startup miqrasiyası sütunda artıq olan key-i label ilə əvəz etmir.
 
 ## API səthinə sonrakı əlavələr
-- **HEAD:** hər GET yolu HEAD-ə də cavab verir: eyni status və başlıqlar, body yoxdur. 405 cavabındakı `Allow` başlığında GET varsa, HEAD də göstərilir.
+- **HEAD:** hər GET yolu HEAD-ə də cavab verir: eyni status və başlıqlar, body yoxdur. Yan təsiri olan GET-lər HEAD-də onu etmir (`install.sh` token yaratmır). 405 cavabındakı `Allow` başlığında GET varsa, HEAD də göstərilir.
 - **`/api` və sonunda `/` olan `/api/...` yolları:** JSON `404 not_found`.
 - **Request log** bütün sorğuları yazır, o cümlədən mux-un 301 yönləndirmələrini.
 - **OpenAPI sənədinə əlavələr:**

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -47,7 +48,7 @@ func headAsGet(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		get := r.Clone(r.Context())
+		get := r.Clone(context.WithValue(r.Context(), headKey{}, true))
 		get.Method = http.MethodGet
 		next.ServeHTTP(bodylessWriter{w}, get)
 	})
@@ -57,3 +58,12 @@ func headAsGet(next http.Handler) http.Handler {
 type bodylessWriter struct{ http.ResponseWriter }
 
 func (b bodylessWriter) Write(p []byte) (int, error) { return len(p), nil }
+
+type headKey struct{}
+
+// isHead reports whether a GET handler is answering a HEAD request; handlers
+// with side effects (install.sh mints a token) skip them then.
+func isHead(r *http.Request) bool {
+	head, _ := r.Context().Value(headKey{}).(bool)
+	return head
+}

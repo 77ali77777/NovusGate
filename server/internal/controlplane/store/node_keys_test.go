@@ -2,6 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
+	"encoding/hex"
 	"net"
 	"os"
 	"strings"
@@ -54,8 +58,8 @@ func TestNodePrivateKeyIsSealed(t *testing.T) {
 	if err := s.SetNodePrivateKey(ctx, n.ID, "node-secret-key"); err != nil {
 		t.Fatal(err)
 	}
-	if raw := storedKey(t, s, n.ID); !strings.HasPrefix(raw, "v1:") || strings.Contains(raw, "node-secret-key") {
-		t.Fatalf("stored = %q, want a v1 ciphertext", raw)
+	if raw := storedKey(t, s, n.ID); !strings.HasPrefix(raw, "v2:") || strings.Contains(raw, "node-secret-key") {
+		t.Fatalf("stored = %q, want a v2 ciphertext", raw)
 	}
 	if got, err := s.NodePrivateKey(ctx, n.ID); err != nil || got != "node-secret-key" {
 		t.Fatalf("NodePrivateKey = %q, %v", got, err)
@@ -107,7 +111,7 @@ func TestMigrateNodeKeysResealsPlain(t *testing.T) {
 	if err != nil || resealed < 1 {
 		t.Fatalf("reseal = %d, %v", resealed, err)
 	}
-	if raw := storedKey(t, s, n.ID); !strings.HasPrefix(raw, "v1:") {
+	if raw := storedKey(t, s, n.ID); !strings.HasPrefix(raw, "v2:") {
 		t.Fatalf("after reseal = %q", raw)
 	}
 	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "legacy-key" {
@@ -264,4 +268,39 @@ func TestCreateNodeWithKey(t *testing.T) {
 	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "created-key" {
 		t.Fatalf("key = %q", key)
 	}
+}
+
+// A key sealed by the first P4c build (v1, not bound to its node) still
+// opens and is sealed again as v2 at startup.
+func TestMigrateNodeKeysResealsV1(t *testing.T) {
+	s := newTestStore(t)
+	box, _ := secretbox.New(testMasterKey)
+	s.SetKeyBox(box)
+	ctx := context.Background()
+	n := keyNode(t, s, map[string]string{})
+	// What the first P4c build stored: AES-GCM without additional data.
+	legacy := "v1:" + legacyV1(t, "old-key")
+	s.db.ExecContext(ctx, "UPDATE nodes SET private_key_enc = $2 WHERE id = $1", n.ID, legacy)
+	if err := s.CheckNodeKeys(ctx); err != nil {
+		t.Fatalf("a v1 key must pass the startup check: %v", err)
+	}
+	if _, resealed, err := s.MigrateNodeKeys(ctx); err != nil || resealed < 1 {
+		t.Fatalf("reseal = %d, %v", resealed, err)
+	}
+	if raw := storedKey(t, s, n.ID); !strings.HasPrefix(raw, "v2:") {
+		t.Fatalf("after reseal = %q", raw)
+	}
+	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "old-key" {
+		t.Fatalf("key = %q", key)
+	}
+}
+
+// legacyV1 seals plaintext the way the first P4c build did.
+func legacyV1(t *testing.T, plaintext string) string {
+	t.Helper()
+	key, _ := hex.DecodeString(testMasterKey)
+	block, _ := aes.NewCipher(key)
+	aead, _ := cipher.NewGCM(block)
+	nonce := make([]byte, aead.NonceSize())
+	return base64.StdEncoding.EncodeToString(aead.Seal(nonce, nonce, []byte(plaintext), nil))
 }

@@ -129,7 +129,22 @@
 - [x] H8: the exec-error path has a unit test with a fake SSH client.
 
 ## Closed with a reason (not changed)
+- **Final review M8** (`loginLimiter.succeed` may pop a concurrent request's attempt): the count per key stays exact, only which timestamp is removed differs by at most a few milliseconds.
 - **P2d-2 M-9, second half** (`Allow` omits OPTIONS): since P4b removed CORS, the API answers OPTIONS with 405 like any other unsupported method, so `Allow` correctly leaves it out.
 - **P3b M8 / F5** (boot file timeouts restart at boot): nftables has no absolute expiry, and the boot unit loads the last applied script as is. In nft mode the control plane reconciles at startup (`StartFirewall`: `MarkReady`, then `ReconcileOrRetry`) and recomputes every remaining timeout and drops expired allows. The window is only boot until the control plane starts (container `restart: always`).
 - **P2b #10** (`statusRecorder` hides `io.ReaderFrom`): this is a performance-only change. Nothing measures it, and the SPA is served by nginx, not by Go. CLAUDE.md §3 forbids unmeasured optimisation.
 - **Center** `--filter` asymmetry: covered by H2.
+
+## Final review (opus) — fixed
+- I1: broad routes (0.0.0.0/0, a site subnet) no longer block a node's /32 — `TestBroadRoutesDoNotBlockNodePeers`.
+- I2: the checkin body is capped at 64 KiB before decoding; the token is checked first and used only after the node is stored; the token lookup runs for unknown nodes too — `TestEnrollmentCheckinBodyIsCapped`, `TestEnrollmentTokenIsUsedOnlyAfterTheUpdate`.
+- I3: new sealed values are `v2:` (bound to the node); `v1:` values from the first P4c build still open and are resealed at startup — `TestSecretboxOpensLegacyV1`, `TestMigrateNodeKeysResealsV1`.
+- Minors:
+  - the limiter eviction cannot loop when timestamps are in the future;
+  - HEAD install.sh mints no token (`TestHeadInstallScriptMintsNoToken`);
+  - the script runs apt-get update before installing curl;
+  - IPv4-mapped IPv6 is rejected for VPN rules;
+  - the shadow test restores the log package output;
+  - Run called twice no longer panics (`TestRunTwiceDoesNotPanic`);
+  - the script's 401 message mentions a possibly successful earlier attempt;
+  - the test comment fixed.

@@ -31,3 +31,13 @@ func (s *Store) ConsumeEnrollmentToken(ctx context.Context, nodeID, tokenHash st
 	n, err := res.RowsAffected()
 	return n == 1, err
 }
+
+// EnrollmentTokenValid reports whether nodeID has an unused, unexpired token
+// with this hash, without using it.
+func (s *Store) EnrollmentTokenValid(ctx context.Context, nodeID, tokenHash string, now time.Time) (bool, error) {
+	var ok bool
+	err := s.db.QueryRowContext(ctx, `
+		SELECT EXISTS (SELECT 1 FROM enrollment_tokens
+		WHERE node_id::text = $1 AND token_hash = $2 AND used_at IS NULL AND expires_at > $3)`, nodeID, tokenHash, now).Scan(&ok)
+	return ok, err
+}

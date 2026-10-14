@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -89,6 +90,7 @@ type Reconciler struct {
 	last    Report
 	trigger chan struct{}
 	done    chan struct{} // closed when Run returns
+	started atomic.Bool   // Run runs once
 
 	// logged holds the findings already logged, so a finding that stays
 	// the same is logged once instead of on every tick.
@@ -239,6 +241,10 @@ func (r *Reconciler) finish(rep Report) {
 // is cancelled. The first run happens after one interval (or a trigger), so
 // startup (loadNetworks bringing interfaces up and adopting peers) goes first.
 func (r *Reconciler) Run(ctx context.Context, every time.Duration) {
+	if !r.started.CompareAndSwap(false, true) {
+		slog.Warn("reconciler: Run called twice; the loop already runs")
+		return
+	}
 	defer close(r.done)
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()

@@ -28,7 +28,8 @@
 
 ## Node private key-ləri və audit (P4c)
 - **Saxlanma:** node-un WireGuard private key-i artıq `labels`-də deyil, `nodes.private_key_enc` sütunundadır.
-  - **Format:** `v1:<base64(nonce|ciphertext)>`, AES-256-GCM ilə şifrələnir. Node-un ID-si AES-GCM-ə əlavə (autentifikasiya olunan) data kimi verilir, ona görə dəyər başqa node-un sətrinə köçürülsə açılmır.
+  - **Format:** `v2:<base64(nonce|ciphertext)>`, AES-256-GCM ilə şifrələnir. Node-un ID-si AES-GCM-ə əlavə (autentifikasiya olunan) data kimi verilir, ona görə dəyər başqa node-un sətrinə köçürülsə açılmır.
+  - **Köhnə format:** ilk P4c build-in yazdığı `v1:` dəyərləri (node-a bağlanmamış) hələ də açılır və növbəti startup-da `v2:` kimi yenidən şifrələnir.
   - **Master açar:** `NOVUSGATE_MASTER_KEY` (64 hex simvol, compose-da `.env`-dəki `MASTER_KEY`-dən).
   - **Açar yoxdursa:** dəyər `plain:` prefiksi ilə saxlanılır və server startup-da xəbərdarlıq verir. Açar sonradan təyin olunsa, növbəti startup bu dəyərləri şifrələyir.
   - **Açar səhvdirsə** (uzunluq və ya hex xətası): server başlamır.
@@ -54,3 +55,12 @@
   - JSON-a yalnız təhlükəsiz simvollar düşür;
   - 401 alanda skript dərhal dayanır;
   - köhnə tokenlər yeni token yaradılanda təmizlənir.
+
+## Final review düzəlişləri (2026-10-14)
+- **Checkin:**
+  - body autentifikasiyadan əvvəl 64 KiB ilə məhdudlaşdırılır;
+  - token əvvəlcə yalnız yoxlanır və node yadda saxlanandan sonra işlənir, ona görə uğursuz yeniləmə tokeni yandırmır;
+  - token yoxlaması mövcud olmayan node üçün də DB-də aparılır, ona görə cavab vaxtı node ID-lərini göstərmir.
+- **Peer bərpası:** başqa peer yalnız node-un tam eyni `/32`-sini saxlayırsa, node əlavə olunmur. Exit gateway-in `0.0.0.0/0`-u və ya sayt subnet-i bunu bloklamır: WireGuard daha dəqiq prefiksi seçir.
+- **Login limiti:** ən çox 10000 açar saxlanılır, doluda ən köhnəsi atılır. Çoxlu IPv6 `/64` idarə edən hücumçu (məsələn bütöv `/48`) öz sayğaclarını bu yolla sıfırlaya bilər. Bu, yaddaşı məhdudlaşdırmağın qəbul olunmuş qiymətidir.
+- **HEAD `install.sh`:** enrollment tokeni yaratmır.

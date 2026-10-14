@@ -169,13 +169,13 @@ func (l *loginLimiter) prune(now time.Time) {
 		}
 	}
 	for len(l.fails) >= maxTrackedIPs {
-		oldest, oldestAt := "", now
+		oldest, oldestAt, found := "", time.Time{}, false
 		for key, f := range l.fails {
-			if last := f[len(f)-1]; !last.After(oldestAt) {
-				oldest, oldestAt = key, last
+			if last := f[len(f)-1]; !found || last.Before(oldestAt) {
+				oldest, oldestAt, found = key, last, true
 			}
 		}
-		delete(l.fails, oldest)
+		delete(l.fails, oldest) // found is true: the map is not empty
 	}
 }
 

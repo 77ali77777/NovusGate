@@ -130,7 +130,7 @@ func TestEnsurePeer(t *testing.T) {
 func TestRestorePeersSkipsAddressesOfOtherPeers(t *testing.T) {
 	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	nodes := []*models.Node{testNode("dup", "KEY_DUP", "10.99.0.7", models.NodeStatusOnline, nil)}
-	live := map[string]wireguard.PeerStatus{"OTHER": {AllowedIPs: "10.99.0.0/28"}}
+	live := map[string]wireguard.PeerStatus{"OTHER": {AllowedIPs: "10.99.0.7/32"}}
 	f := &fakePeerAdder{}
 	added, _, errs := restorePeers(f, nodes, live, now)
 	if added != 0 || len(errs) != 1 || len(f.added) != 0 {
@@ -158,5 +158,21 @@ func TestUpdateNodeMovesThePeer(t *testing.T) {
 	want := []string{"remove " + node.PublicKey, "update " + node.PublicKey + " 192.168.60.0/24," + node.VirtualIP.String() + "/32"}
 	if !reflect.DeepEqual(f.calls, want) {
 		t.Fatalf("calls = %v, want %v", f.calls, want)
+	}
+}
+
+// A broader route (an exit gateway's 0.0.0.0/0, a site's subnet) does not
+// own a node's /32: WireGuard routes the /32 by longest prefix and only an
+// identical prefix would move between peers.
+func TestBroadRoutesDoNotBlockNodePeers(t *testing.T) {
+	f := &fakePC{peers: map[string]wireguard.PeerStatus{"EXIT": {AllowedIPs: "0.0.0.0/0"}, "SITE": {AllowedIPs: "10.99.0.0/24"}}}
+	if err := ensurePeer(f, "NODE", "10.99.0.5/32"); err != nil {
+		t.Fatalf("a /0 or /24 elsewhere must not block a /32: %v", err)
+	}
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	a := &fakePeerAdder{}
+	added, _, errs := restorePeers(a, []*models.Node{testNode("n", "KEY_N", "10.99.0.6", models.NodeStatusOnline, nil)}, f.peers, now)
+	if added != 1 || len(errs) != 0 {
+		t.Fatalf("added=%d errs=%v, want the node restored", added, errs)
 	}
 }

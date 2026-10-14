@@ -1530,6 +1530,9 @@ func (s *Server) clearNovusGateVPNRules() error {
 
 // isIPv4OrCIDR reports whether s is an IPv4 address or IPv4 CIDR.
 func isIPv4OrCIDR(s string) bool {
+	if strings.Contains(s, ":") { // IPv6, including IPv4-mapped (::ffff:a.b.c.d)
+		return false
+	}
 	if ip := net.ParseIP(s); ip != nil {
 		return ip.To4() != nil
 	}

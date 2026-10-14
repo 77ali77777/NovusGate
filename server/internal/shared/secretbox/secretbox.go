@@ -19,7 +19,8 @@ import (
 const EnvVar = "NOVUSGATE_MASTER_KEY"
 
 const (
-	prefixV1    = "v1:"
+	prefixV1    = "v1:" // first P4c build: no additional data
+	prefixV2    = "v2:" // bound to the owning row (additional data)
 	prefixPlain = "plain:"
 )
 
@@ -59,7 +60,7 @@ func FromEnv() (*Box, error) {
 	return b, nil
 }
 
-// Seal returns the stored form of plaintext: "v1:<base64(nonce|ciphertext)>"
+// Seal returns the stored form of plaintext: "v2:<base64(nonce|ciphertext)>"
 // with a box, "plain:<plaintext>" without one. context (the owning row's ID)
 // is authenticated but not stored, so a value only opens for that row.
 func Seal(b *Box, plaintext, context string) (string, error) {
@@ -71,18 +72,23 @@ func Seal(b *Box, plaintext, context string) (string, error) {
 		return "", err
 	}
 	sealed := b.aead.Seal(nonce, nonce, []byte(plaintext), []byte(context))
-	return prefixV1 + base64.StdEncoding.EncodeToString(sealed), nil
+	return prefixV2 + base64.StdEncoding.EncodeToString(sealed), nil
 }
 
-// Open returns the plaintext of a stored value. A "v1:" value needs the box
-// and the context it was sealed with; a "plain:" value opens with or
-// without one.
+// Open returns the plaintext of a stored value. A "v2:" value needs the box
+// and the context it was sealed with; a "v1:" value (written before the
+// context binding) only the box; a "plain:" value opens with or without one.
 func Open(b *Box, stored, context string) (string, error) {
 	if rest, ok := strings.CutPrefix(stored, prefixPlain); ok {
 		return rest, nil
 	}
-	rest, ok := strings.CutPrefix(stored, prefixV1)
-	if !ok {
+	var rest string
+	var aad []byte
+	if r, ok := strings.CutPrefix(stored, prefixV2); ok {
+		rest, aad = r, []byte(context)
+	} else if r, ok := strings.CutPrefix(stored, prefixV1); ok {
+		rest = r
+	} else {
 		return "", errors.New("unknown secret format")
 	}
 	if b == nil {
@@ -96,9 +102,15 @@ func Open(b *Box, stored, context string) (string, error) {
 	if len(raw) < n {
 		return "", errors.New("secret is too short")
 	}
-	plain, err := b.aead.Open(nil, raw[:n], raw[n:], []byte(context))
+	plain, err := b.aead.Open(nil, raw[:n], raw[n:], aad)
 	if err != nil {
 		return "", errors.New("secret cannot be decrypted with this master key (or it belongs to another row)")
 	}
 	return string(plain), nil
+}
+
+// IsLegacy reports whether a stored value should be sealed again in the
+// current format: plain text, or v1 (not bound to its row).
+func IsLegacy(stored string) bool {
+	return strings.HasPrefix(stored, prefixPlain) || strings.HasPrefix(stored, prefixV1)
 }

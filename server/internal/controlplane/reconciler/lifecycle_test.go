@@ -3,6 +3,7 @@ package reconciler
 import (
 	"bytes"
 	"context"
+	"log"
 	"log/slog"
 	"strings"
 	"sync/atomic"
@@ -100,8 +101,13 @@ func TestDuplicateKeyDoesNotFlap(t *testing.T) {
 func TestShadowFindingsAreLoggedOnce(t *testing.T) {
 	var buf bytes.Buffer
 	orig := slog.Default()
+	origOut, origFlags := log.Writer(), log.Flags() // slog.SetDefault also redirects the log package
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
-	defer slog.SetDefault(orig)
+	defer func() {
+		slog.SetDefault(orig)
+		log.SetOutput(origOut)
+		log.SetFlags(origFlags)
+	}()
 	r, _, _ := setup(ModeShadow)
 	r.RunOnce(context.Background())
 	r.RunOnce(context.Background())
@@ -112,4 +118,14 @@ func TestShadowFindingsAreLoggedOnce(t *testing.T) {
 	if n := strings.Count(out, "peer not in the database"); n != 1 {
 		t.Fatalf("unknown peer logged %d times, want 1:\n%s", n, out)
 	}
+}
+
+func TestRunTwiceDoesNotPanic(t *testing.T) {
+	r, _, _ := setup(ModeShadow)
+	ctx, cancel := context.WithCancel(context.Background())
+	go r.Run(ctx, time.Hour)
+	time.Sleep(20 * time.Millisecond)
+	r.Run(ctx, time.Hour) // returns at once
+	cancel()
+	r.Wait()
 }

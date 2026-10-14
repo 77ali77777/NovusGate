@@ -1064,6 +1064,9 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
+	// The body may come from a caller without a session; cap it before
+	// decoding (a node's report is a few hundred bytes).
+	r.Body = http.MaxBytesReader(w, r.Body, checkinBodyLimit)
 	var req NodeCheckInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1072,22 +1075,23 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 
 	node, err := s.store.GetNode(r.Context(), id)
 	if err != nil {
-		errorResponse(w, http.StatusInternalServerError, "failed to get node")
-		return
+		node = nil // e.g. an id that is not a UUID: not found, as before
 	}
 	// A node enrolling with its install script's token: the token is used
 	// only once the request is otherwise acceptable, so a rejected body does
 	// not burn it. Without a session an unknown node is 401, not 404.
+	enrollHash := ""
 	if user, _ := sessionFrom(r); user == nil {
-		ok := false
-		if node != nil {
-			ok, err = s.store.ConsumeEnrollmentToken(r.Context(), id, hashToken(r.Header.Get(enrollmentHeader)), authNow())
-			if err != nil {
-				errorResponse(w, http.StatusInternalServerError, "failed to check enrollment token")
-				return
-			}
+		// Checked here, used only after the node is stored, so a failed
+		// update does not burn the token. The lookup runs for unknown
+		// nodes too, so its timing does not reveal which IDs exist.
+		enrollHash = hashToken(r.Header.Get(enrollmentHeader))
+		ok, err := s.store.EnrollmentTokenValid(r.Context(), id, enrollHash, authNow())
+		if err != nil {
+			errorResponse(w, http.StatusInternalServerError, "failed to check enrollment token")
+			return
 		}
-		if !ok {
+		if !ok || node == nil {
 			errorWithCode(w, http.StatusUnauthorized, "invalid_enrollment_token", "invalid or expired enrollment token")
 			return
 		}
@@ -1130,6 +1134,13 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.UpdateNode(r.Context(), node); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to update node info")
 		return
+	}
+	if enrollHash != "" {
+		// The node is stored: the token is used now. A concurrent checkin with
+		// the same token may have used it first; this one was valid, too.
+		if _, err := s.store.ConsumeEnrollmentToken(r.Context(), id, enrollHash, authNow()); err != nil {
+			slog.Warn("enrollment token not marked used", "node", id, "error", err)
+		}
 	}
 
 	jsonResponse(w, http.StatusOK, node)

@@ -46,6 +46,7 @@ if ! command -v wg > /dev/null 2>&1; then
     apt-get install -y wireguard wireguard-tools
 fi
 if ! command -v curl > /dev/null 2>&1; then
+    apt-get update
     apt-get install -y curl
 fi
 
@@ -76,7 +77,7 @@ for i in $(seq 1 30); do
         exit 0
         ;;
     401)
-        echo "The enrollment token was already used or has expired. Generate a new install script in the panel." >&2
+        echo "The enrollment token was already used or has expired. If an earlier attempt timed out, the check-in may already have succeeded: check the node in the panel; otherwise generate a new install script." >&2
         exit 1
         ;;
     esac
@@ -97,3 +98,7 @@ func withoutWireguardLabels(labels map[string]string) map[string]string {
 	}
 	return out
 }
+
+// checkinBodyLimit caps a checkin body: it may come from a caller without a
+// session, and a node's report is a few hundred bytes.
+const checkinBodyLimit = 64 << 10

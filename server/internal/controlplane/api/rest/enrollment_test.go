@@ -2,9 +2,11 @@ package rest
 
 import (
 	"context"
+	"database/sql"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -190,7 +192,7 @@ func TestEnrollmentWithAPIKey(t *testing.T) {
 	}
 }
 
-// A checkin that fails before it is accepted (bad body, unknown node) must
+// A checkin whose body is rejected must
 // not burn the token.
 func TestEnrollmentTokenSurvivesRejectedCheckin(t *testing.T) {
 	s, st, _ := newContractServer(t)
@@ -220,5 +222,60 @@ func TestInstallScriptHardening(t *testing.T) {
 		if strings.Contains(line, "curl ") && strings.Contains(line, strings.Repeat("b", 64)) {
 			t.Errorf("the token is on a curl command line: %s", line)
 		}
+	}
+}
+
+// An unauthenticated checkin body is capped before it is decoded.
+func TestEnrollmentCheckinBodyIsCapped(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	big := `{"labels":{"x":"` + strings.Repeat("a", 2<<20) + `"}}`
+	if rec := enrollCheckin(s, seed.node.ID, strings.Repeat("0", 64), big); rec.Code != http.StatusRequestEntityTooLarge && rec.Code != http.StatusBadRequest && rec.Code != http.StatusUnauthorized {
+		t.Fatalf("a 2 MiB body = %d, want it refused", rec.Code)
+	}
+	_, token := installToken(t, s, seed.node.ID)
+	if rec := enrollCheckin(s, seed.node.ID, token, big); rec.Code == http.StatusOK {
+		t.Fatal("even with a valid token a 2 MiB body must be refused")
+	}
+}
+
+// HEAD on install.sh must not mint an enrollment token.
+func TestHeadInstallScriptMintsNoToken(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	db, _ := sql.Open("postgres", os.Getenv("TEST_DATABASE_URL"))
+	defer db.Close()
+	count := func() (n int) {
+		db.QueryRow("SELECT count(*) FROM enrollment_tokens WHERE node_id = $1", seed.node.ID).Scan(&n)
+		return n
+	}
+	before := count()
+	if rec := serveFull(s, "HEAD", "/api/v1/nodes/"+seed.node.ID+"/install.sh", true); rec.Code != http.StatusOK {
+		t.Fatalf("HEAD = %d", rec.Code)
+	}
+	if count() != before {
+		t.Fatal("HEAD must not create an enrollment token")
+	}
+}
+
+// A checkin whose token was valid when the update ran, but whose response
+// was lost, is not counted as used before the node is stored.
+func TestEnrollmentTokenIsUsedOnlyAfterTheUpdate(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	_, token := installToken(t, s, seed.node.ID)
+	db, _ := sql.Open("postgres", os.Getenv("TEST_DATABASE_URL"))
+	defer db.Close()
+	// Make UpdateNode fail for this request only.
+	defer db.Exec("DROP TRIGGER IF EXISTS contract_fail_update ON nodes")
+	db.Exec(`CREATE OR REPLACE FUNCTION contract_fail_update() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'update blocked by test'; END $$ LANGUAGE plpgsql`)
+	db.Exec(`CREATE TRIGGER contract_fail_update BEFORE UPDATE ON nodes FOR EACH ROW EXECUTE FUNCTION contract_fail_update()`)
+	rec := enrollCheckin(s, seed.node.ID, token, `{"node_info":{"os":"Linux"}}`)
+	db.Exec("DROP TRIGGER contract_fail_update ON nodes")
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("blocked update = %d, want 500", rec.Code)
+	}
+	if rec := enrollCheckin(s, seed.node.ID, token, `{"node_info":{"os":"Linux"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("the retry after a failed update = %d %s, want 200 (token not used yet)", rec.Code, rec.Body)
 	}
 }
