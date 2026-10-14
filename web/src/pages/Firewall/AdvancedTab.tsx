@@ -471,8 +471,8 @@ const EgressSection = ({ egressIds, disabled }: { egressIds: string[]; disabled:
     <Card>
       <h3 className="mb-1 font-semibold">Full tunnel (internet through the server)</h3>
       <p className="mb-4 text-sm text-gray-500">
-        Nodes of the network selected in the sidebar. The node's config must route 0.0.0.0/0 through
-        the VPN to use it.
+        Nodes of the network selected in the sidebar. Enabling it changes the node's config (all
+        IPv4 traffic, DNS 1.1.1.1): download the config again on the device.
       </p>
       {nodes.length === 0 ? (
         <p className="text-sm text-gray-500">No nodes in the selected network.</p>

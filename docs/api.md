@@ -18,7 +18,7 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 | DELETE | `/firewall/v2/ip-rules/{id}` | — | eyni |
 | POST | `/firewall/v2/forwards` | `protocol`, `public_port`, `target_ip` (VPN node), `target_port`, `comment` | eyni |
 | DELETE | `/firewall/v2/forwards/{id}` | — | eyni |
-| PUT / DELETE | `/firewall/v2/egress/{nodeId}` | — | node-un serverdən internetə çıxışını (full tunnel) açır və ya bağlayır |
+| PUT / DELETE | `/firewall/v2/egress/{nodeId}` | — | node-un serverdən internetə çıxışını (full tunnel) açır və ya bağlayır. Açıq olanda node-un config-i (`/nodes/{id}/config`, `/qrcode`, `install.sh`) `AllowedIPs = 0.0.0.0/0` və `DNS = 1.1.1.1` ilə gəlir (P8, 2026-10-15); cihazda config yenidən yüklənməlidir |
 | POST | `/firewall/v2/confirm/{id}` | — | `{"status":"confirmed"}` |
 
 **Status kodları:**

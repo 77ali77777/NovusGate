@@ -45,11 +45,20 @@ func (g *ConfigGenerator) GenerateServerConfig(privateKey string, port int, addr
 
 // GeneratePeerConfig generates the client/peer configuration file content
 func (g *ConfigGenerator) GeneratePeerConfig(clientPrivateKey, serverPublicKey, serverEndpoint, clientIP string, allowedIPs string) string {
+	return g.GeneratePeerConfigDNS(clientPrivateKey, serverPublicKey, serverEndpoint, clientIP, allowedIPs, "")
+}
+
+// GeneratePeerConfigDNS is GeneratePeerConfig with a DNS server for the
+// tunnel (full tunnel); an empty dns writes no DNS line.
+func (g *ConfigGenerator) GeneratePeerConfigDNS(clientPrivateKey, serverPublicKey, serverEndpoint, clientIP, allowedIPs, dns string) string {
 	var sb strings.Builder
 
 	sb.WriteString("[Interface]\n")
 	sb.WriteString(fmt.Sprintf("PrivateKey = %s\n", clientPrivateKey))
 	sb.WriteString(fmt.Sprintf("Address = %s\n", clientIP))
+	if dns != "" {
+		sb.WriteString(fmt.Sprintf("DNS = %s\n", dns))
+	}
 
 	sb.WriteString("\n[Peer]\n")
 	sb.WriteString(fmt.Sprintf("PublicKey = %s\n", serverPublicKey))

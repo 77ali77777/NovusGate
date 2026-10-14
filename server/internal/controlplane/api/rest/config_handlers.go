@@ -15,6 +15,27 @@ import (
 
 // getRoutedNetworksForNode returns all network CIDRs that this node can reach
 // based on VPN firewall rules
+// fullTunnelDNS resolves names over the tunnel for full-tunnel nodes, so
+// DNS queries do not leave outside it.
+const fullTunnelDNS = "1.1.1.1"
+
+// tunnelRouting returns the AllowedIPs and DNS of a node's config: all IPv4
+// traffic and fullTunnelDNS when full tunnel (egress) is on for the node,
+// otherwise split (the routed VPN networks) without DNS.
+func (s *Server) tunnelRouting(r *http.Request, node *models.Node, split string) (string, string) {
+	ids, err := s.store.ListEgressNodeIDs(r.Context())
+	if err != nil {
+		slog.Warn("full tunnel state not read; the config routes the VPN networks only", "node", node.ID, "error", err)
+		return split, ""
+	}
+	for _, id := range ids {
+		if id == node.ID {
+			return "0.0.0.0/0", fullTunnelDNS
+		}
+	}
+	return split, ""
+}
+
 func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []string {
 	// Start with own network
 	network, err := s.store.GetNetwork(r.Context(), networkID)
@@ -171,13 +192,8 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 	allowedIPsStr := strings.Join(allowedIPs, ", ")
 	
 	cfgGen := wireguard.NewConfigGenerator()
-	config := cfgGen.GeneratePeerConfig(
-		privateKey,
-		serverPublicKey,
-		serverEndpoint,
-		node.VirtualIP.String(),
-		allowedIPsStr,
-	)
+	allowedIPsStr, dns := s.tunnelRouting(r, node, allowedIPsStr)
+	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.conf\"", node.Name))
@@ -245,13 +261,8 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 	allowedIPsStr := strings.Join(allowedIPs, ", ")
 
 	cfgGen := wireguard.NewConfigGenerator()
-	config := cfgGen.GeneratePeerConfig(
-		privateKey,
-		serverPublicKey,
-		serverEndpoint,
-		node.VirtualIP.String(),
-		allowedIPsStr,
-	)
+	allowedIPsStr, dns := s.tunnelRouting(r, node, allowedIPsStr)
+	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	png, err := qrcode.Encode(config, qrcode.Medium, 256)
 	if err != nil {
@@ -347,13 +358,8 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	allowedIPsStr := strings.Join(allowedIPsList, ", ")
 
 	cfgGen := wireguard.NewConfigGenerator()
-	config := cfgGen.GeneratePeerConfig(
-		privateKey,
-		serverPublicKey,
-		serverEndpoint,
-		node.VirtualIP.String(),
-		allowedIPsStr,
-	)
+	allowedIPsStr, dns := s.tunnelRouting(r, node, allowedIPsStr)
+	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	response := CreateServerResponse{Node: node, Config: config}
 	
@@ -421,13 +427,8 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	allowedIPsStr := strings.Join(allowedIPsList, ", ")
 
 	cfgGen := wireguard.NewConfigGenerator()
-	config := cfgGen.GeneratePeerConfig(
-		privateKey,
-		serverPublicKey,
-		serverEndpoint,
-		node.VirtualIP.String(),
-		allowedIPsStr,
-	)
+	allowedIPsStr, dns := s.tunnelRouting(r, node, allowedIPsStr)
+	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	if isHead(r) { // no token for a HEAD: only the headers are wanted
 		w.Header().Set("Content-Type", "text/x-shellscript")
