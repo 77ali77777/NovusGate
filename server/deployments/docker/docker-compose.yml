@@ -44,6 +44,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
 
       novusgate_API_KEY: ${API_KEY:-novusgate_secret_key}
+      # Seals node private keys (64 hex); empty = stored unencrypted, with a warning
+      NOVUSGATE_MASTER_KEY: ${MASTER_KEY:-}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       WG_SERVER_ENDPOINT: ${WG_SERVER_ENDPOINT:-127.0.0.1}

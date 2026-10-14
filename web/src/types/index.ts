@@ -37,6 +37,7 @@ export interface Node {
   expires_at?: string
   node_info?: NodeInfo
   endpoints?: string[]
+  has_config: boolean // the server holds the private key: config, QR and install script work
   created_at: string
 }
 

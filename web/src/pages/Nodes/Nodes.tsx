@@ -200,8 +200,7 @@ export const NodesPage: React.FC = () => {
       className: 'w-10',
       render: (node: Node) => {
         // Hide download button for imported nodes (they don't have private keys)
-        const hasPrivateKey = node.labels?.wireguard_private_key
-        if (!hasPrivateKey) {
+        if (!node.has_config) {
           return (
             <span className="text-xs text-gray-400" title="Config not available for imported nodes">
               -

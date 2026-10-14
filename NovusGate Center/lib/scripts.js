@@ -109,6 +109,8 @@ generate_secret() {
 
 API_KEY=$(generate_secret)
 JWT_SECRET=$(generate_secret)
+# Seals node private keys in the database (64 hex characters).
+MASTER_KEY=$(openssl rand -hex 32)
 
 if [ -z "$DB_PASSWORD" ]; then
   DB_PASSWORD=$(generate_secret)
@@ -259,6 +261,7 @@ DB_PASSWORD=$DB_PASSWORD
 JWT_SECRET=$JWT_SECRET
 
 API_KEY=$API_KEY
+MASTER_KEY=$MASTER_KEY
 ADMIN_USERNAME=$ADMIN_USERNAME
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 WG_SERVER_ENDPOINT=$SERVER_IP
@@ -404,13 +407,19 @@ if [ -f "/tmp/NovusGate.env.bak" ]; then
     SERVER_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 icanhazip.com 2>/dev/null || hostname -I | awk '{print $1}')
     echo "WG_SERVER_ENDPOINT=$SERVER_IP" >> server/deployments/docker/.env
   fi
+
+  # Ensure MASTER_KEY exists (seals node private keys; added in P4c)
+  if ! grep -q "^MASTER_KEY=" server/deployments/docker/.env; then
+    echo "MASTER_KEY=$(openssl rand -hex 32)" >> server/deployments/docker/.env
+  fi
 else
   echo "Generating new keys (Config provided)..."
   generate_secret() { openssl rand -hex 16 2>/dev/null || head -c 16 /dev/urandom | od -An -t x1 | tr -d ' \\n'; }
   
   API_KEY=$(generate_secret)
   JWT_SECRET=$(generate_secret)
-  
+  MASTER_KEY=$(openssl rand -hex 32)
+
   # Use provided or generate
   DB_PASSWORD="${DB_PASS}"
   if [ -z "$DB_PASSWORD" ]; then
@@ -432,6 +441,7 @@ DB_PASSWORD=$DB_PASSWORD
 JWT_SECRET=$JWT_SECRET
 
 API_KEY=$API_KEY
+MASTER_KEY=$MASTER_KEY
 ADMIN_USERNAME=${ADMIN_USER}
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 WG_SERVER_ENDPOINT=$SERVER_IP
@@ -577,6 +587,12 @@ const UPDATE_SCRIPT = `
 set -e
 INSTALL_DIR="/opt/NovusGate"
 TEMP_DIR="/tmp/NovusGate_update"
+
+# Ensure MASTER_KEY exists (seals node private keys; added in P4c)
+if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ] \\
+  && ! grep -q "^MASTER_KEY=" "$INSTALL_DIR/server/deployments/docker/.env"; then
+  echo "MASTER_KEY=$(openssl rand -hex 32)" >> "$INSTALL_DIR/server/deployments/docker/.env"
+fi
 
 echo "=========================================="
 echo "  NovusGate SMART UPDATE v2.0"
