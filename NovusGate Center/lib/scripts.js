@@ -1,5 +1,12 @@
 // ============ INSTALL SCRIPTS ============
 
+// shellQuote makes value one literal shell word: single-quoted, with each
+// embedded single quote written as '\x27'. Every value from the Center's form
+// goes through it.
+function shellQuote(value) {
+  return "'" + String(value).split("'").join("'\\''") + "'";
+}
+
 // Shell expression for a new MASTER_KEY (64 hex characters, seals node
 // private keys); falls back to /dev/urandom when openssl is missing.
 const MASTER_KEY_GEN = "$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -t x1 | tr -d ' \\n')";
@@ -69,16 +76,16 @@ YELLOW='\\033[1;33m'
 NC='\\033[0m'
 ${ALREADY_INSTALLED_GUARD}
 # Configuration Variables
-ADMIN_USERNAME="${config.adminUsername || 'admin'}"
-ADMIN_PASSWORD="${config.adminPassword || ''}" # Empty means auto-generate
-VPN_IP="${config.vpnIp || '10.99.0.1'}"
-VPN_SUBNET="${config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.0/24') : '10.99.0.0/24'}"
-VPN_CLIENT_IP="${config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.2') : '10.99.0.2'}"
+ADMIN_USERNAME=${shellQuote(config.adminUsername || 'admin')}
+ADMIN_PASSWORD=${shellQuote(config.adminPassword || '')} # Empty means auto-generate
+VPN_IP=${shellQuote(config.vpnIp || '10.99.0.1')}
+VPN_SUBNET=${shellQuote(config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.0/24') : '10.99.0.0/24')}
+VPN_CLIENT_IP=${shellQuote(config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.2') : '10.99.0.2')}
 
 # Database Config
-DB_NAME="${config.dbName || 'NovusGate'}"
-DB_USER="${config.dbUser || 'NovusGate'}"
-DB_PASSWORD="${config.dbPassword || ''}" # Empty means auto-generate
+DB_NAME=${shellQuote(config.dbName || 'NovusGate')}
+DB_USER=${shellQuote(config.dbUser || 'NovusGate')}
+DB_PASSWORD=${shellQuote(config.dbPassword || '')} # Empty means auto-generate
 
 log_info() { echo -e "\${GREEN}[INFO]\${NC} $1"; }
 log_warn() { echo -e "\${YELLOW}[WARN]\${NC} $1"; }
@@ -423,12 +430,16 @@ else
   MASTER_KEY=${MASTER_KEY_GEN}
 
   # Use provided or generate
-  DB_PASSWORD="${DB_PASS}"
+  DB_NAME=${shellQuote(DB_NAME)}
+  DB_USER=${shellQuote(DB_USER)}
+  ADMIN_USERNAME=${shellQuote(ADMIN_USER)}
+  ADMIN_CIDR=${shellQuote(ADMIN_CIDR)}
+  DB_PASSWORD=${shellQuote(DB_PASS)}
   if [ -z "$DB_PASSWORD" ]; then
      DB_PASSWORD=$(generate_secret)
   fi
 
-  ADMIN_PASSWORD="${ADMIN_PASS}"
+  ADMIN_PASSWORD=${shellQuote(ADMIN_PASS)}
   if [ -z "$ADMIN_PASSWORD" ]; then
      ADMIN_PASSWORD=$(generate_secret)
   fi
@@ -437,17 +448,17 @@ else
   
   mkdir -p server/deployments/docker
   cat <<EOF > server/deployments/docker/.env
-DB_NAME=${DB_NAME}
-DB_USER=${DB_USER}
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
 JWT_SECRET=$JWT_SECRET
 
 API_KEY=$API_KEY
 MASTER_KEY=$MASTER_KEY
-ADMIN_USERNAME=${ADMIN_USER}
+ADMIN_USERNAME=$ADMIN_USERNAME
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 WG_SERVER_ENDPOINT=$SERVER_IP
-ADMIN_CIDR=${ADMIN_CIDR}
+ADMIN_CIDR=$ADMIN_CIDR
 EOF
   # No web/.env: since P4b the panel calls the API through its own nginx,
   # which adds the API key; the key is never copied into the web build.
@@ -774,6 +785,7 @@ echo "=========================================="
 `;
 
 module.exports = {
+  shellQuote,
   MASTER_KEY_GEN,
   ensureMasterKey,
   CLEAN_INSTALL_DIR_FN,

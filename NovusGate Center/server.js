@@ -16,6 +16,7 @@ const {
 } = require('./lib/scripts');
 const { endWithError } = require('./lib/sse');
 const { runScript, doneMessage } = require('./lib/run');
+const { validateInstallConfig } = require('./lib/validate');
 
 const app = express();
 app.use(cors());
@@ -601,6 +602,11 @@ app.post('/api/servers/:id/install', async (req, res) => {
   
   if (!server) {
     return res.status(404).json({ error: 'Server not found' });
+  }
+  // Form values end up in shell scripts and the compose .env.
+  const invalid = validateInstallConfig(req.body);
+  if (invalid) {
+    return res.status(400).json({ error: invalid });
   }
   
   // STREAM RESPONSE IMMEDIATELY

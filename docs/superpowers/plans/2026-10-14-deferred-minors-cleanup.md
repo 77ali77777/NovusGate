@@ -116,7 +116,7 @@
 ## Batch H — Center (P1 reviews)
 - [x] H1: the UI shows the script's refusal reason instead of "[DONE] Error occurred."
 - [x] H2: the container filter is case-insensitive, like the grep.
-- [x] H3 (temp dirs removed; passwords with $ and quotes: see H3 note): tests generate scripts with passwords containing `$`, `"` and `'`, and run `bash -n` on them; temp dirs are removed.
+- [x] H3 (temp dirs removed; form values go through shellQuote and validateInstallConfig, tested with $, quotes and backticks): tests generate scripts with passwords containing `$`, `"` and `'`, and run `bash -n` on them; temp dirs are removed.
 - [x] H4: a blank line removed from the archive error text; the SSH connection is closed in the outer catch.
 - [x] H5: a test for a non-numeric `SSH_CONNECTION` field.
 - [x] H6 (verified-closed: the archive already excludes server/data and every .env; web/.env is no longer used since P4b):

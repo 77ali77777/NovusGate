@@ -1802,6 +1802,11 @@
         });
         
         console.log('Response received:', response.status);
+        if (!response.ok) {
+          // Refused before the run started (e.g. a value the scripts cannot carry).
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || `Request failed (${response.status})`);
+        }
         await streamResponse(response, output);
         await refreshStatus();
       } catch (err) {
