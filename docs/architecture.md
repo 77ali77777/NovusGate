@@ -62,11 +62,21 @@
 - **Qoruyan testlər:** `TestEveryRouteIsDocumented` (route əhatəsi), `assertMatchesSpec` (hər kontrakt cavabı sxemə qarşı yoxlanılır).
 - **`/api` fallback:** uyğun gəlməyən `/api` sorğuları JSON 404/405 alır (`api_fallback.go`).
 
+## DTO qatı (P2d-3)
+- **Fayllar:** `dto_requests.go` (12 request), `dto_system.go` (auth, node, health, system, stats, debug, sync), `dto_fail2ban.go`, `dto_firewall.go` (v1, v2, VPN). Handler-lər `map` qaytarmır.
+- **Şərti açarlar:** pointer + `omitempty` (mövcud olanda `0`/`false`/`""`/`[]` da yazılır); həmişə olan, amma `null` ola bilən açarlar pointer, `omitempty`-siz (`pending`, `last_run`).
+- **Cavab formasını dəyişmədən tipə keçirmə üsulu:**
+  1. əvvəl formanı kontrakt snapshot-u ilə dondur;
+  2. sonra `docOps`-u yeni tipə yönəlt (`assertMatchesSpec` köhnə cavabı yeni sxemə qarşı yoxlayır);
+  3. ən sonda handler-i çevir (snapshot dəyişməməlidir).
+- **Servis qatı yoxdur:** biznes məntiqi hələ handler-lərdədir. Səbəb P2 spec §5-dədir.
+
 ## Test seam-ləri (P2a)
 - **`api/rest`-də dəyişdirilə bilən funksiyalar:**
   - `execHostCommand`, `execCommand`: host və konteyner əmrləri;
   - `generateKeys`: WireGuard açarları;
   - `openFail2BanLog`: `/var/log/fail2ban.log` (sətir-sətir oxunur);
+  - `fail2banLogExists`: log faylının mövcudluğu (`GET /system/fail2ban/logs`);
   - `wgInit`, `wgTeardown`: WireGuard interfeysinə toxunan yerlər;
   - `legacySSHPorts`, `adminPeers`, `clearLegacyVPNRules`, `checkFirewallHost`, `cutoverIptables`.
 

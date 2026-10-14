@@ -70,4 +70,10 @@ Dəyişənlər:
 - **P2d-2 (bağlandı):**
   - kontrakt snapshot-larından OpenAPI 3 sənədi;
   - qeydiyyatdan keçmiş hər route-un sənəddə olduğunu yoxlayan test.
-- **P2d-3:** servis qatı (handler → service → store).
+- **P2d-3 (bağlandı, 2026-10-14):** bütün request və response body-ləri adlı DTO-lardır, OpenAPI sənədi tiplidir. Wire formatı dəyişməyib, kontrakt snapshot-ları eyni qalıb.
+- **Servis qatı (handler → service → store) təxirə salındı.** Səbəblər:
+  - P2-nin qəbul meyarlarında yoxdur (snapshot-lar yaşıl, reconciler shadow-da izahsız drift-siz, expiry panel bağlı olanda da işləyir);
+  - istifadəçiyə görünən faydası yoxdur, regressiya riski isə realdır.
+
+  Ehtiyac yarananda (P6 və ya ayrıca P2 davamı) ayrıca plan olacaq.
+- **P2-nin vəziyyəti:** P2c-2-dən (`wgN.conf`-a `[Peer]`) başqa hər şey bağlandı.

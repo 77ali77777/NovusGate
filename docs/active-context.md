@@ -302,6 +302,26 @@
   9 minor ledger-də (HEAD 405, 206 sənədsiz, query parametrləri, X-API-Key sxemi və s.).
 - **Davam:** P2d-3 (servis qatı + DTO-lar) və ya P5.
 
+### 2026-10-14: P2d-3 planı və icrası (DTO-lar)
+- **Plan:** `docs/superpowers/plans/2026-10-14-p2d3-dtos.md` (`0ed60a6`). Servis qatı P2d-3-dən çıxarıldı (səbəb P2 spec §5-dədir).
+- **Nəticə:** bütün request/response body-ləri adlı DTO-lardır. Commit-lər:
+  - `b761eef`: host-dan asılı və firewall cavabları snapshot-larla donduruldu (38 yeni snapshot, `fail2banLogExists` seam-i);
+  - `7f39a0e`: request DTO-ları;
+  - `a94c608`: auth/node/system/health DTO-ları və health-in `null`/`false` qolları üçün snapshot;
+  - `850fe63`: fail2ban DTO-ları, 206 sənədə əlavə olundu;
+  - `63e201e`: VPN apply cavabı donduruldu;
+  - `8d33280`: firewall v1/v2/VPN DTO-ları.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → 9 paket `ok`;
+  - Task 2–5-də heç bir kontrakt snapshot-u dəyişmədi (`git diff --stat testdata/contract` boş);
+  - health snapshot-u köhnə `handlers.go` (`7f39a0e`) ilə də keçdi;
+  - OpenAPI-də ümumi `object` sxemləri: 57 → 1.
+- **Davranış dəyişikliyi:** yoxdur. OpenAPI sənədi zənginləşdi, 206 əlavə olundu.
+- **Snapshot-la qorunmayanlar:**
+  - `POST /networks/{id}/sync` 200 cavabı (`wg show`-un seam-i yoxdur);
+  - iptables rejimində v1 firewall cavabları (eyni açarlar nft yolunda qorunur).
+- **Davam:** final review, sonra P2c-2 və ya P5.
+
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
@@ -322,6 +342,7 @@
 | 2026-10-13 | P3 firewall spec + P3a mühərrik planı | docs/superpowers/specs/2026-10-13-p3-firewall-design.md, docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md | firewall-u tam idarə etmək · `709d1a6` |
 | 2026-10-13 | P3a firewall mühərriki: model, kompilyator, SSH qoruması, executor, təsdiqli tətbiq, DB→model, `firewall preview` | server/internal/netctl/nft/*, server/internal/controlplane/firewall/*, server/cmd/control-plane/firewall_cmd.go, Dockerfile.control-plane, server/scripts/test-in-docker.sh, .gitattributes, docs/architecture.md | P3 firewall · `76b8e1b`..Task 6 |
 | 2026-10-14 | P2d-2: OpenAPI sənədi (reflection), /api/v1/openapi.json, route coverage, kontrakt-sxem yoxlaması, /api JSON 404/405 | api/rest/{openapi,api_fallback}.go, testdata | P2d-2 planı · `ceb50b5`..`56d5462` |
+| 2026-10-14 | P2d-3: request və response DTO-ları, tipli OpenAPI, 206 sənədləşdi, host/firewall cavabları snapshot-da | api/rest/{dto_*,handlers,config_handlers,firewall_*,openapi,fail2ban_parse}.go, testdata | P2d-3 planı · `b761eef`..`8d33280` |
 | 2026-10-14 | P2d-1: vahid xəta body-si, sabit kodlar, PUT /nodes validasiyası | api/rest/*, testdata/contract | P2d-1 planı · `761dbc6`..`8325276` |
 | 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |

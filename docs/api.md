@@ -127,7 +127,10 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **Qoruyan testlər:**
   - `TestEveryRouteIsDocumented`: qeydiyyatdan keçmiş hər route sənəddə olmalıdır, tərsinə də;
   - `TestContract`: hər kontrakt-test cavabı sənədin sxeminə qarşı yoxlanılır (`assertMatchesSpec`). Kontrakt testi olmayan endpoint-ləri yalnız golden diff qoruyur.
-- **Məhdudiyyət:** handler daxilindəki adsız request strukturları və `map` cavabları hələlik ümumi `object` kimi sənədləşdirilir. Dəqiq DTO-lar P2d-3-də gələcək. Request sxemlərində `required` yoxdur: Go hər sahəni isteğe bağlı decode edir, default-ları handler verir.
+- **DTO-lar (P2d-3):** bütün request və response body-ləri adlı Go tipləridir (`dto_requests.go`, `dto_system.go`, `dto_fail2ban.go`, `dto_firewall.go`). Sənəddə ümumi `object` kimi yalnız iki yer qalır: `/api/v1/openapi.json`-un özü və v2 dəyişiklik cavabının `item` sahəsi (yaradılan qeyd, `{"id"}` və ya `{"node_id","egress"}`).
+- **Şərti açarlar:** bəzi açarlar yalnız müəyyən halda gəlir (məsələn fail2ban jail sayğacları, `firewall.ready`, v2 state-də `host_error` və ya `ssh_ports`/`egress_interface`). Sxemdə onlar `required` deyil. Mövcud olanda `0`, `false`, `""` və `[]` real dəyərdir.
+- **Əlavə status:** `PUT /system/fail2ban/jail/settings` ayarların bir hissəsi tətbiq olunmayanda 206 qaytarır (`status: "partial"`, `errors`). Bu status sənəddə var (`docExtraResponses`).
+- **Məhdudiyyət:** request sxemlərində `required` yoxdur: Go hər sahəni isteğe bağlı decode edir, default-ları handler verir. `GET /debug/wireguard/{id}`-in 404 body-si köhnə formadadır (`{"network_id","error"}`), vahid xəta formasında deyil.
 - **İstifadə:** P5 web client tiplərini bu sənəddən `openapi-typescript` ilə yaradacaq.
 
 ## `/api` fallback (P2d-2)
