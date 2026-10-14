@@ -1,0 +1,71 @@
+# GitHub Actions workflow for NovusGate. Agents may not write under .github/,
+# so this copy lives in docs/. Install it from the repository root with:
+#   mkdir -p .github/workflows && cp docs/ci/ci.yml .github/workflows/ci.yml
+# The jobs run the same scripts as local development.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  go:
+    # Go build, vet, gofmt and tests against a disposable Postgres, including
+    # the nftables kernel checks (NFT_CHECK=1, needs CAP_NET_ADMIN).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash server/scripts/test-with-postgres.sh
+        env:
+          SERVER_DIR: ${{ github.workspace }}/server
+
+  nft-versions:
+    # Golden rulesets parse with the nft of every supported host OS.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash server/scripts/nft-versions-check.sh
+        env:
+          SERVER_DIR: ${{ github.workspace }}/server
+
+  web:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      # The legacy pages still have lint findings (cleaned up with the P6
+      # page rewrite); report them without failing the job until then.
+      - run: npx biome check .
+        continue-on-error: true
+      - run: npx vite build
+      # The API key is injected by nginx; it must never reach the bundle.
+      - run: "! grep -rIl 'X-API-Key' dist/"
+
+  center:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: NovusGate Center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: node --check server.js
+      - run: npm test
+
+  shell:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash server/deployments/docker/tests/setup-firewall_test.sh
