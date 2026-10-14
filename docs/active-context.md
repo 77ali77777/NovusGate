@@ -323,6 +323,13 @@
   - xəta mətnləri və config şablonu backend-dən götürüldü;
   - render yoxlanmayıb.
 - **Davam:** istifadəçinin mockup-a rəyi və ya təsdiqi → P5 planı.
+- **Klikləmə prototipi (eyni gün):** mockup klikləmə ilə gəzilən panelə çevrildi. Kanvas Login-dən açılır (`launch: focused`). 36 lövhə interaktivdir:
+  - yan menyu səhifələrə keçid edir;
+  - düymələr modallara keçid edir;
+  - tablar tab səhifələrinə keçid edir;
+  - Cancel/Save əvvəlki səhifəyə qaytarır.
+
+  Skript 106 keçidi yoxladı, sınıq keçid 0. Brauzerdə klik yoxlanmayıb.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
