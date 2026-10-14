@@ -347,10 +347,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		allowedIPsStr,
 	)
 
-	response := map[string]interface{}{
-		"node":   node,
-		"config": config,
-	}
+	response := CreateServerResponse{Node: node, Config: config}
 	
 	s.triggerReconcile()
 	jsonResponse(w, http.StatusCreated, response)

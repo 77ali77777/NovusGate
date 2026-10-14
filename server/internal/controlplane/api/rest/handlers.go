@@ -471,10 +471,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Return token
-	jsonResponse(w, http.StatusOK, map[string]string{
-		"token":    adminToken,
-		"username": adminUsername,
-	})
+	jsonResponse(w, http.StatusOK, LoginResponse{Token: adminToken, Username: adminUsername})
 }
 
 // Update Password handler
@@ -515,7 +512,7 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "success"})
+	jsonResponse(w, http.StatusOK, StatusResponse{Status: "success"})
 }
 
 // User Management Handlers
@@ -1042,7 +1039,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 	}
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
-	jsonResponse(w, http.StatusOK, map[string]string{"status": "deleted"})
+	jsonResponse(w, http.StatusOK, StatusResponse{Status: "deleted"})
 }
 
 func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
@@ -1113,17 +1110,16 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	healthy := true
-	checks := map[string]interface{}{}
+	resp := HealthResponse{Status: "healthy", Version: "0.1.0",
+		Checks: HealthChecks{Firewall: FirewallCheck{OK: true, Mode: string(firewall.ModeIptables)}}}
 
 	if s.store.Ping(ctx) != nil {
 		healthy = false
-		checks["database"] = map[string]interface{}{"ok": false}
 	} else {
-		checks["database"] = map[string]interface{}{"ok": true}
-		wgOK := true
-		interfaces := map[string]string{}
+		resp.Checks.Database.OK = true
+		wg := &WireGuardCheck{OK: true, Interfaces: map[string]string{}}
 		if networks, err := s.store.ListNetworks(ctx); err != nil {
-			wgOK = false
+			wg.OK = false
 		} else {
 			for _, n := range networks {
 				if n.InterfaceName == "" {
@@ -1131,59 +1127,59 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 				}
 				state := "up"
 				if !interfaceUp(n.InterfaceName) {
-					state, wgOK = "down", false
+					state, wg.OK = "down", false
 				}
-				interfaces[n.InterfaceName] = state
+				wg.Interfaces[n.InterfaceName] = state
 			}
 		}
-		healthy = healthy && wgOK
-		checks["wireguard"] = map[string]interface{}{"ok": wgOK, "interfaces": interfaces}
+		healthy = healthy && wg.OK
+		resp.Checks.WireGuard = wg
 	}
 
-	fw := map[string]interface{}{"ok": true, "mode": string(firewall.ModeIptables)}
 	if s.firewall != nil {
-		fw["mode"] = string(s.firewall.Mode)
+		fw := &resp.Checks.Firewall
+		fw.Mode = string(s.firewall.Mode)
 		if s.firewall.Mode == firewall.ModeNft {
 			ready := s.firewall.Ready()
 			_, pending := s.firewall.PendingChange()
-			fw["ok"], fw["ready"], fw["pending"] = ready, ready, pending
+			fw.OK, fw.Ready, fw.Pending = ready, &ready, &pending
 			healthy = healthy && ready
 		}
 	}
 	if s.reconciler != nil {
 		rep := s.reconciler.Status()
-		rc := map[string]interface{}{"ok": rep.OK(), "mode": string(s.reconciler.Mode), "pending": 0, "last_run": nil}
+		rc := &ReconcilerCheck{OK: rep.OK(), Mode: string(s.reconciler.Mode)}
 		if !rep.Time.IsZero() {
-			rc["last_run"] = rep.Time.UTC().Format(time.RFC3339)
-			rc["pending"] = len(rep.Pending) // shadow: adds and updates enforce would make
+			last := rep.Time.UTC().Format(time.RFC3339)
+			rc.LastRun = &last
+			rc.Pending = len(rep.Pending) // shadow: adds and updates enforce would make
 		}
 		healthy = healthy && rep.OK()
-		checks["reconciler"] = rc
+		resp.Checks.Reconciler = rc
 	}
-	checks["firewall"] = fw
 
-	status := "healthy"
 	if !healthy {
-		status = "degraded"
+		resp.Status = "degraded"
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{"status": status, "version": "0.1.0", "checks": checks})
+	jsonResponse(w, http.StatusOK, resp)
 }
 
 // System Info - CPU, RAM, Disk
 func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
-	info := map[string]interface{}{}
+	info := SystemInfoResponse{}
 	
 	// CPU Info
 	cpuInfo, _ := os.ReadFile("/proc/cpuinfo")
 	cpuCount := strings.Count(string(cpuInfo), "processor")
-	info["cpu_cores"] = cpuCount
+	info.CPUCores = cpuCount
 	
 	// CPU Model
 	for _, line := range strings.Split(string(cpuInfo), "\n") {
 		if strings.HasPrefix(line, "model name") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
-				info["cpu_model"] = strings.TrimSpace(parts[1])
+				model := strings.TrimSpace(parts[1])
+				info.CPUModel = &model
 				break
 			}
 		}
@@ -1194,9 +1190,9 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 	if len(loadAvg) > 0 {
 		parts := strings.Fields(string(loadAvg))
 		if len(parts) >= 3 {
-			info["load_1m"] = parts[0]
-			info["load_5m"] = parts[1]
-			info["load_15m"] = parts[2]
+			info.Load1m = &parts[0]
+			info.Load5m = &parts[1]
+			info.Load15m = &parts[2]
 		}
 	}
 	
@@ -1212,12 +1208,12 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 			memMap[key] = val * 1024 // Convert KB to bytes
 		}
 	}
-	info["memory_total"] = memMap["MemTotal"]
-	info["memory_free"] = memMap["MemFree"]
-	info["memory_available"] = memMap["MemAvailable"]
-	info["memory_used"] = memMap["MemTotal"] - memMap["MemAvailable"]
-	info["memory_buffers"] = memMap["Buffers"]
-	info["memory_cached"] = memMap["Cached"]
+	info.MemoryTotal = memMap["MemTotal"]
+	info.MemoryFree = memMap["MemFree"]
+	info.MemoryAvailable = memMap["MemAvailable"]
+	info.MemoryUsed = memMap["MemTotal"] - memMap["MemAvailable"]
+	info.MemoryBuffers = memMap["Buffers"]
+	info.MemoryCached = memMap["Cached"]
 	
 	// Disk Info (root partition)
 	// Using df command for simplicity
@@ -1231,9 +1227,9 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 				fmt.Sscanf(fields[1], "%d", &total)
 				fmt.Sscanf(fields[2], "%d", &used)
 				fmt.Sscanf(fields[3], "%d", &avail)
-				info["disk_total"] = total
-				info["disk_used"] = used
-				info["disk_free"] = avail
+				info.DiskTotal = &total
+				info.DiskUsed = &used
+				info.DiskFree = &avail
 			}
 		}
 	}
@@ -1243,12 +1239,13 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 	if len(uptimeData) > 0 {
 		var uptime float64
 		fmt.Sscanf(string(uptimeData), "%f", &uptime)
-		info["uptime_seconds"] = int64(uptime)
+		up := int64(uptime)
+		info.UptimeSeconds = &up
 	}
 	
 	// Hostname
 	hostname, _ := os.Hostname()
-	info["hostname"] = hostname
+	info.Hostname = hostname
 	
 	jsonResponse(w, http.StatusOK, info)
 }
@@ -1538,7 +1535,7 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 	totalRx := int64(0)
 	totalTx := int64(0)
 	
-	networkStats := []map[string]interface{}{}
+	networkStats := []NetworkStats{}
 	
 	for _, network := range networks {
 		nodes, err := s.store.ListNodes(ctx, network.ID)
@@ -1586,31 +1583,17 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 		totalRx += netRx
 		totalTx += netTx
 		
-		networkStats = append(networkStats, map[string]interface{}{
-			"id":            network.ID,
-			"name":          network.Name,
-			"cidr":          network.CIDR,
-			"interface":     network.InterfaceName,
-			"total_nodes":   len(nodes),
-			"online_nodes":  netOnline,
-			"offline_nodes": netOffline,
-			"pending_nodes": netPending,
-			"expired_nodes": netExpired,
-			"transfer_rx":   netRx,
-			"transfer_tx":   netTx,
+		networkStats = append(networkStats, NetworkStats{
+			ID: network.ID, Name: network.Name, CIDR: network.CIDR, Interface: network.InterfaceName,
+			TotalNodes: len(nodes), OnlineNodes: netOnline, OfflineNodes: netOffline,
+			PendingNodes: netPending, ExpiredNodes: netExpired, TransferRx: netRx, TransferTx: netTx,
 		})
 	}
 	
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"total_networks": len(networks),
-		"total_nodes":    totalNodes,
-		"online_nodes":   onlineNodes,
-		"offline_nodes":  offlineNodes,
-		"pending_nodes":  pendingNodes,
-		"expired_nodes":  expiredNodes,
-		"total_rx":       totalRx,
-		"total_tx":       totalTx,
-		"networks":       networkStats,
+	jsonResponse(w, http.StatusOK, StatsOverviewResponse{
+		TotalNetworks: len(networks), TotalNodes: totalNodes, OnlineNodes: onlineNodes,
+		OfflineNodes: offlineNodes, PendingNodes: pendingNodes, ExpiredNodes: expiredNodes,
+		TotalRx: totalRx, TotalTx: totalTx, Networks: networkStats,
 	})
 }
 
@@ -1618,65 +1601,66 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 	networkID := mux.Vars(r)["networkId"]
 	
-	result := map[string]interface{}{
-		"network_id": networkID,
-	}
-	
 	// Get network info
 	network, err := s.store.GetNetwork(r.Context(), networkID)
 	if err != nil || network == nil {
-		result["error"] = "network not found"
-		jsonResponse(w, http.StatusNotFound, result)
+		jsonResponse(w, http.StatusNotFound, DebugNotFoundResponse{NetworkID: networkID, Error: "network not found"})
 		return
 	}
 	
-	result["network_name"] = network.Name
-	result["interface_name"] = network.InterfaceName
-	result["server_public_key"] = network.ServerPublicKey
-	result["server_endpoint"] = network.ServerEndpoint
+	result := DebugWireGuardResponse{
+		NetworkID:       networkID,
+		NetworkName:     network.Name,
+		InterfaceName:   network.InterfaceName,
+		ServerPublicKey: network.ServerPublicKey,
+		ServerEndpoint:  network.ServerEndpoint,
+	}
 	
 	// Check manager
 	s.managersMu.RLock()
 	mgr := s.managers[networkID]
 	s.managersMu.RUnlock()
 	
-	result["manager_registered"] = mgr != nil
+	result.ManagerRegistered = mgr != nil
 	
 	// Get peers from WireGuard
 	if mgr != nil {
 		peers, err := mgr.GetPeers()
 		if err != nil {
-			result["wg_error"] = err.Error()
+			wgErr := err.Error()
+			result.WGError = &wgErr
 		} else {
-			result["wg_peers_count"] = len(peers)
-			peerList := []map[string]interface{}{}
+			count := len(peers)
+			result.WGPeersCount = &count
+			peerList := []DebugPeer{}
 			for pubKey, status := range peers {
-				peerList = append(peerList, map[string]interface{}{
-					"public_key":  pubKey,
-					"endpoint":    status.Endpoint,
-					"allowed_ips": status.AllowedIPs,
-					"transfer_rx": status.TransferRx,
-					"transfer_tx": status.TransferTx,
+				peerList = append(peerList, DebugPeer{
+					PublicKey:  pubKey,
+					Endpoint:   status.Endpoint,
+					AllowedIPs: status.AllowedIPs,
+					TransferRx: status.TransferRx,
+					TransferTx: status.TransferTx,
 				})
 			}
-			result["wg_peers"] = peerList
+			result.WGPeers = &peerList
 		}
 	}
 	
 	// Get DB nodes for comparison
 	nodes, err := s.store.ListNodes(r.Context(), networkID)
 	if err == nil {
-		result["db_nodes_count"] = len(nodes)
-		nodeList := []map[string]interface{}{}
+		count := len(nodes)
+		result.DBNodesCount = &count
+		nodeList := []DebugDBNode{}
 		for _, n := range nodes {
-			nodeList = append(nodeList, map[string]interface{}{
-				"id":         n.ID,
-				"name":       n.Name,
-				"public_key": n.PublicKey,
-				"virtual_ip": n.VirtualIP.String(),
+			nodeList = append(nodeList, DebugDBNode{
+				ID:        n.ID,
+				Name:      n.Name,
+				PublicKey: n.PublicKey,
+				VirtualIP: n.VirtualIP.String(),
 			})
 		}
-		result["db_nodes"] = nodeList
+		result.DBNodes = &nodeList
 	}
 	
 	jsonResponse(w, http.StatusOK, result)
@@ -1711,12 +1695,7 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 	added, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
 
 	s.triggerReconcile()
-	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"added":   added,
-		"skipped": len(nodes) - added - len(errs),
-		"errors":  errs,
-		"total":   len(nodes),
-	})
+	jsonResponse(w, http.StatusOK, SyncPeersResponse{Added: added, Skipped: len(nodes) - added - len(errs), Errors: errs, Total: len(nodes)})
 }
 
 // Middleware

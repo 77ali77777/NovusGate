@@ -1,0 +1,32 @@
+{
+  "body": {
+    "checks": {
+      "database": {
+        "ok": true
+      },
+      "firewall": {
+        "mode": "nft",
+        "ok": false,
+        "pending": false,
+        "ready": false
+      },
+      "reconciler": {
+        "last_run": null,
+        "mode": "shadow",
+        "ok": true,
+        "pending": 0
+      },
+      "wireguard": {
+        "interfaces": {
+          "wg66": "up",
+          "wg68": "up"
+        },
+        "ok": true
+      }
+    },
+    "status": "degraded",
+    "version": "0.1.0"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

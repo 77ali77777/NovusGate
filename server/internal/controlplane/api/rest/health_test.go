@@ -122,3 +122,18 @@ func (brokenPeers) GetPeers() (map[string]wireguard.PeerStatus, error) {
 func (brokenPeers) AddPeer(string, string) error              { return nil }
 func (brokenPeers) UpdatePeerAllowedIPs(string, string) error { return nil }
 func (brokenPeers) RemovePeer(string) error                   { return nil }
+
+// TestContractHealthBranches freezes the health keys whose present value is
+// null or false: a reconciler that has not run yet and an nft engine that
+// is not ready.
+func TestContractHealthBranches(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seedContract(t, st)
+	s.SetReconciler(reconciler.New(reconciler.ModeShadow, st, func(string) reconciler.PeerControl { return brokenPeers{} }))
+	es, _ := newEngineServer(t, firewall.ModeNft)
+	old := es.firewall
+	s.SetFirewall(&firewall.Engine{Mode: firewall.ModeNft, Store: old.Store, Applier: old.Applier, Now: old.Now, Detect: old.Detect})
+	rec := callAs(t, s, "GET", "/health", "", false)
+	assertContract(t, "health_idle_reconciler_nft_not_ready", rec)
+	assertMatchesSpec(t, s, "GET", "/health", rec)
+}

@@ -80,6 +80,26 @@
         },
         "type": "object"
       },
+      "CreateServerResponse": {
+        "properties": {
+          "config": {
+            "type": "string"
+          },
+          "node": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Node"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "config",
+          "node"
+        ],
+        "type": "object"
+      },
       "CreateUserRequest": {
         "properties": {
           "password": {
@@ -89,6 +109,113 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "DebugDBNode": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "virtual_ip": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "public_key",
+          "virtual_ip"
+        ],
+        "type": "object"
+      },
+      "DebugPeer": {
+        "properties": {
+          "allowed_ips": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "transfer_rx": {
+            "type": "integer"
+          },
+          "transfer_tx": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "allowed_ips",
+          "endpoint",
+          "public_key",
+          "transfer_rx",
+          "transfer_tx"
+        ],
+        "type": "object"
+      },
+      "DebugWireGuardResponse": {
+        "properties": {
+          "db_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/DebugDBNode"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "db_nodes_count": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "interface_name": {
+            "type": "string"
+          },
+          "manager_registered": {
+            "type": "boolean"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "network_name": {
+            "type": "string"
+          },
+          "server_endpoint": {
+            "type": "string"
+          },
+          "server_public_key": {
+            "type": "string"
+          },
+          "wg_error": {
+            "nullable": true,
+            "type": "string"
+          },
+          "wg_peers": {
+            "items": {
+              "$ref": "#/components/schemas/DebugPeer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "wg_peers_count": {
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "interface_name",
+          "manager_registered",
+          "network_id",
+          "network_name",
+          "server_endpoint",
+          "server_public_key"
+        ],
         "type": "object"
       },
       "DeleteRuleRequest": {
@@ -204,6 +331,29 @@
         },
         "type": "object"
       },
+      "FirewallCheck": {
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "pending": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "ready": {
+            "nullable": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mode",
+          "ok"
+        ],
+        "type": "object"
+      },
       "FirewallRule": {
         "properties": {
           "chain": {
@@ -283,6 +433,56 @@
         ],
         "type": "object"
       },
+      "HealthChecks": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/OKCheck"
+          },
+          "firewall": {
+            "$ref": "#/components/schemas/FirewallCheck"
+          },
+          "reconciler": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReconcilerCheck"
+              }
+            ],
+            "nullable": true
+          },
+          "wireguard": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WireGuardCheck"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "database",
+          "firewall"
+        ],
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "checks": {
+            "$ref": "#/components/schemas/HealthChecks"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "checks",
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
       "ImportRulesRequest": {
         "properties": {
           "rules": {
@@ -300,6 +500,21 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "LoginResponse": {
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "username"
+        ],
         "type": "object"
       },
       "Network": {
@@ -342,6 +557,57 @@
           "listen_port",
           "name",
           "updated_at"
+        ],
+        "type": "object"
+      },
+      "NetworkStats": {
+        "properties": {
+          "cidr": {
+            "type": "string"
+          },
+          "expired_nodes": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "interface": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "offline_nodes": {
+            "type": "integer"
+          },
+          "online_nodes": {
+            "type": "integer"
+          },
+          "pending_nodes": {
+            "type": "integer"
+          },
+          "total_nodes": {
+            "type": "integer"
+          },
+          "transfer_rx": {
+            "type": "integer"
+          },
+          "transfer_tx": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cidr",
+          "expired_nodes",
+          "id",
+          "interface",
+          "name",
+          "offline_nodes",
+          "online_nodes",
+          "pending_nodes",
+          "total_nodes",
+          "transfer_rx",
+          "transfer_tx"
         ],
         "type": "object"
       },
@@ -464,6 +730,17 @@
         ],
         "type": "object"
       },
+      "OKCheck": {
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "type": "object"
+      },
       "OpenPortRequest": {
         "properties": {
           "port": {
@@ -476,6 +753,186 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "ReconcilerCheck": {
+        "properties": {
+          "last_run": {
+            "nullable": true,
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "pending": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "last_run",
+          "mode",
+          "ok",
+          "pending"
+        ],
+        "type": "object"
+      },
+      "StatsOverviewResponse": {
+        "properties": {
+          "expired_nodes": {
+            "type": "integer"
+          },
+          "networks": {
+            "items": {
+              "$ref": "#/components/schemas/NetworkStats"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "offline_nodes": {
+            "type": "integer"
+          },
+          "online_nodes": {
+            "type": "integer"
+          },
+          "pending_nodes": {
+            "type": "integer"
+          },
+          "total_networks": {
+            "type": "integer"
+          },
+          "total_nodes": {
+            "type": "integer"
+          },
+          "total_rx": {
+            "type": "integer"
+          },
+          "total_tx": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expired_nodes",
+          "networks",
+          "offline_nodes",
+          "online_nodes",
+          "pending_nodes",
+          "total_networks",
+          "total_nodes",
+          "total_rx",
+          "total_tx"
+        ],
+        "type": "object"
+      },
+      "StatusResponse": {
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "SyncPeersResponse": {
+        "properties": {
+          "added": {
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "errors",
+          "skipped",
+          "total"
+        ],
+        "type": "object"
+      },
+      "SystemInfoResponse": {
+        "properties": {
+          "cpu_cores": {
+            "type": "integer"
+          },
+          "cpu_model": {
+            "nullable": true,
+            "type": "string"
+          },
+          "disk_free": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "disk_total": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "disk_used": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "load_15m": {
+            "nullable": true,
+            "type": "string"
+          },
+          "load_1m": {
+            "nullable": true,
+            "type": "string"
+          },
+          "load_5m": {
+            "nullable": true,
+            "type": "string"
+          },
+          "memory_available": {
+            "type": "integer"
+          },
+          "memory_buffers": {
+            "type": "integer"
+          },
+          "memory_cached": {
+            "type": "integer"
+          },
+          "memory_free": {
+            "type": "integer"
+          },
+          "memory_total": {
+            "type": "integer"
+          },
+          "memory_used": {
+            "type": "integer"
+          },
+          "uptime_seconds": {
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cpu_cores",
+          "hostname",
+          "memory_available",
+          "memory_buffers",
+          "memory_cached",
+          "memory_free",
+          "memory_total",
+          "memory_used"
+        ],
         "type": "object"
       },
       "UpdateNodeRequest": {
@@ -680,6 +1137,25 @@
         },
         "type": "object"
       },
+      "WireGuardCheck": {
+        "properties": {
+          "interfaces": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "interfaces",
+          "ok"
+        ],
+        "type": "object"
+      },
       "v2ForwardRequest": {
         "properties": {
           "comment": {
@@ -784,7 +1260,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
               }
             },
@@ -826,7 +1302,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusResponse"
                 }
               }
             },
@@ -867,7 +1343,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/DebugWireGuardResponse"
                 }
               }
             },
@@ -2066,7 +2542,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/CreateServerResponse"
                 }
               }
             },
@@ -2107,7 +2583,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/SyncPeersResponse"
                 }
               }
             },
@@ -2148,7 +2624,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusResponse"
                 }
               }
             },
@@ -2521,7 +2997,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatsOverviewResponse"
                 }
               }
             },
@@ -3040,7 +3516,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/SystemInfoResponse"
                 }
               }
             },
@@ -3179,7 +3655,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             },
