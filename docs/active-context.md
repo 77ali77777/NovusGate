@@ -236,6 +236,19 @@
 - **Davam:** P2c-2 (`wgN.conf` peer-ləri) və ya P2d.
 
 
+### 2026-10-14: P2d-1 planı
+- **Seçim:** P2c-2 əvəzinə P2d. Səbəb:
+  - P5 (UI kit) P2d-nin OpenAPI və xəta formatından asılıdır;
+  - P2c-2 installer-in `wg0.conf`-una toxunur, riskli olduğu üçün sonraya qalır.
+- **P2d bölündü:**
+  - P2d-1: vahid xəta + node validasiyası;
+  - P2d-2: OpenAPI;
+  - P2d-3: servis qatı.
+- **Nəticə:** `docs/superpowers/plans/2026-10-14-p2d1-unified-errors.md` yazıldı. 4 tapşırıq. Kod dəyişməyib.
+- **Qərar:** xəta body-si `{"error":{"code","message"}}` olur, `message` mətni dəyişmir. Web hər iki formanı oxuyur, Center xəta body-sini oxumur.
+- **Davam:** P2d-1 icrası.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
