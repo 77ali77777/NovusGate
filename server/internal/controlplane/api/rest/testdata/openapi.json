@@ -1033,6 +1033,40 @@
         ],
         "type": "object"
       },
+      "NetworkInput": {
+        "properties": {
+          "cidr": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "interface_name": {
+            "type": "string"
+          },
+          "listen_port": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "server_endpoint": {
+            "type": "string"
+          },
+          "server_public_key": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "NetworkStats": {
         "properties": {
           "cidr": {
@@ -1176,7 +1210,7 @@
           "node_info": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/NodeInfo"
+                "$ref": "#/components/schemas/NodeInfoInput"
               }
             ],
             "nullable": true
@@ -1201,6 +1235,20 @@
           "hostname",
           "os"
         ],
+        "type": "object"
+      },
+      "NodeInfoInput": {
+        "properties": {
+          "arch": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "os": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "OKCheck": {
@@ -1521,7 +1569,7 @@
           "node_info": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/NodeInfo"
+                "$ref": "#/components/schemas/NodeInfoInput"
               }
             ],
             "nullable": true
@@ -3061,7 +3109,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Network"
+                "$ref": "#/components/schemas/NetworkInput"
               }
             }
           },

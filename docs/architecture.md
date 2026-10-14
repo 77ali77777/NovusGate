@@ -63,7 +63,7 @@
 - **`/api` fallback:** uyğun gəlməyən `/api` sorğuları JSON 404/405 alır (`api_fallback.go`).
 
 ## DTO qatı (P2d-3)
-- **Fayllar:** `dto_requests.go` (12 request), `dto_system.go` (auth, node, health, system, stats, debug, sync), `dto_fail2ban.go`, `dto_firewall.go` (v1, v2, VPN). Handler-lər `map` qaytarmır.
+- **Fayllar:** `dto_requests.go` (12 request), `dto_system.go` (auth, node, health, system, stats, debug, sync), `dto_fail2ban.go`, `dto_firewall.go` (v1, v2; VPN apply `StatusMessageResponse` işlədir). Handler-lər `map` qaytarmır.
 - **Şərti açarlar:** pointer + `omitempty` (mövcud olanda `0`/`false`/`""`/`[]` da yazılır); həmişə olan, amma `null` ola bilən açarlar pointer, `omitempty`-siz (`pending`, `last_run`).
 - **Cavab formasını dəyişmədən tipə keçirmə üsulu:**
   1. əvvəl formanı kontrakt snapshot-u ilə dondur;

@@ -144,3 +144,42 @@ func TestUndocumentedRoutesCatchesMethodlessRoutes(t *testing.T) {
 		t.Fatalf("missing=%v stale=%v", missing, stale)
 	}
 }
+
+// Request bodies must not reach a required list through any $ref: a
+// component shared with a response (Network, NodeInfo) would otherwise make
+// generated clients send server-assigned fields.
+func TestRequestBodiesReachNoRequiredFields(t *testing.T) {
+	doc := openAPIDocument()
+	schemas := doc["components"].(map[string]any)["schemas"].(map[string]any)
+	var walk func(at string, s any, seen map[string]bool)
+	walk = func(at string, s any, seen map[string]bool) {
+		switch v := s.(type) {
+		case map[string]any:
+			if ref, ok := v["$ref"].(string); ok {
+				name := strings.TrimPrefix(ref, "#/components/schemas/")
+				if !seen[name] {
+					seen[name] = true
+					walk(at+" -> "+name, schemas[name], seen)
+				}
+				return
+			}
+			if req, ok := v["required"]; ok {
+				t.Errorf("%s: required = %v", at, req)
+			}
+			for _, child := range v {
+				walk(at, child, seen)
+			}
+		case []any:
+			for _, child := range v {
+				walk(at, child, seen)
+			}
+		}
+	}
+	for path, item := range doc["paths"].(map[string]any) {
+		for method, op := range item.(map[string]any) {
+			if body, ok := op.(map[string]any)["requestBody"]; ok {
+				walk(strings.ToUpper(method)+" "+path, body.(map[string]any)["content"], map[string]bool{}) // the body itself is required
+			}
+		}
+	}
+}

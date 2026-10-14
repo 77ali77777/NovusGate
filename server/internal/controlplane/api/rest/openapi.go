@@ -160,6 +160,11 @@ func (g *schemaGen) typeSchema(t reflect.Type) map[string]any {
 		if name == "" {
 			return g.structSchema(t)
 		}
+		if g.inRequest && !strings.HasSuffix(name, "Request") {
+			// A type shared with responses (models.Network, models.NodeInfo) gets
+			// its own request component, so it carries no required list.
+			name += "Input"
+		}
 		if _, ok := g.components[name]; !ok {
 			g.components[name] = map[string]any{} // break recursion
 			g.components[name] = g.structSchema(t)
