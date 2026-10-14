@@ -236,6 +236,8 @@ func TestContract(t *testing.T) {
 		{"network_create", "POST", "/api/v1/networks", `{"name":"contract-new","cidr":"10.67.0.0/24"}`, true},
 		{"network_create_overlap", "POST", "/api/v1/networks", `{"name":"contract-overlap","cidr":"10.66.0.0/25"}`, true},
 		{"network_create_bad_body", "POST", "/api/v1/networks", `{`, true},
+		{"node_update_bad_status", "PUT", "/api/v1/nodes/" + node, `{"status":"banana"}`, true},
+		{"node_update_bad_expiry", "PUT", "/api/v1/nodes/" + node, `{"expires_at":"next tuesday"}`, true},
 		{"node_update", "PUT", "/api/v1/nodes/" + node, `{"name":"contract-node-renamed"}`, true},
 		{"user_create", "POST", "/api/v1/users", `{"username":"contract-user-2","password":"contract-pw-2"}`, true},
 		{"node_delete", "DELETE", "/api/v1/nodes/" + node, "", true},

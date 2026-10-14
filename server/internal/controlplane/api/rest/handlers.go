@@ -956,15 +956,23 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 			node.ExpiresAt = nil
 		} else {
 			t, err := time.Parse(time.RFC3339, *req.ExpiresAt)
-			if err == nil {
-				node.ExpiresAt = &t
+			if err != nil {
+				errorWithCode(w, http.StatusBadRequest, "invalid_expires_at", "expires_at must be an RFC 3339 time, e.g. 2026-10-14T12:00:00Z")
+				return
 			}
+			node.ExpiresAt = &t
 		}
 	}
 
 	// Update status if provided
 	if req.Status != nil {
-		node.Status = models.NodeStatus(*req.Status)
+		switch st := models.NodeStatus(*req.Status); st {
+		case models.NodeStatusPending, models.NodeStatusOnline, models.NodeStatusOffline, models.NodeStatusExpired:
+			node.Status = st
+		default:
+			errorWithCode(w, http.StatusBadRequest, "invalid_status", "status must be pending, online, offline or expired")
+			return
+		}
 	} else if node.Status == models.NodeStatusExpired && req.ExpiresAt != nil && *req.ExpiresAt != "" {
 		// A new expiry for an expired node re-activates it.
 		node.Status = models.NodeStatusPending

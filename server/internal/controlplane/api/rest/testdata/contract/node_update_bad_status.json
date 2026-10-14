@@ -1,0 +1,10 @@
+{
+  "body": {
+    "error": {
+      "code": "invalid_status",
+      "message": "status must be pending, online, offline or expired"
+    }
+  },
+  "content_type": "application/json",
+  "status": 400
+}
