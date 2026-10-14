@@ -626,6 +626,41 @@ set -e
 ${SHELL_HELPERS}
 INSTALL_DIR="/opt/NovusGate"
 TEMP_DIR="/tmp/NovusGate_update"
+BACKUP_DIR="/var/backups/novusgate/update-$(date +%Y%m%d-%H%M%S)"
+set -E # the ERR trap below also fires inside functions
+${CLEAN_INSTALL_DIR_FN}
+# wait_healthy waits until the control plane answers /health
+# (HEALTH_TRIES tries, 2 s apart; 30 = one minute).
+wait_healthy() {
+  command -v curl > /dev/null 2>&1 || { echo "  (curl missing: health not checked)"; return 0; }
+  local i
+  for i in $(seq 1 "\${HEALTH_TRIES:-30}"); do
+    if curl -fsS -m 3 http://127.0.0.1:8080/health > /dev/null 2>&1; then return 0; fi
+    sleep 2
+  done
+  return 1
+}
+
+# rollback restores the code and .env saved in BACKUP_DIR and starts that
+# version again. The database is not restored: migrations only add, so the
+# previous version runs on the newer schema; BACKUP_DIR/db.sql is kept for a
+# manual restore.
+rollback() {
+  trap - ERR
+  echo ""
+  echo "[ROLLBACK] The update failed; restoring the previous version from $BACKUP_DIR ..."
+  cd /
+  clean_install_dir "$INSTALL_DIR"
+  tar -xzf "$BACKUP_DIR/code.tar.gz" -C "$INSTALL_DIR"
+  cd "$INSTALL_DIR"
+  compose -f server/deployments/docker/docker-compose.yml up -d --build --force-recreate || true
+  if wait_healthy; then
+    echo "[ROLLBACK] The previous version is running again."
+  else
+    echo "[ROLLBACK] The previous version did not become healthy either; check 'docker ps' and the container logs."
+  fi
+  exit 1
+}
 
 # Ensure MASTER_KEY exists (seals node private keys; added in P4c)
 ${ensureMasterKey('$INSTALL_DIR/server/deployments/docker/.env')}
@@ -709,6 +744,22 @@ if [ "$SERVER_CHANGED" = false ] && [ "$WEB_CHANGED" = false ] && [ "$DOCKER_CHA
   exit 0
 fi
 
+# Backup before anything changes: the rollback source, and a manual restore
+# point (code with .env, WireGuard configs, database dump).
+echo "[backup] Saving the current version to $BACKUP_DIR ..."
+mkdir -p "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
+tar -czf "$BACKUP_DIR/code.tar.gz" -C "$INSTALL_DIR" --exclude='./server/data' --exclude='./data' .
+tar -czf "$BACKUP_DIR/wireguard.tar.gz" -C /etc wireguard 2>/dev/null || true
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx novusgate-postgres; then
+  ENV_FILE="$INSTALL_DIR/server/deployments/docker/.env"
+  DB_USER_V=$(grep -E '^DB_USER=' "$ENV_FILE" 2>/dev/null | tail -n1 | cut -d= -f2-)
+  DB_NAME_V=$(grep -E '^DB_NAME=' "$ENV_FILE" 2>/dev/null | tail -n1 | cut -d= -f2-)
+  docker exec novusgate-postgres pg_dump -U "\${DB_USER_V:-novusgate}" "\${DB_NAME_V:-novusgate}" > "$BACKUP_DIR/db.sql" \\
+    || echo "  (database dump failed; the code backup is still taken)"
+fi
+trap rollback ERR
+
 # 3. Copy files (preserving .env and data)
 echo "[3/6] Updating files..."
 if command -v rsync &> /dev/null; then
@@ -790,6 +841,12 @@ fi
 
 # Ensure all containers running
 compose -f server/deployments/docker/docker-compose.yml up -d
+
+echo "[health] Waiting for the control plane..."
+wait_healthy || { echo "[ERROR] The control plane did not answer /health within a minute."; rollback; }
+trap - ERR
+# Keep the five newest update backups.
+ls -1dt /var/backups/novusgate/update-* 2>/dev/null | tail -n +6 | xargs -r rm -rf
 
 echo ""
 echo "=========================================="

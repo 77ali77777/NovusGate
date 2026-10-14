@@ -167,3 +167,75 @@ test('uninstall picks the NovusGate WireGuard interfaces only', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// P7: a failed update rolls back to the previous version.
+test('update backs up before changing files and rolls back on failure', () => {
+  const s = scripts.UPDATE_SCRIPT;
+  const backup = s.indexOf('tar -czf "$BACKUP_DIR/code.tar.gz"');
+  const trap = s.indexOf('trap rollback ERR');
+  const copy = s.indexOf('Updating files');
+  const rebuild = s.indexOf('Rebuilding changed containers');
+  const health = s.lastIndexOf('wait_healthy ||');
+  assert.ok(backup > -1 && trap > -1 && copy > -1 && health > -1, 'backup, trap and health check present');
+  assert.ok(s.indexOf('No changes detected') < backup, 'no backup when nothing changed');
+  assert.ok(backup < trap && trap < copy, 'backup and trap before the files change');
+  assert.ok(rebuild < health, 'health is checked after the rebuild');
+  assert.ok(s.includes('pg_dump'), 'database dump kept for a manual restore');
+  assert.ok(s.includes('tar -xzf "$BACKUP_DIR/code.tar.gz" -C "$INSTALL_DIR"'), 'rollback restores the code');
+  assert.match(s, /set -E/, 'ERR trap reaches functions');
+});
+
+test('wait_healthy succeeds once /health answers and fails after its tries', () => {
+  const fn = scripts.UPDATE_SCRIPT.match(/wait_healthy\(\) \{[\s\S]*?\n\}/);
+  assert.ok(fn, 'wait_healthy() missing');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-health-'));
+  try {
+    // curl stub: fails until the counter file reaches $OK_AFTER calls
+    fs.writeFileSync(path.join(dir, 'curl'),
+      `#!/bin/bash\nn=$(( $(cat ${dir}/n 2>/dev/null || echo 0) + 1 )); echo $n > ${dir}/n\n[ "$n" -ge "$OK_AFTER" ]\n`, { mode: 0o755 });
+    fs.writeFileSync(path.join(dir, 'sleep'), '#!/bin/bash\nexit 0\n', { mode: 0o755 });
+    const run = (okAfter) => {
+      fs.rmSync(path.join(dir, 'n'), { force: true });
+      return spawnSync('bash', ['-c', `${fn[0]}\nHEALTH_TRIES=5 wait_healthy`],
+        { env: { PATH: `${dir}:/usr/bin:/bin`, OK_AFTER: String(okAfter) } }).status;
+    };
+    assert.strictEqual(run(3), 0, 'healthy on the third try');
+    assert.strictEqual(run(99), 1, 'gives up after HEALTH_TRIES');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('rollback restores the backed-up code, keeps server/data and exits 1', () => {
+  const s = scripts.UPDATE_SCRIPT;
+  const pick = (name) => s.match(new RegExp(`${name}\\(\\) \\{[\\s\\S]*?\\n\\}`))[0];
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-rollback-'));
+  try {
+    const inst = path.join(root, 'opt');
+    const bak = path.join(root, 'bak');
+    const bin = path.join(root, 'bin');
+    fs.mkdirSync(path.join(inst, 'server', 'data'), { recursive: true });
+    fs.mkdirSync(bak);
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(inst, 'server', 'main.go'), 'old');
+    fs.writeFileSync(path.join(inst, 'server', '.env'), 'SECRET=1');
+    fs.writeFileSync(path.join(inst, 'server', 'data', 'pg'), 'database');
+    spawnSync('tar', ['-czf', path.join(bak, 'code.tar.gz'), '-C', inst, '--exclude=./server/data', '.']);
+    // the failed update: new code, a new file, the database still there
+    fs.writeFileSync(path.join(inst, 'server', 'main.go'), 'new');
+    fs.writeFileSync(path.join(inst, 'server', 'added.go'), 'new');
+    fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/bash\nexit 0\n', { mode: 0o755 });
+    const body = [pick('compose'), pick('clean_install_dir'), pick('wait_healthy'), pick('rollback')].join('\n');
+    const out = spawnSync('bash', ['-c', `compose() { echo "compose $*" >> "${root}/calls"; }\n${body.replace(/^compose\(\) \{[\s\S]*?\n\}\n/, '')}\nINSTALL_DIR='${inst}'\nBACKUP_DIR='${bak}'\nrollback`],
+      { encoding: 'utf8', env: { PATH: `${bin}:/usr/bin:/bin` } });
+    assert.strictEqual(out.status, 1, out.stderr);
+    assert.strictEqual(fs.readFileSync(path.join(inst, 'server', 'main.go'), 'utf8'), 'old');
+    assert.ok(!fs.existsSync(path.join(inst, 'server', 'added.go')), 'files of the failed version are gone');
+    assert.strictEqual(fs.readFileSync(path.join(inst, 'server', '.env'), 'utf8'), 'SECRET=1');
+    assert.strictEqual(fs.readFileSync(path.join(inst, 'server', 'data', 'pg'), 'utf8'), 'database');
+    assert.match(fs.readFileSync(path.join(root, 'calls'), 'utf8'), /up -d --build --force-recreate/);
+    assert.match(out.stdout, /previous version is running again/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
