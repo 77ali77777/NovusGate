@@ -13,19 +13,23 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// TestEveryRouteIsDocumented fails when a route is registered without a
-// docOps entry, or documented without being registered.
-func TestEveryRouteIsDocumented(t *testing.T) {
-	s, _, _ := newContractServer(t)
+// undocumentedRoutes compares the router with docOps. A route without
+// methods counts as "ANY <path>" unless it is a named catch-all
+// (api-fallback, spa) or a subrouter prefix.
+func undocumentedRoutes(r *mux.Router, ops []docOp) (missing, stale []string) {
 	registered := map[string]bool{}
-	err := s.router.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
+	_ = r.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
 		tpl, err := route.GetPathTemplate()
 		if err != nil {
 			return nil
 		}
 		methods, err := route.GetMethods()
 		if err != nil {
-			return nil // catch-alls (api-fallback, spa) and the /api/v1 subrouter itself
+			if name := route.GetName(); name == "api-fallback" || name == "spa" || route.GetHandler() == nil {
+				return nil // catch-alls and subrouter prefixes
+			}
+			registered["ANY "+tpl] = true
+			return nil
 		}
 		for _, m := range methods {
 			if m != "OPTIONS" {
@@ -34,14 +38,10 @@ func TestEveryRouteIsDocumented(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	documented := map[string]bool{}
-	for _, op := range docOps {
+	for _, op := range ops {
 		documented[op.Method+" "+op.Path] = true
 	}
-	var missing, stale []string
 	for k := range registered {
 		if !documented[k] {
 			missing = append(missing, k)
@@ -54,6 +54,14 @@ func TestEveryRouteIsDocumented(t *testing.T) {
 	}
 	sort.Strings(missing)
 	sort.Strings(stale)
+	return missing, stale
+}
+
+// TestEveryRouteIsDocumented fails when a route is registered without a
+// docOps entry, or documented without being registered.
+func TestEveryRouteIsDocumented(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	missing, stale := undocumentedRoutes(s.router, docOps)
 	if len(missing) > 0 || len(stale) > 0 {
 		t.Fatalf("undocumented routes:\n%s\ndocumented but not registered:\n%s", strings.Join(missing, "\n"), strings.Join(stale, "\n"))
 	}
@@ -106,5 +114,33 @@ func TestOpenAPIIsServedBehindAuth(t *testing.T) {
 	var doc map[string]any
 	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &doc) != nil || doc["paths"] == nil {
 		t.Fatalf("with a token = %d %.200s", rec.Code, rec.Body)
+	}
+}
+
+// Requests are decoded with every field optional (Go fills zero values and
+// handlers apply defaults); only responses follow omitempty.
+func TestRequestSchemasHaveNoRequiredFields(t *testing.T) {
+	schemas := openAPIDocument()["components"].(map[string]any)["schemas"].(map[string]any)
+	for _, name := range []string{"OpenPortRequest", "ClosePortRequest", "BlockIPRequest", "v2ServiceRequest", "v2IPRuleRequest", "VPNFirewallRuleRequest"} {
+		if req := schemas[name].(map[string]any)["required"]; req != nil {
+			t.Errorf("%s.required = %v; request fields are optional on decode", name, req)
+		}
+	}
+	if schemas["Node"].(map[string]any)["required"] == nil {
+		t.Error("response schemas keep their required fields")
+	}
+}
+
+// A route registered without .Methods(...) must be reported too, unless it
+// is one of the two named catch-alls or a subrouter prefix.
+func TestUndocumentedRoutesCatchesMethodlessRoutes(t *testing.T) {
+	r := mux.NewRouter()
+	r.HandleFunc("/api/v1/ws", func(http.ResponseWriter, *http.Request) {})
+	r.HandleFunc("/api/v1/networks", func(http.ResponseWriter, *http.Request) {}).Methods("GET")
+	r.PathPrefix("/api/").HandlerFunc(func(http.ResponseWriter, *http.Request) {}).Name("api-fallback")
+	r.PathPrefix("/api/v2").Subrouter()
+	missing, stale := undocumentedRoutes(r, []docOp{{Method: "GET", Path: "/api/v1/networks"}, {Method: "GET", Path: "/gone"}})
+	if strings.Join(missing, ",") != "ANY /api/v1/ws" || strings.Join(stale, ",") != "GET /gone" {
+		t.Fatalf("missing=%v stale=%v", missing, stale)
 	}
 }

@@ -106,7 +106,10 @@ var (
 
 // schemaGen turns Go types into OpenAPI 3.0 schemas; named structs become
 // components referenced by $ref.
-type schemaGen struct{ components map[string]any }
+type schemaGen struct {
+	components map[string]any
+	inRequest  bool // request bodies: every field is optional on decode
+}
 
 func (g *schemaGen) schema(v any) map[string]any {
 	if _, ok := v.(freeform); ok {
@@ -176,7 +179,7 @@ func (g *schemaGen) structSchema(t reflect.Type) map[string]any {
 			name = f.Name
 		}
 		props[name] = g.typeSchema(f.Type)
-		if !strings.Contains(opts, "omitempty") {
+		if !g.inRequest && !strings.Contains(opts, "omitempty") {
 			required = append(required, name)
 		}
 	}
@@ -236,7 +239,7 @@ func openAPIDocument() map[string]any {
 		}
 		if op.Request != nil {
 			o["requestBody"] = map[string]any{"required": true, "content": map[string]any{
-				"application/json": map[string]any{"schema": g.schema(op.Request)}}}
+				"application/json": map[string]any{"schema": g.requestSchema(op.Request)}}}
 		}
 		if op.Public {
 			o["security"] = []any{}
@@ -259,4 +262,13 @@ func openAPIDocument() map[string]any {
 // handleOpenAPI serves the document (behind the same auth as the API).
 func (s *Server) handleOpenAPI(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, openAPIDocument())
+}
+
+// requestSchema documents a request body. Go decodes every field as
+// optional (handlers apply defaults), so request components list no
+// required fields; only responses follow omitempty.
+func (g *schemaGen) requestSchema(v any) map[string]any {
+	g.inRequest = true
+	defer func() { g.inRequest = false }()
+	return g.schema(v)
 }

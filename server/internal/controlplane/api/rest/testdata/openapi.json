@@ -10,10 +10,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "ip",
-          "ports"
-        ],
         "type": "object"
       },
       "BlockIPRequest": {
@@ -25,10 +21,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "ip",
-          "ports"
-        ],
         "type": "object"
       },
       "ChainInfo": {
@@ -66,11 +58,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "force",
-          "port",
-          "protocol"
-        ],
         "type": "object"
       },
       "DeleteRuleRequest": {
@@ -85,11 +72,6 @@
             "type": "integer"
           }
         },
-        "required": [
-          "chain",
-          "force",
-          "line_number"
-        ],
         "type": "object"
       },
       "Error": {
@@ -201,9 +183,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "rules"
-        ],
         "type": "object"
       },
       "Network": {
@@ -360,11 +339,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "port",
-          "protocol",
-          "source"
-        ],
         "type": "object"
       },
       "User": {
@@ -528,15 +502,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "action",
-          "dest_type",
-          "enabled",
-          "name",
-          "priority",
-          "protocol",
-          "source_type"
-        ],
         "type": "object"
       },
       "v2ForwardRequest": {
@@ -557,13 +522,6 @@
             "type": "integer"
           }
         },
-        "required": [
-          "comment",
-          "protocol",
-          "public_port",
-          "target_ip",
-          "target_port"
-        ],
         "type": "object"
       },
       "v2IPRuleRequest": {
@@ -589,14 +547,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "action",
-          "comment",
-          "expires_at",
-          "ports",
-          "prefix",
-          "protocol"
-        ],
         "type": "object"
       },
       "v2ServiceRequest": {
@@ -624,14 +574,6 @@
             "type": "array"
           }
         },
-        "required": [
-          "comment",
-          "interface",
-          "port_from",
-          "port_to",
-          "protocol",
-          "sources"
-        ],
         "type": "object"
       }
     },

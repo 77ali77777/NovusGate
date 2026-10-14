@@ -126,8 +126,8 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **Golden nüsxə:** `server/internal/controlplane/api/rest/testdata/openapi.json`. `bash server/scripts/update-contracts.sh` ilə yenilənir, hər fərq API dəyişikliyidir.
 - **Qoruyan testlər:**
   - `TestEveryRouteIsDocumented`: qeydiyyatdan keçmiş hər route sənəddə olmalıdır, tərsinə də;
-  - `TestContract`: hər cavab sənədin sxeminə qarşı yoxlanılır (`assertMatchesSpec`).
-- **Məhdudiyyət:** handler daxilindəki adsız request strukturları və `map` cavabları hələlik ümumi `object` kimi sənədləşdirilir. Dəqiq DTO-lar P2d-3-də gələcək.
+  - `TestContract`: hər kontrakt-test cavabı sənədin sxeminə qarşı yoxlanılır (`assertMatchesSpec`). Kontrakt testi olmayan endpoint-ləri yalnız golden diff qoruyur.
+- **Məhdudiyyət:** handler daxilindəki adsız request strukturları və `map` cavabları hələlik ümumi `object` kimi sənədləşdirilir. Dəqiq DTO-lar P2d-3-də gələcək. Request sxemlərində `required` yoxdur: Go hər sahəni isteğe bağlı decode edir, default-ları handler verir.
 - **İstifadə:** P5 web client tiplərini bu sənəddən `openapi-typescript` ilə yaradacaq.
 
 ## `/api` fallback (P2d-2)
