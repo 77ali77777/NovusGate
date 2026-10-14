@@ -38,6 +38,7 @@ const installScriptTemplate = `#!/bin/bash
 # NovusGate node installer. The enrollment token in it works once, for 15
 # minutes. Run as root on the new server.
 set -euo pipefail
+umask 077 # wg0.conf holds the private key: never readable by others
 
 echo "Installing WireGuard..."
 if ! command -v wg > /dev/null 2>&1; then

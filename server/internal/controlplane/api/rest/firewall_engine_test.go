@@ -419,3 +419,19 @@ func TestV1ListShowsNetworkPortsAndShortIPv6(t *testing.T) {
 		t.Fatalf("network port shown=%v, IPv6 shown without /128=%v", wg, v6)
 	}
 }
+
+// Behind the panel's nginx every request comes from 127.0.0.1; the lockout
+// protection must still see the operator's real address.
+func TestProtectionSeesOperatorBehindProxy(t *testing.T) {
+	s, _ := newEngineServer(t, firewall.ModeNft)
+	req := httptest.NewRequest("POST", "/api/v1/firewall/host/ip/block", strings.NewReader(`{"ip":"198.51.100.0/24"}`))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Real-IP", "198.51.100.200")
+	req.RemoteAddr = "127.0.0.1:41000"
+	rec := httptest.NewRecorder()
+	s.router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("blocking the operator's network through the proxy = %d %s, want 400", rec.Code, rec.Body)
+	}
+}

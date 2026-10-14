@@ -22,6 +22,6 @@
 - **Enrollment tokeni:** 32 təsadüfi bayt. DB-də (`enrollment_tokens`) yalnız SHA-256-sı saxlanılır. Bir node üçündür, 15 dəqiqə və bir dəfəlik keçərlidir. İşlənməsi bir `UPDATE … WHERE used_at IS NULL` əmri ilə olur, ona görə paralel iki checkin eyni tokeni işlədə bilmir.
 - **Public port açılmır:** skript paneldən kopyalanır. Checkin WireGuard qalxandan sonra VPN üzərindən gedir (8080 yalnız `wg+` interfeyslərində açıqdır).
 - **Checkin label filtri:** `wireguard_*` açarları node-dan qəbul olunmur.
-- **Etibarlı proxy:** `X-Real-IP` yalnız loopback-dən (panelin nginx-i) gələn sorğuda nəzərə alınır. Başqa client bu başlıqla öz IP-sini seçə bilmir (login limiti bundan asılıdır).
+- **Etibarlı proxy:** `X-Real-IP` yalnız loopback-dən (panelin nginx-i) gələn sorğuda nəzərə alınır. Başqa client bu başlıqla öz IP-sini seçə bilmir. Bu IP-dən istifadə edənlər: login limiti, firewall-un operatoru kilidləməyə qarşı qoruması və firewall audit log-u.
 - **API açarı:** `X-API-Key`-i panelin nginx-i env-dən (`NOVUSGATE_API_KEY`) əlavə edir. Açar artıq JS bundle-a düşmür. `web/.dockerignore` `.env` fayllarını image-dən çıxarır.
 - **İstifadəçinin qərarı:** `web/.env` hələ git-də izlənir. Əvvəlki bundle-lar açarı daşıyıb, ona görə açarı dəyişmək və faylı git-dən çıxarmaq tövsiyə olunur.

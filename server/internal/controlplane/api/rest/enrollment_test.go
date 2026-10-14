@@ -59,6 +59,10 @@ func TestInstallScript(t *testing.T) {
 			t.Errorf("script lacks %q", want)
 		}
 	}
+	umask, write := strings.Index(script, "umask 077"), strings.Index(script, "cat > /etc/wireguard/wg0.conf")
+	if umask < 0 || umask > write {
+		t.Errorf("umask 077 must come before the config is written (umask at %d, write at %d)", umask, write)
+	}
 	up, checkin := strings.Index(script, "systemctl restart wg-quick@wg0"), strings.Index(script, "X-Enrollment-Token")
 	if up < 0 || checkin < 0 || up > checkin {
 		t.Errorf("WireGuard must be up before the checkin (up at %d, checkin at %d)", up, checkin)
@@ -145,5 +149,43 @@ func TestInstallScriptIsValidBash(t *testing.T) {
 	cmd.Stdin = strings.NewReader(script)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("bash -n: %v\n%s", err, out)
+	}
+}
+
+// Deployments always set the API key; the enrollment checkin must pass it
+// and nothing else may.
+func TestEnrollmentWithAPIKey(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	orig := apiKey
+	t.Cleanup(func() { apiKey = orig })
+	apiKey = "contract-api-key"
+
+	req := httptest.NewRequest("GET", "/api/v1/nodes/"+seed.node.ID+"/install.sh", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("X-API-Key", apiKey)
+	rec := httptest.NewRecorder()
+	s.router.ServeHTTP(rec, req)
+	m := scriptTokenRe.FindStringSubmatch(rec.Body.String())
+	if rec.Code != http.StatusOK || m == nil {
+		t.Fatalf("install.sh = %d %s", rec.Code, rec.Body)
+	}
+	token := m[1]
+
+	for _, c := range []struct{ method, path string }{
+		{"POST", "/api/v1/networks"},
+		{"GET", "/api/v1/nodes/" + seed.node.ID + "/checkin"},
+		{"PUT", "/api/v1/nodes/" + seed.node.ID},
+	} {
+		req := httptest.NewRequest(c.method, c.path, strings.NewReader(`{}`))
+		req.Header.Set(enrollmentHeader, token)
+		rec := httptest.NewRecorder()
+		s.router.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s %s with only an enrollment token = %d, want 401", c.method, c.path, rec.Code)
+		}
+	}
+	if rec := enrollCheckin(s, seed.node.ID, token, `{"node_info":{"os":"Linux"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("enrollment checkin with the API key enabled = %d %s", rec.Code, rec.Body)
 	}
 }

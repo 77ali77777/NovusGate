@@ -219,7 +219,14 @@
   - CORS başlıqları yoxdur, `OPTIONS` 405 alır;
   - `web/.env` build-də oxunmur.
 - **P7-yə keçirildi:** B10 (Center `join-vpn`).
-- **Davam:** final review, sonra P4c.
+- **Final review (opus):** 3 Important və 1 Minor→Important düzəldildi:
+  - proxy arxasında firewall-un lockout qoruması və audit `127.0.0.1` görürdü, indi `clientIP` işlədir (RED→GREEN);
+  - compose-da web açarının default-u control-plane ilə eyniləşdi;
+  - API açarı aktiv olanda enrollment testi əlavə olundu;
+  - skriptə `umask 077` əlavə olundu (RED→GREEN).
+
+  10 minor ledger-də.
+- **Davam:** P4c.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

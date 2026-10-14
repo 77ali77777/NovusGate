@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/netip"
 	"strings"
@@ -153,13 +152,10 @@ func logWarnings(warnings []error) {
 
 // protectAddrs returns the addresses the request comes from, plus the public
 // WireGuard endpoint of that peer when it arrives over the VPN, so a change
-// can never cut off the operator making it.
+// can never cut off the operator making it. Behind the panel's nginx the
+// address is the one nginx reports (clientIP), not 127.0.0.1.
 func (s *Server) protectAddrs(r *http.Request) []netip.Addr {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	remote, err := netip.ParseAddr(host)
+	remote, err := netip.ParseAddr(clientIP(r))
 	if err != nil {
 		return nil
 	}
