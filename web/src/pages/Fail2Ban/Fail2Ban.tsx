@@ -28,6 +28,7 @@ import { formatBantime } from './formatBantime'
 const useManualBan = () => {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to ban IP', successTitle: 'IP banned' },
     mutationFn: (data: { jail: string; ip: string; permanent: boolean }) =>
       api.banIP(data.jail, data.ip, data.permanent),
     onSuccess: () => {
@@ -47,6 +48,7 @@ const useJailSettings = (jail: string) =>
 const useUpdateJailSettings = () => {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to save settings', successTitle: 'Settings saved' },
     mutationFn: (data: { jail: string; bantime?: string; maxretry?: string; findtime?: string }) =>
       api.updateJailSettings(data.jail, data),
     onSuccess: (_, v) => {
@@ -66,6 +68,7 @@ const useWhitelist = (jail: string) =>
 const useUpdateWhitelist = () => {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to update whitelist', successTitle: 'Whitelist updated' },
     mutationFn: (data: { jail: string; action: 'add' | 'remove'; ip: string }) =>
       api.updateWhitelist(data.jail, data.action, data.ip),
     onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['whitelist', v.jail] }),
@@ -78,6 +81,7 @@ const usePermanentBans = () =>
 const useRemovePermanentBan = () => {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to remove permanent ban', successTitle: 'Permanent ban removed' },
     mutationFn: (ip: string) => api.removePermanentBan(ip),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['permanent-bans'] }),
   })
@@ -86,6 +90,7 @@ const useRemovePermanentBan = () => {
 const useReloadFail2Ban = () => {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to reload Fail2Ban', successTitle: 'Fail2Ban reloaded' },
     mutationFn: (jail?: string) => api.reloadFail2Ban(jail),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fail2ban'] }),
   })

@@ -17,6 +17,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { api, useNetworks } from '@/api/client'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
+import { Toaster } from './Toaster'
 
 interface NavItem {
   name: string
@@ -214,6 +215,7 @@ export const Layout = () => {
           <Outlet />
         </main>
       </div>
+      <Toaster />
     </div>
   )
 }

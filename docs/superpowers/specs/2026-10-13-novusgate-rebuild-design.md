@@ -176,9 +176,9 @@ Bu siyahı "əskiksiz" tələbinin ölçüsüdür. Yeni sistemdə hər sətir ya
 | B10 | join-vpn işləmir | P4, P7 |
 | B11 | Expiry problemləri: lazy tətbiq; reaktivləşmə peer-i geri qaytarmır; rule sync vaxtı bitmiş peer-ləri bərpa edir | P1 (sync və bərpa üçün aktivlik filtri), P2 (reconciler) — **P2c-də bağlandı (`e5d346a`, `c61bc4a`, `07e63f1`, `149af2f`)** |
 | B12 | Host rule delete: frontend və backend method/path uyğun gəlmir | P2 (alias), P6 |
-| B13 | EditNodeModal expiry ilə saxlamağı bloklayır | P6 |
+| B13 | EditNodeModal expiry ilə saxlamağı bloklayır | P6 — **2026-10-14-də bağlandı** (hazırkı frontend): dialoq "Keep Current" ilə açılır, tarix sahəsi yalnız "Set Custom Date"-də görünür; `web/src/lib/nodeExpiry.ts` + `web/tests` |
 | B14 | VPNRuleModal `null` gəldikdə çökür | P2 (`[]` qaytarmaq), P6 — **P2a-da bağlandı (`10f49ff`)**: səbəb node siyahısı idi |
-| B15 | Köhnə parol səhv olanda logout baş verir | P4 (`400 invalid_old_password`), P5 (interceptor) |
+| B15 | Köhnə parol səhv olanda logout baş verir | P4 (`400 invalid_old_password`), P5 (interceptor) — **bağlandı:** backend 400 qaytarır (P4a), frontend yalnız 401-də çıxış edir və xətanı formada göstərir |
 | B16 | Fail2ban tarixçəsi boşdur; whitelist parse səhvdir | P2 — **P2a-da bağlandı (`7d798ff`)** |
 | B17 | Migrate binary adı səhvdir | P1 |
 | B18 | Center konteyner adları böyük/kiçik hərf uyğunsuzluğu | P1 |

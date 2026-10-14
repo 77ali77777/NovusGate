@@ -1,8 +1,9 @@
 import { Clock, Power, PowerOff } from 'lucide-react'
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import type { Node } from '@/types'
 import { Button, Input, Modal, Select } from '@/components/ui'
+import { computeExpiry, type ExpiryChoice, initialExpiryChoice } from '@/lib/nodeExpiry'
+import type { Node } from '@/types'
 
 interface EditNodeModalProps {
   isOpen: boolean
@@ -32,8 +33,9 @@ export const EditNodeModal = ({
   isLoading,
 }: EditNodeModalProps) => {
   const [name, setName] = useState('')
-  const [expiryType, setExpiryType] = useState('keep')
+  const [expiryType, setExpiryType] = useState<ExpiryChoice>('keep')
   const [customDate, setCustomDate] = useState('')
+  const [formError, setFormError] = useState('')
   const [status, setStatus] = useState<string>('')
   const [os, setOs] = useState('')
   const [arch, setArch] = useState('')
@@ -47,14 +49,14 @@ export const EditNodeModal = ({
       setArch(node.node_info?.arch || '')
       setHostname(node.node_info?.hostname || '')
 
+      setExpiryType(initialExpiryChoice(node.expires_at))
+      setFormError('')
       if (node.expires_at) {
-        setExpiryType('existing')
-        // Convert to local datetime for the input
+        // Prefill "Set Custom Date" with the current expiry (local time)
         const d = new Date(node.expires_at)
         d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
         setCustomDate(d.toISOString().slice(0, 16))
       } else {
-        setExpiryType('keep')
         setCustomDate('')
       }
     }
@@ -75,55 +77,16 @@ export const EditNodeModal = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    let expiresAt: string | null | undefined // undefined means no change
-    const now = new Date()
-
-    if (expiryType === 'forever') {
-      expiresAt = null // Remove expiration
-    } else if (expiryType === '1h') {
-      const base = node?.expires_at ? new Date(node.expires_at) : now
-      expiresAt = new Date(Math.max(base.getTime(), now.getTime()) + 60 * 60 * 1000).toISOString()
-    } else if (expiryType === '1d') {
-      const base = node?.expires_at ? new Date(node.expires_at) : now
-      expiresAt = new Date(
-        Math.max(base.getTime(), now.getTime()) + 24 * 60 * 60 * 1000
-      ).toISOString()
-    } else if (expiryType === '1w') {
-      const base = node?.expires_at ? new Date(node.expires_at) : now
-      expiresAt = new Date(
-        Math.max(base.getTime(), now.getTime()) + 7 * 24 * 60 * 60 * 1000
-      ).toISOString()
-    } else if (expiryType === 'custom' && customDate) {
-      const selectedDate = new Date(customDate)
-      const minDate = node?.expires_at ? new Date(node.expires_at) : now
-      if (selectedDate <= now) {
-        alert('Expiration date must be in the future!')
-        return
-      }
-      if (node?.expires_at && selectedDate < minDate) {
-        alert('Expiration date cannot be earlier than the minimum date!')
-        return
-      }
-      expiresAt = selectedDate.toISOString()
-    } else if (expiryType === 'existing' && customDate) {
-      // User modified the existing date
-      const selectedDate = new Date(customDate)
-      const originalDate = node?.expires_at ? new Date(node.expires_at) : now
-      if (selectedDate <= now) {
-        alert('Expiration date must be in the future!')
-        return
-      }
-      // Only allow extending, not reducing
-      if (selectedDate < originalDate) {
-        alert('Cannot reduce expiration time! You can only extend it.')
-        return
-      }
-      expiresAt = selectedDate.toISOString()
+    const result = computeExpiry({ choice: expiryType, current: node?.expires_at, customDate, now: new Date() })
+    if (!result.ok) {
+      setFormError(result.error)
+      return
     }
+    setFormError('')
 
     onSubmit({
       name,
-      expires_at: expiresAt,
+      expires_at: result.expiresAt,
       status: status !== node?.status ? status : undefined,
       node_info: { os, arch, hostname },
     })
@@ -131,6 +94,12 @@ export const EditNodeModal = ({
 
   const isExpired = node?.status === 'expired'
   const _canReactivate = isExpired || node?.status === 'offline'
+  // Reactivating while keeping a past expiry: the expiry job disables it again.
+  const pastExpiryKept =
+    status !== 'expired' &&
+    expiryType === 'keep' &&
+    !!node?.expires_at &&
+    new Date(node.expires_at).getTime() <= Date.now()
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit: ${node?.name || 'Node'}`}>
@@ -184,26 +153,35 @@ export const EditNodeModal = ({
           <Select
             options={expiryOptions}
             value={expiryType}
-            onChange={(e) => setExpiryType(e.target.value)}
+            onChange={(e) => setExpiryType(e.target.value as ExpiryChoice)}
           />
         </div>
 
-        {(expiryType === 'custom' || expiryType === 'existing') && (
+        {expiryType === 'custom' && (
           <Input
             label="Expiration Date & Time"
             type="datetime-local"
             value={customDate}
             min={getMinDateTime()}
-            onChange={(e) => {
-              setCustomDate(e.target.value)
-              if (expiryType === 'existing') setExpiryType('custom')
-            }}
+            onChange={(e) => setCustomDate(e.target.value)}
             required
           />
         )}
 
+        {formError && (
+          <div className="text-sm text-red-700 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg" role="alert">
+            {formError}
+          </div>
+        )}
+
+        {pastExpiryKept && (
+          <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
+            <Clock className="w-4 h-4" />
+            <span>The current expiration is in the past. Extend it, or the node is disabled again.</span>
+          </div>
+        )}
+
         {expiryType !== 'keep' &&
-          expiryType !== 'existing' &&
           expiryType !== 'forever' &&
           expiryType !== 'custom' && (
             <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">

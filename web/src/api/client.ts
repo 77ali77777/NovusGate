@@ -381,6 +381,7 @@ export function useNetwork(id: string) {
 export function useCreateNetwork() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { inlineError: true, successTitle: 'Network created' },
     mutationFn: (data: CreateNetworkForm) => api.createNetwork(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['networks'] })
@@ -391,6 +392,7 @@ export function useCreateNetwork() {
 export function useDeleteNetwork() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to delete network', successTitle: 'Network deleted' },
     mutationFn: (id: string) => api.deleteNetwork(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['networks'] })
@@ -419,6 +421,7 @@ export function useNode(id: string) {
 export function useDeleteNode() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to delete node', successTitle: 'Node deleted' },
     mutationFn: (id: string) => api.deleteNode(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['nodes'] })
@@ -429,6 +432,7 @@ export function useDeleteNode() {
 export function useCreateServerWithConfig() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to create peer' },
     mutationFn: (vars: { networkId: string; data: any }) =>
       api.createServerWithConfig(vars.networkId, vars.data),
     onSuccess: () => {
@@ -440,6 +444,7 @@ export function useCreateServerWithConfig() {
 export function useUpdateNode() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to update node', successTitle: 'Node updated' },
     mutationFn: (vars: {
       id: string
       data: {
@@ -458,6 +463,7 @@ export function useUpdateNode() {
 // User Management hooks
 export function useUpdatePassword() {
   return useMutation({
+    meta: { inlineError: true },
     mutationFn: (data: { oldPass: string; newPass: string }) =>
       api.updatePassword(data.oldPass, data.newPass),
   })
@@ -473,6 +479,7 @@ export function useUsers() {
 export function useCreateUser() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { inlineError: true, successTitle: 'User created' },
     mutationFn: (data: { username: string; password: string }) =>
       api.createUser(data.username, data.password),
     onSuccess: () => {
@@ -484,6 +491,7 @@ export function useCreateUser() {
 export function useDeleteUser() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to delete user', successTitle: 'User deleted' },
     mutationFn: (id: string) => api.deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
@@ -519,6 +527,7 @@ export function useFail2BanLogs(lines: number = 100) {
 export function useUnbanIP() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to unban IP', successTitle: 'IP unbanned' },
     mutationFn: (data: { jail: string; ip: string }) => api.unbanIP(data.jail, data.ip),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fail2ban'] })
@@ -550,6 +559,7 @@ export function useFirewallRules(chain?: string) {
 export function useOpenPort() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to open port', successTitle: 'Port opened' },
     mutationFn: (request: OpenPortRequest) => api.openPort(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -560,6 +570,7 @@ export function useOpenPort() {
 export function useClosePort() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to close port', successTitle: 'Port closed' },
     mutationFn: (request: ClosePortRequest) => api.closePort(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -570,6 +581,7 @@ export function useClosePort() {
 export function useBlockIP() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to block IP', successTitle: 'IP blocked' },
     mutationFn: (request: BlockIPRequest) => api.blockIP(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -580,6 +592,7 @@ export function useBlockIP() {
 export function useAllowIP() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to allow IP', successTitle: 'IP allowed' },
     mutationFn: (request: AllowIPRequest) => api.allowIP(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -590,6 +603,7 @@ export function useAllowIP() {
 export function useDeleteFirewallRule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to delete rule', successTitle: 'Rule deleted' },
     mutationFn: (request: DeleteRuleRequest) => api.deleteFirewallRule(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -600,6 +614,7 @@ export function useDeleteFirewallRule() {
 export function useImportFirewallRules() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to import rules', successTitle: 'Rules imported' },
     mutationFn: (request: ImportRulesRequest) => api.importFirewallRules(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -610,6 +625,7 @@ export function useImportFirewallRules() {
 export function useResetFirewall() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to reset firewall', successTitle: 'Firewall reset' },
     mutationFn: () => api.resetFirewall(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'host'] })
@@ -632,6 +648,7 @@ export function useVPNFirewallRules() {
 export function useCreateVPNFirewallRule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to save VPN rule', successTitle: 'VPN rule created' },
     mutationFn: (request: VPNFirewallRuleRequest) => api.createVPNFirewallRule(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn'] })
@@ -642,6 +659,7 @@ export function useCreateVPNFirewallRule() {
 export function useUpdateVPNFirewallRule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to save VPN rule', successTitle: 'VPN rule updated' },
     mutationFn: (vars: { id: string; request: VPNFirewallRuleRequest }) =>
       api.updateVPNFirewallRule(vars.id, vars.request),
     onSuccess: () => {
@@ -653,6 +671,7 @@ export function useUpdateVPNFirewallRule() {
 export function useDeleteVPNFirewallRule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to delete VPN rule', successTitle: 'VPN rule deleted' },
     mutationFn: (id: string) => api.deleteVPNFirewallRule(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn'] })
@@ -663,6 +682,7 @@ export function useDeleteVPNFirewallRule() {
 export function useApplyVPNFirewallRules() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorTitle: 'Failed to apply VPN rules', successTitle: 'VPN rules applied' },
     mutationFn: () => api.applyVPNFirewallRules(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn'] })

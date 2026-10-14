@@ -332,6 +332,22 @@
   Skript 106 keçidi yoxladı, sınıq keçid 0. Brauzerdə klik yoxlanmayıb.
 - **İstifadəçi qərarı:** yeni dizayna ehtiyac olmadı. Hazırkı frontend və dizayn saxlanılır, P5 və P6 ləğv olundu (master spec §2-də qeyd edilib).
 
+### 2026-10-14: Frontend baqları (hazırkı dizaynda)
+- **B13:** `EditNodeModal` "Keep Current" ilə açılır; tarix sahəsi yalnız "Set Custom Date" seçiləndə görünür, ona görə keçmiş müddət artıq saxlamağı bloklamır.
+  - Müddət hesabı `web/src/lib/nodeExpiry.ts`-ə çıxarıldı.
+  - `alert` əvəzinə xəta formanın içində göstərilir.
+  - Keçmiş müddətlə yenidən aktivləşdirəndə xəbərdarlıq çıxır.
+- **B15:** backend artıq 400 qaytarır (P4a); frontend yalnız 401-də çıxış edir. Kodda əlavə dəyişiklik lazım olmadı.
+- **Səssiz xətalar:** `App.tsx`-də `MutationCache` hər mutasiya xətasını serverin mesajı ilə toast kimi göstərir, `meta.successTitle` olanda uğuru da göstərir. Yeni `components/Toaster.tsx` mövcud store bildirişlərini Layout-da göstərir.
+  - Hook-lara `meta` əlavə olundu (`api/client.ts`: 20, `Fail2Ban.tsx`: 5).
+  - Formada xətanı özü göstərən mutasiyalar `inlineError` ilə işarələndi: create network, parol, istifadəçi yaratma.
+  - Close Port-un ikiqat `alert`-i çıxarıldı.
+- **Testlər:** `web/tests/nodeExpiry.test.mjs` (8). `npm test` Node 22 `--experimental-strip-types` ilə işləyir, yeni paket yoxdur; `docs/ci/ci.yml` web job-u Node 22-yə keçdi.
+- **Yoxlamalar:**
+  - Node 22: `tsc` OK, `npm test` 8/8, `vite build` OK, bundle-da açar yoxdur;
+  - biome: 98 xəta / 31 xəbərdarlıq, əvvəl 99 / 31 idi; yeni xəta yoxdur, `package.json`-un sonuna sətir əlavə olundu.
+- **Brauzerdə yoxlanmayıb:** toast-ların görünüşü, Edit Node axını.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|

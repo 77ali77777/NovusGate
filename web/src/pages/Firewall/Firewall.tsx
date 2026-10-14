@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   Ban,
   CheckCircle,
@@ -11,6 +10,7 @@ import {
   RotateCcw,
   Shield,
 } from 'lucide-react'
+import { useState } from 'react'
 import {
   api,
   useAllowIP,
@@ -27,16 +27,15 @@ import {
   useUpdateVPNFirewallRule,
   useVPNFirewallRules,
 } from '@/api/client'
-import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
 import { Button, Card, Modal } from '@/components/ui'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
-import { HostRulesTab } from './HostRulesTab'
-import { OverviewTab } from './OverviewTab'
-import { VPNRulesTab } from './VPNRulesTab'
-import { VPNRuleModal } from './VPNRuleModal'
 import { BlockedIPsTab } from './BlockedIPsTab'
+import { HostRulesTab } from './HostRulesTab'
 import { OpenPortsTab } from './OpenPortsTab'
+import { OverviewTab } from './OverviewTab'
+import { VPNRuleModal } from './VPNRuleModal'
+import { VPNRulesTab } from './VPNRulesTab'
 
 type TabId = 'overview' | 'host-rules' | 'open-ports' | 'vpn-rules' | 'blocked-ips'
 
@@ -141,9 +140,8 @@ export const Firewall: React.FC = () => {
     try {
       await closePortMutation.mutateAsync({ port, protocol })
     } catch (error: any) {
-      const errorMessage = apiErrorMessage(error, 'Unknown error')
+      // The mutation cache shows the server's message as a toast.
       console.error('Failed to close port:', error)
-      alert(`Failed to close port: ${errorMessage}`)
     }
   }
 
