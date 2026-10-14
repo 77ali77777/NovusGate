@@ -1,3 +1,7 @@
 # Dependencies
 /node_modules
 /dist
+# Local environment files: never commit them
+.env
+.env.*
+!.env.example

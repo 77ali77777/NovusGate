@@ -13,3 +13,6 @@ deployments/agent-bundles/
 
 # Go
 target/
+
+# Server configuration with secrets (copy of deployments/docker/.env.example)
+deployments/docker/.env
