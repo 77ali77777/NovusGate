@@ -9,7 +9,7 @@
     "services": [
       {
         "created_at": "<time>",
-        "id": "<uuid>",
+        "id": "<uuid-1>",
         "port_from": 9443,
         "port_to": 9443,
         "protocol": "tcp",
@@ -17,7 +17,7 @@
       },
       {
         "created_at": "<time>",
-        "id": "<uuid>",
+        "id": "<uuid-2>",
         "port_from": 9444,
         "port_to": 9444,
         "protocol": "tcp",

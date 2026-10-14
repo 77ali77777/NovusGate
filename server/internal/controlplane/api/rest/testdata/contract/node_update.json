@@ -3,11 +3,11 @@
     "created_at": "<time>",
     "endpoints": null,
     "has_config": true,
-    "id": "<uuid>",
+    "id": "<uuid-1>",
     "labels": {},
     "last_seen": "<time>",
     "name": "contract-node-renamed",
-    "network_id": "<uuid>",
+    "network_id": "<uuid-2>",
     "node_info": {
       "arch": "",
       "hostname": "",

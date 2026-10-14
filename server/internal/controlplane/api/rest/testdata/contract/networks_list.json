@@ -3,7 +3,7 @@
     {
       "cidr": "10.66.0.0/24",
       "created_at": "<time>",
-      "id": "<uuid>",
+      "id": "<uuid-1>",
       "interface_name": "wg66",
       "listen_port": 51866,
       "name": "contract-net",
@@ -14,7 +14,7 @@
     {
       "cidr": "10.68.0.0/24",
       "created_at": "<time>",
-      "id": "<uuid>",
+      "id": "<uuid-2>",
       "interface_name": "wg68",
       "listen_port": 51868,
       "name": "contract-zempty",

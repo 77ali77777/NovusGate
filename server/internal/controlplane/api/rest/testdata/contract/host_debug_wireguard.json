@@ -2,7 +2,7 @@
   "body": {
     "db_nodes": [
       {
-        "id": "<uuid>",
+        "id": "<uuid-2>",
         "name": "contract-node",
         "public_key": "<key>",
         "virtual_ip": "10.66.0.3"
@@ -11,7 +11,7 @@
     "db_nodes_count": 1,
     "interface_name": "wg66",
     "manager_registered": false,
-    "network_id": "<uuid>",
+    "network_id": "<uuid-1>",
     "network_name": "contract-net",
     "server_endpoint": "203.0.113.1",
     "server_public_key": "<key>"

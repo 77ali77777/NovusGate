@@ -95,3 +95,29 @@ func TestChangePasswordRevokesOtherSessions(t *testing.T) {
 		t.Fatal("the current session must stay")
 	}
 }
+
+// /health only needs interface names, not whole network rows (keys).
+func TestListInterfaceNames(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "DELETE FROM networks WHERE name = 'iface-net'")
+	nw := &models.Network{Name: "iface-net", CIDR: "10.74.0.0/24", ListenPort: 51874, InterfaceName: "wg74"}
+	if err := s.CreateNetwork(ctx, nw); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.DeleteNetwork(context.Background(), nw.ID) })
+	names, err := s.ListInterfaceNames(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, n := range names {
+		if n == "" {
+			t.Fatal("empty interface names must not be listed")
+		}
+		found = found || n == "wg74"
+	}
+	if !found {
+		t.Fatalf("names = %v, want wg74 among them", names)
+	}
+}

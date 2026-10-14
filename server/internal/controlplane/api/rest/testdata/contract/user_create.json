@@ -1,7 +1,7 @@
 {
   "body": {
     "created_at": "<time>",
-    "id": "<uuid>",
+    "id": "<uuid-1>",
     "username": "contract-user-2"
   },
   "content_type": "application/json",

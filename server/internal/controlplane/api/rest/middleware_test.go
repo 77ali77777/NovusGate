@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -16,8 +17,13 @@ func captureLogs(t *testing.T) *bytes.Buffer {
 	t.Helper()
 	var buf bytes.Buffer
 	orig := slog.Default()
+	origOut, origFlags := log.Writer(), log.Flags() // slog.SetDefault also redirects the log package
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
-	t.Cleanup(func() { slog.SetDefault(orig) })
+	t.Cleanup(func() {
+		slog.SetDefault(orig)
+		log.SetOutput(origOut)
+		log.SetFlags(origFlags)
+	})
 	return &buf
 }
 

@@ -5,7 +5,7 @@
       {
         "cidr": "10.66.0.0/24",
         "expired_nodes": 0,
-        "id": "<uuid>",
+        "id": "<uuid-1>",
         "interface": "wg66",
         "name": "contract-net",
         "offline_nodes": 0,
@@ -18,7 +18,7 @@
       {
         "cidr": "10.68.0.0/24",
         "expired_nodes": 0,
-        "id": "<uuid>",
+        "id": "<uuid-2>",
         "interface": "wg68",
         "name": "contract-zempty",
         "offline_nodes": 0,

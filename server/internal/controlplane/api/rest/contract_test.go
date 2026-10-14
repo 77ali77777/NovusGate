@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,8 +34,9 @@ var wgCalls []string
 
 var (
 	uuidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-	timeRe = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})`)
-	keyRe  = regexp.MustCompile(`[A-Za-z0-9+/]{43}=`)
+	// timeValueRe matches a JSON string that is exactly an RFC 3339 time.
+	timeValueRe = regexp.MustCompile(`"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})"`)
+	keyRe       = regexp.MustCompile(`[A-Za-z0-9+/]{43}=`)
 	// tokenRe matches a session token returned by login.
 	tokenRe = regexp.MustCompile(`"token":"[0-9a-f]{64}"`)
 )
@@ -61,6 +63,9 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
 		t.Skip("set TEST_DATABASE_URL to run database tests (scripts/test-with-postgres.sh)")
+	}
+	if !looksLikeTestDatabase(url) {
+		t.Fatal("TEST_DATABASE_URL must name a test database (host or name containing \"test\"): these tests empty its tables")
 	}
 	st, err := store.New(url)
 	if err != nil {
@@ -162,11 +167,23 @@ func callAs(t *testing.T, s *Server, method, path, body string, auth bool) *http
 	return rec
 }
 
+// normalizeBody replaces the values that change between runs. Each distinct
+// UUID gets its own number, so a snapshot still shows which fields point at
+// the same record; only whole JSON string values that are times are
+// replaced, so a time quoted inside a message stays visible.
 func normalizeBody(body string) string {
-	body = strings.ReplaceAll(body, adminToken, "<token>")
+	if adminToken != "" {
+		body = strings.ReplaceAll(body, adminToken, "<token>")
+	}
 	body = tokenRe.ReplaceAllString(body, `"token":"<token>"`)
-	body = uuidRe.ReplaceAllString(body, "<uuid>")
-	body = timeRe.ReplaceAllString(body, "<time>")
+	ids := map[string]string{}
+	body = uuidRe.ReplaceAllStringFunc(body, func(id string) string {
+		if _, ok := ids[id]; !ok {
+			ids[id] = fmt.Sprintf("<uuid-%d>", len(ids)+1)
+		}
+		return ids[id]
+	})
+	body = timeValueRe.ReplaceAllString(body, `"<time>"`)
 	return keyRe.ReplaceAllString(body, "<key>")
 }
 
@@ -212,6 +229,7 @@ const fail2banIgnoreTree = "These IP addresses/networks are ignored:\n|- 127.0.0
 // TestContract freezes the response shapes of every endpoint that can run
 // without a host. Order matters: reads first, then writes.
 func TestContract(t *testing.T) {
+	t.Setenv("WG_SERVER_ENDPOINT", "") // network_create's endpoint is the default, not the host's env
 	s, st, stub := newContractServer(t)
 	seed := seedContract(t, st)
 	stub.out["fail2ban-client get sshd ignoreip"] = fail2banIgnoreTree
@@ -308,4 +326,14 @@ func TestNetworkHandlersUseWireGuardSeams(t *testing.T) {
 	if strings.Join(wgCalls, ",") != strings.Join(want, ",") {
 		t.Fatalf("WireGuard calls = %v, want %v", wgCalls, want)
 	}
+}
+
+// looksLikeTestDatabase guards the helpers that empty tables: the database
+// host or name must say "test".
+func looksLikeTestDatabase(dsn string) bool {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(u.Host), "test") || strings.Contains(strings.ToLower(u.Path), "test")
 }

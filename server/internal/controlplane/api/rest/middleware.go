@@ -61,6 +61,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 // abort a response on purpose.
 func RecoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tw := &headerTracker{ResponseWriter: w}
 		defer func() {
 			v := recover()
 			if v == nil {
@@ -71,8 +72,32 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 			}
 			slog.Error("panic in handler", "method", r.Method, "path", r.URL.Path,
 				"panic", fmt.Sprint(v), "stack", string(debug.Stack()))
+			if tw.wrote { // the response has started; an error body would corrupt it
+				return
+			}
 			errorResponse(w, http.StatusInternalServerError, "internal server error")
 		}()
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(tw, r)
 	})
+}
+
+// headerTracker records whether the response has started.
+type headerTracker struct {
+	http.ResponseWriter
+	wrote bool
+}
+
+func (h *headerTracker) WriteHeader(code int) {
+	h.wrote = true
+	h.ResponseWriter.WriteHeader(code)
+}
+
+func (h *headerTracker) Write(p []byte) (int, error) {
+	h.wrote = true
+	return h.ResponseWriter.Write(p)
+}
+
+// Unwrap lets http.ResponseController reach the underlying writer.
+func (h *headerTracker) Unwrap() http.ResponseWriter {
+	return h.ResponseWriter
 }

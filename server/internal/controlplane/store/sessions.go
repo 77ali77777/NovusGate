@@ -80,3 +80,22 @@ func (s *Store) ChangePassword(ctx context.Context, userID, passwordHash, keepHa
 	}
 	return tx.Commit()
 }
+
+// ListInterfaceNames returns the WireGuard interface of every network that
+// has one; /health needs only these, not the networks' keys.
+func (s *Store) ListInterfaceNames(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT interface_name FROM networks WHERE interface_name <> '' ORDER BY interface_name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	names := []string{}
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, err
+		}
+		names = append(names, n)
+	}
+	return names, rows.Err()
+}

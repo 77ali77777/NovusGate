@@ -2,7 +2,7 @@
   "body": {
     "item": {
       "egress": false,
-      "node_id": "<uuid>"
+      "node_id": "<uuid-1>"
     },
     "pending": null,
     "warnings": []

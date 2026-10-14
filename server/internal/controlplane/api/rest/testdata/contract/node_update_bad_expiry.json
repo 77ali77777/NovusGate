@@ -2,7 +2,7 @@
   "body": {
     "error": {
       "code": "invalid_expires_at",
-      "message": "expires_at must be an RFC 3339 time, e.g. <time>"
+      "message": "expires_at must be an RFC 3339 time, e.g. 2026-10-14T12:00:00Z"
     }
   },
   "content_type": "application/json",

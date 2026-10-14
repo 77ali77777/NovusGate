@@ -1162,18 +1162,15 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	} else {
 		resp.Checks.Database.OK = true
 		wg := &WireGuardCheck{OK: true, Interfaces: map[string]string{}}
-		if networks, err := s.store.ListNetworks(ctx); err != nil {
+		if names, err := s.store.ListInterfaceNames(ctx); err != nil {
 			wg.OK = false
 		} else {
-			for _, n := range networks {
-				if n.InterfaceName == "" {
-					continue
-				}
+			for _, name := range names {
 				state := "up"
-				if !interfaceUp(n.InterfaceName) {
+				if !interfaceUp(name) {
 					state, wg.OK = "down", false
 				}
-				wg.Interfaces[n.InterfaceName] = state
+				wg.Interfaces[name] = state
 			}
 		}
 		healthy = healthy && wg.OK
