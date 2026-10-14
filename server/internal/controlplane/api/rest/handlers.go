@@ -446,10 +446,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var req LoginRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -482,11 +479,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 // Update Password handler
 func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Username    string `json:"username"`
-		OldPassword string `json:"oldPassword"`
-		NewPassword string `json:"newPassword"`
-	}
+	var req UpdatePasswordRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -541,10 +534,7 @@ func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var req CreateUserRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -929,12 +919,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	
-	var req struct {
-		Name      *string          `json:"name"`
-		ExpiresAt *string          `json:"expires_at"` // ISO string or null to remove
-		Status    *string          `json:"status"`
-		NodeInfo  *models.NodeInfo `json:"node_info"`
-	}
+	var req UpdateNodeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
@@ -1062,10 +1047,7 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	var req struct {
-		NodeInfo *models.NodeInfo  `json:"node_info"`
-		Labels   map[string]string `json:"labels"`
-	}
+	var req NodeCheckInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
@@ -1506,10 +1488,7 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 
 // Fail2Ban Unban IP
 func (s *Server) handleFail2BanUnban(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Jail string `json:"jail"`
-		IP   string `json:"ip"`
-	}
+	var req Fail2BanJailIPRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1821,11 +1800,7 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 
 // Fail2Ban Manual Ban - Ban an IP address manually
 func (s *Server) handleFail2BanManualBan(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Jail      string `json:"jail"`
-		IP        string `json:"ip"`
-		Permanent bool   `json:"permanent"` // If true, add to iptables directly for permanent ban
-	}
+	var req Fail2BanBanRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1915,12 +1890,7 @@ func (s *Server) handleFail2BanGetJailSettings(w http.ResponseWriter, r *http.Re
 
 // Fail2Ban Update Jail Settings - Update jail configuration
 func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Jail     string `json:"jail"`
-		Bantime  string `json:"bantime"`   // e.g., "3600" (1 hour), "-1" (permanent)
-		Maxretry string `json:"maxretry"`  // e.g., "3"
-		Findtime string `json:"findtime"`  // e.g., "600" (10 minutes)
-	}
+	var req Fail2BanJailSettingsRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1999,11 +1969,7 @@ func (s *Server) handleFail2BanGetWhitelist(w http.ResponseWriter, r *http.Reque
 
 // Fail2Ban Update Whitelist - Add or remove IPs from whitelist
 func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Jail   string `json:"jail"`
-		Action string `json:"action"` // "add" or "remove"
-		IP     string `json:"ip"`
-	}
+	var req Fail2BanWhitelistRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -2098,9 +2064,7 @@ func (s *Server) handleFail2BanGetPermanentBans(w http.ResponseWriter, r *http.R
 
 // Fail2Ban Remove Permanent Ban - Remove a permanently banned IP from iptables
 func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		IP string `json:"ip"`
-	}
+	var req Fail2BanIPRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -2144,10 +2108,7 @@ func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http
 
 // Fail2Ban Jail Control - Start/Stop a jail
 func (s *Server) handleFail2BanJailControl(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Jail   string `json:"jail"`
-		Action string `json:"action"` // "start" or "stop"
-	}
+	var req Fail2BanJailControlRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")

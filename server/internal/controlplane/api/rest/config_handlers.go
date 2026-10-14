@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -259,11 +258,7 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Request) {
 	networkID := mux.Vars(r)["networkId"]
 	
-	var req struct {
-		Name      string            `json:"name"`
-		Labels    map[string]string `json:"labels"`
-		ExpiresAt *time.Time        `json:"expires_at,omitempty"`
-	}
+	var req CreateServerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
