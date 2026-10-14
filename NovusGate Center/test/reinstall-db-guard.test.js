@@ -58,7 +58,8 @@ test('reinstall runs the database guard before anything is stopped or deleted', 
   const guard = script.indexOf('no .env to go with it');
   assert.ok(guard > -1, 'guard missing from reinstall script');
   assert.ok(
-    guard < script.indexOf('docker-compose -f server/deployments/docker/docker-compose.yml down'),
+    script.indexOf('compose -f server/deployments/docker/docker-compose.yml down') > -1 &&
+      guard < script.indexOf('compose -f server/deployments/docker/docker-compose.yml down'),
     'guard must run before the stack is stopped'
   );
   assert.ok(guard < script.indexOf('clean_install_dir "$INSTALL_DIR"'), 'guard must run before files are removed');

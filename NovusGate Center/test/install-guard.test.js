@@ -42,7 +42,9 @@ test('guard runs before any package installation or secret generation', () => {
   const script = scripts.GENERATE_INSTALL_SCRIPT(sampleConfig);
   const guard = script.indexOf('is already installed in');
   assert.ok(guard > -1, 'guard missing from install script');
-  assert.ok(guard < script.indexOf('apt-get'), 'guard must run before apt-get');
+  // apt_get() is defined at the top; the first call is "apt_get update".
+  assert.ok(script.indexOf('apt_get update') > -1, 'apt_get update missing');
+  assert.ok(guard < script.indexOf('apt_get update'), 'guard must run before apt-get');
   assert.ok(guard < script.indexOf('generate_secret()'), 'guard must run before secrets are generated');
   assert.ok(guard < script.indexOf('wg genkey'), 'guard must run before wg0 keys are generated');
 });

@@ -34,6 +34,17 @@ clean_install_dir() {
 }
 `;
 
+// Bash helpers every script starts with: compose() runs Docker Compose v2
+// ("docker compose", what get.docker.com installs) and falls back to the v1
+// binary; apt_get() waits up to 10 minutes for a held dpkg lock (e.g.
+// unattended-upgrades on a fresh server) instead of failing at once.
+const SHELL_HELPERS = `
+compose() {
+  if docker compose version > /dev/null 2>&1; then docker compose "$@"; else docker-compose "$@"; fi
+}
+apt_get() { apt-get -o DPkg::Lock::Timeout=600 "$@"; }
+`;
+
 // Exit code of the install script when NovusGate is already installed.
 const EXIT_ALREADY_INSTALLED = 3;
 
@@ -68,6 +79,7 @@ fi
 const GENERATE_INSTALL_SCRIPT = (config) => `
 #!/bin/bash
 set -e
+${SHELL_HELPERS}
 
 INSTALL_DIR="/opt/NovusGate"
 RED='\\033[0;31m'
@@ -97,7 +109,7 @@ echo "=========================================="
 
 # Update system
 log_info "Updating system..."
-apt-get update -qq
+apt_get update -qq
 
 # Install Docker if not present
 if ! command -v docker &> /dev/null; then
@@ -107,12 +119,12 @@ else
   log_info "Docker already installed ✓"
 fi
 
-# Install Docker Compose
-if ! command -v docker-compose &> /dev/null; then
-  log_info "Installing Docker Compose..."
-  apt-get install -y docker-compose
-else
+# Docker Compose: v2 plugin (get.docker.com installs it); v1 only as a fallback
+if docker compose version &> /dev/null || command -v docker-compose &> /dev/null; then
   log_info "Docker Compose already installed ✓"
+else
+  log_info "Installing Docker Compose..."
+  apt_get install -y docker-compose-plugin || apt_get install -y docker-compose-v2 || apt_get install -y docker-compose
 fi
 
 # Extract archive
@@ -176,13 +188,13 @@ rm -f /etc/wireguard/wg1.conf # Clean old wg1 if exists
 # Install WireGuard
 if ! command -v wg &> /dev/null; then
   log_info "Installing WireGuard..."
-  apt-get install -y wireguard
+  apt_get install -y wireguard
 fi
 
 # Install Fail2Ban for SSH protection
 if ! command -v fail2ban-client &> /dev/null; then
   log_info "Installing Fail2Ban..."
-  apt-get install -y fail2ban
+  apt_get install -y fail2ban
   
   # Create SSH jail config
   cat <<F2B > /etc/fail2ban/jail.local
@@ -295,7 +307,7 @@ chmod 600 "$INSTALL_DIR/server/deployments/docker/.env"
 # Start services
 log_info "Starting services..."
 cd "$INSTALL_DIR"
-docker-compose -f server/deployments/docker/docker-compose.yml up -d --build
+compose -f server/deployments/docker/docker-compose.yml up -d --build
 
 # Wait
 log_info "Waiting 30 seconds..."
@@ -304,7 +316,7 @@ sleep 30
 # Initialize
 log_info "Skipping default network creation (Admin Network is auto-created)..."
 # We DO NOT run init anymore, because we only want the Admin Network initially.
-# INIT_OUTPUT=$(docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server init --name "$NETWORK_NAME" --cidr "$NETWORK_CIDR" 2>&1 || true)
+# INIT_OUTPUT=$(compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server init --name "$NETWORK_NAME" --cidr "$NETWORK_CIDR" 2>&1 || true)
 # echo "$INIT_OUTPUT"
 
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -365,6 +377,7 @@ const GENERATE_REINSTALL_SCRIPT = (config) => {
   return `
 #!/bin/bash
 set -e
+${SHELL_HELPERS}
 
 INSTALL_DIR="/opt/NovusGate"
 ${REINSTALL_DB_GUARD}
@@ -385,7 +398,7 @@ fi
 if [ -f "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" ]; then
   cd "$INSTALL_DIR"
   # NO -v flag here, keep volumes!
-  docker-compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
 fi
 
 # Remove files but KEEP the database (server/data) and admin-vpn.conf
@@ -467,8 +480,8 @@ fi
 # Ensure Fail2Ban is installed
 if ! command -v fail2ban-client &> /dev/null; then
   echo "Installing Fail2Ban..."
-  apt-get update -qq
-  apt-get install -y fail2ban
+  apt_get update -qq
+  apt_get install -y fail2ban
   
   # Create SSH jail config
   cat <<F2B > /etc/fail2ban/jail.local
@@ -502,7 +515,7 @@ fi
 
 # Start
 echo "Starting services..."
-docker-compose -f server/deployments/docker/docker-compose.yml up -d --build
+compose -f server/deployments/docker/docker-compose.yml up -d --build
 
 echo "Waiting for DB..."
 sleep 20
@@ -521,6 +534,7 @@ docker ps | grep -i novusgate || true
 const UNINSTALL_SCRIPT = `
 #!/bin/bash
 set -e
+${SHELL_HELPERS}
 INSTALL_DIR="/opt/NovusGate"
 
 echo "=========================================="
@@ -531,7 +545,7 @@ echo "=========================================="
 echo "[1/5] Stopping Docker services..."
 if [ -f "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" ]; then
   cd "$INSTALL_DIR"
-  docker-compose -f server/deployments/docker/docker-compose.yml down -v --rmi all --remove-orphans 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml down -v --rmi all --remove-orphans 2>/dev/null || true
 fi
 
 # Fallback: kill any NovusGate containers
@@ -589,6 +603,7 @@ echo "Server is ready for a fresh install."
 const UPDATE_SCRIPT = `
 #!/bin/bash
 set -e
+${SHELL_HELPERS}
 INSTALL_DIR="/opt/NovusGate"
 TEMP_DIR="/tmp/NovusGate_update"
 
@@ -709,33 +724,33 @@ docker image prune -f 2>/dev/null || true
 
 if [ "$DOCKER_CHANGED" = true ]; then
   echo "  Docker config changed - full rebuild required"
-  docker-compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml up -d --build --force-recreate
+  compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml up -d --build --force-recreate
 elif [ "$SERVER_CHANGED" = true ] && [ "$WEB_CHANGED" = true ]; then
   echo "  Rebuilding: control-plane, web"
-  docker-compose -f server/deployments/docker/docker-compose.yml stop control-plane web 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml rm -f control-plane web 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane web
-  docker-compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane web
+  compose -f server/deployments/docker/docker-compose.yml stop control-plane web 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml rm -f control-plane web 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane web
+  compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane web
 elif [ "$SERVER_CHANGED" = true ]; then
   echo "  Rebuilding: control-plane only"
-  docker-compose -f server/deployments/docker/docker-compose.yml stop control-plane 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml rm -f control-plane 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane
-  docker-compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane
+  compose -f server/deployments/docker/docker-compose.yml stop control-plane 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml rm -f control-plane 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane
+  compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane
 elif [ "$WEB_CHANGED" = true ]; then
   echo "  Rebuilding: web only"
-  docker-compose -f server/deployments/docker/docker-compose.yml stop web 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml rm -f web 2>/dev/null || true
-  docker-compose -f server/deployments/docker/docker-compose.yml build --no-cache web
-  docker-compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps web
+  compose -f server/deployments/docker/docker-compose.yml stop web 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml rm -f web 2>/dev/null || true
+  compose -f server/deployments/docker/docker-compose.yml build --no-cache web
+  compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps web
 fi
 
 # 5. Run migrations if server changed
 echo "[5/6] Checking database..."
 if [ "$SERVER_CHANGED" = true ]; then
   sleep 5
-  docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate 2>&1 || echo "Migration skipped"
+  compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate 2>&1 || echo "Migration skipped"
 else
   echo "  Server unchanged - skipping migration"
 fi
@@ -754,7 +769,7 @@ if [ -f "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh" ]; then
 fi
 
 # Ensure all containers running
-docker-compose -f server/deployments/docker/docker-compose.yml up -d
+compose -f server/deployments/docker/docker-compose.yml up -d
 
 echo ""
 echo "=========================================="
@@ -772,6 +787,7 @@ docker ps --format "table {{.Names}}\\t{{.Status}}" | grep -i novusgate || true
 const DATABASE_MIGRATE_SCRIPT = `
 #!/bin/bash
 set -e
+${SHELL_HELPERS}
 INSTALL_DIR="/opt/NovusGate"
 
 echo "=========================================="
@@ -782,7 +798,7 @@ echo "=========================================="
 cd "$INSTALL_DIR"
 
 echo "[1/2] Checking database migrations..."
-docker-compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate
+compose -f server/deployments/docker/docker-compose.yml exec -T control-plane ./novusgate-server migrate
 
 echo ""
 echo "=========================================="
@@ -792,6 +808,7 @@ echo "=========================================="
 
 module.exports = {
   shellQuote,
+  SHELL_HELPERS,
   MASTER_KEY_GEN,
   ensureMasterKey,
   CLEAN_INSTALL_DIR_FN,

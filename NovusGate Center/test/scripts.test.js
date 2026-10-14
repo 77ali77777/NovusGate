@@ -94,3 +94,32 @@ test('uninstall removes the IPv6 admin port guard', () => {
   assert.ok(script.includes('ip6tables -t mangle -F NOVUSGATE-ADMIN'));
   assert.ok(script.includes('ip6tables -t mangle -X NOVUSGATE-ADMIN'));
 });
+
+// P7: Docker Compose v2 ("docker compose") is what get.docker.com installs;
+// the v1 binary is only a fallback. apt waits for a held dpkg lock
+// (unattended-upgrades on a fresh server) instead of failing.
+for (const [name, script] of Object.entries(generateAll(sampleConfig))) {
+  test(`${name} script uses the compose and apt_get helpers`, () => {
+    assert.ok(script.includes('compose() {'), 'defines compose()');
+    assert.ok(script.includes('apt_get() {'), 'defines apt_get()');
+    assert.doesNotMatch(script, /(^|[\s;&|(])docker-compose -f/m, 'no direct docker-compose call');
+    assert.doesNotMatch(script, /(^|[\s;&|(])apt-get (update|install)/m, 'no direct apt-get call');
+  });
+}
+
+test('compose() prefers docker compose v2 and falls back to docker-compose', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-compose-'));
+  try {
+    const run = (dockerHasV2) => {
+      fs.writeFileSync(path.join(dir, 'docker'),
+        `#!/bin/bash\nif [ "$1 $2" = "compose version" ]; then exit ${dockerHasV2 ? 0 : 1}; fi\necho "v2 $*"\n`, { mode: 0o755 });
+      fs.writeFileSync(path.join(dir, 'docker-compose'), '#!/bin/bash\necho "v1 $*"\n', { mode: 0o755 });
+      return spawnSync('bash', ['-c', `${scripts.SHELL_HELPERS}\ncompose -f x.yml up -d`],
+        { encoding: 'utf8', env: { PATH: `${dir}:/usr/bin:/bin` } }).stdout.trim();
+    };
+    assert.strictEqual(run(true), 'v2 compose -f x.yml up -d');
+    assert.strictEqual(run(false), 'v1 -f x.yml up -d');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

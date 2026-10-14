@@ -207,7 +207,12 @@ restart_docker_stack() {
   echo "[FIREWALL] Restarting NovusGate containers..."
   if [ -f "/opt/NovusGate/server/deployments/docker/.env" ]; then
     cd /opt/NovusGate
-    docker-compose -f server/deployments/docker/docker-compose.yml up -d
+    # Docker Compose v2 when available, the v1 binary otherwise.
+    if docker compose version > /dev/null 2>&1; then
+      docker compose -f server/deployments/docker/docker-compose.yml up -d
+    else
+      docker-compose -f server/deployments/docker/docker-compose.yml up -d
+    fi
   else
     echo "[FIREWALL] Warning: .env not found, skipping container restart"
     echo "[FIREWALL] Containers will be started by the installer script"
