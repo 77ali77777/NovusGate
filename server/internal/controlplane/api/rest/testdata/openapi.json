@@ -1,0 +1,3099 @@
+{
+  "components": {
+    "schemas": {
+      "AllowIPRequest": {
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "ports": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ip",
+          "ports"
+        ],
+        "type": "object"
+      },
+      "BlockIPRequest": {
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "ports": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ip",
+          "ports"
+        ],
+        "type": "object"
+      },
+      "ChainInfo": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/FirewallRule"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "policy",
+          "rules"
+        ],
+        "type": "object"
+      },
+      "ClosePortRequest": {
+        "properties": {
+          "force": {
+            "type": "boolean"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "force",
+          "port",
+          "protocol"
+        ],
+        "type": "object"
+      },
+      "DeleteRuleRequest": {
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "line_number": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chain",
+          "force",
+          "line_number"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "stable snake_case code, see docs/api.md",
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "FirewallRule": {
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "in_interface": {
+            "type": "string"
+          },
+          "interface": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "options": {
+            "type": "string"
+          },
+          "out_interface": {
+            "type": "string"
+          },
+          "port": {
+            "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain",
+          "destination",
+          "interface",
+          "number",
+          "port",
+          "protected",
+          "protocol",
+          "source",
+          "target"
+        ],
+        "type": "object"
+      },
+      "FirewallStatus": {
+        "properties": {
+          "blocked_ips": {
+            "type": "integer"
+          },
+          "chains": {
+            "items": {
+              "$ref": "#/components/schemas/ChainInfo"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "open_ports": {
+            "type": "integer"
+          },
+          "total_rules": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blocked_ips",
+          "chains",
+          "open_ports",
+          "total_rules"
+        ],
+        "type": "object"
+      },
+      "ImportRulesRequest": {
+        "properties": {
+          "rules": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rules"
+        ],
+        "type": "object"
+      },
+      "Network": {
+        "properties": {
+          "cidr": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "interface_name": {
+            "type": "string"
+          },
+          "listen_port": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "server_endpoint": {
+            "type": "string"
+          },
+          "server_public_key": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cidr",
+          "created_at",
+          "id",
+          "interface_name",
+          "listen_port",
+          "name",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "Node": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "last_seen": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "node_info": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NodeInfo"
+              }
+            ],
+            "nullable": true
+          },
+          "public_ip": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "transfer_rx": {
+            "type": "integer"
+          },
+          "transfer_tx": {
+            "type": "integer"
+          },
+          "virtual_ip": {
+            "description": "IP address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "endpoints",
+          "id",
+          "labels",
+          "last_seen",
+          "name",
+          "network_id",
+          "public_key",
+          "status",
+          "virtual_ip"
+        ],
+        "type": "object"
+      },
+      "NodeInfo": {
+        "properties": {
+          "arch": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "os": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "arch",
+          "hostname",
+          "os"
+        ],
+        "type": "object"
+      },
+      "OpenPortRequest": {
+        "properties": {
+          "port": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "port",
+          "protocol",
+          "source"
+        ],
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "username"
+        ],
+        "type": "object"
+      },
+      "VPNFirewallRule": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dest_ip": {
+            "type": "string"
+          },
+          "dest_network_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dest_network_name": {
+            "type": "string"
+          },
+          "dest_node_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dest_node_name": {
+            "type": "string"
+          },
+          "dest_type": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "port": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source_ip": {
+            "type": "string"
+          },
+          "source_network_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source_network_name": {
+            "type": "string"
+          },
+          "source_node_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source_node_name": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "created_at",
+          "dest_type",
+          "enabled",
+          "id",
+          "name",
+          "priority",
+          "protocol",
+          "source_type",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "VPNFirewallRuleRequest": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dest_ip": {
+            "type": "string"
+          },
+          "dest_network_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dest_node_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dest_type": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "port": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source_ip": {
+            "type": "string"
+          },
+          "source_network_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source_node_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "dest_type",
+          "enabled",
+          "name",
+          "priority",
+          "protocol",
+          "source_type"
+        ],
+        "type": "object"
+      },
+      "v2ForwardRequest": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "public_port": {
+            "type": "integer"
+          },
+          "target_ip": {
+            "type": "string"
+          },
+          "target_port": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "comment",
+          "protocol",
+          "public_port",
+          "target_ip",
+          "target_port"
+        ],
+        "type": "object"
+      },
+      "v2IPRuleRequest": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "ports": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "comment",
+          "expires_at",
+          "ports",
+          "prefix",
+          "protocol"
+        ],
+        "type": "object"
+      },
+      "v2ServiceRequest": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "interface": {
+            "type": "string"
+          },
+          "port_from": {
+            "type": "integer"
+          },
+          "port_to": {
+            "type": "integer"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "comment",
+          "interface",
+          "port_from",
+          "port_to",
+          "protocol",
+          "sources"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "NovusGate Control Plane API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "post_auth_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Log in (body: username, password)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/password": {
+      "put": {
+        "operationId": "put_auth_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a password (body: username, oldPassword, newPassword)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/debug/wireguard/{networkId}": {
+      "get": {
+        "operationId": "get_debug_wireguard_by_networkId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "networkId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Compare DB nodes with live peers",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/export": {
+      "get": {
+        "operationId": "get_firewall_host_export",
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Export the ruleset",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/import": {
+      "post": {
+        "operationId": "post_firewall_host_import",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportRulesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Import iptables-save rules (iptables mode only)",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/ip/allow": {
+      "post": {
+        "operationId": "post_firewall_host_ip_allow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowIPRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Allow an IP or CIDR",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/ip/block": {
+      "post": {
+        "operationId": "post_firewall_host_ip_block",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockIPRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Block an IP or CIDR",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/port/close": {
+      "post": {
+        "operationId": "post_firewall_host_port_close",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosePortRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Close a port",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/port/open": {
+      "post": {
+        "operationId": "post_firewall_host_port_open",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenPortRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Open a port",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/reset": {
+      "post": {
+        "operationId": "post_firewall_host_reset",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Reset the host firewall to the installer baseline",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/rules": {
+      "get": {
+        "operationId": "get_firewall_host_rules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirewallStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Host firewall chains (iptables, or a synthetic view in nft mode)",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/host/rules/delete": {
+      "post": {
+        "operationId": "post_firewall_host_rules_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a rule by chain and line number",
+        "tags": [
+          "firewall-host"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/confirm/{id}": {
+      "post": {
+        "operationId": "post_firewall_v2_confirm_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Confirm a pending change",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/egress/{nodeId}": {
+      "delete": {
+        "operationId": "delete_firewall_v2_egress_by_nodeId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nodeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Revoke a node's full-tunnel egress",
+        "tags": [
+          "firewall-v2"
+        ]
+      },
+      "put": {
+        "operationId": "put_firewall_v2_egress_by_nodeId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nodeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Allow a node's full-tunnel egress",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/forwards": {
+      "post": {
+        "operationId": "post_firewall_v2_forwards",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v2ForwardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add a port forward to a VPN node",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/forwards/{id}": {
+      "delete": {
+        "operationId": "delete_firewall_v2_forwards_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Remove a port forward",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/ip-rules": {
+      "post": {
+        "operationId": "post_firewall_v2_ip_rules",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v2IPRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add an IP block/allow rule",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/ip-rules/{id}": {
+      "delete": {
+        "operationId": "delete_firewall_v2_ip_rules_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Remove an IP rule",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/preview": {
+      "get": {
+        "operationId": "get_firewall_v2_preview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Compiled nftables ruleset",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/services": {
+      "post": {
+        "operationId": "post_firewall_v2_services",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v2ServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Open a service (pending until confirmed unless ?confirm=false)",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/services/{id}": {
+      "delete": {
+        "operationId": "delete_firewall_v2_services_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Close a service",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/state": {
+      "get": {
+        "operationId": "get_firewall_v2_state",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "nftables engine state",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/vpn/apply": {
+      "post": {
+        "operationId": "post_firewall_vpn_apply",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Re-apply all VPN firewall rules",
+        "tags": [
+          "firewall-vpn"
+        ]
+      }
+    },
+    "/api/v1/firewall/vpn/rules": {
+      "get": {
+        "operationId": "get_firewall_vpn_rules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VPNFirewallRule"
+                  },
+                  "nullable": true,
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List VPN firewall rules",
+        "tags": [
+          "firewall-vpn"
+        ]
+      },
+      "post": {
+        "operationId": "post_firewall_vpn_rules",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VPNFirewallRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VPNFirewallRule"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a VPN firewall rule",
+        "tags": [
+          "firewall-vpn"
+        ]
+      }
+    },
+    "/api/v1/firewall/vpn/rules/{id}": {
+      "delete": {
+        "operationId": "delete_firewall_vpn_rules_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a VPN firewall rule",
+        "tags": [
+          "firewall-vpn"
+        ]
+      },
+      "put": {
+        "operationId": "put_firewall_vpn_rules_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VPNFirewallRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VPNFirewallRule"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update a VPN firewall rule",
+        "tags": [
+          "firewall-vpn"
+        ]
+      }
+    },
+    "/api/v1/networks": {
+      "get": {
+        "operationId": "get_networks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Network"
+                  },
+                  "nullable": true,
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List networks",
+        "tags": [
+          "networks"
+        ]
+      },
+      "post": {
+        "operationId": "post_networks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a network (body: name, cidr)",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/networks/{id}": {
+      "delete": {
+        "operationId": "delete_networks_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a network (not wg0)",
+        "tags": [
+          "networks"
+        ]
+      },
+      "get": {
+        "operationId": "get_networks_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a network",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/networks/{networkId}/nodes": {
+      "get": {
+        "operationId": "get_networks_by_networkId_nodes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "networkId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Node"
+                  },
+                  "nullable": true,
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List a network's nodes",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/networks/{networkId}/servers": {
+      "post": {
+        "operationId": "post_networks_by_networkId_servers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "networkId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a node with its WireGuard config (body: name, labels, expires_at)",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/networks/{networkId}/sync": {
+      "post": {
+        "operationId": "post_networks_by_networkId_sync",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "networkId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Re-add missing peers of active nodes",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}": {
+      "delete": {
+        "operationId": "delete_nodes_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a node",
+        "tags": [
+          "nodes"
+        ]
+      },
+      "get": {
+        "operationId": "get_nodes_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a node",
+        "tags": [
+          "nodes"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_nodes_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update a node (same as PUT)",
+        "tags": [
+          "nodes"
+        ]
+      },
+      "put": {
+        "operationId": "put_nodes_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update a node (body: name, expires_at, status, node_info)",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/checkin": {
+      "post": {
+        "operationId": "post_nodes_by_id_checkin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Report node information (body: node_info)",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/config": {
+      "get": {
+        "operationId": "get_nodes_by_id_config",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Download the client WireGuard config",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/install.sh": {
+      "get": {
+        "operationId": "get_nodes_by_id_install_sh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/x-shellscript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Linux install script for the node",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/qrcode": {
+      "get": {
+        "operationId": "get_nodes_by_id_qrcode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Client config as a QR code",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "operationId": "get_openapi_json",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "This document",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/api/v1/stats/overview": {
+      "get": {
+        "operationId": "get_stats_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Dashboard counters",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/ban": {
+      "post": {
+        "operationId": "post_system_fail2ban_ban",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ban an IP (body: jail, ip, permanent)",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/ban-history": {
+      "get": {
+        "operationId": "get_system_fail2ban_ban_history",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ban/unban history, newest first",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/jail/control": {
+      "post": {
+        "operationId": "post_system_fail2ban_jail_control",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Start or stop a jail (body: jail, action)",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/jail/settings": {
+      "get": {
+        "operationId": "get_system_fail2ban_jail_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Jail settings",
+        "tags": [
+          "fail2ban"
+        ]
+      },
+      "put": {
+        "operationId": "put_system_fail2ban_jail_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update jail settings (206 when partly applied)",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/logs": {
+      "get": {
+        "operationId": "get_system_fail2ban_logs",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "fail2ban log lines",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/permanent-bans": {
+      "delete": {
+        "operationId": "delete_system_fail2ban_permanent_bans",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Remove a permanent ban (body: ip)",
+        "tags": [
+          "fail2ban"
+        ]
+      },
+      "get": {
+        "operationId": "get_system_fail2ban_permanent_bans",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Permanent bans",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/ping": {
+      "get": {
+        "operationId": "get_system_fail2ban_ping",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Is fail2ban alive",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/reload": {
+      "post": {
+        "operationId": "post_system_fail2ban_reload",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Reload fail2ban",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/status": {
+      "get": {
+        "operationId": "get_system_fail2ban_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "fail2ban jails and bans",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/unban": {
+      "post": {
+        "operationId": "post_system_fail2ban_unban",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Unban an IP (body: jail, ip)",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/fail2ban/whitelist": {
+      "get": {
+        "operationId": "get_system_fail2ban_whitelist",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ignored IPs of a jail",
+        "tags": [
+          "fail2ban"
+        ]
+      },
+      "put": {
+        "operationId": "put_system_fail2ban_whitelist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add or remove an ignored IP (body: jail, action, ip)",
+        "tags": [
+          "fail2ban"
+        ]
+      }
+    },
+    "/api/v1/system/info": {
+      "get": {
+        "operationId": "get_system_info",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Host CPU, memory, disk, uptime",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "get_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "nullable": true,
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List users",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "operationId": "post_users",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a user (body: username, password)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "delete": {
+        "operationId": "delete_users_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "get_health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [],
+        "summary": "Liveness and component checks (always 200)",
+        "tags": [
+          "meta"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

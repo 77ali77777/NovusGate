@@ -324,6 +324,7 @@ func (s *Server) setupRoutes() {
 	
 	// All Networks Stats (for dashboard)
 	api.HandleFunc("/stats/overview", s.handleStatsOverview).Methods("GET")
+	api.HandleFunc("/openapi.json", s.handleOpenAPI).Methods("GET")
 
 	// Host Firewall Management
 	api.HandleFunc("/firewall/host/rules", s.handleFirewallGetRules).Methods("GET")
