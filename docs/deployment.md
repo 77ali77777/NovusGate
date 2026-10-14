@@ -48,3 +48,15 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
   - P4b-dən sonra web API-ni öz nginx-i üzərindən çağırır.
 
   Ona görə hər ikisini birlikdə build edin (`docker compose up -d --build`). Sonra brauzerdə səhifəni yeniləyin (açıq qalmış köhnə tab köhnə JS-i işlədir).
+
+## NovusGate Center əməliyyatları (P7)
+- **Update:**
+  - Dəyişiklik aşkarlansa, fayllar dəyişməzdən əvvəl backup alınır: `/var/backups/novusgate/update-<vaxt>/`. İçində `code.tar.gz` (`.env` ilə), `wireguard.tar.gz` və `db.sql` var; son 5 backup saxlanılır.
+  - Hər hansı addım uğursuz olsa və ya control-plane `/health`-ə bir dəqiqə ərzində cavab verməsə, əvvəlki versiya avtomatik bərpa olunur və update 1 kodu ilə bitir.
+  - DB avtomatik geri qaytarılmır, çünki miqrasiyalar yalnız genişləndirir. Lazım olsa `db.sql`-dən əl ilə bərpa edin.
+- **Uninstall:**
+  - Yalnız NovusGate silinir: onun konteynerləri, volume-ları, qurduğu image-lər, wg interfeysləri, INPUT qaydaları, nft cədvəli, boot unit və fail2ban jail faylı.
+  - Docker-in şəbəkə qaydaları və başqa tətbiqlərin image və volume-ları qalır.
+- **Join VPN:** paneldə Nodes → Connect → Linux → "Generate install script" düyməsini basın, skripti Center-də Join VPN pəncərəsinə yapışdırın. Skript bir dəfə və 15 dəqiqə ərzində işləyir, serverdə root kimi icra olunur.
+- **Non-root SSH istifadəçisi:** Center əmrləri `sudo -n` ilə işlədir, ona görə həmin istifadəçinin parolsuz sudo hüququ olmalıdır.
+- **Eyni server üçün iki əməliyyat:** ikincisi 409 alır və birincinin bitməsini gözləməlidir.

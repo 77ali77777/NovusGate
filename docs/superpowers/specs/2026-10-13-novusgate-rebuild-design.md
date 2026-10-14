@@ -173,7 +173,7 @@ Bu siyahı "əskiksiz" tələbinin ölçüsüdür. Yeni sistemdə hər sətir ya
 | B7 | VPN DROP qaydası təsirsizdir (PostUp ACCEPT öndədir) | P3 |
 | B8 | Birtərəfli qayda işləmir; `node` qaydası bütün şəbəkəyə tətbiq olunur | P3 (siyasət modeli) |
 | B9 | Linux one-line install işləmir | P4 |
-| B10 | join-vpn işləmir | P4, P7 |
+| B10 | join-vpn işləmir | P4, P7 — **2026-10-14-də bağlandı:** Center panelin node install skriptini serverdə işə salır (`62a3601`) |
 | B11 | Expiry problemləri: lazy tətbiq; reaktivləşmə peer-i geri qaytarmır; rule sync vaxtı bitmiş peer-ləri bərpa edir | P1 (sync və bərpa üçün aktivlik filtri), P2 (reconciler) — **P2c-də bağlandı (`e5d346a`, `c61bc4a`, `07e63f1`, `149af2f`)** |
 | B12 | Host rule delete: frontend və backend method/path uyğun gəlmir | P2 (alias), P6 |
 | B13 | EditNodeModal expiry ilə saxlamağı bloklayır | P6 — **2026-10-14-də bağlandı** (hazırkı frontend): dialoq "Keep Current" ilə açılır, tarix sahəsi yalnız "Set Custom Date"-də görünür; `web/src/lib/nodeExpiry.ts` + `web/tests` |
@@ -188,15 +188,15 @@ Bu siyahı "əskiksiz" tələbinin ölçüsüdür. Yeni sistemdə hər sətir ya
 | B22 | `GetPublicKey` `=` simvolunu kəsir; `parseRuleLine` panic edir | P2 / P3 — **P2a-da bağlandı (`5802f79`)** |
 | B23 | Mixed content | P4 (nginx proxy) |
 
-**C. Center əlavə → P7:**
-- `servers.json` yarışı
-- terminal-da passphrase və resize problemi
-- `$` və `"` escape problemi
-- compose v1 asılılığı
-- apt lock
-- non-root istifadəçi
-- paralel arxiv
-- uninstall-un yan təsirləri
+**C. Center əlavə → P7** (hamısı **2026-10-14-də bağlandı**, bax `docs/active-context.md` P7 bloku):
+- `servers.json` yarışı — `lib/store.js`
+- terminal-da passphrase və resize problemi — `lib/ssh.js`, `public/index.html`
+- `$` və `"` escape problemi — `shellQuote` (cleanup planı)
+- compose v1 asılılığı — `compose()` köməkçisi
+- apt lock — `apt_get()` köməkçisi
+- non-root istifadəçi — `sudo -n` bağlantı səviyyəsində
+- paralel arxiv — `lib/archive.js`
+- uninstall-un yan təsirləri — yalnız NovusGate silinir
 
 ## 8. Açıq sual (P1-dən sonra qərar)
 - Postgres 5432-nin wg0 üzərindən açıqlığı saxlanılsın, yoxsa yalnız SSH tunel ilə olsun? Hazırda wg0-dan açıqdır, P3-də nftables ilə məhz bu davranış saxlanılır. Dəyişmək istifadəçinin qərarıdır.
