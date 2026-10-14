@@ -8,6 +8,12 @@ import type {
   Fail2BanLogs,
   Fail2BanStatus,
   FirewallStatus,
+  FirewallV2Change,
+  FirewallV2ForwardRequest,
+  FirewallV2IPRuleRequest,
+  FirewallV2Preview,
+  FirewallV2ServiceRequest,
+  FirewallV2State,
   ImportRulesRequest,
   Network,
   Node,
@@ -353,6 +359,61 @@ class ApiClient {
     const { data } = await this.client.post('/firewall/vpn/apply')
     return data
   }
+
+  // Firewall v2 (nftables engine). Changes wait for /confirm unless confirmed
+  // within the deadline the response carries; otherwise the host rolls back.
+  async getFirewallV2State(): Promise<FirewallV2State> {
+    const { data } = await this.client.get<FirewallV2State>('/firewall/v2/state')
+    return data
+  }
+
+  async getFirewallV2Preview(): Promise<FirewallV2Preview> {
+    const { data } = await this.client.get<FirewallV2Preview>('/firewall/v2/preview')
+    return data
+  }
+
+  async createFirewallV2Service(req: FirewallV2ServiceRequest): Promise<FirewallV2Change> {
+    const { data } = await this.client.post<FirewallV2Change>('/firewall/v2/services', req)
+    return data
+  }
+
+  async deleteFirewallV2Service(id: string): Promise<FirewallV2Change> {
+    const { data } = await this.client.delete<FirewallV2Change>(`/firewall/v2/services/${id}`)
+    return data
+  }
+
+  async createFirewallV2IPRule(req: FirewallV2IPRuleRequest): Promise<FirewallV2Change> {
+    const { data } = await this.client.post<FirewallV2Change>('/firewall/v2/ip-rules', req)
+    return data
+  }
+
+  async deleteFirewallV2IPRule(id: string): Promise<FirewallV2Change> {
+    const { data } = await this.client.delete<FirewallV2Change>(`/firewall/v2/ip-rules/${id}`)
+    return data
+  }
+
+  async createFirewallV2Forward(req: FirewallV2ForwardRequest): Promise<FirewallV2Change> {
+    const { data } = await this.client.post<FirewallV2Change>('/firewall/v2/forwards', req)
+    return data
+  }
+
+  async deleteFirewallV2Forward(id: string): Promise<FirewallV2Change> {
+    const { data } = await this.client.delete<FirewallV2Change>(`/firewall/v2/forwards/${id}`)
+    return data
+  }
+
+  async setFirewallV2Egress(nodeId: string, enabled: boolean): Promise<FirewallV2Change> {
+    const url = `/firewall/v2/egress/${nodeId}`
+    const { data } = enabled
+      ? await this.client.put<FirewallV2Change>(url)
+      : await this.client.delete<FirewallV2Change>(url)
+    return data
+  }
+
+  async confirmFirewallV2(id: string): Promise<{ status: string }> {
+    const { data } = await this.client.post<{ status: string }>(`/firewall/v2/confirm/${id}`)
+    return data
+  }
 }
 
 export const api = new ApiClient()
@@ -689,3 +750,52 @@ export function useApplyVPNFirewallRules() {
     },
   })
 }
+
+// Firewall v2 (nftables). The state refreshes every 5 s while a change waits
+// for confirmation, so the countdown and the rollback show without a reload.
+export function useFirewallV2State() {
+  return useQuery({
+    queryKey: ['firewall', 'v2', 'state'],
+    queryFn: () => api.getFirewallV2State(),
+    refetchInterval: (query) => (query.state.data?.pending ? 5000 : 30000),
+  })
+}
+
+export function useFirewallV2Preview(enabled: boolean) {
+  return useQuery({
+    queryKey: ['firewall', 'v2', 'preview'],
+    queryFn: () => api.getFirewallV2Preview(),
+    enabled,
+  })
+}
+
+function useFirewallV2Mutation<T>(fn: (vars: T) => Promise<unknown>, errorTitle: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle },
+    mutationFn: fn,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['firewall'] })
+    },
+  })
+}
+
+export const useCreateFirewallV2Service = () =>
+  useFirewallV2Mutation((req: FirewallV2ServiceRequest) => api.createFirewallV2Service(req), 'Failed to open service')
+export const useDeleteFirewallV2Service = () =>
+  useFirewallV2Mutation((id: string) => api.deleteFirewallV2Service(id), 'Failed to remove service')
+export const useCreateFirewallV2IPRule = () =>
+  useFirewallV2Mutation((req: FirewallV2IPRuleRequest) => api.createFirewallV2IPRule(req), 'Failed to add IP rule')
+export const useDeleteFirewallV2IPRule = () =>
+  useFirewallV2Mutation((id: string) => api.deleteFirewallV2IPRule(id), 'Failed to remove IP rule')
+export const useCreateFirewallV2Forward = () =>
+  useFirewallV2Mutation((req: FirewallV2ForwardRequest) => api.createFirewallV2Forward(req), 'Failed to add port forward')
+export const useDeleteFirewallV2Forward = () =>
+  useFirewallV2Mutation((id: string) => api.deleteFirewallV2Forward(id), 'Failed to remove port forward')
+export const useSetFirewallV2Egress = () =>
+  useFirewallV2Mutation(
+    (v: { nodeId: string; enabled: boolean }) => api.setFirewallV2Egress(v.nodeId, v.enabled),
+    'Failed to change full tunnel'
+  )
+export const useConfirmFirewallV2 = () =>
+  useFirewallV2Mutation((id: string) => api.confirmFirewallV2(id), 'Failed to confirm the change')

@@ -9,6 +9,7 @@ import {
   RefreshCw,
   RotateCcw,
   Shield,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useState } from 'react'
 import {
@@ -30,6 +31,7 @@ import {
 import { PageHeader } from '@/components/Layout'
 import { Button, Card, Modal } from '@/components/ui'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
+import { AdvancedTab } from './AdvancedTab'
 import { BlockedIPsTab } from './BlockedIPsTab'
 import { HostRulesTab } from './HostRulesTab'
 import { OpenPortsTab } from './OpenPortsTab'
@@ -37,7 +39,7 @@ import { OverviewTab } from './OverviewTab'
 import { VPNRuleModal } from './VPNRuleModal'
 import { VPNRulesTab } from './VPNRulesTab'
 
-type TabId = 'overview' | 'host-rules' | 'open-ports' | 'vpn-rules' | 'blocked-ips'
+type TabId = 'overview' | 'host-rules' | 'open-ports' | 'vpn-rules' | 'blocked-ips' | 'advanced'
 
 export const Firewall: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -308,6 +310,7 @@ export const Firewall: React.FC = () => {
     { id: 'open-ports' as TabId, label: 'Open Ports', icon: Globe, count: openPorts },
     { id: 'vpn-rules' as TabId, label: 'VPN Rules', icon: Network, count: vpnRuleCount },
     { id: 'blocked-ips' as TabId, label: 'Blocked IPs', icon: Ban, count: blockedIPs },
+    { id: 'advanced' as TabId, label: 'Advanced (nftables)', icon: SlidersHorizontal },
   ]
 
   // Quick Actions Component - shown in all tabs
@@ -408,7 +411,7 @@ export const Firewall: React.FC = () => {
       </div>
 
       {/* Quick Actions Bar - shown in all tabs except Overview */}
-      {activeTab !== 'overview' && <QuickActionsBar />}
+      {activeTab !== 'overview' && activeTab !== 'advanced' && <QuickActionsBar />}
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
@@ -466,6 +469,9 @@ export const Firewall: React.FC = () => {
           unblockLoading={deleteRuleMutation.isPending}
         />
       )}
+
+      {/* nftables engine (firewall v2): services, IP rules, forwards, full tunnel */}
+      {activeTab === 'advanced' && <AdvancedTab />}
 
       {/* Open Port Modal */}
       <Modal

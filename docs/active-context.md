@@ -348,6 +348,22 @@
   - biome: 98 xəta / 31 xəbərdarlıq, əvvəl 99 / 31 idi; yeni xəta yoxdur, `package.json`-un sonuna sətir əlavə olundu.
 - **Brauzerdə yoxlanmayıb:** toast-ların görünüşü, Edit Node axını.
 
+### 2026-10-14: P3c — Firewall "Advanced (nftables)" tabı (hazırkı dizaynda)
+- **Nəticə:** Firewall səhifəsinə yeni tab əlavə olundu (`pages/Firewall/AdvancedTab.tsx`). Mövcud v2 API-dən istifadə edir, backend dəyişməyib. Bölmələr:
+  - engine statusu: rejim, qorunan SSH portları, internet interfeysi, host xətası;
+  - gözləyən dəyişiklik: geri sayım və "Confirm change"; təsdiq olunmasa host özü geri qaytarır;
+  - servislər (port aralığı, mənbələr, interfeys);
+  - IP qaydaları: block/allow, portlar, bitmə vaxtı, mənşə;
+  - port yönləndirmə;
+  - full tunnel (egress), sidebar-da seçilmiş şəbəkənin node-ları üçün;
+  - nft ruleset önizləməsi.
+
+  `nft` rejimindən başqa rejimlərdə və təsdiq gözləyən dəyişiklik varkən dəyişiklik düymələri bağlıdır; önizləmə hər rejimdə işləyir.
+- **Kod:** `api/client.ts`-ə 10 v2 metodu və hook əlavə olundu. State gözləyən dəyişiklik varkən 5 s-dən bir, əks halda 30 s-dən bir yenilənir. Tiplər `types/index.ts`-dədir; `pending` `null` ola bilər. Köməkçilər `lib/firewallV2.ts`-dədir.
+- **Testlər:** `web/tests/firewallV2.test.mjs`, 4 test, əvvəl düşdü sonra keçdi; cəmi 12/12. `tsc` OK, biome 98/31 (yeni xəta yoxdur), `vite build` OK.
+- **P3c-dən qalanlar** (P3 spec §5): Live (sayğaclar, drop log-u, conntrack) və History (diff, rollback) üçün backend endpoint-i yoxdur. Bunlar backend işi tələb edir.
+- **Brauzerdə və real nft hostda yoxlanmayıb.**
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|

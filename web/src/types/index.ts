@@ -295,3 +295,93 @@ export interface VPNFirewallRuleRequest {
   priority: number
   enabled: boolean
 }
+
+// Firewall v2 (nftables engine, /api/v1/firewall/v2/*)
+export type FirewallEngineMode = 'iptables' | 'shadow' | 'nft'
+
+export interface FirewallV2Service {
+  id: string
+  protocol: 'tcp' | 'udp'
+  port_from: number
+  port_to: number
+  sources: string[] // empty: any source
+  interface?: string
+  comment?: string
+  created_at: string
+}
+
+export interface FirewallV2IPRule {
+  id: string
+  action: 'block' | 'allow'
+  prefix: string
+  protocol?: string
+  ports?: string
+  expires_at?: string
+  origin: string // panel, fail2ban or import
+  comment?: string
+  created_at: string
+}
+
+export interface FirewallV2Forward {
+  id: string
+  protocol: 'tcp' | 'udp'
+  public_port: number
+  target_ip: string
+  target_port: number
+  comment?: string
+  created_at: string
+}
+
+export interface FirewallV2Pending {
+  id: string
+  deadline: string
+}
+
+export interface FirewallV2State {
+  mode: FirewallEngineMode
+  services: FirewallV2Service[]
+  ip_rules: FirewallV2IPRule[]
+  forwards: FirewallV2Forward[]
+  egress_node_ids: string[]
+  pending?: FirewallV2Pending | null
+  ssh_ports?: number[]
+  egress_interface?: string
+  host_error?: string
+}
+
+export interface FirewallV2Change {
+  item?: unknown
+  pending?: FirewallV2Pending | null
+  warnings: string[]
+}
+
+export interface FirewallV2Preview {
+  script: string
+  warnings: string[]
+}
+
+export interface FirewallV2ServiceRequest {
+  protocol: 'tcp' | 'udp'
+  port_from: number
+  port_to?: number
+  sources?: string[]
+  interface?: string
+  comment?: string
+}
+
+export interface FirewallV2IPRuleRequest {
+  action: 'block' | 'allow'
+  prefix: string
+  protocol?: string
+  ports?: string
+  expires_at?: string
+  comment?: string
+}
+
+export interface FirewallV2ForwardRequest {
+  protocol: 'tcp' | 'udp'
+  public_port: number
+  target_ip: string
+  target_port: number
+  comment?: string
+}
