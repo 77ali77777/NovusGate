@@ -64,3 +64,10 @@
 - **Peer bərpası:** başqa peer yalnız node-un tam eyni `/32`-sini saxlayırsa, node əlavə olunmur. Exit gateway-in `0.0.0.0/0`-u və ya sayt subnet-i bunu bloklamır: WireGuard daha dəqiq prefiksi seçir.
 - **Login limiti:** ən çox 10000 açar saxlanılır, doluda ən köhnəsi atılır. Çoxlu IPv6 `/64` idarə edən hücumçu (məsələn bütöv `/48`) öz sayğaclarını bu yolla sıfırlaya bilər. Bu, yaddaşı məhdudlaşdırmağın qəbul olunmuş qiymətidir.
 - **HEAD `install.sh`:** enrollment tokeni yaratmır.
+
+## Port və gizli faylların sərtləşdirilməsi (2026-10-14)
+- **PostgreSQL yalnız loopback-dədir:** compose portu `127.0.0.1:5432:5432` kimi publish edir. Docker-in publish etdiyi port iptables `INPUT` qaydalarından keçmir (DNAT `FORWARD`-a gedir). Ona görə əvvəlki `5432:5432` iptables rejimində bazanı internetə açırdı.
+  - Control-plane host şəbəkəsindədir və `localhost:5432` ilə qoşulur, onun üçün heç nə dəyişmir.
+  - Admin VPN (wg0) üzərindən birbaşa DB-yə qoşulma artıq mümkün deyil. Lazım olsa SSH tuneli istifadə edin: `ssh -L 5432:127.0.0.1:5432 <server>`.
+  - Qüvvəyə minməsi üçün: `docker compose up -d postgres`.
+- **`.env` faylları git-də deyil:** `web/.env` və `NovusGate Center/.env` indeksdən çıxarıldı, `.gitignore`-lar `.env`-i (server: `deployments/docker/.env`) ignore edir. `web/.env` git tarixçəsində qalır, ona görə `API_KEY` dəyişdirilməlidir.

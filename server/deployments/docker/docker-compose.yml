@@ -14,7 +14,10 @@ services:
       - ../../data/postgres:/var/lib/postgresql/data
       - ../../migrations:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      # Loopback only: the control plane (host network) connects to
+      # localhost:5432. A published port bypasses iptables INPUT rules, so
+      # binding all addresses would expose the database to the internet.
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-novusgate}"]
       interval: 5s
