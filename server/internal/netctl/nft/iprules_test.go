@@ -42,6 +42,27 @@ func TestIPRulesRendering(t *testing.T) {
 	}
 }
 
+// An allow rule (spec §6b.4) must not open the VPN-only admin and API ports
+// to its source: the guard drop sits after the VPN accepts and before the allows.
+func TestAllowsCannotOpenAdminPorts(t *testing.T) {
+	got, err := Compile(ipRulesRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	guard := `tcp dport { 3007, 5432, 8080, 8443 } counter drop comment "admin ports: VPN only"`
+	g := strings.Index(got, guard)
+	if g < 0 {
+		t.Fatalf("missing %q\n%s", guard, got)
+	}
+	if g < strings.Index(got, `iifname "wg0" tcp dport { 3007, 5432 } accept`) ||
+		g < strings.Index(got, `tcp dport { 8080, 8443 } accept`) {
+		t.Fatal("the guard must come after the VPN accepts of the admin and API ports")
+	}
+	if g > strings.Index(got, `comment "ip:office"`) {
+		t.Fatal("the guard must come before the allow rules")
+	}
+}
+
 func TestIPRulesValidation(t *testing.T) {
 	cases := map[string]IPRule{
 		"block without ports": {ID: "x", Prefix: netip.MustParsePrefix("192.0.2.1/32"), Action: "block"},

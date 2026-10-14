@@ -230,12 +230,34 @@ func validateIPRule(req v2IPRuleRequest, origin string, now time.Time) (*models.
 		if _, err := firewall.ParsePorts(req.Ports); err != nil {
 			return nil, err
 		}
+		if req.Action == "allow" && req.Protocol == "tcp" {
+			if p, ok := reservedPortIn(req.Ports); ok {
+				return nil, fmt.Errorf("port %d is reserved for VPN-only admin services", p)
+			}
+		}
 	}
 	if req.ExpiresAt != nil && !req.ExpiresAt.After(now) {
 		return nil, fmt.Errorf("expires_at must be in the future")
 	}
 	return &models.FirewallIPRule{ID: uuid.New().String(), Action: req.Action, Prefix: prefix, Protocol: req.Protocol,
 		Ports: req.Ports, ExpiresAt: req.ExpiresAt, Origin: origin, Comment: req.Comment}, nil
+}
+
+// reservedPortIn returns the first VPN-only admin or API port (TCP) that the
+// port list covers; allow rules may not open them (spec §6b.4).
+func reservedPortIn(ports string) (uint16, bool) {
+	ranges, err := firewall.ParsePorts(ports)
+	if err != nil {
+		return 0, false
+	}
+	for _, p := range append(append([]uint16{}, nft.AdminPorts...), nft.APIPorts...) {
+		for _, r := range ranges {
+			if r.From <= p && p <= r.To {
+				return p, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func addIPRule(s *Server, rule *models.FirewallIPRule) firewall.Change {

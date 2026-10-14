@@ -85,3 +85,12 @@ test('container cleanup matches names case-insensitively', () => {
     assert.doesNotMatch(script, /docker ps -q --filter name=/, `${name} uses a case-sensitive docker filter`);
   }
 });
+
+// setup-firewall.sh guards the admin ports in mangle PREROUTING for IPv4
+// and IPv6; uninstall flushes IPv4 mangle and must remove the IPv6 guard too.
+test('uninstall removes the IPv6 admin port guard', () => {
+  const script = generateAll(sampleConfig).uninstall;
+  assert.ok(script.includes('ip6tables -t mangle -D PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN'));
+  assert.ok(script.includes('ip6tables -t mangle -F NOVUSGATE-ADMIN'));
+  assert.ok(script.includes('ip6tables -t mangle -X NOVUSGATE-ADMIN'));
+});

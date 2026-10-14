@@ -118,9 +118,9 @@
   - 3: ən uzun prefiks (`033d080`);
   - 5: WireGuard portları və `/128` (`033d080`);
   - 6: hazır olma şərti (`2854f01`);
-  - 7: panel-in delete sorğusu (`033d080`).
+  - 7: panel-in delete sorğusu (`033d080`);
+  - 4: 2026-10-14, istifadəçi qərarı ilə: allow qaydaları admin və API portlarını açmır (bax `docs/api.md`).
 - **Açıq qalır:**
-  - 4: istifadəçinin qərarıdır. Hazırda legacy paritet saxlanılır;
   - 5-in `line_number` sürüşməsi: v1 API-nin nömrəyə əsaslanan məhdudiyyətidir, P3c UI v2 ID-lərindən istifadə edir.
 1. **Forward-un dublikatı.** Eyni `(protocol, public_port)` cütü üçün forward kernel-ə tətbiq olunur, sonra Commit `UNIQUE` şərtində uğursuz olur və 500 qaytarır. Bunu Mutate-də 409 ilə əvvəlcədən yoxlamaq lazımdır.
 2. **Apply-dan sonrakı xətalar.**

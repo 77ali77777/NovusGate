@@ -165,8 +165,34 @@ apply_rules() {
   # 11. Allow ICMP (Ping)
   iptables -A INPUT -p icmp -j ACCEPT
 
-  # 12. Default DROP only after every allow rule is in place
+  # 12. Keep the admin and API ports VPN-only for IPv4 and IPv6, even for a
+  #     panel "Allow IP" (inserted at the top of INPUT).
+  guard_admin_ports iptables || echo "[FIREWALL] Warning: IPv4 admin port guard could not be installed"
+  if command -v ip6tables > /dev/null 2>&1; then
+    guard_admin_ports ip6tables || echo "[FIREWALL] Warning: IPv6 admin port guard could not be installed"
+  fi
+
+  # 13. Default DROP only after every allow rule is in place
   iptables -P INPUT DROP
+}
+
+# guard_admin_ports <iptables|ip6tables> drops traffic to the local admin
+# (3007, 5432) and API (8080, 8443) ports unless it comes from loopback, the
+# admin VPN (wg0) or, for the API, any VPN (wg+). It runs in mangle
+# PREROUTING, before every filter rule, so no ACCEPT can open these ports.
+# Only local destinations are matched: traffic routed through the hub is not.
+guard_admin_ports() {
+  local ipt="$1" chain=NOVUSGATE-ADMIN
+  local jump=(-p tcp -m multiport --dports 3007,5432,8080,8443 -j "$chain")
+  "$ipt" -t mangle -N "$chain" 2> /dev/null || true
+  "$ipt" -t mangle -F "$chain" || return 1
+  "$ipt" -t mangle -A "$chain" -i lo -j RETURN || return 1
+  "$ipt" -t mangle -A "$chain" -i wg0 -j RETURN || return 1
+  "$ipt" -t mangle -A "$chain" -i wg+ -p tcp -m multiport --dports 8080,8443 -j RETURN || return 1
+  "$ipt" -t mangle -A "$chain" -m addrtype --dst-type LOCAL -j DROP || return 1
+  # Re-runs replace the jump: remove the previous one (if any), then add it.
+  "$ipt" -t mangle -D PREROUTING "${jump[@]}" 2> /dev/null || true
+  "$ipt" -t mangle -A PREROUTING "${jump[@]}"
 }
 
 restart_docker_stack() {

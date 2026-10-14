@@ -87,6 +87,10 @@ func writeInput(b *builder, rs Ruleset) {
 			b.line(2, l)
 		}
 	}
+	// The admin and API ports stay VPN-only even for allowed sources: their
+	// VPN accepts are above, so this drop only reaches other interfaces.
+	b.line(2, fmt.Sprintf(`tcp dport { %s } counter drop comment "admin ports: VPN only"`,
+		joinPorts(append(append([]uint16{}, AdminPorts...), APIPorts...))))
 	for _, r := range rs.IPRules {
 		if r.Action == "allow" {
 			b.line(2, ipRuleLine(r, "accept"))

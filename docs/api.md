@@ -45,6 +45,14 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 - `POST /firewall/host/import` 409 qaytarır. `GET /firewall/host/export` `nft list table inet novusgate` çıxışını verir.
 - Siyahıda 51820–51900 aralığından kənarda olan şəbəkə portları ayrıca qorunan WireGuard sətri kimi görünür. Tək IPv6 ünvanı `/128`-siz göstərilir.
 
+## Allow IP və admin portları (spec §6b.4, 2026-10-14)
+Allow qaydası admin (3007, 5432) və API (8080, 8443) portlarını heç vaxt açmır. Bu iki rejimdə də belədir:
+- `POST /firewall/v2/ip-rules` və `POST /firewall/host/ip/allow` bu TCP portlarından birini əhatə edən `ports` üçün **400** qaytarır: `port N is reserved for VPN-only admin services`. Block qaydaları və UDP təsirlənmir.
+- Bütöv ünvana Allow (`ports` boş) qəbul olunur, amma admin və API portlarına şamil olunmur:
+  - nft rejimində kompilyator allow-lardan əvvəl `tcp dport { 3007, 5432, 8080, 8443 } counter drop` qoyur;
+  - iptables rejimində `setup-firewall.sh` mangle `PREROUTING`-də `NOVUSGATE-ADMIN` zəncirini qurur (IPv4 və IPv6).
+- Bu dəyişiklikdən əvvəl yaradılmış allow qaydaları silinmir, sadəcə admin portlarına təsir etmir.
+
 ## Köhnə firewall endpoint-ləri `FIREWALL_ENGINE=iptables` rejimində
 - Close Port və Delete aşkarlanan bütün SSH portlarını (`sshd -T`, `ss`) qoruyur və `force` olmadan **403** qaytarır. Əvvəllər yalnız 22 qorunurdu.
 - Panel qaydanı `POST /firewall/host/rules/delete` ilə silir. Əvvəllər panel qeydiyyatdan keçməmiş `DELETE /firewall/host/rules` route-unu çağırırdı.

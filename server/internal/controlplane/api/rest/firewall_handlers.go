@@ -628,6 +628,11 @@ func (s *Server) handleFirewallAllowIP(w http.ResponseWriter, r *http.Request) {
 		s.handleFirewallIPRuleNft(w, r, "allow", req.IP, req.Ports)
 		return
 	}
+	// Whole-address allows are kept off these ports by setup-firewall.sh.
+	if p, ok := reservedPortIn(req.Ports); ok {
+		errorResponse(w, http.StatusBadRequest, fmt.Sprintf("port %d is reserved for VPN-only admin services", p))
+		return
+	}
 
 	// Build iptables command
 	args := []string{"-I", "INPUT", "-s", req.IP}

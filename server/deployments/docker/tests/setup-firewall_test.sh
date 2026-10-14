@@ -20,7 +20,8 @@ run_case() {
   local stub
   stub="$(mktemp -d)"
   printf '#!/bin/bash\necho "$*" >> "%s/iptables.log"\n' "$stub" > "$stub/iptables"
-  chmod +x "$stub/iptables"
+  printf '#!/bin/bash\necho "$*" >> "%s/ip6tables.log"\n' "$stub" > "$stub/ip6tables"
+  chmod +x "$stub/iptables" "$stub/ip6tables"
   if [ "$sshd_out" != "none" ]; then
     printf '%s\n' "$sshd_out" > "$stub/sshd.out"
     printf '#!/bin/bash\ncat "%s/sshd.out"\n' "$stub" > "$stub/sshd"
@@ -147,7 +148,7 @@ run_main() {
   local engine="$1" ruleset="$2" has_table="$3" stub
   stub="$(mktemp -d)"
   mkdir -p "$stub/units" "$stub/jail.d"
-  for cmd in iptables systemctl apt-get netfilter-persistent docker-compose sleep debconf-set-selections; do
+  for cmd in iptables ip6tables systemctl apt-get netfilter-persistent docker-compose sleep debconf-set-selections; do
     printf '#!/bin/bash\necho "%s $*" >> "%s/calls.log"\n' "$cmd" "$stub" > "$stub/$cmd"
     chmod +x "$stub/$cmd"
   done
@@ -235,7 +236,7 @@ run_offline() {
   local engine="$1" stub rc
   stub="$(mktemp -d)"
   mkdir -p "$stub/units" "$stub/jail.d"
-  for cmd in iptables systemctl netfilter-persistent docker-compose sleep debconf-set-selections; do
+  for cmd in iptables ip6tables systemctl netfilter-persistent docker-compose sleep debconf-set-selections; do
     printf '#!/bin/bash\necho "%s $*" >> "%s/calls.log"\n' "$cmd" "$stub" > "$stub/$cmd"
     chmod +x "$stub/$cmd"
   done
@@ -273,6 +274,47 @@ d="$(run_main "" yes yes)"
 stop_at="$(grep -n -F "systemctl stop novusgate-fw-rollback.timer" "$d/calls.log" | cut -d: -f1)"
 del_at="$(grep -n -F "nft delete table inet novusgate" "$d/calls.log" | cut -d: -f1)"
 [ -n "$stop_at" ] && [ -n "$del_at" ] && [ "$stop_at" -lt "$del_at" ] || fail "revert: the rollback timer must be stopped before the table is deleted"
+
+# Case 14 (spec §6b.4): a panel "Allow IP" is inserted at the top of INPUT, so
+# the admin and API ports are guarded before filter, in mangle PREROUTING, for
+# IPv4 and IPv6. Re-running replaces the jump instead of adding a second one.
+log="$(run_case none "" "")"
+log6="$(dirname "$log")/ip6tables.log"
+guard=(
+  "-t mangle -N NOVUSGATE-ADMIN"
+  "-t mangle -F NOVUSGATE-ADMIN"
+  "-t mangle -A NOVUSGATE-ADMIN -i lo -j RETURN"
+  "-t mangle -A NOVUSGATE-ADMIN -i wg0 -j RETURN"
+  "-t mangle -A NOVUSGATE-ADMIN -i wg+ -p tcp -m multiport --dports 8080,8443 -j RETURN"
+  "-t mangle -A NOVUSGATE-ADMIN -m addrtype --dst-type LOCAL -j DROP"
+  "-t mangle -D PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN"
+  "-t mangle -A PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN"
+)
+for rule in "${guard[@]}"; do
+  assert_rule "$log" "$rule" "admin guard (IPv4)"
+  assert_rule "$log6" "$rule" "admin guard (IPv6)"
+done
+for l in "$log" "$log6"; do
+  del="$(line_of "$l" "${guard[6]}")"
+  add="$(line_of "$l" "${guard[7]}")"
+  [ -n "$del" ] && [ -n "$add" ] && [ "$del" -lt "$add" ] || fail "admin guard: the old jump must be removed before the new one is added ($l)"
+done
+assert_drop_last "$log" "admin guard"
+assert_not "$log6" "-P INPUT" "admin guard: IPv6 INPUT policy stays untouched"
+
+# Case 15: a host without ip6tables still gets the IPv4 baseline
+d="$(mktemp -d)"
+printf '#!/bin/bash\necho "$*" >> "%s/iptables.log"\n' "$d" > "$d/iptables"
+chmod +x "$d/iptables"
+(
+  export PATH="$d:/usr/bin:/bin"
+  export SSHD_SBIN=/nonexistent/sshd
+  unset SSH_PORT SSH_CONNECTION
+  # shellcheck source=../setup-firewall.sh
+  source "$SCRIPT"
+  apply_rules > /dev/null 2>&1
+) || fail "no ip6tables: apply_rules must not fail"
+assert_drop_last "$d/iptables.log" "no ip6tables"
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"

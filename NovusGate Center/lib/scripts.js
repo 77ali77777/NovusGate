@@ -564,6 +564,12 @@ iptables -t mangle -F
 iptables -t mangle -X
 iptables -t raw -F
 iptables -t raw -X
+# IPv6: only the admin port guard from setup-firewall.sh
+if command -v ip6tables &> /dev/null; then
+    ip6tables -t mangle -D PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN 2>/dev/null || true
+    ip6tables -t mangle -F NOVUSGATE-ADMIN 2>/dev/null || true
+    ip6tables -t mangle -X NOVUSGATE-ADMIN 2>/dev/null || true
+fi
 
 # Save clean state
 if command -v netfilter-persistent &> /dev/null; then
