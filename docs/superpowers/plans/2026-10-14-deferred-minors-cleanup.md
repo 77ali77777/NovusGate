@@ -96,7 +96,7 @@
 - [x] F2 (M10): revert while a rollback timer is armed does not reload the old snapshot.
 - [x] F3 (M4): a narrower ban under a shorter cover is re-applied when the cover expires (reconcile scheduled at the cover's expiry).
 - [x] F4 (M6): `ErrNotReady` retries back off and stop logging after the first warning per failure.
-- [ ] F5 (M8): the boot file drops already-expired timeouts (elements with `expires_at` in the past are not written).
+- [x] F5 (M8): expired elements are already dropped at compile time (`compile_test.go`: "expired and covered entries dropped"), so the boot file never contains them; the restart of remaining timeouts at boot is closed with a reason below.
 - [x] F6 (M9): `setup-firewall.sh` strips a trailing `# comment` from `FIREWALL_ENGINE`.
 - [x] F7 (M9): VPN drop/reject rules that cannot be converted are reported (warning in apply response and log), not silently skipped.
 - [x] F8: `parseRuleLine`:
@@ -129,6 +129,7 @@
 - [x] H8: the exec-error path has a unit test with a fake SSH client.
 
 ## Closed with a reason (not changed)
+- **P2d-2 M-9, second half** (`Allow` omits OPTIONS): since P4b removed CORS, the API answers OPTIONS with 405 like any other unsupported method, so `Allow` correctly leaves it out.
 - **P3b M8 / F5** (boot file timeouts restart at boot): nftables has no absolute expiry, and the boot unit loads the last applied script as is. In nft mode the control plane reconciles at startup (`StartFirewall`: `MarkReady`, then `ReconcileOrRetry`) and recomputes every remaining timeout and drops expired allows. The window is only boot until the control plane starts (container `restart: always`).
 - **P2b #10** (`statusRecorder` hides `io.ReaderFrom`): this is a performance-only change. Nothing measures it, and the SPA is served by nginx, not by Go. CLAUDE.md §3 forbids unmeasured optimisation.
 - **Center** `--filter` asymmetry: covered by H2.
