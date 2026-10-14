@@ -14,7 +14,10 @@
    - yoxla: `ss -Htlnp | grep sshd` → 22 və 2222.
 
 ## Keçid
-3. **Center → Update** (`setup-firewall.sh` işə düşür). Sonra yoxla:
+3. **Center → Update** (`setup-firewall.sh` işə düşür).
+   - **Bilinən sıra problemi:** Update yeni control-plane-i `setup-firewall.sh` boot unit-i quraşdırmazdan əvvəl başlada bilər. Onda control-plane log-unda `host not ready for FIREWALL_ENGINE=nft` görünür və iptables işləməyə davam edir (fail-closed). Bu halda skript bitəndən sonra bir dəfə `docker compose restart control-plane` icra et.
+
+   Sonra yoxla:
 
    | Əmr | Gözlənilən |
    |---|---|
@@ -36,7 +39,10 @@
    - `iptables -S FORWARD | grep novusgate-vpn` → boş;
    - `cat /etc/novusgate/firewall.nft` → fayl mövcuddur.
 
-5. **Center → Update-i bir daha icra et.** Bu dəfə `setup-firewall.sh` nft rejimini görür. Log: `FIREWALL_ENGINE=nft: the control plane owns INPUT filtering`. Sonra:
+5. **Center → Update-i bir daha icra et.** Bu dəfə `setup-firewall.sh` nft rejimini görür. Log: `FIREWALL_ENGINE=nft: the control plane owns INPUT filtering`.
+   - **Diqqət:** Center-in Update-i `setup-firewall.sh`-i yalnız `server/` (konkret olaraq `server/deployments/docker`) faylları dəyişəndə işə salır. Update log-unda server dəyişikliyi yoxdursa, skripti əl ilə işə sal: `sudo bash /opt/NovusGate/server/deployments/docker/setup-firewall.sh`.
+
+   Sonra:
    - `jail.d/novusgate.local` faylında `banaction = nftables-multiport` olmalıdır;
    - `iptables -S INPUT` dəyişməməlidir;
    - `docker ps` uptime-ı sıfırlanmamalıdır (Docker restart olunmur).
@@ -66,6 +72,10 @@
    - VPN üzərindən panel açılmalıdır;
    - 8444 portu reboot-dan əvvəlki vəziyyətində qalmalıdır;
    - `iptables -S INPUT` → hələ də `ACCEPT` (netfilter-persistent təhvildən sonrakı vəziyyəti yükləyib).
+   - **fail2ban zəncirləri (iptables rejimində qalan hostlar üçün):** `netfilter-persistent save` fail2ban-ın `f2b-*` zəncirlərini və o anki ban-ları da `rules.v4`-ə yaza bilər (fail2ban versiyasından asılıdır, yoxlanmayıb). Reboot-dan sonra bunları yoxla və nəticəni yaz:
+     - `iptables -S | grep f2b`: hər zəncir yalnız bir dəfə görünməlidir;
+     - `rules.v4`-dən qalxan ban-lar `fail2ban-client status sshd` siyahısında görünürmü;
+     - bantime bitəndə həmin ban-lar silinirmi?
 
 ## fail2ban
 10. Test IP-dən 2222 portuna 4 dəfə səhv parol gir. Sonra:

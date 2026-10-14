@@ -1,14 +1,14 @@
 # Active Context arxivi: 2026-10-13 sessiyaları
 
-`docs/active-context.md`-dən köçürülüb (400 sətir limiti). Məzmun dəyişməyib.
+`docs/active-context.md`-dən köçürülüb (400 sətir limiti). Məzmun dəyişməyib. Yalnız 2026-10-14-də sıxılmış (`…`) test əmrləri P1 planındakı tam formaları ilə əvəz olunub. `…/api/rest` kimi paket qısaltmaları qalır.
 
 ## Son Sessiya
 - **Tarix:** 2026-10-13
 - **Tapşırıq:** P1 Stabilizasiya (`docs/superpowers/plans/2026-10-13-p1-stabilization.md`)
 - **Nəticə:** Task 1–10 commit-lənib (`cde27c5^..70216b9`, 13 commit: `cde27c5` `3fbfd54` `abdb7b5` `1bb5700` `1bbc4c2` `63cf05f` `2ddf730` `f7efd76` `7e1abd1` `b58853c` `dc582ea` `8e9a449` `70216b9`). Step 1 avtomatik testlər (Docker, `MSYS_NO_PATHCONV=1`):
-  - Go — `docker run … golang:1.23 go test ./...` → `ok  github.com/novusgate/novusgate/internal/controlplane/api/rest 0.019s`; digər paketlər `[no test files]`; exit 0.
-  - Center — `docker run … node:20-bookworm sh -c 'node --test test/*.test.js'` → `# tests 19` · `# pass 19` · `# fail 0`; exit 0.
-  - Shell — `docker run … ubuntu:24.04 bash tests/setup-firewall_test.sh` → `OK`; exit 0.
+  - Go — `MSYS_NO_PATHCONV=1 docker run --rm -v gomod:/go/pkg/mod -v /mnt/c/Users/Administrator/Desktop/NovusGate/server:/src -w /src golang:1.23 go test ./...` → `ok  github.com/novusgate/novusgate/internal/controlplane/api/rest 0.019s`; digər paketlər `[no test files]`; exit 0.
+  - Center — `MSYS_NO_PATHCONV=1 docker run --rm -v "/mnt/c/Users/Administrator/Desktop/NovusGate/NovusGate Center:/app" -w /app node:20-bookworm sh -c 'node --test test/*.test.js'` → `# tests 19` · `# pass 19` · `# fail 0`; exit 0.
+  - Shell — `MSYS_NO_PATHCONV=1 docker run --rm -v /mnt/c/Users/Administrator/Desktop/NovusGate/server/deployments/docker:/w -w /w ubuntu:24.04 bash tests/setup-firewall_test.sh` → `OK`; exit 0.
   - Staging qəbulu icra olunmadı, səbəb: staging VM yoxdur — runbook istifadəçi tərəfindən icra olunmalıdır.
 - **Davam:** P2 Backend nüvəsi planı yazılmalıdır (növbəti addım). İstifadəçinin tərəfində qalanlar:
   1. `.github/workflows/ci.yml` yaradılmalıdır — `.github` altına yazma icazə ayarlarına görə rədd edildi; YAML P1 planında Task 1 Step 5-dədir.

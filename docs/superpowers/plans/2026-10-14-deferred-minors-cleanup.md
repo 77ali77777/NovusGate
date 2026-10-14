@@ -105,13 +105,13 @@
   - loses the redundant `< 9` guard. (the guard was already gone after P2a; closed)
 
 ## Batch G — Docs and runbooks
-- [ ] G1 (M3): runbook — `netfilter-persistent save` also saves fail2ban chains.
-- [ ] G2 (M4): runbook step 5 — Update reruns `setup-firewall.sh` only when `server/docker` changed; run it by hand otherwise.
-- [ ] G3 (M7): runbook — after the P3b-1 update, restart control-plane once `setup-firewall` has installed the unit.
-- [ ] G4 (M8): runbook — containers on Docker bridges vs host services.
-- [ ] G5: runbook — check `systemctl is-enabled docker`.
-- [ ] G6: the `.gitattributes` comment explains why testdata is LF.
-- [ ] G7: the active-context archive keeps full test commands (no `…`).
+- [x] G1 (M3): runbook — `netfilter-persistent save` also saves fail2ban chains.
+- [x] G2 (M4): runbook step 5 — Update reruns `setup-firewall.sh` only when `server/docker` changed; run it by hand otherwise.
+- [x] G3 (M7): runbook — after the P3b-1 update, restart control-plane once `setup-firewall` has installed the unit.
+- [x] G4 (M8): verified-closed — already in p3b2 runbook step 11 ("Məlum məhdudiyyət (M8)").
+- [x] G5: verified-closed — already in p1 runbook step 3.
+- [x] G6: the `.gitattributes` comment explains why testdata is LF.
+- [x] G7: the active-context archive keeps full test commands (no `…`).
 
 ## Batch H — Center (P1 reviews)
 - [ ] H1: the UI shows the script's refusal reason instead of "[DONE] Error occurred."

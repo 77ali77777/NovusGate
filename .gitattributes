@@ -4,4 +4,6 @@
 *.nft text eol=lf
 # gofmt checks in scripts/test-in-docker.sh fail on CRLF checkouts.
 *.go text eol=lf
+# Contract snapshots, OpenAPI and nft goldens are compared byte for byte;
+# a CRLF checkout on Windows would make every golden test fail.
 server/**/testdata/** text eol=lf
