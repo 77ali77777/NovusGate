@@ -24,7 +24,7 @@ test('after SSE headers are flushed the error is sent as stream events', () => {
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.chunks.length, 2);
   assert.deepStrictEqual(event(res.chunks[0]), { text: '[ERROR] All configured authentication methods failed\n', stderr: true });
-  assert.deepStrictEqual(event(res.chunks[1]), { done: true, success: false });
+  assert.deepStrictEqual(event(res.chunks[1]), { done: true, success: false, message: 'All configured authentication methods failed' });
   assert.ok(res.ended);
 });
 

@@ -14,12 +14,16 @@ BOOT_UNIT=novusgate-firewall.service
 # Sources: port 22 (always, as before), SSH_PORT env, the port of the current
 # SSH session (SSH_CONNECTION) and the ports reported by `sshd -T`.
 detect_ssh_ports() {
+  # Non-login shells (e.g. over SSH exec) often lack /usr/sbin in PATH.
+  local sshd sbin="${SSHD_SBIN:-/usr/sbin/sshd}"
+  sshd="$(command -v sshd 2> /dev/null || true)"
+  if [ -z "$sshd" ] && [ -x "$sbin" ]; then sshd="$sbin"; fi
   {
     echo 22
     if [ -n "${SSH_PORT:-}" ]; then echo "$SSH_PORT"; fi
     if [ -n "${SSH_CONNECTION:-}" ]; then echo "${SSH_CONNECTION##* }"; fi
-    if command -v sshd > /dev/null 2>&1; then
-      sshd -T 2> /dev/null | awk '$1 == "port" {print $2}'
+    if [ -n "$sshd" ]; then
+      "$sshd" -T 2> /dev/null | awk '$1 == "port" {print $2}'
     fi
   } | grep -E '^[0-9]+$' | awk '$1 >= 1 && $1 <= 65535' | sort -un
 }

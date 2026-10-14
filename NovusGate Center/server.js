@@ -15,6 +15,7 @@ const {
   EXIT_ALREADY_INSTALLED,
 } = require('./lib/scripts');
 const { endWithError } = require('./lib/sse');
+const { runScript, doneMessage } = require('./lib/run');
 
 const app = express();
 app.use(cors());
@@ -612,8 +613,10 @@ app.post('/api/servers/:id/install', async (req, res) => {
     res.write(`data: ${JSON.stringify({ text: text + '\n', stderr: isError })}\n\n`);
   };
 
-  // Declared outside the try so the catch below can clean up the archive.
+  // Declared outside the try so the catch below can clean up the archive
+  // and close the SSH connection.
   let archivePath = null;
+  let conn = null;
   try {
     sendLog('[INFO] Initializing installation...');
 
@@ -631,7 +634,7 @@ app.post('/api/servers/:id/install', async (req, res) => {
 
     // 2. Connect SSH
     sendLog(`[INFO] Connecting to server ${server.host}...`);
-    const conn = await createSSHConnection(server);
+    conn = await createSSHConnection(server);
     sendLog('[INFO] Connected!');
 
     // 3. Upload Archive
@@ -670,77 +673,37 @@ app.post('/api/servers/:id/install', async (req, res) => {
     // 5. Execute Script
     sendLog('[INFO] Executing installation script...');
     
-    conn.exec(`${envs}\n${script}`, (err, stream) => {
-      if (err) {
-        endWithError(res, new Error(`Execution failed: ${err.message}`));
-        conn.end();
-        return;
+    // The API key is no longer copied into web/.env: since P4b the panel
+    // calls the API through its own nginx, which adds the key.
+    const isInstall = !update && !reinstall && !migrateOnly;
+    runScript(conn, `${envs}\n${script}`, res, (code) => {
+      // A refused install on an already-installed server keeps its status.
+      const alreadyInstalled = code === EXIT_ALREADY_INSTALLED && isInstall;
+      if (!alreadyInstalled) {
+        // Update server status
+        server.status = code === 0 ? 'installed' : 'error';
+        server.installedAt = new Date().toISOString();
       }
-      
-      let outputBuffer = '';
+      server.history = server.history || [];
+      server.history.unshift({
+        action: update ? 'update' : (reinstall ? 'reinstall' : 'install'),
+        source,
+        timestamp: new Date().toISOString(),
+        success: code === 0
+      });
+      saveServers(data);
 
-      stream.on('data', (chunk) => {
-        const text = chunk.toString();
-        outputBuffer += text;
-        res.write(`data: ${JSON.stringify({ text })}\n\n`);
-      });
-      
-      stream.stderr.on('data', (chunk) => {
-        const text = chunk.toString();
-        outputBuffer += text;
-        res.write(`data: ${JSON.stringify({ text, stderr: true })}\n\n`);
-      });
-      
-      stream.on('close', (code) => {
-        conn.end();
-        
-        // A refused install on an already-installed server keeps its status.
-        const alreadyInstalled = code === EXIT_ALREADY_INSTALLED && !update && !reinstall && !migrateOnly;
-        if (!alreadyInstalled) {
-          // Update server status
-          server.status = code === 0 ? 'installed' : 'error';
-          server.installedAt = new Date().toISOString();
-        }
-        server.history = server.history || [];
-        server.history.unshift({
-          action: update ? 'update' : (reinstall ? 'reinstall' : 'install'),
-          source,
-          timestamp: new Date().toISOString(),
-          success: code === 0
-        });
-        saveServers(data);
-        
-        // Post-install logic (API Key parsing)
-        if (code === 0) {
-          try {
-             const apiKeyMatch = outputBuffer.match(/API_KEY:\s+([a-zA-Z0-9]+)/);
-             if (apiKeyMatch && apiKeyMatch[1]) {
-                const apiKey = apiKeyMatch[1];
-                const envContent = `VITE_API_URL=http://${config.vpnIp || '10.99.0.1'}:8080\nVITE_API_KEY=${apiKey}\n`;
-                const dockerPath = '/project_root/web/.env';
-                const localPath = path.join(__dirname, '..', 'web', '.env');
-                const envPath = fs.existsSync('/project_root') ? dockerPath : localPath;
-                
-                fs.writeFileSync(envPath, envContent);
-                res.write(`data: ${JSON.stringify({ text: '\n[INFO] Local web/.env file updated! 🚀\n' })}\n\n`);
-             }
-          } catch (e) {
-            console.error('Error updating web/.env:', e);
-            res.write(`data: ${JSON.stringify({ text: `\n[WARN] Failed to update web/.env: ${e.message}\n` })}\n\n`);
-          }
-        }
-
-        res.write(`data: ${JSON.stringify({ done: true, success: code === 0 })}\n\n`);
-        res.end();
-      });
+      res.write(`data: ${JSON.stringify({ done: true, success: code === 0, message: doneMessage(code, { install: isInstall }) })}\n\n`);
+      res.end();
     });
-    
+
   } catch (err) {
     try {
       if (archivePath && fs.existsSync(archivePath)) fs.unlinkSync(archivePath);
     } catch (cleanupErr) {
       console.error('Failed to remove archive:', cleanupErr);
     }
+    if (conn) conn.end(); // an upload failure must not leave the SSH session open
     endWithError(res, err);
   }
 });
@@ -882,7 +845,7 @@ function createProjectArchive() {
     
     exec(tarCommand, (error, stdout, stderr) => {
       if (error) {
-        reject(new Error(stderr || error.message));
+        reject(new Error((stderr || error.message).trim())); // no trailing blank line in the log
       } else {
         resolve(archivePath);
       }

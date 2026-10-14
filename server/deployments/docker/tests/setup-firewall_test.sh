@@ -29,6 +29,7 @@ run_case() {
   (
     export PATH="$stub:/usr/bin:/bin"
     unset SSH_PORT SSH_CONNECTION
+    export SSHD_SBIN="${SSHD_SBIN:-/nonexistent/sshd}" # never the host's real sshd
     if [ -n "$ssh_port" ]; then export SSH_PORT="$ssh_port"; fi
     if [ -n "$ssh_conn" ]; then export SSH_CONNECTION="$ssh_conn"; fi
     # shellcheck source=../setup-firewall.sh
@@ -76,6 +77,36 @@ log="$(run_case none "abc" "")"
 if grep -q -- "--dport abc" "$log"; then fail "invalid SSH_PORT was used"; fi
 log="$(run_case none "2022" "")"
 assert_rule "$log" "-A INPUT -p tcp --dport 2022 -j ACCEPT" "SSH_PORT"
+
+# Case 4 (cont.): the invalid SSH_PORT still leaves 22 open and INPUT DROP last
+log="$(run_case none "abc" "")"
+assert_rule "$log" "-A INPUT -p tcp --dport 22 -j ACCEPT" "SSH_PORT=abc"
+assert_drop_last "$log" "SSH_PORT=abc"
+
+# Case 4c: a non-numeric port in SSH_CONNECTION is ignored
+log="$(run_case none "" "203.0.113.9 51000 198.51.100.4 ssh")"
+if grep -q -- "--dport ssh" "$log"; then fail "a non-numeric SSH_CONNECTION port was used"; fi
+assert_rule "$log" "-A INPUT -p tcp --dport 22 -j ACCEPT" "SSH_CONNECTION ssh"
+assert_drop_last "$log" "SSH_CONNECTION ssh"
+
+# Case 4d: sshd outside PATH (non-login shells often lack /usr/sbin) is still asked;
+# a failing sshd -T falls back to 22; repeated ports become one rule
+sbin="$(mktemp -d)"
+printf '#!/bin/bash
+echo port 2244
+echo port 2244
+' > "$sbin/sshd"
+chmod +x "$sbin/sshd"
+log="$(SSHD_SBIN="$sbin/sshd" run_case none "" "")"
+assert_rule "$log" "-A INPUT -p tcp --dport 2244 -j ACCEPT" "sshd outside PATH"
+[ "$(grep -c -x -F -- "-A INPUT -p tcp --dport 2244 -j ACCEPT" "$log")" = 1 ] || fail "a repeated sshd port must give one rule"
+printf '#!/bin/bash
+echo "error: bad config" >&2
+exit 255
+' > "$sbin/sshd"
+log="$(SSHD_SBIN="$sbin/sshd" run_case none "" "")"
+assert_rule "$log" "-A INPUT -p tcp --dport 22 -j ACCEPT" "failing sshd -T"
+assert_drop_last "$log" "failing sshd -T"
 
 # Case 4b: out-of-range ports are ignored; 22 stays open and INPUT DROP is still last
 for bad in 0 70000; do
@@ -137,6 +168,7 @@ run_main() {
     export PATH="$stub:/usr/bin:/bin"
     export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
     unset SSH_PORT SSH_CONNECTION
+    export SSHD_SBIN="${SSHD_SBIN:-/nonexistent/sshd}" # never the host's real sshd
     # shellcheck source=../setup-firewall.sh
     source "$SCRIPT"
     main > /dev/null
@@ -216,6 +248,7 @@ run_offline() {
     export PATH="$stub:/usr/bin:/bin"
     export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
     unset SSH_PORT SSH_CONNECTION
+    export SSHD_SBIN="${SSHD_SBIN:-/nonexistent/sshd}" # never the host's real sshd
     # shellcheck source=../setup-firewall.sh
     source "$SCRIPT"
     main > /dev/null 2>&1

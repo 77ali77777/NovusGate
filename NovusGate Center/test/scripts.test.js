@@ -70,3 +70,18 @@ test('ensureMasterKey adds, fills and keeps keys', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// P4b: the web reads no .env any more; scripts must not copy the API key
+// into web/.env (that file was also tracked by git on the Center side).
+test('no script writes the API key into web/.env', () => {
+  for (const [name, script] of Object.entries(generateAll(sampleConfig))) {
+    assert.doesNotMatch(script, /VITE_API_KEY=/, `${name} writes VITE_API_KEY`);
+  }
+});
+
+// Container lookups match "novusgate" in any case, like the status greps.
+test('container cleanup matches names case-insensitively', () => {
+  for (const [name, script] of Object.entries(generateAll(sampleConfig))) {
+    assert.doesNotMatch(script, /docker ps -q --filter name=/, `${name} uses a case-sensitive docker filter`);
+  }
+});

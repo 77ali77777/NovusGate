@@ -114,19 +114,19 @@
 - [x] G7: the active-context archive keeps full test commands (no `…`).
 
 ## Batch H — Center (P1 reviews)
-- [ ] H1: the UI shows the script's refusal reason instead of "[DONE] Error occurred."
-- [ ] H2: the container filter is case-insensitive, like the grep.
-- [ ] H3: tests generate scripts with passwords containing `$`, `"` and `'`, and run `bash -n` on them; temp dirs are removed.
-- [ ] H4: a blank line removed from the archive error text; the SSH connection is closed in the outer catch.
-- [ ] H5: a test for a non-numeric `SSH_CONNECTION` field.
-- [ ] H6:
+- [x] H1: the UI shows the script's refusal reason instead of "[DONE] Error occurred."
+- [x] H2: the container filter is case-insensitive, like the grep.
+- [x] H3 (temp dirs removed; passwords with $ and quotes: see H3 note): tests generate scripts with passwords containing `$`, `"` and `'`, and run `bash -n` on them; temp dirs are removed.
+- [x] H4: a blank line removed from the archive error text; the SSH connection is closed in the outer catch.
+- [x] H5: a test for a non-numeric `SSH_CONNECTION` field.
+- [x] H6 (verified-closed: the archive already excludes server/data and every .env; web/.env is no longer used since P4b):
   - the restore branch generates `web/.env` when only the server `.env` existed;
   - `createProjectArchive` excludes `server/data`.
-- [ ] H7:
+- [x] H7:
   - sshd is looked up in `/usr/sbin` as well;
   - its non-zero exit is tested;
   - case "abc" asserts 22 and DROP-last.
-- [ ] H8: the exec-error path has a unit test with a fake SSH client.
+- [x] H8: the exec-error path has a unit test with a fake SSH client.
 
 ## Closed with a reason (not changed)
 - **P3b M8 / F5** (boot file timeouts restart at boot): nftables has no absolute expiry, and the boot unit loads the last applied script as is. In nft mode the control plane reconciles at startup (`StartFirewall`: `MarkReady`, then `ReconcileOrRetry`) and recomputes every remaining timeout and drops expired allows. The window is only boot until the control plane starts (container `restart: always`).

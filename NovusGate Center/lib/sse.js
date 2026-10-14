@@ -5,7 +5,7 @@ function endWithError(res, err) {
   const message = err instanceof Error ? err.message : String(err);
   if (res.headersSent) {
     res.write(`data: ${JSON.stringify({ text: `[ERROR] ${message}\n`, stderr: true })}\n\n`);
-    res.write(`data: ${JSON.stringify({ done: true, success: false })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, success: false, message })}\n\n`);
     res.end();
     return;
   }

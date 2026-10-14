@@ -151,8 +151,8 @@ log_info "Cleaning up previous VPN state..."
 
 # 1. Stop existing Docker containers holding ports
 if command -v docker &> /dev/null; then
-  docker ps -q --filter name=novusgate | xargs -r docker stop || true
-  docker ps -q --filter name=novusgate | xargs -r docker rm || true
+  docker ps -a --format "{{.ID}} {{.Names}}" | grep -i novusgate | awk '{print $1}' | xargs -r docker stop || true
+  docker ps -a --format "{{.ID}} {{.Names}}" | grep -i novusgate | awk '{print $1}' | xargs -r docker rm || true
 fi
 
 # 2. Stop Systemd Services
@@ -281,17 +281,8 @@ WG_SERVER_ENDPOINT=$SERVER_IP
 ADMIN_CIDR=$VPN_SUBNET
 EOF
 chmod 600 "$INSTALL_DIR/server/deployments/docker/.env"
-
-# Create Web .env
-# Ensure directory exists
-mkdir -p "$INSTALL_DIR/web"
-
-
-cat <<EOF > "$INSTALL_DIR/web/.env"
-VITE_API_URL=http://$VPN_IP:8080
-VITE_API_KEY=$API_KEY
-EOF
-chmod 600 "$INSTALL_DIR/web/.env"
+# No web/.env: since P4b the panel calls the API through its own nginx,
+# which adds the API key; the key is never copied into the web build.
 
 
 # Start services
@@ -458,23 +449,8 @@ ADMIN_PASSWORD=$ADMIN_PASSWORD
 WG_SERVER_ENDPOINT=$SERVER_IP
 ADMIN_CIDR=${ADMIN_CIDR}
 EOF
-  
-  # Also regenerate web/.env if needed or ensure it has VITE_ prefix
-  # For reinstall we might rely on the main install flow to handle web .env but 
-  # strictly speaking the server.js script handles the web.env creation in the main flow.
-  # The reinstall script logic above creates 'server/deployments/docker/.env'.
-  # It does NOT appear to create 'web/.env' in the current script block. 
-  # Wait, looking at the code, install script does it at line 918. 
-  # Reinstall script currently ONLY touches server/.env.
-  # If web/.env exists it might be stale or incorrect format.
-  # Let's add web/.env regeneration to Reinstall script for safety.
-  
-  mkdir -p web
-  cat <<EOF > web/.env
-VITE_API_URL=http://${VPN_IP}:8080
-VITE_API_KEY=$API_KEY
-EOF
-  chmod 600 web/.env
+  # No web/.env: since P4b the panel calls the API through its own nginx,
+  # which adds the API key; the key is never copied into the web build.
 fi
 
 # Ensure Fail2Ban is installed
@@ -548,7 +524,7 @@ if [ -f "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" ]; then
 fi
 
 # Fallback: kill any NovusGate containers
-docker ps -q --filter name=novusgate | xargs -r docker stop || true
+docker ps --format "{{.ID}} {{.Names}}" | grep -i novusgate | awk '{print $1}' | xargs -r docker stop || true
 docker ps -a --format "{{.ID}} {{.Names}}" | grep -i novusgate | awk '{print $1}' | xargs -r docker rm -f || true
 
 echo "[2/5] Cleaning WireGuard Interfaces..."

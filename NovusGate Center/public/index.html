@@ -1656,7 +1656,7 @@
                   console.log('Credentials saved to localStorage for server:', selectedServer.id);
                 }
                 
-                outputLog.textContent += '\n\n[DONE] ' + (data.success ? 'Completed successfully.' : 'Error occurred.');
+                outputLog.textContent += '\n\n[DONE] ' + (data.success ? 'Completed successfully.' : (data.message || 'Error occurred.'));
                 outputLog.scrollTop = outputLog.scrollHeight;
                 isProcessRunning = false;
                 
