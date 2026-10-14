@@ -4,6 +4,7 @@
     "node": {
       "created_at": "<time>",
       "endpoints": null,
+      "has_config": false,
       "id": "<uuid>",
       "labels": {
         "wireguard_private_key": "<key>"

@@ -1066,7 +1066,7 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 	s.store.CreateFirewallAuditLog(r.Context(), "vpn_rule_created", map[string]interface{}{
 		"rule_id":   rule.ID,
 		"rule_name": rule.Name,
-	}, clientIP(r))
+	}, clientIP(r), "")
 	
 	// Fetch the rule with joined names
 	createdRule, _ := s.store.GetVPNFirewallRule(r.Context(), rule.ID)
@@ -1139,7 +1139,7 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 	s.store.CreateFirewallAuditLog(r.Context(), "vpn_rule_updated", map[string]interface{}{
 		"rule_id":   rule.ID,
 		"rule_name": rule.Name,
-	}, clientIP(r))
+	}, clientIP(r), "")
 	
 	// Fetch the rule with joined names
 	updatedRule, _ := s.store.GetVPNFirewallRule(r.Context(), rule.ID)
@@ -1180,7 +1180,7 @@ func (s *Server) handleVPNFirewallDeleteRule(w http.ResponseWriter, r *http.Requ
 	s.store.CreateFirewallAuditLog(r.Context(), "vpn_rule_deleted", map[string]interface{}{
 		"rule_id":   id,
 		"rule_name": existingRule.Name,
-	}, clientIP(r))
+	}, clientIP(r), "")
 	
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -1195,7 +1195,7 @@ func (s *Server) handleVPNFirewallApply(w http.ResponseWriter, r *http.Request) 
 	// Create audit log
 	s.store.CreateFirewallAuditLog(r.Context(), "vpn_rules_applied", map[string]interface{}{
 		"action": "full_sync",
-	}, clientIP(r))
+	}, clientIP(r), "")
 	
 	jsonResponse(w, http.StatusOK, StatusMessageResponse{
 		Status: "success",

@@ -1136,6 +1136,9 @@
             "nullable": true,
             "type": "string"
           },
+          "has_config": {
+            "type": "boolean"
+          },
           "id": {
             "type": "string"
           },
@@ -1187,6 +1190,7 @@
         "required": [
           "created_at",
           "endpoints",
+          "has_config",
           "id",
           "labels",
           "last_seen",

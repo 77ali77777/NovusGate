@@ -45,6 +45,7 @@ type Node struct {
 	ExpiresAt *time.Time        `json:"expires_at,omitempty"`
 	NodeInfo  *NodeInfo         `json:"node_info,omitempty"`
 	Endpoints []string          `json:"endpoints"`
+	HasConfig bool              `json:"has_config"` // the server holds its private key: config, QR and install script work
 	CreatedAt time.Time         `json:"created_at"`
 }
 

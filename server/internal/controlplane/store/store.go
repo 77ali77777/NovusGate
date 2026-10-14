@@ -11,11 +11,13 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/novusgate/novusgate/internal/shared/models"
+	"github.com/novusgate/novusgate/internal/shared/secretbox"
 )
 
 // Store provides database operations for the control plane
 type Store struct {
-	db *sql.DB
+	db  *sql.DB
+	box *secretbox.Box // seals node private keys; nil stores them as plain text
 }
 
 // New creates a new store with the given database connection string
@@ -172,10 +174,10 @@ func (s *Store) GetNode(ctx context.Context, id string) (*models.Node, error) {
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
 		FROM nodes WHERE id = $1
 	`, id).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -202,10 +204,10 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
 		FROM nodes WHERE network_id = $1 AND name = $2
 	`, networkID, name).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -227,7 +229,7 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 // ListNodes lists all nodes in a network
 func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
 		FROM nodes WHERE network_id = $1 ORDER BY name
 	`, networkID)
 	if err != nil {
@@ -243,7 +245,7 @@ func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node
 		var lastSeen sql.NullTime
 		
 		if err := rows.Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt); err != nil {
+			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig); err != nil {
 			return nil, err
 		}
 		
@@ -645,15 +647,16 @@ func (s *Store) DeleteVPNFirewallRule(ctx context.Context, id string) error {
 	return nil
 }
 
-// CreateFirewallAuditLog creates an audit log entry for firewall changes
-func (s *Store) CreateFirewallAuditLog(ctx context.Context, action string, details map[string]interface{}, userIP string) error {
+// CreateFirewallAuditLog records a firewall change; an empty userID (no panel
+// session) is stored as NULL.
+func (s *Store) CreateFirewallAuditLog(ctx context.Context, action string, details map[string]interface{}, userIP, userID string) error {
 	id := uuid.New().String()
 	detailsJSON, _ := json.Marshal(details)
-	
+
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO firewall_audit_log (id, action, details, user_ip, created_at)
-		VALUES ($1, $2, $3, $4, $5)
-	`, id, action, detailsJSON, userIP, time.Now())
+		INSERT INTO firewall_audit_log (id, action, details, user_ip, user_id, created_at)
+		VALUES ($1, $2, $3, $4, NULLIF($5, '')::uuid, $6)
+	`, id, action, detailsJSON, userIP, userID, time.Now())
 	
 	return err
 }
