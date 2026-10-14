@@ -23,7 +23,7 @@
 - **Public port açılmır:** skript paneldən kopyalanır. Checkin WireGuard qalxandan sonra VPN üzərindən gedir (8080 yalnız `wg+` interfeyslərində açıqdır).
 - **Checkin label filtri:** `wireguard_*` açarları node-dan qəbul olunmur.
 - **Etibarlı proxy:** `X-Real-IP` yalnız loopback-dən (panelin nginx-i) gələn sorğuda nəzərə alınır. Başqa client bu başlıqla öz IP-sini seçə bilmir. Bu IP-dən istifadə edənlər: login limiti, firewall-un operatoru kilidləməyə qarşı qoruması və firewall audit log-u.
-- **API açarı:** `X-API-Key`-i panelin nginx-i env-dən (`NOVUSGATE_API_KEY`) əlavə edir. Açar artıq JS bundle-a düşmür. `web/.dockerignore` `.env` fayllarını image-dən çıxarır.
+- **API açarı:** `X-API-Key`-i panelin nginx-i env-dən (`NOVUSGATE_API_KEY`) əlavə edir. Açar yalnız `[A-Za-z0-9._~-]` simvollarından ibarət olmalıdır, əks halda control-plane başlamır (nginx konfiqurasiyası sınmasın). Açar artıq JS bundle-a düşmür. `web/.dockerignore` `.env` fayllarını image-dən çıxarır.
 - **İstifadəçinin qərarı:** `web/.env` hələ git-də izlənir. Əvvəlki bundle-lar açarı daşıyıb, ona görə açarı dəyişmək və faylı git-dən çıxarmaq tövsiyə olunur.
 
 ## Node private key-ləri və audit (P4c)
@@ -41,3 +41,16 @@
 - **Master açarın itməsi:** şifrələnmiş key-lər açılmır. Həmin node-ların config-i yenidən yaradılmalıdır. Açarı `.env` ilə birlikdə yedəkləyin.
 - **Audit:** `firewall_audit_log.user_id` dəyişikliyi edən panel istifadəçisidir (`ON DELETE SET NULL`). `user_ip` real client IP-sidir (`clientIP`).
 - **Hələ şifrələnmir:** `networks.server_private_key` (spec-də yoxdur; JSON-da gizlidir). Növbəti addım kimi qeyd olunub.
+
+## Sonrakı sərtləşdirmələr (təxirə salınmış məsələlərin bağlanması)
+- **Login:**
+  - parol dəyişməsi ilə digər sessiyaların ləğvi bir tranzaksiyada gedir;
+  - mövcud olmayan istifadəçi adı da bcrypt-dən keçir, ona görə cavab vaxtı adın olub-olmadığını göstərmir;
+  - limiter IPv6-nı `/64` üzrə sayır, ən çox 10000 açar saxlayır;
+  - uğurlu login yalnız öz cəhdini silir, əvvəlki uğursuz cəhdlər sayılmağa davam edir.
+- **Enrollment:**
+  - token yalnız checkin qəbul ediləndən sonra işlənir, ona görə pis body tokeni yandırmır;
+  - skript tokeni `ps`-də görünməyən 0600 icazəli faylla ötürür;
+  - JSON-a yalnız təhlükəsiz simvollar düşür;
+  - 401 alanda skript dərhal dayanır;
+  - köhnə tokenlər yeni token yaradılanda təmizlənir.

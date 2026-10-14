@@ -1,6 +1,6 @@
 import { Box, Check, Copy, Download, Monitor, QrCode as QrIcon, Terminal } from 'lucide-react'
 import type React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { Button, Modal } from '@/components/ui'
@@ -49,16 +49,24 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   const [installScript, setInstallScript] = useState('')
   const [scriptLoading, setScriptLoading] = useState(false)
   const [scriptError, setScriptError] = useState('')
+  const [scriptCopied, setScriptCopied] = useState(false)
+  // The node the modal shows now; a script fetched for another node is dropped.
+  const nodeIdRef = useRef(nodeId)
+  nodeIdRef.current = nodeId
 
   // Each fetch issues a new one-time enrollment token, so the script is
   // generated on request rather than when the modal opens.
   const loadInstallScript = async () => {
+    const forNode = nodeId
     setScriptLoading(true)
     setScriptError('')
     try {
-      setInstallScript(await api.getNodeInstallScript(nodeId))
+      const script = await api.getNodeInstallScript(forNode)
+      if (nodeIdRef.current === forNode) setInstallScript(script)
     } catch (err) {
-      setScriptError(apiErrorMessage(err, 'Failed to generate the install script'))
+      if (nodeIdRef.current === forNode) {
+        setScriptError(apiErrorMessage(err, 'Failed to generate the install script'))
+      }
     } finally {
       setScriptLoading(false)
     }
@@ -115,11 +123,11 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
     document.body.removeChild(element)
   }
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (text: string, markCopied: (v: boolean) => void = setCopied) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text)
-        setCopied(true)
+        markCopied(true)
       } else {
         // Fallback for non-secure contexts
         const textArea = document.createElement('textarea')
@@ -132,7 +140,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
         textArea.select()
         try {
           document.execCommand('copy')
-          setCopied(true)
+          markCopied(true)
         } catch (err) {
           console.error('Fallback: Oops, unable to copy', err)
         }
@@ -141,7 +149,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
     } catch (err) {
       console.error('Failed to copy!', err)
     }
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => markCopied(false), 2000)
   }
 
   const renderContent = () => {
@@ -277,11 +285,11 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(installScript)}
+                      onClick={() => copyToClipboard(installScript, setScriptCopied)}
                       className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
                     >
-                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {copied ? 'Copied' : 'Copy'}
+                      {scriptCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {scriptCopied ? 'Copied' : 'Copy'}
                     </button>
                     <button
                       type="button"
@@ -290,6 +298,14 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                     >
                       <Download className="w-3 h-3" />
                       Download
+                    </button>
+                    <button
+                      type="button"
+                      onClick={loadInstallScript}
+                      disabled={scriptLoading}
+                      className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300 disabled:opacity-50"
+                    >
+                      {scriptLoading ? 'Generating...' : 'Regenerate'}
                     </button>
                   </div>
                 )}

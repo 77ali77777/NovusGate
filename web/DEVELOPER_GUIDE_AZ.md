@@ -60,16 +60,16 @@ Axios və React Query ilə mərkəzləşdirilmiş API qatı:
 
 ```typescript
 // Interceptor-larla Axios instance
+// Same origin: the panel's nginx proxies /api to the control plane and adds
+// the API key (the Vite dev server proxies /api to localhost:8080).
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: '/api/v1',
 });
 
-// Auth header əlavəsi
+// Sessiya tokeninin əlavəsi
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  const apiKey = localStorage.getItem('apiKey');
+  const token = localStorage.getItem('auth_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  if (apiKey) config.headers['X-API-Key'] = apiKey;
   return config;
 });
 
@@ -267,11 +267,11 @@ type VPNFirewallAction = 'accept' | 'drop' | 'reject';
 
 ### Mühit Dəyişənləri
 
-`.env` faylı yaradın:
-```bash
-VITE_API_URL=http://localhost:8080/api/v1
-VITE_API_KEY=your-api-key  # İnkişaf üçün isteğe bağlı
-```
+Heç bir dəyişən lazım deyil. Web `/api/v1`-i öz origin-indən çağırır:
+- inkişafda Vite dev serveri `/api`-ni `http://localhost:8080`-ə proxy edir;
+- production-da panelin nginx-i bunu edir və API açarını əlavə edir.
+
+`VITE_API_URL` və `VITE_API_KEY` artıq oxunmur. İnkişafda control-plane API açarı tələb edirsə, onu `novusgate_API_KEY` olmadan başladın.
 
 ### Yerli İşə Salma
 

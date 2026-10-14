@@ -8,6 +8,10 @@ import (
 // CreateEnrollmentToken stores a one-time token that lets nodeID check in;
 // only the token's hash is kept.
 func (s *Store) CreateEnrollmentToken(ctx context.Context, nodeID, tokenHash string, now time.Time, ttl time.Duration) error {
+	// Housekeeping: used or expired tokens older than a day are no longer
+	// useful for diagnosis; a failure here only leaves old rows.
+	s.db.ExecContext(ctx, `DELETE FROM enrollment_tokens
+		WHERE (used_at IS NOT NULL OR expires_at <= $1) AND created_at < $2`, now, now.Add(-24*time.Hour))
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO enrollment_tokens (node_id, token_hash, created_at, expires_at)
 		VALUES ($1, $2, $3, $4)`, nodeID, tokenHash, now, now.Add(ttl))

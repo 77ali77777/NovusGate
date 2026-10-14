@@ -15,7 +15,7 @@ import (
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
-var scriptTokenRe = regexp.MustCompile(`X-Enrollment-Token: ([0-9a-f]{64})`)
+var scriptTokenRe = regexp.MustCompile(`X-Enrollment-Token: %s\\n' '([0-9a-f]{64})'`)
 
 // installToken fetches a node's install script with the panel session and
 // returns the script and the enrollment token in it.
@@ -187,5 +187,38 @@ func TestEnrollmentWithAPIKey(t *testing.T) {
 	}
 	if rec := enrollCheckin(s, seed.node.ID, token, `{"node_info":{"os":"Linux"}}`); rec.Code != http.StatusOK {
 		t.Fatalf("enrollment checkin with the API key enabled = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// A checkin that fails before it is accepted (bad body, unknown node) must
+// not burn the token.
+func TestEnrollmentTokenSurvivesRejectedCheckin(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	_, token := installToken(t, s, seed.node.ID)
+	if rec := enrollCheckin(s, seed.node.ID, token, `{`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad body = %d, want 400", rec.Code)
+	}
+	if rec := enrollCheckin(s, seed.node.ID, token, `{"node_info":{"os":"Linux"}}`); rec.Code != http.StatusOK {
+		t.Fatalf("the token must still work after a rejected body: %d %s", rec.Code, rec.Body)
+	}
+}
+
+func TestInstallScriptHardening(t *testing.T) {
+	script := installScript("[Interface]", "http://10.66.0.1:8080/api/v1/nodes/n/checkin", strings.Repeat("b", 64))
+	for _, want := range []string{
+		"command -v curl",       // curl even when wg is already installed
+		"tr -cd 'A-Za-z0-9._-'", // hostname and arch cannot break the JSON
+		`-H @"$HDR"`,            // the token is not in curl's argv
+		"401)",                  // a used or expired token stops at once
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("script lacks %q", want)
+		}
+	}
+	for _, line := range strings.Split(script, "\n") {
+		if strings.Contains(line, "curl ") && strings.Contains(line, strings.Repeat("b", 64)) {
+			t.Errorf("the token is on a curl command line: %s", line)
+		}
 	}
 }

@@ -60,16 +60,16 @@ Centralized API layer with Axios and React Query:
 
 ```typescript
 // Axios instance with interceptors
+// Same origin: the panel's nginx proxies /api to the control plane and adds
+// the API key (the Vite dev server proxies /api to localhost:8080).
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: '/api/v1',
 });
 
-// Auth header injection
+// Session token injection
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  const apiKey = localStorage.getItem('apiKey');
+  const token = localStorage.getItem('auth_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  if (apiKey) config.headers['X-API-Key'] = apiKey;
   return config;
 });
 
@@ -267,11 +267,11 @@ type VPNFirewallAction = 'accept' | 'drop' | 'reject';
 
 ### Environment Variables
 
-Create `.env` file:
-```bash
-VITE_API_URL=http://localhost:8080/api/v1
-VITE_API_KEY=your-api-key  # Optional for development
-```
+None are needed. The web calls `/api/v1` on its own origin: in development
+the Vite dev server proxies `/api` to `http://localhost:8080`, in production
+the panel's nginx proxies it and adds the API key. `VITE_API_URL` and
+`VITE_API_KEY` are no longer read. If the control plane requires an API key
+in development, start it without `novusgate_API_KEY`.
 
 ### Running Locally
 

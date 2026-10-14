@@ -43,7 +43,10 @@ umask 077 # wg0.conf holds the private key: never readable by others
 echo "Installing WireGuard..."
 if ! command -v wg > /dev/null 2>&1; then
     apt-get update
-    apt-get install -y wireguard wireguard-tools curl
+    apt-get install -y wireguard wireguard-tools
+fi
+if ! command -v curl > /dev/null 2>&1; then
+    apt-get install -y curl
 fi
 
 mkdir -p /etc/wireguard
@@ -56,15 +59,27 @@ systemctl enable wg-quick@wg0
 systemctl restart wg-quick@wg0
 
 echo "Checking in over the VPN..."
-BODY=$(printf '{"node_info":{"os":"Linux","arch":"%s","hostname":"%s"}}' "$(uname -m)" "$(hostname)")
+# The token goes to curl through a private file, so it never shows in ps.
+HDR=$(mktemp)
+trap 'rm -f "$HDR"' EXIT
+printf 'X-Enrollment-Token: %s\n' '{{TOKEN}}' > "$HDR"
+# Only safe characters reach the JSON body.
+ARCH=$(uname -m | tr -cd 'A-Za-z0-9._-')
+HOST=$(hostname | tr -cd 'A-Za-z0-9._-')
+BODY=$(printf '{"node_info":{"os":"Linux","arch":"%s","hostname":"%s"}}' "$ARCH" "$HOST")
 for i in $(seq 1 30); do
-    if curl -fsS --max-time 5 -X POST "{{CHECKIN_URL}}" \
-        -H "Content-Type: application/json" \
-        -H "X-Enrollment-Token: {{TOKEN}}" \
-        -d "$BODY" > /dev/null; then
+    CODE=$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' -X POST "{{CHECKIN_URL}}" \
+        -H "Content-Type: application/json" -H @"$HDR" -d "$BODY" || true)
+    case "$CODE" in
+    200)
         echo "Installation complete. This server is connected to the VPN."
         exit 0
-    fi
+        ;;
+    401)
+        echo "The enrollment token was already used or has expired. Generate a new install script in the panel." >&2
+        exit 1
+        ;;
+    esac
     sleep 2
 done
 echo "WireGuard is up, but the check-in failed. Check the tunnel with: wg show" >&2

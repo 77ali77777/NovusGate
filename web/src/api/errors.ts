@@ -1,6 +1,14 @@
 // Error bodies are {"error":"message"} today and {"error":{"code","message"}}
 // after the unified error format (P2d); read both.
 export function errorBodyMessage(data: unknown): string | undefined {
+  if (typeof data === 'string') {
+    // Requests made with responseType 'text' get the JSON error body as text.
+    try {
+      return errorBodyMessage(JSON.parse(data))
+    } catch {
+      return undefined
+    }
+  }
   if (!data || typeof data !== 'object') return undefined
   const error = (data as { error?: unknown }).error
   if (typeof error === 'string') return error

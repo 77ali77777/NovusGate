@@ -289,3 +289,13 @@ func TestUnknownUserRunsBcrypt(t *testing.T) {
 		t.Fatalf("bcrypt calls for an unknown user = %d, want 1", calls)
 	}
 }
+
+// The API key ends up in an nginx config: only characters that cannot
+// break it out of its quotes are allowed.
+func TestValidateAPIKey(t *testing.T) {
+	for key, ok := range map[string]bool{"": true, "a1B2-c3_d4.e~": true, "novusgate_secret_key": true, `bad"key`: false, "bad$key": false, "bad key": false} {
+		if err := ValidateAPIKey(key); (err == nil) != ok {
+			t.Errorf("ValidateAPIKey(%q) = %v, want ok=%v", key, err, ok)
+		}
+	}
+}

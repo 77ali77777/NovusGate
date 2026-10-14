@@ -1051,17 +1051,6 @@ func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	if user, _ := sessionFrom(r); user == nil { // a node enrolling with its install script's token
-		ok, err := s.store.ConsumeEnrollmentToken(r.Context(), id, hashToken(r.Header.Get(enrollmentHeader)), authNow())
-		if err != nil {
-			errorResponse(w, http.StatusInternalServerError, "failed to check enrollment token")
-			return
-		}
-		if !ok {
-			errorWithCode(w, http.StatusUnauthorized, "invalid_enrollment_token", "invalid or expired enrollment token")
-			return
-		}
-	}
 	var req NodeCheckInRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1069,7 +1058,28 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	node, err := s.store.GetNode(r.Context(), id)
-	if err != nil || node == nil {
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to get node")
+		return
+	}
+	// A node enrolling with its install script's token: the token is used
+	// only once the request is otherwise acceptable, so a rejected body does
+	// not burn it. Without a session an unknown node is 401, not 404.
+	if user, _ := sessionFrom(r); user == nil {
+		ok := false
+		if node != nil {
+			ok, err = s.store.ConsumeEnrollmentToken(r.Context(), id, hashToken(r.Header.Get(enrollmentHeader)), authNow())
+			if err != nil {
+				errorResponse(w, http.StatusInternalServerError, "failed to check enrollment token")
+				return
+			}
+		}
+		if !ok {
+			errorWithCode(w, http.StatusUnauthorized, "invalid_enrollment_token", "invalid or expired enrollment token")
+			return
+		}
+	}
+	if node == nil {
 		errorResponse(w, http.StatusNotFound, "node not found")
 		return
 	}

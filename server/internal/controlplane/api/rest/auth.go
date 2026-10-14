@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -229,4 +231,15 @@ func sessionUserID(r *http.Request) string {
 		return user.ID
 	}
 	return ""
+}
+
+var apiKeyRe = regexp.MustCompile(`^[A-Za-z0-9._~-]*$`)
+
+// ValidateAPIKey rejects API keys with characters that could break out of
+// the quoted header value in the panel's nginx config.
+func ValidateAPIKey(key string) error {
+	if !apiKeyRe.MatchString(key) {
+		return fmt.Errorf("novusgate_API_KEY may only contain letters, digits and . _ ~ -")
+	}
+	return nil
 }

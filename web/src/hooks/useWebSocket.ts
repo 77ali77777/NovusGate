@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useAppStore, useCurrentNetworkId } from '@/store'
 import type { WebSocketEvent } from '@/types'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080'
+// Same origin as the panel by default (wss on https), like the API.
+const WS_URL =
+  import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
 
 export function useWebSocket() {
   const networkId = useCurrentNetworkId()

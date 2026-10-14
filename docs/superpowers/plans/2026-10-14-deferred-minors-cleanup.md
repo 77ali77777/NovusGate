@@ -32,18 +32,18 @@
 - [x] A8: unknown usernames run bcrypt against a dummy hash, so their timing matches.
 
 ## Batch B — Enrollment (P4b review)
-- [ ] B1: checkin decodes and validates the body and finds the node **before** it consumes the token; the script stops at once on 401 with "token used or expired".
-- [ ] B2: the hostname in the checkin JSON is reduced to `[A-Za-z0-9._-]`.
-- [ ] B3: the script installs `curl` when it is missing, even if `wg` exists.
-- [ ] B4: the token goes to curl through a 0600 header file (`-H @file`), not argv.
-- [ ] B5: creating a token deletes used or expired tokens older than a day.
-- [ ] B6: `apiErrorMessage` reads error bodies that arrive as text (`responseType: 'text'`).
-- [ ] B7: install-script modal:
+- [x] B1: checkin decodes and validates the body and finds the node **before** it consumes the token; the script stops at once on 401 with "token used or expired".
+- [x] B2: the hostname in the checkin JSON is reduced to `[A-Za-z0-9._-]`.
+- [x] B3: the script installs `curl` when it is missing, even if `wg` exists.
+- [x] B4: the token goes to curl through a 0600 header file (`-H @file`), not argv.
+- [x] B5: creating a token deletes used or expired tokens older than a day.
+- [x] B6: `apiErrorMessage` reads error bodies that arrive as text (`responseType: 'text'`).
+- [x] B7: install-script modal:
   - a Regenerate button;
   - its own copied state;
   - a response for a node that is no longer shown is ignored.
-- [ ] B8: the API key must match `[A-Za-z0-9._~-]+`; otherwise serve refuses to start (nginx template safety). Documented.
-- [ ] B9: `web/DEVELOPER_GUIDE*.md` drop `VITE_API_URL`/`VITE_API_KEY`; `useWebSocket` defaults to the page's own origin. `web/.env.example` → **user** (`.env*` writes are machine-denied).
+- [x] B8: the API key must match `[A-Za-z0-9._~-]+`; otherwise serve refuses to start (nginx template safety). Documented.
+- [x] B9: `web/DEVELOPER_GUIDE*.md` drop `VITE_API_URL`/`VITE_API_KEY`; `useWebSocket` defaults to the page's own origin. `web/.env.example` → **user** (`.env*` writes are machine-denied).
 
 ## Batch C — Node keys (P4c review)
 - [ ] C1: an empty legacy label is not migrated (it is dropped from labels, no column value).

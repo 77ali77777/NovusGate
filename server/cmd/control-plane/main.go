@@ -173,6 +173,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 	slog.Info("  Database: Migrations applied")
 
+	if err := rest.ValidateAPIKey(os.Getenv("novusgate_API_KEY")); err != nil {
+		return err
+	}
+
 	if err := setupNodeKeys(context.Background(), db); err != nil {
 		return err
 	}
