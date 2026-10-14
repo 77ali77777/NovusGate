@@ -123,3 +123,47 @@ test('compose() prefers docker compose v2 and falls back to docker-compose', () 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// P7: uninstall removes NovusGate and nothing else on the host.
+test('uninstall does not touch other applications', () => {
+  const s = scripts.UNINSTALL_SCRIPT;
+  assert.doesNotMatch(s, /docker system prune/, 'a global prune deletes other apps\' images and volumes');
+  // A whole-table flush has no chain name; NOVUSGATE-ADMIN is ours to remove.
+  assert.doesNotMatch(s, /iptables -t (nat|mangle|raw) -[FX]\s*$/m, 'flushing nat/mangle/raw breaks Docker networking');
+  assert.doesNotMatch(s, /^iptables -[FX]\s*$/m, 'only the INPUT chain NovusGate owns is flushed');
+  assert.match(s, /--rmi local/, 'only the images NovusGate built are removed');
+});
+
+test('uninstall removes every NovusGate host artifact', () => {
+  const s = scripts.UNINSTALL_SCRIPT;
+  for (const piece of [
+    'nft delete table inet novusgate',
+    'systemctl disable novusgate-firewall.service',
+    'novusgate-fw-rollback.timer',
+    'rm -rf /etc/novusgate /var/lib/novusgate',
+    'rm -f /etc/fail2ban/jail.d/novusgate.local',
+    'iptables -t mangle -X NOVUSGATE-ADMIN',
+    'ip6tables -t mangle -X NOVUSGATE-ADMIN',
+  ]) {
+    assert.ok(s.includes(piece), `missing: ${piece}`);
+  }
+});
+
+// The interfaces to remove: wg0, the networks in the database and configs
+// with the PostUp line the control plane writes; never another WireGuard.
+test('uninstall picks the NovusGate WireGuard interfaces only', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-wg-'));
+  try {
+    const ng = "PostUp = iptables -t nat -A POSTROUTING -o $(ip route get 8.8.8.8 | awk '{print $5; exit}') -j MASQUERADE\n";
+    fs.writeFileSync(path.join(dir, 'wg0.conf'), '[Interface]\n');
+    fs.writeFileSync(path.join(dir, 'wg3.conf'), `[Interface]\n${ng}`);
+    fs.writeFileSync(path.join(dir, 'wg9.conf'), '[Interface]\nPostUp = echo mine\n'); // not ours
+    fs.writeFileSync(path.join(dir, 'office.conf'), `[Interface]\n${ng}`); // not a wgN name
+    const fn = scripts.UNINSTALL_SCRIPT.match(/novusgate_ifaces\(\) \{[\s\S]*?\n\}/);
+    assert.ok(fn, 'novusgate_ifaces() missing');
+    const out = spawnSync('bash', ['-c', `${fn[0]}\nnovusgate_ifaces '${dir}' 'wg2 wg5 eth0'`], { encoding: 'utf8' });
+    assert.deepStrictEqual(out.stdout.trim().split('\n'), ['wg0', 'wg2', 'wg3', 'wg5']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
