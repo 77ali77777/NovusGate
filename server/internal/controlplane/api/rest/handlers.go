@@ -2,9 +2,7 @@ package rest
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -27,13 +25,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Admin credentials from env or defaults
-var (
-	adminUsername = getEnvOrDefault("ADMIN_USERNAME", "admin")
-	adminPassword = getEnvOrDefault("ADMIN_PASSWORD", "") // REQUIRED - set via environment
-	adminToken    = ""
-	apiKey        = getEnvOrDefault("novusgate_API_KEY", "") // Request-level security key
-)
+// apiKey is the optional request-level key checked by APIKeyMiddleware.
+var apiKey = getEnvOrDefault("novusgate_API_KEY", "")
 
 func getEnvOrDefault(key, defaultValue string) string {
 	if v := os.Getenv(key); v != "" {
@@ -42,12 +35,6 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
-func init() {
-	// Generate a random admin token on startup
-	b := make([]byte, 32)
-	rand.Read(b)
-	adminToken = hex.EncodeToString(b)
-}
 
 // PeerActivity tracks the last known activity of a peer
 type PeerActivity struct {
@@ -264,7 +251,7 @@ func (s *Server) setupRoutes() {
 	// Apply global middleware
 	// Order: the request log wraps everything (it records the 500 that
 	// RecoverMiddleware writes), then panic recovery, then auth.
-	s.router.Use(LoggingMiddleware, RecoverMiddleware, APIKeyMiddleware, AuthMiddleware)
+	s.router.Use(LoggingMiddleware, RecoverMiddleware, APIKeyMiddleware, s.authMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -299,6 +286,7 @@ func (s *Server) setupRoutes() {
 	// Auth
 	s.router.HandleFunc("/api/v1/auth/login", s.handleLogin).Methods("POST", "OPTIONS")
 	api.HandleFunc("/auth/password", s.handleUpdatePassword).Methods("PUT")
+	api.HandleFunc("/auth/logout", s.handleLogout).Methods("POST")
 
 	// User Management
 	api.HandleFunc("/users", s.handleListUsers).Methods("GET")
@@ -470,8 +458,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Return token
-	jsonResponse(w, http.StatusOK, LoginResponse{Token: adminToken, Username: adminUsername})
+	s.store.DeleteExpiredSessions(r.Context(), authNow()) // housekeeping; a failure only leaves old rows
+	token, err := newSessionToken()
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to create session")
+		return
+	}
+	if err := s.store.CreateSession(r.Context(), user.ID, hashToken(token), authNow(), sessionTTL); err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to create session")
+		return
+	}
+	jsonResponse(w, http.StatusOK, LoginResponse{Token: token, Username: user.Username})
 }
 
 // Update Password handler
@@ -1683,46 +1680,6 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 // Middleware
 
 // AuthMiddleware validates authentication
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
-		
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		
-		// Skip auth for health check and login
-		if r.URL.Path == "/health" ||
-		   strings.HasSuffix(r.URL.Path, "/login") {
-			next.ServeHTTP(w, r)
-			return
-		}
-		
-		auth := r.Header.Get("Authorization")
-		if auth == "" {
-			errorResponse(w, http.StatusUnauthorized, "missing authorization header")
-			return
-		}
-		
-		if !strings.HasPrefix(auth, "Bearer ") {
-			errorResponse(w, http.StatusUnauthorized, "invalid authorization header")
-			return
-		}
-		
-		token := strings.TrimPrefix(auth, "Bearer ")
-		if subtle.ConstantTimeCompare([]byte(token), []byte(adminToken)) != 1 {
-			errorResponse(w, http.StatusUnauthorized, "invalid token")
-			return
-		}
-		
-		next.ServeHTTP(w, r)
-	})
-}
-
 // APIKeyMiddleware validates the X-API-Key header
 func APIKeyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1743,8 +1700,7 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Public paths that don't need API Key
-		if r.URL.Path == "/health" ||
-		   strings.HasSuffix(r.URL.Path, "/login") {
+		if publicPaths[r.URL.Path] {
 			next.ServeHTTP(w, r)
 			return
 		}

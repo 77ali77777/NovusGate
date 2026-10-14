@@ -1,7 +1,7 @@
 {
   "body": {
     "token": "<token>",
-    "username": "admin"
+    "username": "contract-user"
   },
   "content_type": "application/json",
   "status": 200

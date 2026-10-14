@@ -42,6 +42,7 @@ var docOps = []docOp{
 	{"GET", "/api/v1/openapi.json", "This document", "meta", nil, 200, freeform{}, false},
 	{"POST", "/api/v1/auth/login", "Log in", "auth", LoginRequest{}, 200, LoginResponse{}, true},
 	{"PUT", "/api/v1/auth/password", "Change a password", "auth", UpdatePasswordRequest{}, 200, StatusResponse{}, false},
+	{"POST", "/api/v1/auth/logout", "Log out (revokes this session)", "auth", nil, 204, nil, false},
 	{"GET", "/api/v1/users", "List users", "users", nil, 200, []models.User{}, false},
 	{"POST", "/api/v1/users", "Create a user", "users", CreateUserRequest{}, 201, models.User{}, false},
 	{"DELETE", "/api/v1/users/{id}", "Delete a user", "users", nil, 204, nil, false},

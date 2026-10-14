@@ -20,8 +20,10 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
-	"golang.org/x/crypto/bcrypt"
 )
+
+// adminToken is the bearer token of the current test's session.
+var adminToken string
 
 var updateContract = flag.Bool("update", false, "rewrite testdata/contract snapshots")
 
@@ -32,6 +34,8 @@ var (
 	uuidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	timeRe = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})`)
 	keyRe  = regexp.MustCompile(`[A-Za-z0-9+/]{43}=`)
+	// tokenRe matches a session token returned by login.
+	tokenRe = regexp.MustCompile(`"token":"[0-9a-f]{64}"`)
 )
 
 // hostStub answers host commands from a table and records every call.
@@ -107,6 +111,7 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 	s := &Server{store: st, router: mux.NewRouter(), managers: map[string]*wireguard.Manager{},
 		peerActivity: map[string]*PeerActivity{}}
 	s.setupRoutes()
+	adminToken = testSession(t, st, "contract-user")
 	return s, st, stub
 }
 
@@ -133,13 +138,6 @@ func seedContract(t *testing.T, st *store.Store) contractSeed {
 	if err := st.CreateNode(ctx, node); err != nil {
 		t.Fatal(err)
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte("contract-pw-1"), bcrypt.MinCost)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := st.CreateUser(ctx, &models.User{Username: "contract-user", PasswordHash: string(hash)}); err != nil {
-		t.Fatal(err)
-	}
 	return contractSeed{network: n, empty: e, node: node}
 }
 
@@ -158,6 +156,7 @@ func callAs(t *testing.T, s *Server, method, path, body string, auth bool) *http
 
 func normalizeBody(body string) string {
 	body = strings.ReplaceAll(body, adminToken, "<token>")
+	body = tokenRe.ReplaceAllString(body, `"token":"<token>"`)
 	body = uuidRe.ReplaceAllString(body, "<uuid>")
 	body = timeRe.ReplaceAllString(body, "<time>")
 	return keyRe.ReplaceAllString(body, "<key>")
@@ -243,6 +242,7 @@ func TestContract(t *testing.T) {
 		{"node_update", "PUT", "/api/v1/nodes/" + node, `{"name":"contract-node-renamed"}`, true},
 		{"user_create", "POST", "/api/v1/users", `{"username":"contract-user-2","password":"contract-pw-2"}`, true},
 		{"node_delete", "DELETE", "/api/v1/nodes/" + node, "", true},
+		{"logout", "POST", "/api/v1/auth/logout", "", true}, // last: revokes the session
 	}
 	for _, c := range cases {
 		rec := callAs(t, s, c.method, c.path, c.body, c.auth)
@@ -256,8 +256,7 @@ func TestEmptyCollectionsAreArrays(t *testing.T) {
 	s, st, stub := newContractServer(t)
 	stub.out["iptables -L INPUT -n --line-numbers"] = "Chain INPUT (policy DROP)\nnum  target     prot opt source               destination\n"
 	for path, want := range map[string]string{
-		"/api/v1/networks": "[]",
-		"/api/v1/users":    "[]",
+		"/api/v1/networks": "[]", // /users is never empty: the caller's session needs a user
 	} {
 		if got := strings.TrimSpace(callAs(t, s, "GET", path, "", true).Body.String()); got != want {
 			t.Errorf("GET %s = %s, want %s", path, got, want)

@@ -108,6 +108,12 @@ func newEngineServer(t *testing.T, mode firewall.Mode) (*Server, *recRunner) {
 	}
 	e.MarkReady()
 	s.SetFirewall(e)
+	adminToken = testSession(t, st, "engine-admin")
+	t.Cleanup(func() {
+		if u, _ := st.GetUserByUsername(context.Background(), "engine-admin"); u != nil {
+			st.DeleteUser(context.Background(), u.ID)
+		}
+	})
 	return s, r
 }
 
