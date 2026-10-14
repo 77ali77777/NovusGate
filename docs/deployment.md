@@ -35,3 +35,10 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 
 ## API açarının formatı
 `API_KEY` (control-plane-də `novusgate_API_KEY`) yalnız hərf, rəqəm və `. _ ~ -` simvollarından ibarət ola bilər. Səbəb: açar panelin nginx konfiqurasiyasına dırnaq içində yazılır. Başqa simvol olsa, control-plane başlamır. Center açarı hex yaradır.
+
+## Yeniləmə qaydası (buraxılış qeydi)
+- **Web və control-plane birlikdə yenilənməlidir:**
+  - P2a-dan əvvəlki web köhnə xəta formasını gözləyir və yeni control-plane ilə `[object Object]` göstərə bilər;
+  - P4b-dən sonra web API-ni öz nginx-i üzərindən çağırır.
+
+  Ona görə hər ikisini birlikdə build edin (`docker compose up -d --build`). Sonra brauzerdə səhifəni yeniləyin (açıq qalmış köhnə tab köhnə JS-i işlədir).

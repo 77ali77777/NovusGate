@@ -19,13 +19,14 @@ export function errorBodyMessage(data: unknown): string | undefined {
   return undefined
 }
 
-// apiErrorMessage returns the server's message for an axios error, else the
-// error's own message, else fallback.
+// apiErrorMessage returns the server's message for an axios error. An HTTP
+// error without one shows fallback (not axios' "Request failed with status
+// code …"); only errors without a response (network down) show their own
+// message.
 export function apiErrorMessage(err: unknown, fallback: string): string {
   const response = (err as { response?: { data?: unknown } } | undefined)?.response
-  return (
-    errorBodyMessage(response?.data) ??
-    (err instanceof Error && err.message ? err.message : undefined) ??
-    fallback
-  )
+  if (response) {
+    return errorBodyMessage(response.data) ?? fallback
+  }
+  return err instanceof Error && err.message ? err.message : fallback
 }

@@ -71,25 +71,25 @@
 - [x] D11 (P2b #9): mux's path-cleaning 301s are logged (logging wraps the router, not only matched routes).
 
 ## Batch E — Server internals (P2a–P2c reviews)
-- [ ] E1 (#10): fail2ban log read errors other than "not found" are logged and returned as an `error` field.
-- [ ] E2 (#4): `parseIgnoreIPList` keeps dot-less hostnames (`localhost`).
-- [ ] E3 (#5): networks narrower than /30 are rejected (`hubAddress` has no room for hub plus peer).
-- [ ] E4 (#5): the reconciler `Run` recovers from a panic in `RunOnce` and keeps running.
-- [ ] E5 (#6): shutdown waits for a running reconcile tick; wg commands get a timeout.
-- [ ] E6 (#7): `/health` uses a light query (interface names only).
-- [ ] E7 (#7): the shadow-mode "unknown peer" and "would change" warnings are logged once per change, not every tick.
-- [ ] E8 (#3): two nodes with one public key: the reconciler keeps the active one and reports the conflict instead of flapping.
-- [ ] E9 (#8): the PUT /nodes reactivation adds the peer with its full allowed IPs (gateway routes), not only /32.
-- [ ] E10 (#4): a panic after a partial write does not append an error body.
-- [ ] E11 (#6): the `captureLogs` test helper restores `log.SetOutput`.
-- [ ] E12 (#6): the `network_create` golden pins `WG_SERVER_ENDPOINT` (`t.Setenv`).
-- [ ] E13 (#7): `newContractServer` refuses a database whose name does not look like a test database.
-- [ ] E14 (#8): snapshot UUID normalisation numbers each distinct ID (`<uuid-1>`…), so wrong relations show.
-- [ ] E15 (#9): PUT /nodes peer add/remove has a handler test with a fake manager.
-- [ ] E16 (#9 web): password and user cards show the API message, with the fixed text only as fallback.
-- [ ] E17: sync logs each added peer, `skipped` excludes nodes without a key, and the `loadNetworks` error branches have tests.
-- [ ] E18 (#4): the contract normaliser leaves the example time in the `invalid_expires_at` message.
-- [ ] E19 (#1): release note — rebuild web and control plane together.
+- [x] E1 (#10): fail2ban log read errors other than "not found" are logged and returned as an `error` field.
+- [x] E2 (#4): `parseIgnoreIPList` keeps dot-less hostnames (`localhost`).
+- [x] E3 (#5): networks narrower than /30 are rejected (`hubAddress` has no room for hub plus peer).
+- [x] E4 (#5): the reconciler `Run` recovers from a panic in `RunOnce` and keeps running.
+- [x] E5 (#6): shutdown waits for a running reconcile tick; wg commands get a timeout.
+- [x] E6 (#7): `/health` uses a light query (interface names only).
+- [x] E7 (#7): the shadow-mode "unknown peer" and "would change" warnings are logged once per change, not every tick.
+- [x] E8 (#3): two nodes with one public key: the reconciler keeps the active one and reports the conflict instead of flapping.
+- [x] E9 (#8): the PUT /nodes reactivation adds the peer with its full allowed IPs (gateway routes), not only /32.
+- [x] E10 (#4): a panic after a partial write does not append an error body.
+- [x] E11 (#6): the `captureLogs` test helper restores `log.SetOutput`.
+- [x] E12 (#6): the `network_create` golden pins `WG_SERVER_ENDPOINT` (`t.Setenv`).
+- [x] E13 (#7): `newContractServer` refuses a database whose name does not look like a test database.
+- [x] E14 (#8): snapshot UUID normalisation numbers each distinct ID (`<uuid-1>`…), so wrong relations show.
+- [x] E15 (#9): PUT /nodes peer add/remove has a handler test with a fake manager.
+- [x] E16 (#9 web): password and user cards show the API message, with the fixed text only as fallback.
+- [x] E17: sync logs each added peer, `skipped` excludes nodes without a key, and the `loadNetworks` error branches have tests.
+- [x] E18 (#4): the contract normaliser leaves the example time in the `invalid_expires_at` message.
+- [x] E19 (#1): release note — rebuild web and control plane together.
 
 ## Batch F — Firewall (P3 reviews)
 - [ ] F1 (M10): kernel `nft -c` test covers the edge rulesets (empty, IPv6-only, forwards, egress) across versions in `nft-versions-check.sh`.
