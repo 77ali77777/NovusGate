@@ -103,3 +103,21 @@ func TestParseRuleLine(t *testing.T) {
 		t.Fatalf("interface without opt: %+v", wg)
 	}
 }
+
+func TestParseRuleLineVariants(t *testing.T) {
+	for _, c := range []struct {
+		line, target, proto, port, source string
+	}{
+		{"4 0 0 ACCEPT 6 -- * * 0.0.0.0/0 0.0.0.0/0 tcp dpt:443", "ACCEPT", "6", "443", "anywhere"},         // numeric protocol with the opt column
+		{"5 0 0 ACCEPT tcp -f * * 0.0.0.0/0 0.0.0.0/0 tcp dpt:80", "ACCEPT", "tcp", "80", "anywhere"},       // fragments only
+		{"6 0 0 ACCEPT tcp !f * * 0.0.0.0/0 0.0.0.0/0 tcp dpt:81", "ACCEPT", "tcp", "81", "anywhere"},       // no fragments
+		{"7 2 120 DROP all -- * * 203.0.113.9 0.0.0.0/0", "DROP", "all", "", "203.0.113.9"},                 // a DROP without a port
+		{"8 0 0 ACCEPT udp -- * * 0.0.0.0/0 0.0.0.0/0 udp dpt:51820", "ACCEPT", "udp", "51820", "anywhere"}, // udp with the opt column
+		{"9 0 0 ACCEPT tcp -- * * 0.0.0.0/0 0.0.0.0/0 /* opened for dpt:9999 */ tcp dpt:8080", "ACCEPT", "tcp", "8080", "anywhere"},
+	} {
+		r := parseRuleLine(c.line, "INPUT")
+		if r == nil || r.Target != c.target || r.Protocol != c.proto || r.Port != c.port || r.Source != c.source {
+			t.Errorf("%q = %+v, want target=%s proto=%s port=%q source=%s", c.line, r, c.target, c.proto, c.port, c.source)
+		}
+	}
+}

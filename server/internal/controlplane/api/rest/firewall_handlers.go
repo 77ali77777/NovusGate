@@ -244,8 +244,8 @@ func parseRuleLine(line string, chainName string) *FirewallRule {
 	remaining := strings.Join(fields[in+4:], " ")
 	rule.Options = remaining
 	
-	// Extract port from options
-	rule.Port = extractPort(remaining)
+	// Extract port from options; a "/* comment */" may itself contain "dpt:".
+	rule.Port = extractPort(ruleCommentRe.ReplaceAllString(remaining, ""))
 	
 	return rule
 }
@@ -1536,3 +1536,6 @@ func isIPv4OrCIDR(s string) bool {
 	ip, _, err := net.ParseCIDR(s)
 	return err == nil && ip.To4() != nil
 }
+
+// ruleCommentRe matches an iptables "/* comment */" in `iptables -L` output.
+var ruleCommentRe = regexp.MustCompile(`/\*.*?\*/`)

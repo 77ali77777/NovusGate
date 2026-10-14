@@ -92,17 +92,17 @@
 - [x] E19 (#1): release note — rebuild web and control plane together.
 
 ## Batch F — Firewall (P3 reviews)
-- [ ] F1 (M10): kernel `nft -c` test covers the edge rulesets (empty, IPv6-only, forwards, egress) across versions in `nft-versions-check.sh`.
+- [x] F1 (M10): kernel `nft -c` test covers the edge rulesets (empty, IPv6-only, forwards, egress) across versions in `nft-versions-check.sh`.
 - [x] F2 (M10): revert while a rollback timer is armed does not reload the old snapshot.
 - [x] F3 (M4): a narrower ban under a shorter cover is re-applied when the cover expires (reconcile scheduled at the cover's expiry).
 - [x] F4 (M6): `ErrNotReady` retries back off and stop logging after the first warning per failure.
 - [ ] F5 (M8): the boot file drops already-expired timeouts (elements with `expires_at` in the past are not written).
 - [x] F6 (M9): `setup-firewall.sh` strips a trailing `# comment` from `FIREWALL_ENGINE`.
 - [x] F7 (M9): VPN drop/reject rules that cannot be converted are reported (warning in apply response and log), not silently skipped.
-- [ ] F8: `parseRuleLine`:
+- [x] F8: `parseRuleLine`:
   - ignores `dpt:` inside `/* … */` comments;
   - has tests for numeric+opt, `-f`/`!f`, a DROP target and udp+opt;
-  - loses the redundant `< 9` guard.
+  - loses the redundant `< 9` guard. (the guard was already gone after P2a; closed)
 
 ## Batch G — Docs and runbooks
 - [ ] G1 (M3): runbook — `netfilter-persistent save` also saves fail2ban chains.
