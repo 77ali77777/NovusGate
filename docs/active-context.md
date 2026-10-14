@@ -266,6 +266,21 @@
 - **Davam:** P2d-2 (OpenAPI).
 
 
+### 2026-10-14: P2d-2 planı
+- **Nəticə:** `docs/superpowers/plans/2026-10-14-p2d2-openapi.md` yazıldı. 4 tapşırıq:
+  1. `/api` üçün JSON 404/405 və `firewall_engine_enforcing` kodu;
+  2. OpenAPI sənədi Go tiplərindən reflection ilə qurulur, `GET /api/v1/openapi.json` ilə verilir, golden faylı var, route coverage testi var;
+  3. hər kontrakt cavabı sənədə qarşı yoxlanılır;
+  4. sənədlər.
+
+  Kod dəyişməyib.
+- **Davranış dəyişikliyi:**
+  - naməlum `/api` yolu SPA əvəzinə 404 JSON qaytarır;
+  - səhv method 405 JSON və `Allow` başlığı qaytarır;
+  - yeni endpoint: `/api/v1/openapi.json` (auth tələb edir).
+- **Davam:** P2d-2 icrası.
+
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
