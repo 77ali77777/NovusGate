@@ -228,3 +228,18 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 
 - Ad yalnız `novusgate-backup-YYYYMMDD-HHMMSS.tar.gz` ola bilər, başqa fayl açılmır.
 - Backup servisi qurulmayıbsa 503 `backups_disabled` qaytarılır.
+
+## Telegram bildirişləri — `/api/v1/notifications` (P8, 2026-10-15)
+| Method | Path | Cavab |
+|---|---|---|
+| GET | `/notifications/settings` | `{"enabled","chat_id","token_set","node_offline","node_expired","fail2ban_ban","firewall_change"}`. Bot token heç vaxt qaytarılmır. |
+| PUT | `/notifications/settings` | Body eyni sahələrdir, `token_set` əvəzinə isə `bot_token` göndərilir. Boş və ya yoxdursa saxlanılan token qalır. 200 yeni ayarları qaytarır. 400 kodları: `invalid_chat_id`, `invalid_bot_token`, `notifications_incomplete` (chat ID və ya token olmadan aktivləşdirmə). |
+| POST | `/notifications/test` | 200 `{"status":"sent"}`. 400 `notifications_incomplete`. 502 `telegram_failed` Telegram-ın izahı ilə qaytarılır (məsələn `chat not found`); token mesaja düşmür. 503 `notifications_disabled`. |
+
+- `chat_id`: rəqəmli chat/qrup ID-si (`-100…`) və ya `@kanal`. `bot_token`: `<bot id>:<sirr>` formatında, BotFather-in verdiyi kimi.
+- Hadisələr:
+  - `node_offline`: 5 dəqiqə handshake olmayanda göndərilir, node qayıdanda da bildiriş gəlir.
+  - `node_expired`: reconciler node-u expired edəndə göndərilir. `WG_RECONCILER=off` olarsa bu hadisə göndərilmir.
+  - `fail2ban_ban`: `/var/log/fail2ban.log`-da yeni `Ban` sətri görünəndə göndərilir.
+  - `firewall_change`: `/api/v1/firewall/*` altında GET olmayan uğurlu (2xx) sorğudan sonra göndərilir.
+- Eyni hadisə (eyni node, jail+IP) 30 dəqiqə ərzində bir dəfə göndərilir. Firewall dəyişikliklərinin hər biri ayrıca göndərilir.

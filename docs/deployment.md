@@ -69,3 +69,8 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
   3. DB: `docker exec -i novusgate-postgres psql -U <DB_USER> -d <DB_NAME> < /tmp/ng-restore/db.sql`. Bunu boş bazaya edin (təzə install-dan sonra), çünki dump mövcud cədvəllərin üzərinə yazmır.
   4. `docker compose up -d --force-recreate control-plane`
 - Restore üçün eyni `MASTER_KEY` lazımdır (`.env`): node açarları onunla şifrələnib. Backup-da `.env` yoxdur.
+
+## Telegram bildirişləri (P8)
+- Panel → Settings → **Telegram notifications** bölməsində qurulur, env dəyişəni lazım deyil. Control-plane serverdən `https://api.telegram.org`-a çıxış imkanı olmalıdır.
+- Miqrasiya `011_notification_settings.sql` yeniləmədə avtomatik tətbiq olunur.
+- **Məlum məhdudiyyət:** compose `/var/log/fail2ban.log`-u konteynerə tək fayl kimi bağlayır. `logrotate` faylı yenisi ilə əvəz edəndə (rename), konteyner köhnə faylı görməyə davam edir. Nəticədə növbəti `docker compose up -d control-plane`-ə qədər yeni ban bildirişləri gəlmir. Bu məhdudiyyət Fail2Ban səhifəsinin log görünüşünə də aiddir. `copytruncate` ilə rotasiyada watcher faylın kiçildiyini görür və yenidən başlayır.

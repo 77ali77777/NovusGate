@@ -50,3 +50,17 @@ Node-ların trafik tarixçəsi. Control-plane hər 5 dəqiqədən bir hər node-
 - PK `(node_id, sampled_at)`, indeks `sampled_at` (retention üçün).
 - Sayğac interfeys yenidən qalxanda sıfırlanır; API azalmanı sıfırdan başlayan say kimi hesablayır.
 - Rollback: `migrations_rollback/010_node_traffic_samples.down.sql`.
+
+## `notification_settings` (011, P8)
+Telegram bildiriş ayarları. Cədvəldə tək sətir var (`id = 1`, `CHECK`).
+
+| Sütun | Tip | Qeyd |
+|---|---|---|
+| `enabled` | BOOLEAN | default `false` |
+| `chat_id` | TEXT | default `''` |
+| `bot_token_enc` | TEXT NULL | `NOVUSGATE_MASTER_KEY` ilə möhürlənir, kontekst `notification_settings.bot_token`. Master açar yoxdursa `plain:` prefiksi ilə saxlanılır. |
+| `node_offline`, `node_expired`, `fail2ban_ban`, `firewall_change` | BOOLEAN | default `true` |
+| `updated_at` | TIMESTAMPTZ | |
+
+- Sətir yoxdursa API default-ları qaytarır: söndürülüb, bütün hadisələr açıqdır, token yoxdur.
+- Rollback: `migrations_rollback/011_notification_settings.down.sql`.

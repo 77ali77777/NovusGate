@@ -142,9 +142,45 @@
   - job log-larının saxlanması: install çıxışında parollar var, saxlamaq təhlükəsizlik qərarıdır;
   - tam preflight (OS, disk).
 
+### 2026-10-15: P8 — yeni imkanlar
+- **İstifadəçi qərarları:**
+  - full tunnel `0.0.0.0/0` + DNS 1.1.1.1;
+  - backup yalnız manual;
+  - bildirişlər Telegram bot ilə;
+  - trafik 5 dəqiqəlik nümunə ilə, 30 gün saxlanır.
+- **Full tunnel (`c82b56b`):** egress-i açıq olan node-un config-i `AllowedIPs = 0.0.0.0/0` və `DNS = 1.1.1.1` alır (`rest.tunnelRouting`, `wireguard.GeneratePeerConfigDNS`).
+- **Trafik tarixçəsi (`1bcae2a`):**
+  - `traffic.Sampler` 5 dəqiqədən bir işləyir, köhnə nümunələr 30 gündən sonra silinir; miqrasiya 010;
+  - `GET /nodes/{id}/traffic?range=24h|7d|30d`;
+  - NodeDetail-də `TrafficHistoryCard` (recharts).
+- **Backup-lar (`846fd9d`):**
+  - `backup.Service` `pg_dump` və `/etc/wireguard`-ı `.tar.gz`-yə yığır, `/var/backups/novusgate/panel`-ə yazır;
+  - `/api/v1/backups` CRUD;
+  - Settings-də `BackupsCard`;
+  - image-ə `postgresql16-client` əlavə olundu; restore addımları `deployment.md`-dədir.
+- **Telegram bildirişləri (`8812781`, `3b64cd0`):**
+  - `notify` paketi: sender, dedupe edən növbə, `PeerWatcher`, `Fail2BanWatcher`;
+  - miqrasiya 011: token `MASTER_KEY` ilə möhürlənir və qaytarılmır;
+  - `/api/v1/notifications/{settings,test}`;
+  - firewall dəyişikliyi middleware-i və reconciler `OnExpired` hook-u;
+  - Settings-də `NotificationsCard`.
+- **Yoxlamalar:**
+  - Go `test-with-postgres.sh` → 13 paket `ok`, `go vet` OK;
+  - web: `tsc` OK, `npm test` 17/17, biome 97/31 (baseline), `vite build` OK.
+- **İcra olunmayıb:**
+  - real Telegram bot ilə göndəriş;
+  - real serverdə full tunnel ilə internet çıxışı;
+  - `pg_dump`-dan restore;
+  - brauzerdə kartların görünüşü.
+- **Məlum məhdudiyyət:** `fail2ban.log` konteynerə tək fayl kimi mount olunub, ona görə rename ilə rotasiyadan sonra ban bildirişləri konteyner restart olunana qədər dayanır (`deployment.md`).
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | Telegram bildirişləri: notify paketi, miqrasiya 011, `/api/v1/notifications/*`, firewall/expiry hook-ları, Settings kartı | server/internal/controlplane/{notify,store,api/rest,reconciler}, cmd/control-plane/main.go, web/src/{lib/notifications.ts,pages/Settings/*,api/client.ts,types}, docs | P8 · `8812781`, `3b64cd0` |
+| 2026-10-15 | Manual backup-lar (pg_dump + WireGuard config) | server/internal/controlplane/backup, api/rest/backup_handlers.go, Dockerfile, compose, web BackupsCard, docs | P8 · `846fd9d` |
+| 2026-10-15 | Node trafik tarixçəsi (5 dəq, 30 gün) | traffic/, store/traffic.go, miqrasiya 010, api/rest/traffic_handlers.go, web TrafficHistoryCard | P8 · `1bcae2a` |
+| 2026-10-15 | Full tunnel config-i (0.0.0.0/0 + DNS) | wireguard, api/rest | P8 · `c82b56b` |
 | 2026-10-14 | `.env` faylları git-dən çıxarıldı və ignore olundu | web/.gitignore, server/.gitignore, NovusGate Center/.gitignore | secret sızması · `3bb858c`, `5510657` |
 | 2026-10-14 | Postgres yalnız `127.0.0.1:5432` | docker-compose.yml, docs/security.md | publish olunmuş port iptables INPUT-dan keçmir · `2b374d8` |
 | 2026-10-14 | CI workflow `docs/ci/ci.yml`-də hazırlandı; `VITE_WS_URL` qeydi | docs/ci/ci.yml, web/.env.example | `.github` agentə bağlıdır · `8d4b700` |

@@ -71,3 +71,9 @@
   - Admin VPN (wg0) üzərindən birbaşa DB-yə qoşulma artıq mümkün deyil. Lazım olsa SSH tuneli istifadə edin: `ssh -L 5432:127.0.0.1:5432 <server>`.
   - Qüvvəyə minməsi üçün: `docker compose up -d postgres`.
 - **`.env` faylları git-də deyil:** `web/.env` və `NovusGate Center/.env` indeksdən çıxarıldı, `.gitignore`-lar `.env`-i (server: `deployments/docker/.env`) ignore edir. `web/.env` git tarixçəsində qalır, ona görə `API_KEY` dəyişdirilməlidir.
+
+## Telegram bildirişləri (P8, 2026-10-15)
+- Bot token DB-də node private key-ləri kimi `NOVUSGATE_MASTER_KEY` ilə möhürlənir. Möhürün konteksti ayrıdır, ona görə node açarı bu sütuna köçürülsə açılmır.
+- Token API cavablarında, log-da və xəta mesajlarında görünmür. Telegram xətasında yalnız Telegram-ın `description` mətni qalır, URL (tokenlə birlikdə) atılır.
+- Endpoint-lər panel sessiyası və ya API açarı tələb edir.
+- Control-plane `api.telegram.org`-a çıxış edir (HTTPS). Mesajlarda node adları, şəbəkə adları və ban olunan IP-lər var; bunlar Telegram serverlərindən keçir.

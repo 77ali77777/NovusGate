@@ -109,7 +109,7 @@ server/
 | **P5 UI kit** | §4.4 bünövrəsi: token-lər, komponentlər, i18n, tipli client, `/ui-kit` vitrin səhifəsi | P2 (OpenAPI) | Bütün komponentlər light/dark-da vitrində; `tsc` təmiz; a11y yoxlaması keçir |
 | **P6 UI səhifələri** | §6-nın hamısı yeni kit ilə + §7 UI baqları + yeni səhifələr (Network detalı, Policy matrisi/topologiya, Audit, Sessions, Backups) | P5, P3, P4 | Hər səhifə üçün §6 paritet çeklisti 100% |
 | **P7 Center** | §4.5 + Center baqları (§7.C) | P1 | Uğursuz update avtomatik rollback edir; paralel əməliyyat bloklanır |
-| **P8 Yeni imkanlar** | Full tunnel (node üzrə), backup UI, bildirişlər, trafik tarixçəsi | P3, P6 | Ayrıca spesifikasiya ilə |
+| **P8 Yeni imkanlar** | Full tunnel (node üzrə), backup UI, bildirişlər, trafik tarixçəsi | P3, P6 | Ayrıca spesifikasiya ilə. **2026-10-15:** dördü də hazırdır (hazırkı dizaynda; P6 ləğv olunub). Seçimlər: `0.0.0.0/0` + DNS 1.1.1.1, yalnız manual backup, Telegram bot, 5 dəq/30 gün. Real serverdə yoxlanmayıb. |
 
 **Təsdiq tələb edən yeni paketlər** (`CLAUDE.md`: yeni paket → təsdiq):
 - **P5:** `@radix-ui/*`, `class-variance-authority`, `tailwind-merge`, `react-hook-form`, `zod`, `@hookform/resolvers`, `i18next`, `react-i18next`, `@tanstack/react-table`, `sonner`, `openapi-typescript` (dev).
