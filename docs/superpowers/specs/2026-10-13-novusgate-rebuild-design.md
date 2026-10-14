@@ -15,7 +15,7 @@ NovusGate-i (WireGuard hub-and-spoke VPN idarəetmə sistemi) peşəkar, etibarl
 | Mövzu | Qərar |
 |---|---|
 | Firewall texnologiyası | **nftables-ə keçid** (iptables-dən) |
-| Frontend komponentləri | **Tam yeni UI kit** |
+| Frontend komponentləri | ~~Tam yeni UI kit~~ → **2026-10-14 qərarı: hazırkı frontend və dizayn saxlanılır.** P5 (UI kit) və P6 (səhifələrin yenidən yazılması) ləğv olundu. Qalan UI baqları (B13, B15-in frontend hissəsi) və P3c firewall UI hazırkı dizaynda edilir |
 | NovusGate Center | **Ayrıca Node.js aləti kimi qalır**: skriptlər fayllara çıxarılır, job modeli qurulur |
 | Təhdid modeli | Tək admin. Center lokaldır. Panel (3007) yalnız VPN (wg0) ilə, API (8080) yalnız `wg+` ilə açılır |
 
