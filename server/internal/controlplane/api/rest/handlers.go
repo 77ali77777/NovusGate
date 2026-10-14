@@ -71,9 +71,12 @@ func NewServer(store *store.Store) *Server {
 }
 
 // loadNetworks initializes managers for existing networks and imports/syncs peers
+// loadNetworksDelay gives the database a moment at startup (replaced in tests).
+var loadNetworksDelay = 2 * time.Second
+
 func (s *Server) loadNetworks() {
 	// Give DB a moment to come up
-	time.Sleep(2 * time.Second)
+	time.Sleep(loadNetworksDelay)
 	
 	ctx := context.Background()
 	networks, err := s.store.ListNetworks(ctx)
@@ -196,7 +199,7 @@ func (s *Server) loadNetworks() {
 			slog.Warn(fmt.Sprintf("Warning: cannot read peers of %s: %v", network.InterfaceName, err))
 			continue
 		}
-		restored, restoreErrs := restorePeers(mgr, dbNodes, livePeers, time.Now())
+		restored, _, restoreErrs := restorePeers(mgr, dbNodes, livePeers, time.Now())
 		if restored > 0 || len(restoreErrs) > 0 {
 			slog.Info(fmt.Sprintf("Restored %d peers on %s (%d errors)", restored, network.InterfaceName, len(restoreErrs)))
 		}
@@ -1002,13 +1005,14 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 
 	// B11: the peer follows the node's activity.
 	if add, remove := peerTransition(&before, node, time.Now()); add || remove {
-		if mgr := s.getManager(node.NetworkID); mgr != nil {
+		if pc := nodePeerControl(s, node.NetworkID); pc != nil {
 			if add {
 				slog.Info(fmt.Sprintf("Reactivating node %s, adding to WireGuard", node.Name))
-				if err := mgr.AddPeer(node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
+				// Keep a live peer's gateway routes and never take another peer's /32.
+				if err := ensurePeer(pc, node.PublicKey, node.VirtualIP.String()+"/32"); err != nil {
 					slog.Error(fmt.Sprintf("Warning: failed to add reactivated peer to WireGuard: %v", err))
 				}
-			} else if err := mgr.RemovePeer(node.PublicKey); err != nil {
+			} else if err := pc.RemovePeer(node.PublicKey); err != nil {
 				slog.Error(fmt.Sprintf("Warning: failed to remove peer from WireGuard: %v", err))
 			}
 		}
@@ -1714,10 +1718,10 @@ func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Expired or disabled nodes are not re-added.
-	added, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
+	added, skipped, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
 
 	s.triggerReconcile()
-	jsonResponse(w, http.StatusOK, SyncPeersResponse{Added: added, Skipped: len(nodes) - added - len(errs), Errors: errs, Total: len(nodes)})
+	jsonResponse(w, http.StatusOK, SyncPeersResponse{Added: added, Skipped: skipped, Errors: errs, Total: len(nodes)})
 }
 
 // Middleware
