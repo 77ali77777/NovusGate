@@ -14,7 +14,7 @@ import {
 import type React from 'react'
 import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { useNetworks } from '@/api/client'
+import { api, useNetworks } from '@/api/client'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
 
@@ -131,9 +131,15 @@ export const Layout = () => {
             type="button"
             onClick={() => {
               if (confirm('Are you sure you want to log out?')) {
-                localStorage.removeItem('auth_token')
-                localStorage.removeItem('auth_username')
-                window.location.href = '/login'
+                // Revoke the session on the server; leave locally even if that fails.
+                api
+                  .logout()
+                  .catch(() => undefined)
+                  .finally(() => {
+                    localStorage.removeItem('auth_token')
+                    localStorage.removeItem('auth_username')
+                    window.location.href = '/login'
+                  })
               }
             }}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"

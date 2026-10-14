@@ -490,19 +490,21 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate current password first
-	user, err := s.store.GetUserByUsername(r.Context(), req.Username)
-	if err != nil {
+	// The password changed is always the session user's; a body username
+	// is accepted only when it names that user.
+	current, hash := sessionFrom(r)
+	if req.Username != "" && req.Username != current.Username {
+		errorWithCode(w, http.StatusForbidden, "forbidden", "you can only change your own password")
+		return
+	}
+	user, err := s.store.GetUserByUsername(r.Context(), current.Username)
+	if err != nil || user == nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to check user")
 		return
 	}
-	if user == nil {
-		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
-		return
-	}
-	
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
-		errorWithCode(w, http.StatusUnauthorized, "invalid_old_password", "invalid old password")
+		errorWithCode(w, http.StatusBadRequest, "invalid_old_password", "invalid old password") // 400: a 401 logs the panel out (B15)
 		return
 	}
 
@@ -514,8 +516,13 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update password
-	if err := s.store.UpdateUserPassword(r.Context(), req.Username, string(hashedPassword)); err != nil {
+	if err := s.store.UpdateUserPassword(r.Context(), user.Username, string(hashedPassword)); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to update password")
+		return
+	}
+	// Other logins of this user end; the session that changed it stays.
+	if err := s.store.DeleteUserSessions(r.Context(), user.ID, hash); err != nil {
+		errorResponse(w, http.StatusInternalServerError, "password changed, but other sessions could not be revoked")
 		return
 	}
 

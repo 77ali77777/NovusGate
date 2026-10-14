@@ -121,6 +121,11 @@ class ApiClient {
     })
     return data
   }
+
+  async logout(): Promise<void> {
+    await this.client.post('/auth/logout')
+  }
+
   // User Management
   async updatePassword(username: string, oldPass: string, newPass: string): Promise<void> {
     await this.client.put('/auth/password', {

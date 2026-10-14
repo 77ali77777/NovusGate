@@ -37,7 +37,7 @@ func TestErrorCodes(t *testing.T) {
 		{"bad body", "POST", "/api/v1/networks", `{`, 400, "invalid_request_body"},
 		{"login", "POST", "/api/v1/auth/login", `{"username":"contract-user","password":"nope"}`, 401, "invalid_credentials"},
 		{"login unknown", "POST", "/api/v1/auth/login", `{"username":"ghost","password":"nope"}`, 401, "invalid_credentials"},
-		{"old password", "PUT", "/api/v1/auth/password", `{"username":"contract-user","oldPassword":"nope","newPassword":"x1y2z3"}`, 401, "invalid_old_password"},
+		{"old password", "PUT", "/api/v1/auth/password", `{"username":"contract-user","oldPassword":"nope","newPassword":"x1y2z3"}`, 400, "invalid_old_password"}, // B15: 401 logged the panel out
 		{"overlap", "POST", "/api/v1/networks", `{"name":"contract-o","cidr":"10.66.0.0/25"}`, 409, "cidr_overlap"},
 		{"admin network", "DELETE", "/api/v1/networks/" + admin.ID, "", 403, "admin_network_protected"},
 		{"protected port", "POST", "/api/v1/firewall/host/port/close", `{"port":22,"protocol":"tcp"}`, 403, "protected_rule"},

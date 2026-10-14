@@ -46,7 +46,7 @@ const LoginPage = () => {
 
       const data = await response.json()
       localStorage.setItem('auth_token', data.token)
-      localStorage.setItem('auth_username', email) // Store logged in username
+      localStorage.setItem('auth_username', data.username)
       window.location.href = '/dashboard'
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed')

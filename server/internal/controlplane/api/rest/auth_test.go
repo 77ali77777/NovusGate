@@ -117,3 +117,51 @@ func TestLoginRateLimit(t *testing.T) {
 		t.Fatalf("code = %q", code)
 	}
 }
+
+func TestPasswordChangeIsForSessionUser(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	mine := adminToken
+	testSession(t, st, "contract-other") // a second account
+	adminToken = mine
+	body := `{"username":"contract-other","oldPassword":"contract-pw-1","newPassword":"x-new-pw"}`
+	rec := callAs(t, s, "PUT", "/api/v1/auth/password", body, true)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("changing another account = %d %s, want 403", rec.Code, rec.Body)
+	}
+}
+
+func TestPasswordChangeRevokesOtherSessions(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	mine := adminToken
+	other := testSession(t, st, "contract-user") // a second session of the same user
+	rec := callAs(t, s, "PUT", "/api/v1/auth/password", `{"oldPassword":"contract-pw-1","newPassword":"contract-pw-2"}`, true)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("password = %d %s", rec.Code, rec.Body)
+	}
+	adminToken = other
+	if rec := callAs(t, s, "GET", "/api/v1/networks", "", true); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("the other session = %d, want 401", rec.Code)
+	}
+	adminToken = mine
+	if rec := callAs(t, s, "GET", "/api/v1/networks", "", true); rec.Code != http.StatusOK {
+		t.Fatalf("the current session = %d, want 200", rec.Code)
+	}
+}
+
+func TestDeletingUserRevokesSessions(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	mine := adminToken
+	victim := testSession(t, st, "contract-gone")
+	adminToken = mine
+	u, err := st.GetUserByUsername(context.Background(), "contract-gone")
+	if err != nil || u == nil {
+		t.Fatalf("user = %v, %v", u, err)
+	}
+	if rec := callAs(t, s, "DELETE", "/api/v1/users/"+u.ID, "", true); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d", rec.Code)
+	}
+	adminToken = victim
+	if rec := callAs(t, s, "GET", "/api/v1/networks", "", true); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("deleted user's session = %d, want 401", rec.Code)
+	}
+}
