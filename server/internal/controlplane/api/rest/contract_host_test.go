@@ -60,7 +60,7 @@ func TestContractHost(t *testing.T) {
 		{"f2b_reload", "POST", "/api/v1/system/fail2ban/reload", "", true},
 		{"f2b_ping", "GET", "/api/v1/system/fail2ban/ping", "", true},
 		{"host_debug_wireguard", "GET", "/api/v1/debug/wireguard/" + n, "", true},
-		{"host_debug_wireguard_missing", "GET", "/api/v1/debug/wireguard/00000000-0000-4000-8000-000000000000", "", false},
+		{"host_debug_wireguard_missing", "GET", "/api/v1/debug/wireguard/00000000-0000-4000-8000-000000000000", "", true},
 		{"host_checkin", "POST", "/api/v1/nodes/" + node + "/checkin", `{"node_info":{"os":"linux","arch":"amd64","hostname":"edge-1"}}`, true},
 		{"host_password", "PUT", "/api/v1/auth/password", `{"username":"contract-user","oldPassword":"contract-pw-1","newPassword":"contract-pw-2"}`, true},
 		{"host_server_create", "POST", "/api/v1/networks/" + n + "/servers", `{"name":"contract-srv"}`, true},

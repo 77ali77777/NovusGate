@@ -144,10 +144,3 @@ type DebugDBNode struct {
 	PublicKey string `json:"public_key"`
 	VirtualIP string `json:"virtual_ip"`
 }
-
-// DebugNotFoundResponse is debug/wireguard's legacy 404 body (not the
-// unified error shape; kept as is, see P2d-2 deferred minor M-3).
-type DebugNotFoundResponse struct {
-	NetworkID string `json:"network_id"`
-	Error     string `json:"error"`
-}

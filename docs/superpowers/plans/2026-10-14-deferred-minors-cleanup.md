@@ -54,21 +54,21 @@
 - [x] C6: `secretbox.IsPlain` is removed (unused).
 
 ## Batch D — API surface and OpenAPI (P2d reviews)
-- [ ] D1 (M-3): `GET /debug/wireguard/{id}` 404 uses the unified error body.
-- [ ] D2 (M-4): GET routes also answer HEAD (no body).
-- [ ] D3 (M-5): `/api` without a slash and `/api/...` with a trailing slash → JSON 404, documented.
-- [ ] D4 (M-1): nullable `$ref` is emitted as `{type: object, nullable, allOf}`.
-- [ ] D5 (P2d-3 M-2): `ssh_ports` and `egress_interface` are not documented as nullable (optional only).
-- [ ] D6 (M-6): `assertMatchesSpec` checks the Content-Type of media-type operations.
-- [ ] D7 (M-8):
+- [x] D1 (M-3): `GET /debug/wireguard/{id}` 404 uses the unified error body.
+- [x] D2 (M-4): GET routes also answer HEAD (no body).
+- [x] D3 (M-5): `/api` without a slash and `/api/...` with a trailing slash → JSON 404, documented.
+- [x] D4 (M-1): nullable `$ref` is emitted as `{type: object, nullable, allOf}`.
+- [x] D5 (P2d-3 M-2): `ssh_ports` and `egress_interface` are not documented as nullable (optional only).
+- [x] D6 (M-6): `assertMatchesSpec` checks the Content-Type of media-type operations.
+- [x] D7 (M-8):
   - query parameters documented;
   - an `X-API-Key` security scheme;
   - `format: binary` for the QR PNG;
   - an enum for `NodeStatus`.
-- [ ] D8 (M-9): `handleAPIFallback` does not clone the request per method.
-- [ ] D9: a test that every `docExtraResponses` key names a `docOps` entry.
-- [ ] D10 (P2a #2): `docs/api.md` scopes the error format to `/api` responses (SPA and 301 excluded).
-- [ ] D11 (P2b #9): mux's path-cleaning 301s are logged (logging wraps the router, not only matched routes).
+- [x] D8 (M-9): `handleAPIFallback` does not clone the request per method.
+- [x] D9: a test that every `docExtraResponses` key names a `docOps` entry.
+- [x] D10 (P2a #2): `docs/api.md` scopes the error format to `/api` responses (SPA and 301 excluded).
+- [x] D11 (P2b #9): mux's path-cleaning 301s are logged (logging wraps the router, not only matched routes).
 
 ## Batch E — Server internals (P2a–P2c reviews)
 - [ ] E1 (#10): fail2ban log read errors other than "not found" are logged and returned as an `error` field.

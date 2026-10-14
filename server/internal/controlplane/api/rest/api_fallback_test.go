@@ -14,11 +14,11 @@ func TestAPIFallbacks(t *testing.T) {
 		t.Fatalf("unknown /api path = %d %s", rec.Code, rec.Body)
 	}
 	rec = callAs(t, s, "DELETE", "/api/v1/stats/overview", "", true)
-	if rec.Code != http.StatusMethodNotAllowed || errorCode(t, rec.Body.Bytes()) != "method_not_allowed" || rec.Header().Get("Allow") != "GET" {
+	if rec.Code != http.StatusMethodNotAllowed || errorCode(t, rec.Body.Bytes()) != "method_not_allowed" || rec.Header().Get("Allow") != "GET, HEAD" {
 		t.Fatalf("wrong method = %d %s Allow=%q", rec.Code, rec.Body, rec.Header().Get("Allow"))
 	}
 	rec = callAs(t, s, "PUT", "/api/v1/networks", "", true)
-	if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Allow") != "GET, POST" {
+	if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Allow") != "GET, HEAD, POST" {
 		t.Fatalf("wrong method on a two-method path = %d Allow=%q", rec.Code, rec.Header().Get("Allow"))
 	}
 	// Without a token the auth middleware still answers first.

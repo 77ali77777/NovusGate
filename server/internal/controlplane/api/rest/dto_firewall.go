@@ -55,8 +55,8 @@ type V2StateResponse struct {
 	EgressNodeIDs   []string                  `json:"egress_node_ids"`
 	Pending         *PendingChange            `json:"pending"`
 	HostError       string                    `json:"host_error,omitempty"`
-	SSHPorts        *[]uint16                 `json:"ssh_ports,omitempty"`
-	EgressInterface *string                   `json:"egress_interface,omitempty"`
+	SSHPorts        *[]uint16                 `json:"ssh_ports,omitempty" openapi:"notnull"`
+	EgressInterface *string                   `json:"egress_interface,omitempty" openapi:"notnull"`
 }
 
 type V2PreviewResponse struct {

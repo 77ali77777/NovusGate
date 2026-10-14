@@ -118,7 +118,8 @@
                 "$ref": "#/components/schemas/Node"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
@@ -897,7 +898,8 @@
                 "$ref": "#/components/schemas/ReconcilerCheck"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           },
           "wireguard": {
             "allOf": [
@@ -905,7 +907,8 @@
                 "$ref": "#/components/schemas/WireGuardCheck"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
@@ -1165,7 +1168,8 @@
                 "$ref": "#/components/schemas/NodeInfo"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           },
           "public_ip": {
             "type": "string"
@@ -1174,6 +1178,12 @@
             "type": "string"
           },
           "status": {
+            "enum": [
+              "pending",
+              "online",
+              "offline",
+              "expired"
+            ],
             "type": "string"
           },
           "transfer_rx": {
@@ -1217,7 +1227,8 @@
                 "$ref": "#/components/schemas/NodeInfoInput"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           }
         },
         "type": "object"
@@ -1576,7 +1587,8 @@
                 "$ref": "#/components/schemas/NodeInfoInput"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           },
           "status": {
             "nullable": true,
@@ -1628,7 +1640,8 @@
                 "$ref": "#/components/schemas/PendingChange"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           },
           "warnings": {
             "items": {
@@ -1667,7 +1680,6 @@
       "V2StateResponse": {
         "properties": {
           "egress_interface": {
-            "nullable": true,
             "type": "string"
           },
           "egress_node_ids": {
@@ -1684,7 +1696,8 @@
                   "$ref": "#/components/schemas/FirewallForward"
                 }
               ],
-              "nullable": true
+              "nullable": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"
@@ -1699,7 +1712,8 @@
                   "$ref": "#/components/schemas/FirewallIPRule"
                 }
               ],
-              "nullable": true
+              "nullable": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"
@@ -1713,7 +1727,8 @@
                 "$ref": "#/components/schemas/PendingChange"
               }
             ],
-            "nullable": true
+            "nullable": true,
+            "type": "object"
           },
           "services": {
             "items": {
@@ -1722,7 +1737,8 @@
                   "$ref": "#/components/schemas/FirewallService"
                 }
               ],
-              "nullable": true
+              "nullable": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"
@@ -1731,7 +1747,6 @@
             "items": {
               "type": "integer"
             },
-            "nullable": true,
             "type": "array"
           }
         },
@@ -1981,9 +1996,19 @@
       }
     },
     "securitySchemes": {
+      "apiKey": {
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      },
       "bearer": {
         "scheme": "bearer",
         "type": "http"
+      },
+      "enrollmentToken": {
+        "in": "header",
+        "name": "X-Enrollment-Token",
+        "type": "apiKey"
       }
     }
   },
@@ -2411,6 +2436,17 @@
     "/api/v1/firewall/host/rules": {
       "get": {
         "operationId": "get_firewall_host_rules",
+        "parameters": [
+          {
+            "description": "only this chain (INPUT, FORWARD, ...)",
+            "in": "query",
+            "name": "chain",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -2532,6 +2568,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -2571,6 +2616,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -2604,6 +2658,17 @@
     "/api/v1/firewall/v2/forwards": {
       "post": {
         "operationId": "post_firewall_v2_forwards",
+        "parameters": [
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2653,6 +2718,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -2686,6 +2760,17 @@
     "/api/v1/firewall/v2/ip-rules": {
       "post": {
         "operationId": "post_firewall_v2_ip_rules",
+        "parameters": [
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2734,6 +2819,15 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2799,6 +2893,17 @@
     "/api/v1/firewall/v2/services": {
       "post": {
         "operationId": "post_firewall_v2_services",
+        "parameters": [
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2847,6 +2952,15 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -3604,6 +3718,15 @@
             "description": "Error"
           }
         },
+        "security": [
+          {
+            "apiKey": [],
+            "bearer": []
+          },
+          {
+            "enrollmentToken": []
+          }
+        ],
         "summary": "Report node information (panel session, or the install script's X-Enrollment-Token)",
         "tags": [
           "nodes"
@@ -3710,6 +3833,7 @@
             "content": {
               "image/png": {
                 "schema": {
+                  "format": "binary",
                   "type": "string"
                 }
               }
@@ -3839,6 +3963,26 @@
     "/api/v1/system/fail2ban/ban-history": {
       "get": {
         "operationId": "get_system_fail2ban_ban_history",
+        "parameters": [
+          {
+            "description": "only this jail",
+            "in": "query",
+            "name": "jail",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "newest entries to return (default 100)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3911,6 +4055,17 @@
     "/api/v1/system/fail2ban/jail/settings": {
       "get": {
         "operationId": "get_system_fail2ban_jail_settings",
+        "parameters": [
+          {
+            "description": "jail name (default sshd)",
+            "in": "query",
+            "name": "jail",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3991,6 +4146,17 @@
     "/api/v1/system/fail2ban/logs": {
       "get": {
         "operationId": "get_system_fail2ban_logs",
+        "parameters": [
+          {
+            "description": "number of log lines (default 100)",
+            "in": "query",
+            "name": "lines",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4123,6 +4289,17 @@
     "/api/v1/system/fail2ban/reload": {
       "post": {
         "operationId": "post_system_fail2ban_reload",
+        "parameters": [
+          {
+            "description": "reload only this jail",
+            "in": "query",
+            "name": "jail",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4226,6 +4403,17 @@
     "/api/v1/system/fail2ban/whitelist": {
       "get": {
         "operationId": "get_system_fail2ban_whitelist",
+        "parameters": [
+          {
+            "description": "jail name (default sshd)",
+            "in": "query",
+            "name": "jail",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4467,6 +4655,7 @@
   },
   "security": [
     {
+      "apiKey": [],
       "bearer": []
     }
   ],

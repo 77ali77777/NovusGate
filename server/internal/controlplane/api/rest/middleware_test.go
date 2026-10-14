@@ -29,7 +29,7 @@ func TestRequestLogNeverContainsSecrets(t *testing.T) {
 		strings.NewReader(`{"username":"contract-user","password":"contract-pw-1"}`))
 	req.Header.Set("Authorization", "Bearer header-secret")
 	rec := httptest.NewRecorder()
-	s.router.ServeHTTP(rec, req)
+	s.Router().ServeHTTP(rec, req) // the request log wraps the mux in Router
 	out := logs.String()
 	for _, secret := range []string{"query-secret", "query-pw", "header-secret", "contract-pw-1", adminToken} {
 		if strings.Contains(out, secret) {

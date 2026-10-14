@@ -242,16 +242,17 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	return newMgr
 }
 
-// Router returns the HTTP router
+// Router returns the HTTP handler the server listens with. The request log
+// wraps the mux itself, so its path-cleaning redirects are logged too, and
+// HEAD requests are answered as GET without a body.
 func (s *Server) Router() http.Handler {
-	return s.router
+	return LoggingMiddleware(headAsGet(s.router))
 }
 
 func (s *Server) setupRoutes() {
-	// Apply global middleware
-	// Order: the request log wraps everything (it records the 500 that
-	// RecoverMiddleware writes), then panic recovery, then auth.
-	s.router.Use(LoggingMiddleware, RecoverMiddleware, APIKeyMiddleware, s.authMiddleware)
+	// Route middleware: panic recovery, then auth. The request log wraps the
+	// whole mux in Router (it records the 500 that RecoverMiddleware writes).
+	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -335,6 +336,7 @@ func (s *Server) setupRoutes() {
 
 	// Helper for SPA (Single Page Application) serving
 	// Unmatched /api requests answer in JSON (404/405), never with the SPA.
+	s.router.Path("/api").HandlerFunc(s.handleAPIFallback).Name("api-fallback")
 	s.router.PathPrefix("/api/").HandlerFunc(s.handleAPIFallback).Name("api-fallback")
 	s.router.PathPrefix("/").HandlerFunc(s.handleSPA).Name("spa")
 }
@@ -1617,7 +1619,7 @@ func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 	// Get network info
 	network, err := s.store.GetNetwork(r.Context(), networkID)
 	if err != nil || network == nil {
-		jsonResponse(w, http.StatusNotFound, DebugNotFoundResponse{NetworkID: networkID, Error: "network not found"})
+		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
 	

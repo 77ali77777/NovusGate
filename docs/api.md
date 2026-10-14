@@ -84,7 +84,11 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.
 
 ## Xəta formatı (P2d-1)
-Bütün `/api` xəta cavabları bu formadadır:
+Bütün `/api` xəta cavabları bu formadadır (`/api`, `/api/` ilə başlayan və sonunda `/` olan yollar da daxil). Bu formaya aid olmayanlar:
+- SPA (`/` altındakı digər yollar);
+- mux-un təmizlənməmiş yollar üçün verdiyi `301` yönləndirməsi (`//` və ya `..` olan yol).
+
+Forma:
 
 ```json
 {"error":{"code":"cidr_overlap","message":"CIDR 10.66.0.0/25 overlaps with existing network 'office' (10.66.0.0/24)"}}
@@ -134,7 +138,7 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **DTO-lar (P2d-3):** bütün request və response body-ləri adlı Go tipləridir (`dto_requests.go`, `dto_system.go`, `dto_fail2ban.go`, `dto_firewall.go`). Sənəddə ümumi `object` kimi yalnız iki yer qalır: `/api/v1/openapi.json`-un özü və v2 dəyişiklik cavabının `item` sahəsi (yaradılan qeyd, `{"id"}` və ya `{"node_id","egress"}`).
 - **Şərti açarlar:** bəzi açarlar yalnız müəyyən halda gəlir (məsələn fail2ban jail sayğacları, `firewall.ready`, v2 state-də `host_error` və ya `ssh_ports`/`egress_interface`). Sxemdə onlar `required` deyil. Mövcud olanda `0`, `false`, `""` və `[]` real dəyərdir.
 - **Əlavə status:** `PUT /system/fail2ban/jail/settings` ayarların bir hissəsi tətbiq olunmayanda 206 qaytarır (`status: "partial"`, `errors`). Bu status sənəddə var (`docExtraResponses`).
-- **Məhdudiyyət:** request sxemlərində `required` yoxdur: Go hər sahəni isteğe bağlı decode edir, default-ları handler verir. `GET /debug/wireguard/{id}`-in 404 body-si köhnə formadadır (`{"network_id","error"}`), vahid xəta formasında deyil.
+- **Məhdudiyyət:** request sxemlərində `required` yoxdur: Go hər sahəni isteğe bağlı decode edir, default-ları handler verir. `GET /debug/wireguard/{id}`-in 404-ü də vahid formadadır (`not_found`).
 - **İstifadə:** P5 web client tiplərini bu sənəddən `openapi-typescript` ilə yaradacaq.
 
 ## `/api` fallback (P2d-2)
@@ -180,3 +184,15 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **`labels.wireguard_private_key` artıq qaytarılmır.** Key şifrələnmiş ayrıca sütunda saxlanılır.
 - **Yeni sahə `has_config` (bool):** server node-un private key-ini saxlayırsa `true` olur. Belə node üçün `GET /nodes/{id}/config`, `/qrcode` və `/install.sh` işləyir. İmport olunmuş peer-lər üçün `false`-dur.
 - **Checkin və server yaratma** `wireguard_*` label-lərini qəbul etmir, ona görə key label vasitəsilə yazıla bilməz. Startup miqrasiyası sütunda artıq olan key-i label ilə əvəz etmir.
+
+## API səthinə sonrakı əlavələr
+- **HEAD:** hər GET yolu HEAD-ə də cavab verir: eyni status və başlıqlar, body yoxdur. 405 cavabındakı `Allow` başlığında GET varsa, HEAD də göstərilir.
+- **`/api` və sonunda `/` olan `/api/...` yolları:** JSON `404 not_found`.
+- **Request log** bütün sorğuları yazır, o cümlədən mux-un 301 yönləndirmələrini.
+- **OpenAPI sənədinə əlavələr:**
+  - query parametrləri (`lines`, `jail`, `limit`, `chain`, `confirm`);
+  - `X-API-Key` (`apiKey`) və checkin üçün `X-Enrollment-Token` security sxemləri;
+  - QR üçün `format: binary`;
+  - `NodeStatus` enum-u;
+  - nullable `$ref`-lər `type: object` ilə;
+  - `ssh_ports` və `egress_interface` nullable deyil, sadəcə isteğe bağlıdır.

@@ -30,6 +30,32 @@ type docOp struct {
 	Public                     bool
 }
 
+// docParam is a documented query parameter.
+type docParam struct {
+	Name, Type, Description string
+}
+
+// docQueryParams documents the query parameters of an operation, keyed by
+// "METHOD path".
+var docQueryParams = map[string][]docParam{
+	"GET /api/v1/system/fail2ban/logs":           {{"lines", "integer", "number of log lines (default 100)"}},
+	"GET /api/v1/firewall/host/rules":            {{"chain", "string", "only this chain (INPUT, FORWARD, ...)"}},
+	"GET /api/v1/system/fail2ban/jail/settings":  {{"jail", "string", "jail name (default sshd)"}},
+	"GET /api/v1/system/fail2ban/whitelist":      {{"jail", "string", "jail name (default sshd)"}},
+	"POST /api/v1/system/fail2ban/reload":        {{"jail", "string", "reload only this jail"}},
+	"GET /api/v1/system/fail2ban/ban-history":    {{"jail", "string", "only this jail"}, {"limit", "integer", "newest entries to return (default 100)"}},
+	"POST /api/v1/firewall/v2/services":          {confirmParam},
+	"DELETE /api/v1/firewall/v2/services/{id}":   {confirmParam},
+	"POST /api/v1/firewall/v2/ip-rules":          {confirmParam},
+	"DELETE /api/v1/firewall/v2/ip-rules/{id}":   {confirmParam},
+	"POST /api/v1/firewall/v2/forwards":          {confirmParam},
+	"DELETE /api/v1/firewall/v2/forwards/{id}":   {confirmParam},
+	"PUT /api/v1/firewall/v2/egress/{nodeId}":    {confirmParam},
+	"DELETE /api/v1/firewall/v2/egress/{nodeId}": {confirmParam},
+}
+
+var confirmParam = docParam{"confirm", "boolean", "false applies at once; otherwise the change rolls back unless confirmed"}
+
 // docExtraResponses documents a second success status of an operation,
 // keyed by "METHOD path".
 var docExtraResponses = map[string]map[int]any{
@@ -108,7 +134,9 @@ var docOps = []docOp{
 var (
 	timeType = reflect.TypeOf(time.Time{})
 	ipType   = reflect.TypeOf(net.IP{})
-	pathVar  = regexp.MustCompile(`\{([^}]+)\}`)
+	// nodeStatusType is documented as an enum of the NodeStatus constants.
+	nodeStatusType = reflect.TypeOf(models.NodeStatus(""))
+	pathVar        = regexp.MustCompile(`\{([^}]+)\}`)
 )
 
 // schemaGen turns Go types into OpenAPI 3.0 schemas; named structs become
@@ -125,9 +153,18 @@ func (g *schemaGen) schema(v any) map[string]any {
 	return g.typeSchema(reflect.TypeOf(v))
 }
 
+// notNull undoes nullable for a field that is omitted rather than null.
+func notNull(s map[string]any) map[string]any {
+	if all, ok := s["allOf"].([]any); ok && s["nullable"] == true {
+		return all[0].(map[string]any)
+	}
+	delete(s, "nullable")
+	return s
+}
+
 func nullable(s map[string]any) map[string]any {
-	if _, isRef := s["$ref"]; isRef {
-		return map[string]any{"allOf": []any{s}, "nullable": true}
+	if _, isRef := s["$ref"]; isRef { // every component is an object
+		return map[string]any{"type": "object", "allOf": []any{s}, "nullable": true}
 	}
 	s["nullable"] = true
 	return s
@@ -137,6 +174,8 @@ func (g *schemaGen) typeSchema(t reflect.Type) map[string]any {
 	switch t {
 	case timeType:
 		return map[string]any{"type": "string", "format": "date-time"}
+	case nodeStatusType:
+		return map[string]any{"type": "string", "enum": []any{"pending", "online", "offline", "expired"}}
 	case ipType:
 		return map[string]any{"type": "string", "description": "IP address"}
 	}
@@ -191,6 +230,9 @@ func (g *schemaGen) structSchema(t reflect.Type) map[string]any {
 			name = f.Name
 		}
 		props[name] = g.typeSchema(f.Type)
+		if f.Tag.Get("openapi") == "notnull" { // optional, but never null when present
+			props[name] = notNull(props[name].(map[string]any))
+		}
 		if !g.inRequest && !strings.Contains(opts, "omitempty") {
 			required = append(required, name)
 		}
@@ -232,7 +274,11 @@ func openAPIDocument() map[string]any {
 		switch body := op.Response.(type) {
 		case nil:
 		case mediaType:
-			resp["content"] = map[string]any{string(body): map[string]any{"schema": map[string]any{"type": "string"}}}
+			schema := map[string]any{"type": "string"}
+			if strings.HasPrefix(string(body), "image/") {
+				schema["format"] = "binary"
+			}
+			resp["content"] = map[string]any{string(body): map[string]any{"schema": schema}}
 		default:
 			resp["content"] = map[string]any{"application/json": map[string]any{"schema": g.schema(body)}}
 		}
@@ -251,6 +297,10 @@ func openAPIDocument() map[string]any {
 		for _, m := range pathVar.FindAllStringSubmatch(op.Path, -1) {
 			params = append(params, map[string]any{"name": m[1], "in": "path", "required": true, "schema": map[string]any{"type": "string"}})
 		}
+		for _, q := range docQueryParams[op.Method+" "+op.Path] {
+			params = append(params, map[string]any{"name": q.Name, "in": "query", "required": false,
+				"description": q.Description, "schema": map[string]any{"type": q.Type}})
+		}
 		if params != nil {
 			o["parameters"] = params
 		}
@@ -261,16 +311,29 @@ func openAPIDocument() map[string]any {
 		if op.Public {
 			o["security"] = []any{}
 		}
+		if op.Method == "POST" && op.Path == "/api/v1/nodes/{id}/checkin" {
+			// A panel session, or the install script's one-time token.
+			o["security"] = []any{
+				map[string]any{"bearer": []any{}, "apiKey": []any{}},
+				map[string]any{"enrollmentToken": []any{}},
+			}
+		}
 		item[strings.ToLower(op.Method)] = o
 	}
 	return map[string]any{
 		"openapi":  "3.0.3",
 		"info":     map[string]any{"title": "NovusGate Control Plane API", "version": "0.1.0"},
 		"servers":  []any{map[string]any{"url": "/"}},
-		"security": []any{map[string]any{"bearer": []any{}}},
+		"security": []any{map[string]any{"bearer": []any{}, "apiKey": []any{}}},
 		"components": map[string]any{
-			"schemas":         g.components,
-			"securitySchemes": map[string]any{"bearer": map[string]any{"type": "http", "scheme": "bearer"}},
+			"schemas": g.components,
+			"securitySchemes": map[string]any{
+				"bearer": map[string]any{"type": "http", "scheme": "bearer"},
+				// Required only when the server sets novusgate_API_KEY; the
+				// panel's nginx adds it.
+				"apiKey":          map[string]any{"type": "apiKey", "in": "header", "name": "X-API-Key"},
+				"enrollmentToken": map[string]any{"type": "apiKey", "in": "header", "name": "X-Enrollment-Token"},
+			},
 		},
 		"paths": paths,
 	}

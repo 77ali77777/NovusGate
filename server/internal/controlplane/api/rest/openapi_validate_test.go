@@ -125,8 +125,13 @@ func assertMatchesSpec(t *testing.T, s *Server, method, path string, rec *httpte
 			}
 			response = extra
 		}
-		switch response.(type) {
-		case nil, mediaType:
+		switch mt := response.(type) {
+		case nil:
+			return
+		case mediaType:
+			if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, string(mt)) {
+				t.Errorf("%s %s: Content-Type %q, documented %q", method, tpl, ct, mt)
+			}
 			return
 		}
 		g := &schemaGen{components: map[string]any{}}
