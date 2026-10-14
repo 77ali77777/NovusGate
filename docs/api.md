@@ -106,6 +106,7 @@ Bütün `/api` xəta cavabları bu formadadır:
 | `too_many_attempts` | 429 | login: bu IP-dən 15 dəqiqədə 10 uğursuz cəhd (`Retry-After` başlığı ilə) |
 | `invalid_old_password` | 400 | parol dəyişmə, köhnə parol səhvdir (P4a-da 401-dən 400-ə keçdi, B15) |
 | `forbidden` | 403 | parol dəyişmə: body-dəki `username` sessiya istifadəçisi deyil |
+| `invalid_enrollment_token` | 401 | checkin: enrollment tokeni yanlışdır, işlənib, vaxtı bitib və ya başqa node-undur |
 | `cidr_overlap` | 409 | şəbəkə yaratma |
 | `admin_network_protected` | 403 | wg0-ın silinməsi |
 | `protected_rule` | 403 | Close Port / Delete: qorunan port və ya qayda |
@@ -155,3 +156,22 @@ Bütün `/api` xəta cavabları bu formadadır:
 - **`PUT /api/v1/auth/password`** (`{oldPassword, newPassword}`, `username` isteğe bağlıdır): parol həmişə sessiya istifadəçisinin parolu dəyişir. Body-də başqa `username` göndərilsə, `403 forbidden` qayıdır. Səhv köhnə parol `400 invalid_old_password` qaytarır.
 - **Login limiti:** bir IP-dən 15 dəqiqədə 10 uğursuz login olandan sonra `429 too_many_attempts` qayıdır, düzgün parol olsa belə. `Retry-After` neçə saniyə gözləmək lazım olduğunu deyir. Uğurlu login həmin IP-nin sayğacını sıfırlayır. Sayğac yaddaşdadır, restartda sıfırlanır.
 - **Açıq (auth tələb etməyən) yollar:** yalnız `/health` və `/api/v1/auth/login`, dəqiq uyğunluqla. Əvvəl `/login` ilə bitən istənilən yol auth-dan keçirdi.
+
+## Node enrollment və same-origin (P4b)
+- **`GET /api/v1/nodes/{id}/install.sh`** (panel sessiyası tələb edir): hər çağırış yeni, bir dəfəlik, 15 dəqiqəlik enrollment tokeni yaradır və onu skriptə yazır. Skript bu ardıcıllıqla işləyir:
+  1. WireGuard quraşdırılır;
+  2. `wg0.conf` quoted heredoc ilə yazılır, icazəsi `600`;
+  3. `wg-quick@wg0` qaldırılır;
+  4. node VPN üzərindən `http://<hub ünvanı>:8080/api/v1/nodes/{id}/checkin`-ə `X-Enrollment-Token` başlığı ilə checkin edir (2 saniyə ara ilə 30 cəhd).
+
+  Heç bir port internetə açılmır.
+- **`POST /api/v1/nodes/{id}/checkin`:**
+  - panel sessiyası ilə əvvəlki kimi işləyir;
+  - sessiya olmadıqda `X-Enrollment-Token` həmin node-un işlənməmiş və vaxtı bitməmiş tokeni olmalıdır, əks halda `401 invalid_enrollment_token`. Token ilk uğurlu istifadədə işlənmiş sayılır.
+
+  Başlıq yalnız bu yolda və `POST` method-unda işə yarayır, başqa heç bir endpoint-i açmır.
+- **Checkin label-ləri:** `wireguard_` ilə başlayan açarlar nəzərə alınmır. Əvvəl checkin `wireguard_private_key`-i əvəz edə bilirdi.
+- **Same origin:**
+  - panel API-ni öz nginx-i üzərindən `/api/v1` kimi çağırır;
+  - control-plane artıq `Access-Control-*` başlıqları göndərmir;
+  - `OPTIONS` sorğusu digər səhv method-lar kimi `405` alır.

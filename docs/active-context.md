@@ -1,155 +1,7 @@
 # Active Context
 
 ## Son Sessiya
-- **Tarix:** 2026-10-13
-- **Tapşırıq:** P1 Stabilizasiya (`docs/superpowers/plans/2026-10-13-p1-stabilization.md`)
-- **Nəticə:** Task 1–10 commit-lənib (`cde27c5^..70216b9`, 13 commit: `cde27c5` `3fbfd54` `abdb7b5` `1bb5700` `1bbc4c2` `63cf05f` `2ddf730` `f7efd76` `7e1abd1` `b58853c` `dc582ea` `8e9a449` `70216b9`). Step 1 avtomatik testlər (Docker, `MSYS_NO_PATHCONV=1`):
-  - Go — `docker run … golang:1.23 go test ./...` → `ok  github.com/novusgate/novusgate/internal/controlplane/api/rest 0.019s`; digər paketlər `[no test files]`; exit 0.
-  - Center — `docker run … node:20-bookworm sh -c 'node --test test/*.test.js'` → `# tests 19` · `# pass 19` · `# fail 0`; exit 0.
-  - Shell — `docker run … ubuntu:24.04 bash tests/setup-firewall_test.sh` → `OK`; exit 0.
-  - Staging qəbulu icra olunmadı, səbəb: staging VM yoxdur — runbook istifadəçi tərəfindən icra olunmalıdır.
-- **Davam:** P2 Backend nüvəsi planı yazılmalıdır (növbəti addım). İstifadəçinin tərəfində qalanlar:
-  1. `.github/workflows/ci.yml` yaradılmalıdır — `.github` altına yazma icazə ayarlarına görə rədd edildi; YAML P1 planında Task 1 Step 5-dədir.
-  2. `setup-firewall.sh` faylının LF ilə yenidən checkout-u rədd edildi — Task 5 (`63cf05f`) faylı artıq LF ilə yazdığı üçün məsələ bağlıdır.
-  3. `docs/runbooks/p1-staging-acceptance.md` staging VM-də (təzə Ubuntu 24.04, root SSH) icra olunmalıdır; hər addımın əmr və çıxışı həmin faylın sonuna yazılmalıdır.
-
-### Eyni sessiyanın davamı (2026-10-13): P3 firewall
-- **Tapşırıq:** Linux firewall-unu (SSH-dan şəbəkəyə qədər) tam idarə etmək üçün analiz, dizayn və plan.
-- **İstifadəçi qərarları:**
-  - SSH public qalır;
-  - port forwarding lazımdır;
-  - full tunnel-in firewall hissəsi P3-də hazırlanır;
-  - IPv6 IPv4 ilə eyni qaydaları alır.
-- **Nəticə:** `docs/superpowers/specs/2026-10-13-p3-firewall-design.md` və `docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md` commit-ləndi (`709d1a6`). Repo-da kod dəyişməyib. P3a kodu scratchpad-da prototip kimi yoxlanılıb:
-  - `go vet`, `go build ./...` və testlər (`ok …/netctl/nft`, `…/controlplane/firewall`, `…/api/rest`) keçir;
-  - yaradılan qaydalar nftables 1.0.2, 1.0.6 və 1.0.9-da `nft -c`-dən keçir;
-  - kernel-də apply, snapshot və restore işləyir.
-- **Aşkarlanan:** WSL docker shim-i argumentlərdəki `$`-ı genişləndirir, ona görə konteyner daxilində `$?` etibarsızdır. Test məntiqi `server/scripts/test-in-docker.sh` faylında olmalıdır.
-- **Davam:** P3a planını icra etmək (icra üsulu istifadəçinin seçimidir), sonra P3b. PR üçün push-u istifadəçi edir.
-
-### Eyni sessiyanın davamı (2026-10-13): P3a icra olundu
-- **Tapşırıq:** `docs/superpowers/plans/2026-10-13-p3a-firewall-engine.md` (inline, executing-plans)
-- **Nəticə:** Task 1–6 commit-ləndi (`76b8e1b` … Task 6). Tam yoxlama (`bash scripts/test-in-docker.sh`, Docker, `NFT_CHECK=1`) → `ok …/api/rest`, `ok …/controlplane/firewall`, `ok …/netctl/nft`; exit 0. Golden ruleset Ubuntu 22.04-də (nft 1.0.2) `KERNEL-CHECK-OK` verdi. Control-plane image yığıldı, içində `nftables v1.0.9` var.
-- **End-to-end yoxlama:** real Postgres-də migration-lar icra olundu, şəbəkə, node və VPN qaydası əlavə edildi, `firewall preview --check` işlədildi. Nəticə: `nft -c: OK`, SSH portları `{ 22, 2222 }` real `sshd -T`-dən aşkarlandı, qayda düzgün çevrildi.
-- **Davranış dəyişikliyi:** yoxdur. Hostda heç nə avtomatik tətbiq olunmur.
-- **Final review (opus):** "With fixes" — 1 Critical, 7 Important. Hamısı RED→GREEN ilə düzəldildi (`e7eadc9`, `cf496f9`, `3c5ce3a`):
-  - SSH portları `listenaddress` və canlı `ss` dinləyicilərindən aşkarlanır;
-  - rollback faylı, timer və nft host-da işləyir;
-  - restart, confirm və disarm yarışları aradan qaldırıldı;
-  - wg0-un Docker postgres-ə çıxışı qorunur;
-  - DHCPv6 cavabları qəbul olunur;
-  - uzun ban-lar ruleset-i sındırmır;
-  - UDP forward WireGuard portunu tuta bilmir;
-  - IPv6 qaydaları xəbərdarlığa çevrilir.
-  
-  Fix-dən sonra suite exit 0, golden nft 1.0.2-də yüklənir. Minor-lar P3 spec §6a-ya köçürüldü.
-- **Davam:** P3b planı (DB cədvəlləri, `/firewall/v2`, iptables-dən import, `FIREWALL_ENGINE` bayrağı, boot unit, fail2ban nftables).
-
-### Eyni sessiyanın davamı (2026-10-13): P3b-1 planı
-- **Nəticə:** `docs/superpowers/plans/2026-10-13-p3b1-firewall-backend.md` yazıldı. 5 tapşırıq var:
-  1. IP qaydaları;
-  2. DB cədvəlləri (006) + store;
-  3. Engine + iptables idxalı;
-  4. REST v2 + v1 adapterləri + `FIREWALL_ENGINE`;
-  5. sənədlər və runbook.
-
-  Kodun hamısı əvvəlcə scratchpad-da yazıldı. `bash scripts/test-with-postgres.sh` → `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft` (real Postgres 16 və `nft -c` ilə). Repo-da kod dəyişməyib.
-- **Davranış qərarı:** nft rejimində rezerv admin portlarını (3007, 5432, 8080, 8443) publik açmaq 400 ilə rədd olunur. Köhnə iptables yolu buna icazə verirdi. Default `iptables` rejimində heç nə dəyişmir.
-- **Yoxlanmayıb:** privileged konteynerdə real kernel end-to-end sınağı. İstifadəçi bu sınağı rədd etdi, ona görə o, P3b-1 runbook-una (staging) köçürüldü.
-- **Davam:** P3b-1 icrası, sonra P3b-2 (iptables → nft keçidi, fail2ban nftables, boot unit, installer).
-
-### Eyni sessiyanın davamı (2026-10-13): P3b-1 icra olundu
-- **Nəticə:** Task 1–4 commit-ləndi (`76a1316`, `70f656f`, `42fcd9b`, `b3d267f`), Task 5 sənədlərdir. `bash server/scripts/test-with-postgres.sh` → `ok` `…/api/rest` (0.669s, real DB), `…/firewall`, `…/store`, `…/nft`; exit 0. Compose config validdir. Köhnə fayllarda (`handlers.go`, `firewall_handlers.go`, `main.go`, compose) yalnız əlavələr var (88 sətir).
-- **Default `FIREWALL_ENGINE=iptables`:** heç bir serverin davranışı dəyişmir.
-- **Davam:** staging-də `docs/runbooks/p3b1-firewall-engine.md`. Sonra P3b-2 planı: iptables `INPUT DROP`-dan keçid, fail2ban nftables, boot unit, installer-in `nftables` paketi, nft-dən iptables-ə geri qayıdanda cədvəlin silinməsi.
-
-### Eyni sessiyanın davamı (2026-10-13): P3b-1 final review
-- **Review (opus):** "With fixes". Critical yoxdur, 4 Important var. Hamısı RED→GREEN ilə düzəldildi:
-  1. Startup-da köhnə `novusgate-vpn-*` FORWARD qaydaları nft tətbiq olunmazdan əvvəl silinirdi. İndi yalnız ilk uğurlu apply-dan sonra silinir (`Engine.AfterApply`).
-  2. Uğursuz reconcile (expiry, VPN, şəbəkə/node, startup) itirdi. İndi `ReconcileOrRetry` 15 saniyədən 5 dəqiqəyə qədər backoff ilə təkrar cəhd edir.
-  3. Allow/block ziddiyyəti:
-     - iptables-də əvvəlki ACCEPT-i sonrakı DROP üstələyən idxal rədd edilir;
-     - blokun içindəki allow hər iki istiqamətdə 400 qaytarır;
-     - `wg0` peer endpoint-ləri hər apply-da qorunur (`Engine.Protect`).
-  4. Runbook-a nft rejiminin məhdudiyyətləri və iptables-ə qayıdışın məcburi addımları yazıldı.
-
-  Suite: `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft`. 7 yeni test `-v` ilə PASS-dır, heç biri skip olmayıb.
-- **Minor-lar:** spec §6b-yə köçürüldü. Əvvəldən mövcud bug da oradadır: panel-in `DELETE /firewall/host/rules` çağırışına uyğun route yoxdur.
-
-### Eyni sessiyanın davamı (2026-10-13): P3b-2 planı
-- **Nəticə:** `docs/superpowers/plans/2026-10-13-p3b2-firewall-cutover.md` yazıldı. 7 tapşırıq:
-  1. engine-in hazır olma şərti;
-  2. host yoxlaması və iptables INPUT-un nftables-ə təhvili;
-  3. REST minor-ları;
-  4. legacy rejimdə xüsusi SSH portunun qorunması;
-  5. M5 və M10;
-  6. `setup-firewall.sh` (boot unit, fail2ban, revert);
-  7. sənədlər və runbook.
-
-  Kod dəyişməyib.
-- **Davam:** planın icrası. Spec §6b.4 (Allow IP-nin admin portlarını açması) istifadəçinin qərarını gözləyir.
-
-### Eyni sessiyanın davamı (2026-10-13): P3b-2 icra olundu
-- **Nəticə:** 7 tapşırığın hamısı commit-ləndi (`2854f01`, `d3972ba`, `033d080`, `d252b87`, `331dc34`, `f22aaaa` + sənədlər).
-- **Yoxlamalar:**
-  - `bash server/scripts/test-with-postgres.sh` → `ok` `…/api/rest`, `…/firewall`, `…/store`, `…/nft`;
-  - `setup-firewall_test.sh` → `OK`;
-  - `nft-versions-check.sh` → `NFT-VERSIONS-OK` (nft 1.0.2, 1.0.6, 1.0.9, snapshot daxil);
-  - web `tsc --noEmit` → exit 0.
-- **Default iptables rejimində davranış dəyişikliyi:**
-  - Close Port/Delete aşkarlanan SSH portlarını qoruyur (403);
-  - `setup-firewall.sh` `nftables` paketini və boot unit-i quraşdırır (ruleset faylı olmadan unit heç nə etmir) və fail2ban `jail.d/novusgate.local` faylını yazır;
-  - panel-in Delete düyməsi işləyir.
-- **Yoxlanmayıb:** real host (reboot, Update, fail2ban, geri qayıdış). `docs/runbooks/p3b2-firewall-cutover.md` staging-də icra olunmalıdır.
-- **Davam:** staging runbook. Sonra P2 və ya P5/P6 (UI kit), istifadəçinin seçiminə görə.
-- **Final review (opus):** "With fixes", 1 Important və 10 Minor. 3 minor effektinə görə Important-a qaldırıldı. Hamısı RED→GREEN ilə düzəldildi:
-  1. INPUT təhvili yalnız boot faylı yazılandan sonra baş verir. Əvvəl `Persist` xətası olsa, reboot-dan sonra host açıq qala bilərdi.
-  2. Qaydalar nömrə ilə yox, spec ilə silinir. Bu, fail2ban ilə yarışın qarşısını alır.
-  3. `REJECT` ban-ları və başqa alətlərin zəncirlərinə jump-lar saxlanılır.
-  4. iptables rejimində apt/systemctl xətası `setup-firewall.sh`-ı dayandırmır, nft rejimində isə dayandırır.
-
-  Qalan 7 minor P3c/P7 üçün ledger-dədir.
-
-### Eyni sessiyanın davamı (2026-10-13): P2 bölgüsü və P2a planı
-- **Nəticə:**
-  - `docs/superpowers/specs/2026-10-13-p2-backend-core-design.md`: P2 dörd alt-plana bölündü:
-    - P2a: kontrakt + baqlar;
-    - P2b: müşahidə;
-    - P2c: WireGuard + reconciler + expiry;
-    - P2d: servis qatı + vahid xəta + OpenAPI.
-  - `docs/superpowers/plans/2026-10-13-p2a-contract-and-bugs.md` yazıldı (8 tapşırıq).
-  - Kod dəyişməyib.
-- **Kod xəritəsindən yoxlanılan faktlar:**
-  - startup log-u DB parolunu açıq yazır (`maskDatabaseURL` heç nə etmir);
-  - fail2ban history-nin regex-i heç vaxt uyğun gəlmir, jail kimi PID götürülür;
-  - `AllocateIP` broadcast ünvanını verir;
-  - `parseRuleLine` 8–9 sahəli sətirdə panic edir və "opt" sütunsuz formatı səhv oxuyur.
-- **Davam:** P2a planının icrası.
-
-### Eyni sessiyanın davamı (2026-10-13): P2a icra olundu
-- **Nəticə:** Task 1–7 commit-ləndi:
-  - `646ce20`: kontrakt snapshot-ları;
-  - `10f49ff`: B14;
-  - `5802f79`: B22;
-  - `7d798ff`: B16;
-  - `4fb3ec9`: B21;
-  - `42f79b2`: DB parolunun maskalanması;
-  - `f816289`: frontend-in hər iki xəta formasını oxuması.
-- **Yoxlamalar:**
-  - `bash server/scripts/test-with-postgres.sh` → `ok` `cmd/control-plane`, `api/rest`, `firewall`, `store`, `nft`, `wireguard`;
-  - kontrakt testi iki ardıcıl run-da eyni nəticə verdi;
-  - golden fayllarda açar yoxdur;
-  - web `tsc --noEmit` → exit 0;
-  - biome diaqnostikalarının sayı dəyişməyib (23/4, hamısı köhnə).
-- **Default rejimdə davranış dəyişikliyi:** yalnız spec §3-dəki baq düzəlişləri (`docs/api.md` → "P2a-da dəyişən cavablar").
-- **Final review (opus):** "With fixes", 2 Important (+1 Important-a qaldırıldı). Hamısı RED→GREEN ilə düzəldildi (`30bdeb9`):
-  - testlər WireGuard-a yalnız `wgInit` və `wgTeardown` seam-ləri vasitəsilə çatır;
-  - fail2ban log-u axınla oxunur;
-  - DB parolu bütün formalarda maskalanır.
-
-  7 minor ledger-də, P2b–P2d üçün.
-- **Davam:** P2b (müşahidə).
-
+- **2026-10-13 sessiyaları** (P1, P3, P2a) `docs/archive/active-context-2026-10-13.md` faylına köçürülüb.
 
 ### 2026-10-14: P2b planı
 - **Nəticə:** `docs/superpowers/plans/2026-10-14-p2b-observability.md` yazıldı. 5 tapşırıq:
@@ -347,6 +199,28 @@
 - **Final review (opus):** Review Focus-un 5 bəndi düzgündür. 1 Important RED→GREEN düzəldildi (`d99d788`): paralel login-lər limiti keçirdi, indi cəhd bir kilid altında yoxlanılır və sayılır. 8 minor ledger-də (parol dəyişmə + sessiya ləğvi bir tranzaksiyada deyil, limiter yaddaşı, köhnə şərhlər və s.).
 - **Davam:** P4b.
 
+### 2026-10-14: P4b planı və icrası (enrollment və same-origin)
+- **İstifadəçi qərarı:** install skripti paneldən kopyalanır, public port açılmır.
+- **Plan:** `docs/superpowers/plans/2026-10-14-p4b-enrollment-and-proxy.md`.
+- **Commit-lər:**
+  - `ae025ba`: `enrollment_tokens` (008);
+  - `f5f40a5`: tokenli install skripti, VPN üzərindən checkin, `wireguard_*` label filtri;
+  - `637bd24`: nginx `/api` proxy-si, `X-Real-IP` yalnız loopback-dən, CORS çıxarıldı;
+  - `532d37d`: web relative API, bundle-da açar yoxdur, kopyalanan install skripti.
+- **Yoxlamalar:**
+  - `bash server/scripts/test-with-postgres.sh` → 9 paket `ok`;
+  - `bash -n` skript testi işləyir (PASS);
+  - `nginx:alpine`-da həm `nginx -t`, həm də image-in öz entrypoint-i ilə template render yoxlandı;
+  - `docker compose config` keçdi;
+  - web: `tsc` exit 0, biome 100/31 (dəyişməyib), `vite build` ok, bundle-da `X-API-Key`/`VITE_API_*` yoxdur.
+- **Davranış dəyişikliyi:**
+  - Linux install əmri tokenli skriptlə əvəz olundu;
+  - checkin sessiyasız da (tokenlə) işləyir;
+  - CORS başlıqları yoxdur, `OPTIONS` 405 alır;
+  - `web/.env` build-də oxunmur.
+- **P7-yə keçirildi:** B10 (Center `join-vpn`).
+- **Davam:** final review, sonra P4c.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
@@ -368,6 +242,7 @@
 | 2026-10-14 | P2d-2: OpenAPI sənədi (reflection), /api/v1/openapi.json, route coverage, kontrakt-sxem yoxlaması, /api JSON 404/405 | api/rest/{openapi,api_fallback}.go, testdata | P2d-2 planı · `ceb50b5`..`56d5462` |
 | 2026-10-14 | P2d-3: request və response DTO-ları, tipli OpenAPI, 206 sənədləşdi, host/firewall cavabları snapshot-da | api/rest/{dto_*,handlers,config_handlers,firewall_*,openapi,fail2ban_parse}.go, testdata | P2d-3 planı · `b761eef`..`8d33280` |
 | 2026-10-14 | P4a: sessions cədvəli, sessiya auth-u, logout, login limiti, parol yalnız sessiya istifadəçisi üçün (B15) | store/{sessions.go,migrations_*/007_*}, api/rest/{auth,handlers,openapi}.go, web/src/{App.tsx,api/client.ts,components/Layout.tsx}, docs/{api,security,data-model}.md | P4a planı · `d4f41fc`..`8917c80` |
+| 2026-10-14 | P4b: enrollment tokenləri, tokenli install skripti (VPN üzərindən checkin), nginx `/api` proxy-si, CORS çıxarıldı, bundle-da API açarı yoxdur | store/{enrollment.go,migrations_*/008_*}, api/rest/{enrollment,auth,handlers,config_handlers,openapi}.go, web/{nginx,Dockerfile,.dockerignore,src}, compose, docs | P4b planı · `ae025ba`..`532d37d` |
 | 2026-10-14 | P2d-1: vahid xəta body-si, sabit kodlar, PUT /nodes validasiyası | api/rest/*, testdata/contract | P2d-1 planı · `761dbc6`..`8325276` |
 | 2026-10-14 | P2c: Node.Active, B11 handler-ləri, ExpireNodes, reconciler (shadow/enforce), loop və /health, tək Up, logging qoruyucusu | models, api/rest/*, store, reconciler/*, main.go, compose, logging test | P2c planı · `e5d346a`..`24a499d` |
 | 2026-10-14 | P2b: slog logger, request log, panic recovery, /health yoxlamaları, runtime log-ların slog-a keçməsi | shared/logging, api/rest/{middleware,handlers}.go, cmd/control-plane/main.go, compose, 10 runtime fayl | P2b planı · `b1fda2b`..`bdbce97` |
