@@ -2,14 +2,14 @@ package wireguard
 
 import (
 	"bytes"
-	"os/exec"
 	"strings"
 )
 
 // GenerateKeys generates a new WireGuard private and public key pair using the 'wg' command-line tool.
 func GenerateKeys() (privateKey string, publicKey string, err error) {
 	// Generate Private Key
-	cmdGenKey := exec.Command("wg", "genkey")
+	cmdGenKey, cancelGen := command("wg", "genkey")
+	defer cancelGen()
 	var outPriv bytes.Buffer
 	cmdGenKey.Stdout = &outPriv
 	if err := cmdGenKey.Run(); err != nil {
@@ -18,7 +18,8 @@ func GenerateKeys() (privateKey string, publicKey string, err error) {
 	privateKey = strings.TrimSpace(outPriv.String())
 
 	// Generate Public Key
-	cmdPubKey := exec.Command("wg", "pubkey")
+	cmdPubKey, cancelPub := command("wg", "pubkey")
+	defer cancelPub()
 	cmdPubKey.Stdin = strings.NewReader(privateKey)
 	var outPub bytes.Buffer
 	cmdPubKey.Stdout = &outPub

@@ -1,11 +1,13 @@
 package wireguard
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Manager controls the WireGuard interface
@@ -51,7 +53,8 @@ func (m *Manager) SetupInterface(configContent string) error {
 
 // Up brings the interface up using wg-quick
 func (m *Manager) Up() error {
-	cmd := exec.Command("wg-quick", "up", m.InterfaceName)
+	cmd, cancel := command("wg-quick", "up", m.InterfaceName)
+	defer cancel()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("wg-quick up failed: %s: %w", string(output), err)
@@ -61,7 +64,8 @@ func (m *Manager) Up() error {
 
 // Down brings the interface down
 func (m *Manager) Down() error {
-	cmd := exec.Command("wg-quick", "down", m.InterfaceName)
+	cmd, cancel := command("wg-quick", "down", m.InterfaceName)
+	defer cancel()
 	// Ignore error if down fails (maybe already down)
 	_ = cmd.Run()
 	return nil
@@ -94,7 +98,8 @@ func (m *Manager) CreateServerConfigWithKey(privateKey string, addressCIDR strin
 }
 
 func (m *Manager) generatePrivateKey() (string, error) {
-	cmd := exec.Command("wg", "genkey")
+	cmd, cancel := command("wg", "genkey")
+	defer cancel()
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -105,7 +110,8 @@ func (m *Manager) generatePrivateKey() (string, error) {
 // AddPeer adds a peer to the running interface
 func (m *Manager) AddPeer(publicKey, allowedIPs string) error {
 	// wg set wg0 peer <key> allowed-ips <ips>
-	cmd := exec.Command("wg", "set", m.InterfaceName, "peer", publicKey, "allowed-ips", allowedIPs)
+	cmd, cancel := command("wg", "set", m.InterfaceName, "peer", publicKey, "allowed-ips", allowedIPs)
+	defer cancel()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to add peer: %s: %w", string(output), err)
@@ -117,7 +123,8 @@ func (m *Manager) AddPeer(publicKey, allowedIPs string) error {
 func (m *Manager) UpdatePeerAllowedIPs(publicKey, allowedIPs string) error {
 	// wg set wg0 peer <key> allowed-ips <ips>
 	// This command updates the peer if it exists
-	cmd := exec.Command("wg", "set", m.InterfaceName, "peer", publicKey, "allowed-ips", allowedIPs)
+	cmd, cancel := command("wg", "set", m.InterfaceName, "peer", publicKey, "allowed-ips", allowedIPs)
+	defer cancel()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to update peer allowed-ips: %s: %w", string(output), err)
@@ -128,7 +135,8 @@ func (m *Manager) UpdatePeerAllowedIPs(publicKey, allowedIPs string) error {
 // RemovePeer removes a peer from the running interface
 func (m *Manager) RemovePeer(publicKey string) error {
 	// wg set wg0 peer <key> remove
-	cmd := exec.Command("wg", "set", m.InterfaceName, "peer", publicKey, "remove")
+	cmd, cancel := command("wg", "set", m.InterfaceName, "peer", publicKey, "remove")
+	defer cancel()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to remove peer: %s: %w", string(output), err)
@@ -138,7 +146,8 @@ func (m *Manager) RemovePeer(publicKey string) error {
 
 func (m *Manager) isInterfaceUp() bool {
 	// Simple check using ip link
-	cmd := exec.Command("ip", "link", "show", m.InterfaceName)
+	cmd, cancel := command("ip", "link", "show", m.InterfaceName)
+	defer cancel()
 	return cmd.Run() == nil
 }
 
@@ -170,7 +179,8 @@ func (m *Manager) GetPublicKey() (string, error) {
 		}
 		
 		// Now derive public key from the new private key
-		cmd := exec.Command("wg", "pubkey")
+		cmd, cancel := command("wg", "pubkey")
+		defer cancel()
 		cmd.Stdin = strings.NewReader(privateKey)
 		output, err := cmd.Output()
 		if err != nil {
@@ -187,7 +197,8 @@ func (m *Manager) GetPublicKey() (string, error) {
 	}
 
 	// 3. Derive Public Key
-	cmd := exec.Command("wg", "pubkey")
+	cmd, cancel := command("wg", "pubkey")
+	defer cancel()
 	cmd.Stdin = strings.NewReader(privateKey)
 	output, err := cmd.Output()
 	if err != nil {
@@ -212,7 +223,8 @@ type PeerStatus struct {
 
 // GetPeers returns the status of all peers on the interface
 func (m *Manager) GetPeers() (map[string]PeerStatus, error) {
-	cmd := exec.Command("wg", "show", m.InterfaceName, "dump")
+	cmd, cancel := command("wg", "show", m.InterfaceName, "dump")
+	defer cancel()
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to dump wg status: %w", err)
@@ -256,4 +268,17 @@ func parsePrivateKey(config string) string {
 		}
 	}
 	return ""
+}
+
+// commandTimeout bounds every wg, wg-quick and ip command, so a hung tool
+// cannot block a request or a reconciler tick forever (replaced in tests).
+var commandTimeout = 30 * time.Second
+
+// command builds a command that is killed after commandTimeout; call cancel
+// once it has finished.
+func command(name string, args ...string) (*exec.Cmd, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.WaitDelay = time.Second // do not wait for pipes a killed child's children still hold
+	return cmd, cancel
 }

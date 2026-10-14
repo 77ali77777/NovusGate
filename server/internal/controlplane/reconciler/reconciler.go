@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -67,7 +68,9 @@ type Report struct {
 	Actions []Action // applied (enforce; expired-peer removals in both modes)
 	Pending []Action // shadow: adds and updates enforce would make
 	Unknown []string
-	Errors  []string
+	// Duplicates lists public keys shared by several nodes of one network.
+	Duplicates []string
+	Errors     []string
 }
 
 // OK reports whether the run had no errors.
@@ -85,11 +88,17 @@ type Reconciler struct {
 	mu      sync.Mutex
 	last    Report
 	trigger chan struct{}
+	done    chan struct{} // closed when Run returns
+
+	// logged holds the findings already logged, so a finding that stays
+	// the same is logged once instead of on every tick.
+	logged map[string]bool
 }
 
 // New returns a reconciler; Run starts its loop.
 func New(mode Mode, st Store, peers func(string) PeerControl) *Reconciler {
-	return &Reconciler{Mode: mode, Store: st, Peers: peers, Now: time.Now, trigger: make(chan struct{}, 1)}
+	return &Reconciler{Mode: mode, Store: st, Peers: peers, Now: time.Now, trigger: make(chan struct{}, 1),
+		done: make(chan struct{}), logged: map[string]bool{}}
 }
 
 // RunOnce runs the expire step, then plans (shadow) or applies (enforce) the
@@ -143,10 +152,19 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 			rep.Errors = append(rep.Errors, fmt.Sprintf("%s: list nodes: %v", nw.InterfaceName, err))
 			continue
 		}
-		actions, unknown := plan(nw, nodes, live, now)
+		actions, unknown, duplicates := plan(nw, nodes, live, now)
 		sort.Strings(unknown)
 		rep.Unknown = append(rep.Unknown, unknown...)
+		rep.Duplicates = append(rep.Duplicates, duplicates...)
 		plans = append(plans, planned{pc, actions})
+	}
+
+	seen := map[string]bool{}
+	logOnce := func(key string, log func()) {
+		seen[key] = true
+		if !r.logged[key] {
+			log()
+		}
 	}
 
 	if r.beforeApply != nil {
@@ -158,7 +176,9 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 			// shadow too, as the panel's expiry always did. Adds and updates
 			// wait for enforce.
 			if r.Mode != ModeEnforce && a.Kind != "remove" {
-				slog.Info("reconciler (shadow): would change peer", "kind", a.Kind, "node", a.Node, "interface", a.Interface, "allowed_ips", a.AllowedIPs)
+				logOnce("pending "+a.Kind+" "+a.PublicKey+" "+a.AllowedIPs, func() {
+					slog.Info("reconciler (shadow): would change peer", "kind", a.Kind, "node", a.Node, "interface", a.Interface, "allowed_ips", a.AllowedIPs)
+				})
 				rep.Pending = append(rep.Pending, a)
 				continue
 			}
@@ -183,8 +203,12 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 		}
 	}
 	for _, u := range rep.Unknown {
-		slog.Warn("reconciler: peer not in the database (left alone)", "peer", u)
+		logOnce("unknown "+u, func() { slog.Warn("reconciler: peer not in the database (left alone)", "peer", u) })
 	}
+	for _, d := range rep.Duplicates {
+		logOnce("duplicate "+d, func() { slog.Warn("reconciler: nodes share a public key (peer kept while one is active)", "detail", d) })
+	}
+	r.logged = seen // a finding that went away is logged again if it returns
 	for _, e := range rep.Errors {
 		slog.Error("reconciler error: " + e)
 	}
@@ -215,6 +239,7 @@ func (r *Reconciler) finish(rep Report) {
 // is cancelled. The first run happens after one interval (or a trigger), so
 // startup (loadNetworks bringing interfaces up and adopting peers) goes first.
 func (r *Reconciler) Run(ctx context.Context, every time.Duration) {
+	defer close(r.done)
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()
 	for {
@@ -224,8 +249,25 @@ func (r *Reconciler) Run(ctx context.Context, every time.Duration) {
 		case <-ticker.C:
 		case <-r.trigger:
 		}
-		r.RunOnce(ctx)
+		r.safeRunOnce(ctx)
 	}
+}
+
+// safeRunOnce runs RunOnce and turns a panic into a logged error, so one bad
+// run does not stop the loop (or the process).
+func (r *Reconciler) safeRunOnce(ctx context.Context) {
+	defer func() {
+		if v := recover(); v != nil {
+			slog.Error("reconciler: run panicked", "panic", fmt.Sprint(v), "stack", string(debug.Stack()))
+		}
+	}()
+	r.RunOnce(ctx)
+}
+
+// Wait blocks until Run has returned (after its context is cancelled and any
+// run in progress has finished).
+func (r *Reconciler) Wait() {
+	<-r.done
 }
 
 // Trigger asks for a run soon; it never blocks and repeated calls coalesce.

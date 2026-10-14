@@ -196,8 +196,9 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 	recCtx, stopReconciler := context.WithCancel(context.Background())
 	defer stopReconciler()
+	var rec *reconciler.Reconciler
 	if wgMode != reconciler.ModeOff {
-		rec := reconciler.New(wgMode, db, func(iface string) reconciler.PeerControl { return wireguard.NewManager(iface) })
+		rec = reconciler.New(wgMode, db, func(iface string) reconciler.PeerControl { return wireguard.NewManager(iface) })
 		apiServer.SetReconciler(rec)
 		go rec.Run(recCtx, 15*time.Second)
 		slog.Info(fmt.Sprintf("  WireGuard reconciler: %s", wgMode))
@@ -253,6 +254,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	stopReconciler()
+	if rec != nil { // let a run in progress finish before the process exits
+		waited := make(chan struct{})
+		go func() { rec.Wait(); close(waited) }()
+		select {
+		case <-waited:
+		case <-time.After(30 * time.Second):
+			slog.Warn("reconciler did not stop within 30s")
+		}
+	}
 
 	slog.Info("\nShutting down server...")
 
