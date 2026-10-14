@@ -18,18 +18,16 @@ import type {
   VPNFirewallRuleRequest,
 } from '@/types'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-const API_KEY = import.meta.env.VITE_API_KEY || ''
-
 class ApiClient {
   private client: AxiosInstance
 
   constructor() {
+    // Same origin: the panel's nginx proxies /api and adds the API key
+    // (Vite's dev server proxies /api to localhost:8080).
     this.client = axios.create({
-      baseURL: `${API_URL}/api/v1`,
+      baseURL: '/api/v1',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': API_KEY,
       },
     })
 
@@ -110,6 +108,14 @@ class ApiClient {
 
   async getNodeConfig(nodeId: string): Promise<string> {
     const { data } = await this.client.get(`/nodes/${nodeId}/config`, {
+      responseType: 'text',
+    })
+    return data
+  }
+
+  // Each call issues a new one-time enrollment token inside the script.
+  async getNodeInstallScript(nodeId: string): Promise<string> {
+    const { data } = await this.client.get(`/nodes/${nodeId}/install.sh`, {
       responseType: 'text',
     })
     return data
@@ -350,14 +356,6 @@ class ApiClient {
 }
 
 export const api = new ApiClient()
-
-export const getAuthHeaders = () => {
-  const token = localStorage.getItem('auth_token')
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'X-API-Key': import.meta.env.VITE_API_KEY || '',
-  }
-}
 
 // React Query hooks
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

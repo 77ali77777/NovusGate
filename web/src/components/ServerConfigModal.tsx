@@ -2,6 +2,7 @@ import { Box, Check, Copy, Download, Monitor, QrCode as QrIcon, Terminal } from 
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { Button, Modal } from '@/components/ui'
 
 interface ServerConfigModalProps {
@@ -45,6 +46,32 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [installScript, setInstallScript] = useState('')
+  const [scriptLoading, setScriptLoading] = useState(false)
+  const [scriptError, setScriptError] = useState('')
+
+  // Each fetch issues a new one-time enrollment token, so the script is
+  // generated on request rather than when the modal opens.
+  const loadInstallScript = async () => {
+    setScriptLoading(true)
+    setScriptError('')
+    try {
+      setInstallScript(await api.getNodeInstallScript(nodeId))
+    } catch (err) {
+      setScriptError(apiErrorMessage(err, 'Failed to generate the install script'))
+    } finally {
+      setScriptLoading(false)
+    }
+  }
+
+  const handleScriptDownload = () => {
+    const element = document.createElement('a')
+    element.href = `data:text/x-shellscript;base64,${btoa(unescape(encodeURIComponent(installScript)))}`
+    element.download = `install-${nodeName.replace(/\s+/g, '-').toLowerCase()}.sh`
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
+  }
 
   const loadConfig = useCallback(async () => {
     setLoading(true)
@@ -72,6 +99,8 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
     if (isOpen && nodeId) {
       loadConfig()
       setActiveTab('general')
+      setInstallScript('') // a script belongs to one node and expires
+      setScriptError('')
     }
   }, [isOpen, nodeId, loadConfig])
 
@@ -239,24 +268,50 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
         )
 
       case 'linux': {
-        const installCommand = `curl -sSfLk ${window.location.origin}/api/v1/nodes/${nodeId}/install.sh | sudo bash`
         return (
           <div className="space-y-4">
             <div className="p-4 bg-gray-900 border border-gray-800 rounded-lg">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-sm font-semibold text-gray-400">Easy One-Line Install</h4>
+                <h4 className="text-sm font-semibold text-gray-400">Install Script</h4>
+                {installScript && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(installScript)}
+                      className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
+                    >
+                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleScriptDownload}
+                      className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </button>
+                  </div>
+                )}
+              </div>
+              {installScript ? (
+                <pre className="text-xs text-green-400 max-h-64 overflow-auto whitespace-pre">
+                  {installScript}
+                </pre>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(installCommand)}
-                  className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
+                  onClick={loadInstallScript}
+                  disabled={scriptLoading}
+                  className="px-3 py-1.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? 'Copied' : 'Copy'}
+                  {scriptLoading ? 'Generating...' : 'Generate install script'}
                 </button>
-              </div>
-              <code className="text-xs text-green-400 break-all">{installCommand}</code>
+              )}
+              {scriptError && <p className="text-xs text-red-400 mt-2">{scriptError}</p>}
               <p className="text-xs text-yellow-500 mt-2">
-                ⚠️ Run this from a machine that already has VPN access to the server
+                Run it as root on the new server. It works once, for 15 minutes; generate a new one
+                if it expires.
               </p>
             </div>
 
