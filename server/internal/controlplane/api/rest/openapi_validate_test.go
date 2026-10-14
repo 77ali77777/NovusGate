@@ -116,16 +116,21 @@ func assertMatchesSpec(t *testing.T, s *Server, method, path string, rec *httpte
 		if op.Method != method || op.Path != tpl {
 			continue
 		}
+		response := op.Response
 		if op.Status != rec.Code {
-			t.Errorf("%s %s: status %d, documented %d", method, tpl, rec.Code, op.Status)
-			return
+			extra, ok := docExtraResponses[method+" "+tpl][rec.Code]
+			if !ok {
+				t.Errorf("%s %s: status %d, documented %d", method, tpl, rec.Code, op.Status)
+				return
+			}
+			response = extra
 		}
-		switch op.Response.(type) {
+		switch response.(type) {
 		case nil, mediaType:
 			return
 		}
 		g := &schemaGen{components: map[string]any{}}
-		schema := g.schema(op.Response)
+		schema := g.schema(response)
 		for k, v := range g.components {
 			schemas[k] = v
 		}

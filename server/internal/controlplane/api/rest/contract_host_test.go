@@ -53,7 +53,7 @@ func TestContractHost(t *testing.T) {
 		{"f2b_unban", "POST", "/api/v1/system/fail2ban/unban", `{"jail":"sshd","ip":"198.51.100.7"}`, true},
 		{"f2b_jail_settings", "GET", "/api/v1/system/fail2ban/jail/settings", "", true},
 		{"f2b_jail_settings_update", "PUT", "/api/v1/system/fail2ban/jail/settings", `{"jail":"sshd","bantime":"7200"}`, true},
-		{"f2b_jail_settings_partial", "PUT", "/api/v1/system/fail2ban/jail/settings", `{"jail":"sshd","bantime":"7200","maxretry":"9"}`, false},
+		{"f2b_jail_settings_partial", "PUT", "/api/v1/system/fail2ban/jail/settings", `{"jail":"sshd","bantime":"7200","maxretry":"9"}`, true},
 		{"f2b_whitelist_update", "PUT", "/api/v1/system/fail2ban/whitelist", `{"jail":"sshd","action":"add","ip":"192.0.2.0/24"}`, true},
 		{"f2b_permanent_bans", "GET", "/api/v1/system/fail2ban/permanent-bans", "", true},
 		{"f2b_jail_control", "POST", "/api/v1/system/fail2ban/jail/control", `{"jail":"sshd","action":"stop"}`, true},

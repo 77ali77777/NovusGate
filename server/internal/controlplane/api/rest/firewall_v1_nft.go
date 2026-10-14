@@ -297,11 +297,8 @@ func (s *Server) handleFail2BanPermanentBanNft(w http.ResponseWriter, r *http.Re
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]string{
-		"status":  "success",
-		"message": fmt.Sprintf("IP %s permanently banned via nftables", ip),
-		"type":    "permanent",
-	})
+	jsonResponse(w, http.StatusOK, Fail2BanBanResponse{Status: "success",
+		Message: fmt.Sprintf("IP %s permanently banned via nftables", ip), Type: "permanent"})
 }
 
 // wholeBlocks returns whole-address blocks (the legacy "permanent bans").
@@ -321,16 +318,11 @@ func (s *Server) handleFail2BanGetPermanentBansNft(w http.ResponseWriter, r *htt
 		engineError(w, err)
 		return
 	}
-	bans := []map[string]interface{}{}
+	bans := []PermanentBan{}
 	for i, rule := range wholeBlocks(st) {
-		bans = append(bans, map[string]interface{}{
-			"line_number": strconv.Itoa(i + 1),
-			"ip":          displayPrefix(rule.Prefix),
-			"target":      "DROP",
-			"protocol":    "all",
-		})
+		bans = append(bans, PermanentBan{LineNumber: strconv.Itoa(i + 1), IP: displayPrefix(rule.Prefix), Target: "DROP", Protocol: "all"})
 	}
-	jsonResponse(w, http.StatusOK, map[string]interface{}{"permanent_bans": bans, "count": len(bans)})
+	jsonResponse(w, http.StatusOK, PermanentBansResponse{PermanentBans: bans, Count: len(bans)})
 }
 
 func (s *Server) handleFail2BanRemovePermanentBanNft(w http.ResponseWriter, r *http.Request, ip string) {
@@ -358,8 +350,5 @@ func (s *Server) handleFail2BanRemovePermanentBanNft(w http.ResponseWriter, r *h
 		engineError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]string{
-		"status":  "success",
-		"message": fmt.Sprintf("Permanent ban removed for IP %s", ip),
-	})
+	jsonResponse(w, http.StatusOK, StatusMessageResponse{Status: "success", Message: fmt.Sprintf("Permanent ban removed for IP %s", ip)})
 }

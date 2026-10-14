@@ -30,6 +30,12 @@ type docOp struct {
 	Public                     bool
 }
 
+// docExtraResponses documents a second success status of an operation,
+// keyed by "METHOD path".
+var docExtraResponses = map[string]map[int]any{
+	"PUT /api/v1/system/fail2ban/jail/settings": {http.StatusPartialContent: Fail2BanUpdateSettingsResponse{}},
+}
+
 // docOps lists every registered route; TestEveryRouteIsDocumented keeps it complete.
 var docOps = []docOp{
 	{"GET", "/health", "Liveness and component checks (always 200)", "meta", nil, 200, HealthResponse{}, true},
@@ -57,20 +63,20 @@ var docOps = []docOp{
 	{"GET", "/api/v1/debug/wireguard/{networkId}", "Compare DB nodes with live peers", "networks", nil, 200, DebugWireGuardResponse{}, false},
 	{"GET", "/api/v1/stats/overview", "Dashboard counters", "system", nil, 200, StatsOverviewResponse{}, false},
 	{"GET", "/api/v1/system/info", "Host CPU, memory, disk, uptime", "system", nil, 200, SystemInfoResponse{}, false},
-	{"GET", "/api/v1/system/fail2ban/status", "fail2ban jails and bans", "fail2ban", nil, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/logs", "fail2ban log lines", "fail2ban", nil, 200, freeform{}, false},
-	{"POST", "/api/v1/system/fail2ban/unban", "Unban an IP", "fail2ban", Fail2BanJailIPRequest{}, 200, freeform{}, false},
-	{"POST", "/api/v1/system/fail2ban/ban", "Ban an IP", "fail2ban", Fail2BanBanRequest{}, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/jail/settings", "Jail settings", "fail2ban", nil, 200, freeform{}, false},
-	{"PUT", "/api/v1/system/fail2ban/jail/settings", "Update jail settings (206 when partly applied)", "fail2ban", Fail2BanJailSettingsRequest{}, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/whitelist", "Ignored IPs of a jail", "fail2ban", nil, 200, freeform{}, false},
-	{"PUT", "/api/v1/system/fail2ban/whitelist", "Add or remove an ignored IP", "fail2ban", Fail2BanWhitelistRequest{}, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/permanent-bans", "Permanent bans", "fail2ban", nil, 200, freeform{}, false},
-	{"DELETE", "/api/v1/system/fail2ban/permanent-bans", "Remove a permanent ban", "fail2ban", Fail2BanIPRequest{}, 200, freeform{}, false},
-	{"POST", "/api/v1/system/fail2ban/jail/control", "Start or stop a jail", "fail2ban", Fail2BanJailControlRequest{}, 200, freeform{}, false},
-	{"POST", "/api/v1/system/fail2ban/reload", "Reload fail2ban", "fail2ban", nil, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/ping", "Is fail2ban alive", "fail2ban", nil, 200, freeform{}, false},
-	{"GET", "/api/v1/system/fail2ban/ban-history", "Ban/unban history, newest first", "fail2ban", nil, 200, freeform{}, false},
+	{"GET", "/api/v1/system/fail2ban/status", "fail2ban jails and bans", "fail2ban", nil, 200, Fail2BanStatusResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/logs", "fail2ban log lines", "fail2ban", nil, 200, Fail2BanLogsResponse{}, false},
+	{"POST", "/api/v1/system/fail2ban/unban", "Unban an IP", "fail2ban", Fail2BanJailIPRequest{}, 200, StatusMessageResponse{}, false},
+	{"POST", "/api/v1/system/fail2ban/ban", "Ban an IP", "fail2ban", Fail2BanBanRequest{}, 200, Fail2BanBanResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/jail/settings", "Jail settings", "fail2ban", nil, 200, Fail2BanJailSettingsResponse{}, false},
+	{"PUT", "/api/v1/system/fail2ban/jail/settings", "Update jail settings; 206 when only some were applied", "fail2ban", Fail2BanJailSettingsRequest{}, 200, Fail2BanUpdateSettingsResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/whitelist", "Ignored IPs of a jail", "fail2ban", nil, 200, Fail2BanWhitelistResponse{}, false},
+	{"PUT", "/api/v1/system/fail2ban/whitelist", "Add or remove an ignored IP", "fail2ban", Fail2BanWhitelistRequest{}, 200, StatusMessageResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/permanent-bans", "Permanent bans", "fail2ban", nil, 200, PermanentBansResponse{}, false},
+	{"DELETE", "/api/v1/system/fail2ban/permanent-bans", "Remove a permanent ban", "fail2ban", Fail2BanIPRequest{}, 200, StatusMessageResponse{}, false},
+	{"POST", "/api/v1/system/fail2ban/jail/control", "Start or stop a jail", "fail2ban", Fail2BanJailControlRequest{}, 200, StatusMessageResponse{}, false},
+	{"POST", "/api/v1/system/fail2ban/reload", "Reload fail2ban", "fail2ban", nil, 200, Fail2BanReloadResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/ping", "Is fail2ban alive", "fail2ban", nil, 200, Fail2BanPingResponse{}, false},
+	{"GET", "/api/v1/system/fail2ban/ban-history", "Ban/unban history, newest first", "fail2ban", nil, 200, Fail2BanHistoryResponse{}, false},
 	{"GET", "/api/v1/firewall/host/rules", "Host firewall chains (iptables, or a synthetic view in nft mode)", "firewall-host", nil, 200, FirewallStatus{}, false},
 	{"POST", "/api/v1/firewall/host/port/open", "Open a port", "firewall-host", OpenPortRequest{}, 200, freeform{}, false},
 	{"POST", "/api/v1/firewall/host/port/close", "Close a port", "firewall-host", ClosePortRequest{}, 200, freeform{}, false},
@@ -224,11 +230,16 @@ func openAPIDocument() map[string]any {
 		default:
 			resp["content"] = map[string]any{"application/json": map[string]any{"schema": g.schema(body)}}
 		}
+		responses := map[string]any{strconv.Itoa(op.Status): resp, "default": errorRef}
+		for code, body := range docExtraResponses[op.Method+" "+op.Path] {
+			responses[strconv.Itoa(code)] = map[string]any{"description": http.StatusText(code),
+				"content": map[string]any{"application/json": map[string]any{"schema": g.schema(body)}}}
+		}
 		o := map[string]any{
 			"summary":     op.Summary,
 			"tags":        []string{op.Tag},
 			"operationId": strings.ToLower(op.Method) + pathVar.ReplaceAllString(strings.NewReplacer("/api/v1", "", "/", "_", "-", "_", ".", "_").Replace(op.Path), "by_$1"),
-			"responses":   map[string]any{strconv.Itoa(op.Status): resp, "default": errorRef},
+			"responses":   responses,
 		}
 		var params []any
 		for _, m := range pathVar.FindAllStringSubmatch(op.Path, -1) {

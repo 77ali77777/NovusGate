@@ -270,12 +270,114 @@
         },
         "type": "object"
       },
+      "Fail2BanBanResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "status",
+          "type"
+        ],
+        "type": "object"
+      },
+      "Fail2BanHistoryEntry": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "jail": {
+            "type": "string"
+          },
+          "raw": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "jail",
+          "raw",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "Fail2BanHistoryResponse": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/Fail2BanHistoryEntry"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "jail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "history",
+          "jail"
+        ],
+        "type": "object"
+      },
       "Fail2BanIPRequest": {
         "properties": {
           "ip": {
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "Fail2BanJail": {
+        "properties": {
+          "banned_count": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "banned_ips": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "failed_count": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "total_banned": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "total_failed": {
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
         "type": "object"
       },
       "Fail2BanJailControlRequest": {
@@ -317,6 +419,162 @@
         },
         "type": "object"
       },
+      "Fail2BanJailSettingsResponse": {
+        "properties": {
+          "bantime": {
+            "nullable": true,
+            "type": "string"
+          },
+          "findtime": {
+            "nullable": true,
+            "type": "string"
+          },
+          "ignoreip": {
+            "nullable": true,
+            "type": "string"
+          },
+          "jail": {
+            "type": "string"
+          },
+          "maxretry": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "jail"
+        ],
+        "type": "object"
+      },
+      "Fail2BanLogEntry": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "raw": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "raw",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "Fail2BanLogsResponse": {
+        "properties": {
+          "count": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/Fail2BanLogEntry"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "logs"
+        ],
+        "type": "object"
+      },
+      "Fail2BanPingResponse": {
+        "properties": {
+          "alive": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "alive",
+          "message"
+        ],
+        "type": "object"
+      },
+      "Fail2BanReloadResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "output",
+          "status"
+        ],
+        "type": "object"
+      },
+      "Fail2BanStatusResponse": {
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "jails": {
+            "items": {
+              "$ref": "#/components/schemas/Fail2BanJail"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "running": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "installed",
+          "jails",
+          "running"
+        ],
+        "type": "object"
+      },
+      "Fail2BanUpdateSettingsResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "updated"
+        ],
+        "type": "object"
+      },
       "Fail2BanWhitelistRequest": {
         "properties": {
           "action": {
@@ -329,6 +587,25 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "Fail2BanWhitelistResponse": {
+        "properties": {
+          "jail": {
+            "type": "string"
+          },
+          "whitelist": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "jail",
+          "whitelist"
+        ],
         "type": "object"
       },
       "FirewallCheck": {
@@ -755,6 +1032,48 @@
         },
         "type": "object"
       },
+      "PermanentBan": {
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "line_number": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ip",
+          "line_number",
+          "protocol",
+          "target"
+        ],
+        "type": "object"
+      },
+      "PermanentBansResponse": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "permanent_bans": {
+            "items": {
+              "$ref": "#/components/schemas/PermanentBan"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "permanent_bans"
+        ],
+        "type": "object"
+      },
       "ReconcilerCheck": {
         "properties": {
           "last_run": {
@@ -823,6 +1142,21 @@
           "total_nodes",
           "total_rx",
           "total_tx"
+        ],
+        "type": "object"
+      },
+      "StatusMessageResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "status"
         ],
         "type": "object"
       },
@@ -3038,7 +3372,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanBanResponse"
                 }
               }
             },
@@ -3069,7 +3403,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanHistoryResponse"
                 }
               }
             },
@@ -3110,7 +3444,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
@@ -3141,7 +3475,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanJailSettingsResponse"
                 }
               }
             },
@@ -3180,11 +3514,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanUpdateSettingsResponse"
                 }
               }
             },
             "description": "OK"
+          },
+          "206": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fail2BanUpdateSettingsResponse"
+                }
+              }
+            },
+            "description": "Partial Content"
           },
           "default": {
             "content": {
@@ -3197,7 +3541,7 @@
             "description": "Error"
           }
         },
-        "summary": "Update jail settings (206 when partly applied)",
+        "summary": "Update jail settings; 206 when only some were applied",
         "tags": [
           "fail2ban"
         ]
@@ -3211,7 +3555,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanLogsResponse"
                 }
               }
             },
@@ -3252,7 +3596,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
@@ -3281,7 +3625,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PermanentBansResponse"
                 }
               }
             },
@@ -3312,7 +3656,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanPingResponse"
                 }
               }
             },
@@ -3343,7 +3687,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanReloadResponse"
                 }
               }
             },
@@ -3374,7 +3718,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanStatusResponse"
                 }
               }
             },
@@ -3415,7 +3759,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
@@ -3446,7 +3790,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Fail2BanWhitelistResponse"
                 }
               }
             },
@@ -3485,7 +3829,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/StatusMessageResponse"
                 }
               }
             },
