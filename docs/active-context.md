@@ -344,7 +344,8 @@
   - səhv köhnə parol 400 qaytarır;
   - 10 uğursuz login-dən sonra 429 qayıdır.
 - **Təhlükəsizlik tapıntısı:** `web/.env` git-də izlənir və build zamanı bundle-a düşür. Bax `docs/security.md`.
-- **Davam:** final review, sonra P4b.
+- **Final review (opus):** Review Focus-un 5 bəndi düzgündür. 1 Important RED→GREEN düzəldildi (`d99d788`): paralel login-lər limiti keçirdi, indi cəhd bir kilid altında yoxlanılır və sayılır. 8 minor ledger-də (parol dəyişmə + sessiya ləğvi bir tranzaksiyada deyil, limiter yaddaşı, köhnə şərhlər və s.).
+- **Davam:** P4b.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
