@@ -93,12 +93,12 @@
 
 ## Batch F — Firewall (P3 reviews)
 - [ ] F1 (M10): kernel `nft -c` test covers the edge rulesets (empty, IPv6-only, forwards, egress) across versions in `nft-versions-check.sh`.
-- [ ] F2 (M10): revert while a rollback timer is armed does not reload the old snapshot.
-- [ ] F3 (M4): a narrower ban under a shorter cover is re-applied when the cover expires (reconcile scheduled at the cover's expiry).
-- [ ] F4 (M6): `ErrNotReady` retries back off and stop logging after the first warning per failure.
+- [x] F2 (M10): revert while a rollback timer is armed does not reload the old snapshot.
+- [x] F3 (M4): a narrower ban under a shorter cover is re-applied when the cover expires (reconcile scheduled at the cover's expiry).
+- [x] F4 (M6): `ErrNotReady` retries back off and stop logging after the first warning per failure.
 - [ ] F5 (M8): the boot file drops already-expired timeouts (elements with `expires_at` in the past are not written).
-- [ ] F6 (M9): `setup-firewall.sh` strips a trailing `# comment` from `FIREWALL_ENGINE`.
-- [ ] F7 (M9): VPN drop/reject rules that cannot be converted are reported (warning in apply response and log), not silently skipped.
+- [x] F6 (M9): `setup-firewall.sh` strips a trailing `# comment` from `FIREWALL_ENGINE`.
+- [x] F7 (M9): VPN drop/reject rules that cannot be converted are reported (warning in apply response and log), not silently skipped.
 - [ ] F8: `parseRuleLine`:
   - ignores `dpt:` inside `/* … */` comments;
   - has tests for numeric+opt, `-f`/`!f`, a DROP target and udp+opt;
@@ -129,5 +129,6 @@
 - [ ] H8: the exec-error path has a unit test with a fake SSH client.
 
 ## Closed with a reason (not changed)
+- **P3b M8 / F5** (boot file timeouts restart at boot): nftables has no absolute expiry, and the boot unit loads the last applied script as is. In nft mode the control plane reconciles at startup (`StartFirewall`: `MarkReady`, then `ReconcileOrRetry`) and recomputes every remaining timeout and drops expired allows. The window is only boot until the control plane starts (container `restart: always`).
 - **P2b #10** (`statusRecorder` hides `io.ReaderFrom`): this is a performance-only change. Nothing measures it, and the SPA is served by nginx, not by Go. CLAUDE.md §3 forbids unmeasured optimisation.
 - **Center** `--filter` asymmetry: covered by H2.

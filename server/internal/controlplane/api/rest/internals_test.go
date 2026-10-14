@@ -98,3 +98,18 @@ func TestNormalizeBodyNumbersIDsAndKeepsEmbeddedTimes(t *testing.T) {
 		t.Fatalf("got  %s\nwant %s", got, want)
 	}
 }
+
+// A VPN rule the nftables engine cannot express (IPv6 custom address, bad
+// port list) is refused when saved instead of being skipped (fail-open)
+// every time the firewall is built.
+func TestVPNRuleRejectsWhatTheEngineCannotExpress(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	for name, body := range map[string]string{
+		"ipv6 source": `{"name":"contract-v6","source_type":"custom","source_ip":"2001:db8::1","dest_type":"any","protocol":"all","action":"drop","enabled":true}`,
+		"bad port":    `{"name":"contract-port","source_type":"any","dest_type":"any","protocol":"tcp","port":"80-abc","action":"drop","enabled":true}`,
+	} {
+		if rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", body, true); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s = %d %s, want 400", name, rec.Code, rec.Body)
+		}
+	}
+}

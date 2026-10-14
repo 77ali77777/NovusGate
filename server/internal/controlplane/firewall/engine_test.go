@@ -566,3 +566,17 @@ func TestNarrowerBanReturnsWhenCoverExpires(t *testing.T) {
 		t.Fatalf("the narrower ban must return once the cover expired:\n%s", h.r.applied[len(h.r.applied)-1])
 	}
 }
+
+// Before startup marks the engine ready, a reconcile is not retried in the
+// background: startup reconciles itself once ready, and retries would only
+// log the same failure every few minutes.
+func TestNotReadyIsNotRetried(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.e.ready.Store(false)
+	if _, err := h.e.ReconcileOrRetry(context.Background()); !errors.Is(err, ErrNotReady) {
+		t.Fatalf("err = %v, want ErrNotReady", err)
+	}
+	if len(h.timers) != 0 {
+		t.Fatalf("no retry may be scheduled while not ready, got %d", len(h.timers))
+	}
+}

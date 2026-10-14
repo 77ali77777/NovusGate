@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
@@ -945,11 +946,10 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 		if req.SourceIP == "" {
 			return fmt.Errorf("source_ip is required when source_type is custom")
 		}
-		// Validate IP/CIDR format
-		if net.ParseIP(req.SourceIP) == nil {
-			if _, _, err := net.ParseCIDR(req.SourceIP); err != nil {
-				return fmt.Errorf("invalid source_ip: must be valid IP or CIDR")
-			}
+		// IPv4 only: VPN rules are compiled into IPv4 nftables rules, and a
+		// rule that cannot be compiled would be skipped (fail-open).
+		if !isIPv4OrCIDR(req.SourceIP) {
+			return fmt.Errorf("invalid source_ip: must be an IPv4 address or CIDR")
 		}
 	}
 	
@@ -967,11 +967,8 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 		if req.DestIP == "" {
 			return fmt.Errorf("dest_ip is required when dest_type is custom")
 		}
-		// Validate IP/CIDR format
-		if net.ParseIP(req.DestIP) == nil {
-			if _, _, err := net.ParseCIDR(req.DestIP); err != nil {
-				return fmt.Errorf("invalid dest_ip: must be valid IP or CIDR")
-			}
+		if !isIPv4OrCIDR(req.DestIP) {
+			return fmt.Errorf("invalid dest_ip: must be an IPv4 address or CIDR")
 		}
 	}
 	
@@ -995,6 +992,11 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 	// Validate port (only for tcp/udp)
 	if req.Port != "" && req.Protocol != "tcp" && req.Protocol != "udp" {
 		return fmt.Errorf("port can only be specified for tcp or udp protocols")
+	}
+	if req.Port != "" {
+		if _, err := firewall.ParsePorts(req.Port); err != nil {
+			return fmt.Errorf("invalid port: %v", err)
+		}
 	}
 	
 	return nil
@@ -1524,4 +1526,13 @@ func (s *Server) clearNovusGateVPNRules() error {
 	}
 	
 	return nil
+}
+
+// isIPv4OrCIDR reports whether s is an IPv4 address or IPv4 CIDR.
+func isIPv4OrCIDR(s string) bool {
+	if ip := net.ParseIP(s); ip != nil {
+		return ip.To4() != nil
+	}
+	ip, _, err := net.ParseCIDR(s)
+	return err == nil && ip.To4() != nil
 }

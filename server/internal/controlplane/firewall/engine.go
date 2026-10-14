@@ -251,7 +251,9 @@ func (e *Engine) Reconcile(ctx context.Context, protect []netip.Addr) (Result, e
 // reconcile succeeds, so expiries and VPN changes are never silently lost.
 func (e *Engine) ReconcileOrRetry(ctx context.Context) (Result, error) {
 	res, err := e.Reconcile(ctx, nil)
-	if err != nil && !errors.Is(err, ErrEngineDisabled) {
+	// Not ready: startup reconciles once it marks the engine ready, so a
+	// background retry would only repeat the same failure in the log.
+	if err != nil && !errors.Is(err, ErrEngineDisabled) && !errors.Is(err, ErrNotReady) {
 		e.scheduleRetry()
 	}
 	return res, err
