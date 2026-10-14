@@ -57,6 +57,11 @@
 ## Xəta formatı (P2d-1)
 - Handler-lər xətanı `errorResponse(w, status, message)` (kod statusdan götürülür) və ya `errorWithCode(w, status, code, message)` ilə yazır. Body: `{"error":{"code","message"}}`. Kodlar sabitdir, siyahısı `docs/api.md`-dədir.
 
+## OpenAPI (P2d-2)
+- **Sənəd:** `openapi.go` `docOps` cədvəli və Go tiplərindən reflection ilə qurulan sxemlər, `GET /api/v1/openapi.json` ilə verilir.
+- **Qoruyan testlər:** `TestEveryRouteIsDocumented` (route əhatəsi), `assertMatchesSpec` (hər kontrakt cavabı sxemə qarşı yoxlanılır).
+- **`/api` fallback:** uyğun gəlməyən `/api` sorğuları JSON 404/405 alır (`api_fallback.go`).
+
 ## Test seam-ləri (P2a)
 - **`api/rest`-də dəyişdirilə bilən funksiyalar:**
   - `execHostCommand`, `execCommand`: host və konteyner əmrləri;

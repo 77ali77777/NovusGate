@@ -67,7 +67,7 @@ Dəyişənlər:
 - **P2d-1 (bağlandı):**
   - vahid xəta body-si `{"error":{"code","message"}}` və sabit kodlar;
   - `PUT /nodes/{id}`-də `status` və `expires_at` validasiyası.
-- **P2d-2:**
+- **P2d-2 (bağlandı):**
   - kontrakt snapshot-larından OpenAPI 3 sənədi;
   - qeydiyyatdan keçmiş hər route-un sənəddə olduğunu yoxlayan test.
 - **P2d-3:** servis qatı (handler → service → store).

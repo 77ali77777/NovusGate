@@ -84,7 +84,7 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.
 
 ## Xəta formatı (P2d-1)
-Bütün xəta cavabları bu formadadır:
+Bütün `/api` xəta cavabları bu formadadır:
 
 ```json
 {"error":{"code":"cidr_overlap","message":"CIDR 10.66.0.0/25 overlaps with existing network 'office' (10.66.0.0/24)"}}
@@ -115,5 +115,23 @@ Bütün xəta cavabları bu formadadır:
 | `conflict` | 409 | dublikat forward |
 | `firewall_rejected` | 400 | lockout qoruması, rezerv port, blokun içində allow |
 | `firewall_change_expired` | 410 | dəyişiklik təsdiqsiz geri qaytarılıb və ya id tapılmadı |
+| `firewall_engine_enforcing` | 409 | nft rejimində iptables importu |
+| `method_not_allowed` | 405 | mövcud `/api` yolu, səhv method (`Allow` başlığı ilə) |
 
 200 cavablarının içindəki `error` sahələri (fail2ban, `/health`, `host_error`, sync `errors`) bu formata aid deyil.
+
+## OpenAPI (P2d-2)
+- **`GET /api/v1/openapi.json`** (Bearer tələb edir): bütün REST API-nin OpenAPI 3.0.3 sənədi.
+- **Necə qurulur:** sənəd əl ilə yazılmır. `server/internal/controlplane/api/rest/openapi.go`-dakı `docOps` cədvəli və Go tipləri (`models.Network`, `models.Node`, `FirewallStatus`, request tipləri) əsasında reflection ilə qurulur.
+- **Golden nüsxə:** `server/internal/controlplane/api/rest/testdata/openapi.json`. `bash server/scripts/update-contracts.sh` ilə yenilənir, hər fərq API dəyişikliyidir.
+- **Qoruyan testlər:**
+  - `TestEveryRouteIsDocumented`: qeydiyyatdan keçmiş hər route sənəddə olmalıdır, tərsinə də;
+  - `TestContract`: hər cavab sənədin sxeminə qarşı yoxlanılır (`assertMatchesSpec`).
+- **Məhdudiyyət:** handler daxilindəki adsız request strukturları və `map` cavabları hələlik ümumi `object` kimi sənədləşdirilir. Dəqiq DTO-lar P2d-3-də gələcək.
+- **İstifadə:** P5 web client tiplərini bu sənəddən `openapi-typescript` ilə yaradacaq.
+
+## `/api` fallback (P2d-2)
+- **Naməlum `/api/...` yolu:** 404 `not_found`. Əvvəl bu yol SPA-ya düşürdü.
+- **Mövcud yol, səhv method:** 405 `method_not_allowed` və `Allow` başlığı, məsələn `Allow: GET, POST`.
+- **Token olmadan:** auth middleware əvvəl cavab verir (401).
+- **SPA-nın öz `Invalid path` 400 cavabı** plain text olaraq qalır. `/health` `/api`-dən kənardadır.
