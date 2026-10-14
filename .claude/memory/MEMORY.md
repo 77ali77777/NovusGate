@@ -1,2 +1,2 @@
 - [WSL docker shim expands $](wsl-docker-shim-dollar-expansion.md) — put shell logic in script files; `$?` inside docker args lies
-- [NovusGate rebuild roadmap](novusgate-rebuild-roadmap.md) — P1–P4 done; next P5 (mockup approval first); hand-offs and open decisions
+- [NovusGate rebuild roadmap](novusgate-rebuild-roadmap.md) — P1–P4 + open decisions done; P5 waits for mockup approval; hand-offs

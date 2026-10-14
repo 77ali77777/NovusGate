@@ -309,6 +309,21 @@
   - CI-nin GitHub-da işə salınması.
 - **Davam:** mockup təsdiqi → P5 planı.
 
+### 2026-10-14: P5 mockup tam paritetlə yenidən quruldu
+- **Tapşırıq:** istifadəçi mockup-un natamam olduğunu dedi. Mockup hazırkı paneldəki hər səhifəni, modalı, detalı, redaktə/silmə/əlavə axınını və config pəncərəsini əks etdirməlidir, heç nə əskik olmamalıdır.
+- **Nəticə:** https://claude.ai/artifact/T3qJP3n5KZBgunekRtTSi1. 40 lövhə; mənbə `web/src`-in sətir-sətir inventarıdır. Repo kodu dəyişməyib.
+  - **Ümumi:** Login, Dashboard, Feedback/vəziyyətlər.
+  - **Networks:** 3 lövhə.
+  - **Nodes:** 11 lövhə; detal, modallar və Connect-in 5 tabı daxil.
+  - **Firewall:** 10 lövhə.
+  - **Fail2Ban:** 10 lövhə.
+  - **Settings.**
+- **Yoxlamalar:**
+  - inventarın 10 mətni `grep` ilə kodda təsdiqləndi;
+  - xəta mətnləri və config şablonu backend-dən götürüldü;
+  - render yoxlanmayıb.
+- **Davam:** istifadəçinin mockup-a rəyi və ya təsdiqi → P5 planı.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
