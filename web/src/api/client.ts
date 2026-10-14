@@ -360,6 +360,15 @@ class ApiClient {
     return data
   }
 
+  // Traffic history of a node: bytes per interval over the range.
+  async getNodeTraffic(
+    id: string,
+    range: TrafficRange
+  ): Promise<{ node_id: string; range: TrafficRange; bucket_seconds: number; points: TrafficPoint[] }> {
+    const { data } = await this.client.get(`/nodes/${id}/traffic`, { params: { range } })
+    return data
+  }
+
   // Firewall v2 (nftables engine). Changes wait for /confirm unless confirmed
   // within the deadline the response carries; otherwise the host rolls back.
   async getFirewallV2State(): Promise<FirewallV2State> {
@@ -420,6 +429,7 @@ export const api = new ApiClient()
 
 // React Query hooks
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 
 // Export hooks
 
@@ -476,6 +486,15 @@ export function useNode(id: string) {
     queryKey: ['nodes', 'detail', id],
     queryFn: () => api.getNode(id),
     enabled: !!id,
+  })
+}
+
+export function useNodeTraffic(id: string, range: TrafficRange) {
+  return useQuery({
+    queryKey: ['nodes', 'traffic', id, range],
+    queryFn: () => api.getNodeTraffic(id, range),
+    enabled: !!id,
+    refetchInterval: 5 * 60 * 1000, // a new sample every 5 minutes
   })
 }
 

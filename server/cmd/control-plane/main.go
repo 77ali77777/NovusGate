@@ -17,6 +17,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
+	"github.com/novusgate/novusgate/internal/controlplane/traffic"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -203,6 +204,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 		go rec.Run(recCtx, 15*time.Second)
 		slog.Info(fmt.Sprintf("  WireGuard reconciler: %s", wgMode))
 	}
+
+	// Traffic history (P8): every node's counters every 5 minutes, 30 days kept.
+	sampler := &traffic.Sampler{
+		Store:     db,
+		Peers:     func(iface string) (map[string]wireguard.PeerStatus, error) { return wireguard.NewManager(iface).GetPeers() },
+		Now:       time.Now,
+		Retention: 30 * 24 * time.Hour,
+	}
+	go sampler.Run(recCtx, 5*time.Minute)
 
 	// Firewall engine: iptables (default, legacy paths), shadow (check only) or nft.
 	fwMode, err := firewall.ParseMode(os.Getenv("FIREWALL_ENGINE"))

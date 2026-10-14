@@ -37,3 +37,16 @@ Migration-lar `server/internal/controlplane/store/migrations_sql/` qovluğundad�
   3. `migrations_rollback/009_node_keys_and_audit_user.down.sql` psql ilə işə salınır, sonra köhnə image başladılır.
 
   Down faylı key-lər yalnız sütunda olduqca işləməkdən imtina edir.
+
+## `node_traffic_samples` (010, P8)
+Node-ların trafik tarixçəsi. Control-plane hər 5 dəqiqədən bir hər node-un kumulyativ WireGuard sayğaclarını yazır və 30 gündən köhnə nümunələri silir.
+
+| Sütun | Tip | Qeyd |
+|---|---|---|
+| `node_id` | UUID | `nodes(id)`, `ON DELETE CASCADE` |
+| `sampled_at` | TIMESTAMPTZ | nümunə vaxtı |
+| `rx_bytes`, `tx_bytes` | BIGINT | hub-un bu peer üçün saydığı kumulyativ baytlar |
+
+- PK `(node_id, sampled_at)`, indeks `sampled_at` (retention üçün).
+- Sayğac interfeys yenidən qalxanda sıfırlanır; API azalmanı sıfırdan başlayan say kimi hesablayır.
+- Rollback: `migrations_rollback/010_node_traffic_samples.down.sql`.

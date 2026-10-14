@@ -1274,6 +1274,33 @@
         },
         "type": "object"
       },
+      "NodeTrafficResponse": {
+        "properties": {
+          "bucket_seconds": {
+            "type": "integer"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "range": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bucket_seconds",
+          "node_id",
+          "points",
+          "range"
+        ],
+        "type": "object"
+      },
       "OKCheck": {
         "properties": {
           "ok": {
@@ -1381,6 +1408,26 @@
         "required": [
           "count",
           "permanent_bans"
+        ],
+        "type": "object"
+      },
+      "Point": {
+        "properties": {
+          "rx": {
+            "type": "integer"
+          },
+          "t": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "tx": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rx",
+          "t",
+          "tx"
         ],
         "type": "object"
       },
@@ -3860,6 +3907,56 @@
           }
         },
         "summary": "Client config as a QR code",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/traffic": {
+      "get": {
+        "operationId": "get_nodes_by_id_traffic",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "24h (default), 7d or 30d",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeTrafficResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Traffic history of the node (bytes per interval)",
         "tags": [
           "nodes"
         ]

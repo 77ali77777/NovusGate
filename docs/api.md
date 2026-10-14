@@ -206,3 +206,12 @@ Forma:
   - `NodeStatus` enum-u;
   - nullable `$ref`-lər `type: object` ilə;
   - `ssh_ports` və `egress_interface` nullable deyil, sadəcə isteğe bağlıdır.
+
+## `GET /api/v1/nodes/{id}/traffic` (P8, 2026-10-15)
+Node-un trafik tarixçəsi, intervallar üzrə baytlar.
+- **Query:** `range` = `24h` (default, 5 dəq intervallar, 288 nöqtə), `7d` (1 saat, 168 nöqtə) və ya `30d` (4 saat, 180 nöqtə).
+- **Cavab:** `{"node_id","range","bucket_seconds","points":[{"t","rx","tx"}]}`.
+  - `t` intervalın başlanğıcıdır.
+  - `rx` və `tx` həmin intervalda ötürülən baytlardır, hub-un saydığı kimi.
+  - Nümunə olmayan intervallar `0` göstərir.
+- **Xətalar:** 400 `invalid_range`, 404 `node not found`.

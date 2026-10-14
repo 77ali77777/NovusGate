@@ -39,6 +39,7 @@ type docParam struct {
 // "METHOD path".
 var docQueryParams = map[string][]docParam{
 	"GET /api/v1/system/fail2ban/logs":           {{"lines", "integer", "number of log lines (default 100)"}},
+	"GET /api/v1/nodes/{id}/traffic": {{"range", "string", "24h (default), 7d or 30d"}},
 	"GET /api/v1/firewall/host/rules":            {{"chain", "string", "only this chain (INPUT, FORWARD, ...)"}},
 	"GET /api/v1/system/fail2ban/jail/settings":  {{"jail", "string", "jail name (default sshd)"}},
 	"GET /api/v1/system/fail2ban/whitelist":      {{"jail", "string", "jail name (default sshd)"}},
@@ -87,6 +88,7 @@ var docOps = []docOp{
 	{"GET", "/api/v1/nodes/{id}/config", "Download the client WireGuard config", "nodes", nil, 200, mediaType("text/plain"), false},
 	{"GET", "/api/v1/nodes/{id}/qrcode", "Client config as a QR code", "nodes", nil, 200, mediaType("image/png"), false},
 	{"GET", "/api/v1/nodes/{id}/install.sh", "Linux install script for the node", "nodes", nil, 200, mediaType("text/x-shellscript"), false},
+	{"GET", "/api/v1/nodes/{id}/traffic", "Traffic history of the node (bytes per interval)", "nodes", nil, 200, NodeTrafficResponse{}, false},
 	{"GET", "/api/v1/debug/wireguard/{networkId}", "Compare DB nodes with live peers", "networks", nil, 200, DebugWireGuardResponse{}, false},
 	{"GET", "/api/v1/stats/overview", "Dashboard counters", "system", nil, 200, StatsOverviewResponse{}, false},
 	{"GET", "/api/v1/system/info", "Host CPU, memory, disk, uptime", "system", nil, 200, SystemInfoResponse{}, false},

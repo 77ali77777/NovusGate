@@ -27,6 +27,7 @@ import { CreateNodeModal } from '@/components/CreateNodeModal'
 import { EditNodeModal } from '@/components/EditNodeModal'
 import { PageHeader } from '@/components/Layout'
 import { ServerConfigModal } from '@/components/ServerConfigModal'
+import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
 import { useCurrentNetworkId } from '@/store'
 import type { Node } from '@/types'
@@ -617,6 +618,11 @@ export const NodeDetailPage: React.FC = () => {
             </div>
           </div>
         </Card>
+
+        {/* Traffic History Card (P8) */}
+        <div className="lg:col-span-2">
+          <TrafficHistoryCard nodeId={id || ''} />
+        </div>
 
         {/* System Info Card */}
         <Card className="lg:col-span-2">

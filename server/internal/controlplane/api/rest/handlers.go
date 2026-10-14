@@ -278,6 +278,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/nodes/{id}/config", s.handleDownloadConfig).Methods("GET")
 	api.HandleFunc("/nodes/{id}/qrcode", s.handleGetQRCode).Methods("GET")
 	api.HandleFunc("/nodes/{id}/install.sh", s.handleNodeInstallScript).Methods("GET")
+	api.HandleFunc("/nodes/{id}/traffic", s.handleNodeTraffic).Methods("GET")
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check
