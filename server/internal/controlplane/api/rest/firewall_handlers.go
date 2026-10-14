@@ -763,7 +763,7 @@ func (s *Server) handleFirewallExport(w http.ResponseWriter, r *http.Request) {
 // handleFirewallImport imports iptables rules from iptables-restore format
 func (s *Server) handleFirewallImport(w http.ResponseWriter, r *http.Request) {
 	if s.engineEnforces() {
-		errorResponse(w, http.StatusConflict, "importing iptables rules is not supported while the nftables engine enforces the firewall")
+		errorWithCode(w, http.StatusConflict, "firewall_engine_enforcing", "importing iptables rules is not supported while the nftables engine enforces the firewall")
 		return
 	}
 	var req ImportRulesRequest

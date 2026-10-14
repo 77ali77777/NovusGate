@@ -345,7 +345,9 @@ func (s *Server) setupRoutes() {
 	s.setupFirewallV2Routes(api)
 
 	// Helper for SPA (Single Page Application) serving
-	s.router.PathPrefix("/").HandlerFunc(s.handleSPA)
+	// Unmatched /api requests answer in JSON (404/405), never with the SPA.
+	s.router.PathPrefix("/api/").HandlerFunc(s.handleAPIFallback).Name("api-fallback")
+	s.router.PathPrefix("/").HandlerFunc(s.handleSPA).Name("spa")
 }
 
 func (s *Server) handleSPA(w http.ResponseWriter, r *http.Request) {

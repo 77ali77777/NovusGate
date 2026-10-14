@@ -1,0 +1,10 @@
+{
+  "body": {
+    "error": {
+      "code": "not_found",
+      "message": "no API endpoint at /api/v1/no-such-thing"
+    }
+  },
+  "content_type": "application/json",
+  "status": 404
+}

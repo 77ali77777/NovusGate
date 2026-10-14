@@ -233,6 +233,8 @@ func TestContract(t *testing.T) {
 		{"fail2ban_whitelist", "GET", "/api/v1/system/fail2ban/whitelist", "", true},
 		{"fail2ban_history", "GET", "/api/v1/system/fail2ban/ban-history", "", true},
 		{"fail2ban_history_jail", "GET", "/api/v1/system/fail2ban/ban-history?jail=sshd&limit=2", "", true},
+		{"api_unknown_path", "GET", "/api/v1/no-such-thing", "", true},
+		{"api_wrong_method", "DELETE", "/api/v1/stats/overview", "", true},
 		{"network_create", "POST", "/api/v1/networks", `{"name":"contract-new","cidr":"10.67.0.0/24"}`, true},
 		{"network_create_overlap", "POST", "/api/v1/networks", `{"name":"contract-overlap","cidr":"10.66.0.0/25"}`, true},
 		{"network_create_bad_body", "POST", "/api/v1/networks", `{`, true},

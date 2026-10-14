@@ -1,0 +1,10 @@
+{
+  "body": {
+    "error": {
+      "code": "method_not_allowed",
+      "message": "method DELETE is not allowed for /api/v1/stats/overview"
+    }
+  },
+  "content_type": "application/json",
+  "status": 405
+}

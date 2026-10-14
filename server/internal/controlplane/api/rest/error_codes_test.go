@@ -72,4 +72,7 @@ func TestFirewallEngineErrorCodes(t *testing.T) {
 	if rec := call(t, s, "POST", "/api/v1/firewall/host/ip/block", `{"ip":"198.51.100.200"}`); rec.Code != 400 || errorCode(t, rec.Body.Bytes()) != "firewall_rejected" {
 		t.Fatalf("blocking the operator = %d %s", rec.Code, rec.Body)
 	}
+	if rec := call(t, s, "POST", "/api/v1/firewall/host/import", `{"rules":"*filter\nCOMMIT\n"}`); rec.Code != 409 || errorCode(t, rec.Body.Bytes()) != "firewall_engine_enforcing" {
+		t.Fatalf("iptables import in nft mode = %d %s", rec.Code, rec.Body)
+	}
 }
