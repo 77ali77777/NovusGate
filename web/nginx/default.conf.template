@@ -1,0 +1,43 @@
+# Rendered at container start by the nginx image (envsubst replaces only
+# variables that exist in the environment, e.g. ${NOVUSGATE_API_KEY}).
+server {
+    listen 3007 ssl;
+    server_name _;
+
+    # Self-signed certificate (generated at image build time)
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+    # SSL settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # The API is served on the panel's own origin (no mixed content, no
+    # CORS). nginx adds the API key so it never ships in the JS bundle.
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-API-Key "${NOVUSGATE_API_KEY}";
+        proxy_read_timeout 60s;
+    }
+
+    location = /health {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # SPA routing - all routes go to index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+}

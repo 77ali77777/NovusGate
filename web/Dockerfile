@@ -17,8 +17,9 @@ RUN apk add --no-cache openssl
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx config template (the image renders it into conf.d at start)
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+ENV NOVUSGATE_API_KEY=""
 
 # Generate self-signed certificate at build time
 RUN mkdir -p /etc/nginx/ssl && \

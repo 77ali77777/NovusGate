@@ -284,7 +284,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/networks/{networkId}/sync", s.handleSyncPeers).Methods("POST")
 	
 	// Auth
-	s.router.HandleFunc("/api/v1/auth/login", s.handleLogin).Methods("POST", "OPTIONS")
+	s.router.HandleFunc("/api/v1/auth/login", s.handleLogin).Methods("POST")
 	api.HandleFunc("/auth/password", s.handleUpdatePassword).Methods("PUT")
 	api.HandleFunc("/auth/logout", s.handleLogout).Methods("POST")
 
@@ -424,16 +424,6 @@ func defaultErrorCode(status int) string {
 
 // Login handler
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	// Add CORS headers
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	ip, now := clientIP(r), authNow()
 	if wait, ok := loginLimit.begin(ip, now); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
@@ -1715,16 +1705,6 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 		// Skip if no key is configured (dev mode)
 		if apiKey == "" {
 			next.ServeHTTP(w, r)
-			return
-		}
-
-		// Add CORS headers for OPTIONS
-		if r.Method == "OPTIONS" {
-			// Headers are handled in AuthMiddleware or should be here too if this runs first
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
-			w.WriteHeader(http.StatusOK)
 			return
 		}
 

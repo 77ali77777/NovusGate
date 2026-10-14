@@ -82,9 +82,8 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      API_URL: ${API_URL:-http://localhost:8080}
-    volumes:
-      - ../../../web/.env:/app/.env
+      # nginx adds it to proxied /api requests; it is not built into the bundle
+      NOVUSGATE_API_KEY: ${API_KEY:-}
     # Port 3007 exposed via host network mode
 
 

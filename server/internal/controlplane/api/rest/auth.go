@@ -52,16 +52,9 @@ func sessionFrom(r *http.Request) (*models.User, string) {
 }
 
 // authMiddleware requires a bearer token of an unexpired session, except
-// for the public paths and CORS preflights.
+// for the public paths and an enrollment checkin.
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 		if publicPaths[r.URL.Path] || isEnrollmentCheckin(r) { // the checkin handler validates the token
 			next.ServeHTTP(w, r)
 			return
@@ -163,11 +156,18 @@ func (l *loginLimiter) reset(ip string) {
 	delete(l.fails, ip)
 }
 
-// clientIP is the request's remote address without the port.
+// clientIP is the request's remote address without the port. Behind the
+// panel's nginx (a loopback peer) it is the X-Real-IP that nginx sets;
+// any other client cannot choose its address with that header.
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		if real := net.ParseIP(strings.TrimSpace(r.Header.Get("X-Real-IP"))); real != nil {
+			return real.String()
+		}
 	}
 	return host
 }

@@ -199,3 +199,27 @@ func TestLoginRateLimitHoldsUnderConcurrency(t *testing.T) {
 		t.Fatalf("%d passwords were checked concurrently, want at most 3", evaluated)
 	}
 }
+
+func TestClientIPTrustsOnlyLoopbackProxy(t *testing.T) {
+	for _, c := range []struct{ remote, want string }{
+		{"127.0.0.1:40000", "203.0.113.5"},     // the panel's nginx
+		{"[::1]:40000", "203.0.113.5"},         // the panel's nginx over IPv6
+		{"198.51.100.9:40000", "198.51.100.9"}, // anyone else cannot choose their IP
+	} {
+		req := httptest.NewRequest("POST", "/api/v1/auth/login", nil)
+		req.RemoteAddr = c.remote
+		req.Header.Set("X-Real-IP", "203.0.113.5")
+		if got := clientIP(req); got != c.want {
+			t.Errorf("clientIP(%s) = %s, want %s", c.remote, got, c.want)
+		}
+	}
+}
+
+// The panel calls the API through its own nginx, so no CORS headers are sent.
+func TestNoCORSHeaders(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	rec := callAs(t, s, "GET", "/api/v1/networks", "", true)
+	if v := rec.Header().Get("Access-Control-Allow-Origin"); v != "" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want none", v)
+	}
+}
