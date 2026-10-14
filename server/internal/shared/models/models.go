@@ -136,6 +136,18 @@ type FirewallAuditLog struct {
 }
 
 
+// NotificationSettings are the Telegram notification settings (P8). The bot
+// token is stored sealed and never returned; TokenSet says whether one is.
+type NotificationSettings struct {
+	Enabled        bool   `json:"enabled"`
+	ChatID         string `json:"chat_id"`
+	TokenSet       bool   `json:"token_set"`
+	NodeOffline    bool   `json:"node_offline"`    // a node goes offline or comes back
+	NodeExpired    bool   `json:"node_expired"`    // a node's access expired
+	Fail2BanBan    bool   `json:"fail2ban_ban"`    // Fail2Ban banned an address
+	FirewallChange bool   `json:"firewall_change"` // a firewall rule was changed
+}
+
 // FirewallService opens a host port through the nftables engine.
 type FirewallService struct {
 	ID        string    `json:"id"`

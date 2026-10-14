@@ -21,6 +21,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/notify"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -55,6 +56,8 @@ type Server struct {
 	firewall     *firewall.Engine // nil, or engine for FIREWALL_ENGINE=shadow|nft
 	reconciler   *reconciler.Reconciler // nil when WG_RECONCILER=off
 	backups      *backup.Service        // nil: the backup endpoints answer 503
+	notifier     *notify.Notifier       // nil: no notifications (P8)
+	notifySender notify.Sender          // sends the test message
 	activityMu   sync.RWMutex
 }
 
@@ -259,7 +262,7 @@ func (s *Server) Router() http.Handler {
 func (s *Server) setupRoutes() {
 	// Route middleware: panic recovery, then auth. The request log wraps the
 	// whole mux in Router (it records the 500 that RecoverMiddleware writes).
-	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware)
+	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware, s.firewallChangeMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -282,6 +285,8 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/nodes/{id}/install.sh", s.handleNodeInstallScript).Methods("GET")
 	api.HandleFunc("/nodes/{id}/traffic", s.handleNodeTraffic).Methods("GET")
 	s.registerBackupRoutes(api)
+	s.registerNotificationRoutes(api)
+	s.registerNotificationRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check

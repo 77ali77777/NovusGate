@@ -295,3 +295,14 @@ func TestFailedExpiredRemovalIsRetried(t *testing.T) {
 		t.Fatalf("the next run must retry removing the expired peer, calls=%v", wg.calls)
 	}
 }
+
+// OnExpired hears about every node the expire step marks (P8 notifications).
+func TestOnExpiredIsCalledForExpiredNodes(t *testing.T) {
+	r, _, _ := setup(ModeShadow)
+	var got []string
+	r.OnExpired = func(n *models.Node) { got = append(got, n.Name) }
+	r.RunOnce(context.Background())
+	if strings.Join(got, ",") != "node-c" {
+		t.Fatalf("OnExpired got %v", got)
+	}
+}

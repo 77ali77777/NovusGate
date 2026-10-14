@@ -17,6 +17,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
+	"github.com/novusgate/novusgate/internal/controlplane/notify"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/traffic"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
@@ -198,9 +199,29 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 	recCtx, stopReconciler := context.WithCancel(context.Background())
 	defer stopReconciler()
+
+	// Telegram notifications (P8): settings live in the database, so the
+	// watchers always run and send only when the panel has enabled them.
+	telegram := &notify.Telegram{BaseURL: "https://api.telegram.org", Client: &http.Client{Timeout: 20 * time.Second}}
+	notifier := &notify.Notifier{Settings: db.NotificationSettings, Sender: telegram, Now: time.Now, Repeat: 30 * time.Minute}
+	apiServer.SetNotifier(notifier, telegram)
+	go notifier.Run(recCtx)
+	peerWatcher := &notify.PeerWatcher{
+		Notifier: notifier,
+		Nodes:    func(ctx context.Context) ([]notify.WatchedNode, error) { return watchedNodes(ctx, db) },
+		Peers:    func(iface string) (map[string]wireguard.PeerStatus, error) { return wireguard.NewManager(iface).GetPeers() },
+		Now:      time.Now,
+	}
+	go peerWatcher.Run(recCtx)
+	go (&notify.Fail2BanWatcher{Notifier: notifier, Path: "/var/log/fail2ban.log"}).Run(recCtx)
+
 	var rec *reconciler.Reconciler
 	if wgMode != reconciler.ModeOff {
 		rec = reconciler.New(wgMode, db, func(iface string) reconciler.PeerControl { return wireguard.NewManager(iface) })
+		rec.OnExpired = func(n *models.Node) {
+			notifier.Notify(notify.Event{Kind: notify.NodeExpired, Key: n.ID,
+				Text: fmt.Sprintf("⏰ NovusGate: node %s expired; its access was removed", n.Name)})
+		}
 		apiServer.SetReconciler(rec)
 		go rec.Run(recCtx, 15*time.Second)
 		slog.Info(fmt.Sprintf("  WireGuard reconciler: %s", wgMode))
@@ -660,4 +681,30 @@ func newHTTPServer(addr string, h http.Handler, logger *slog.Logger) *http.Serve
 		IdleTimeout:  60 * time.Second,
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
+}
+
+// watchedNodes lists the nodes the peer watcher follows: every node with a
+// key on a network with an interface, except expired ones.
+func watchedNodes(ctx context.Context, db *store.Store) ([]notify.WatchedNode, error) {
+	networks, err := db.ListNetworks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []notify.WatchedNode
+	for _, nw := range networks {
+		if nw.InterfaceName == "" {
+			continue
+		}
+		nodes, err := db.ListNodes(ctx, nw.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nodes {
+			if n.PublicKey == "" || n.Status == models.NodeStatusExpired {
+				continue
+			}
+			out = append(out, notify.WatchedNode{ID: n.ID, Name: n.Name, Network: nw.Name, Interface: nw.InterfaceName, PublicKey: n.PublicKey})
+		}
+	}
+	return out, nil
 }

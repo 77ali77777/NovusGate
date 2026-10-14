@@ -40,7 +40,7 @@ type docParam struct {
 // "METHOD path".
 var docQueryParams = map[string][]docParam{
 	"GET /api/v1/system/fail2ban/logs":           {{"lines", "integer", "number of log lines (default 100)"}},
-	"GET /api/v1/nodes/{id}/traffic": {{"range", "string", "24h (default), 7d or 30d"}},
+	"GET /api/v1/nodes/{id}/traffic":             {{"range", "string", "24h (default), 7d or 30d"}},
 	"GET /api/v1/firewall/host/rules":            {{"chain", "string", "only this chain (INPUT, FORWARD, ...)"}},
 	"GET /api/v1/system/fail2ban/jail/settings":  {{"jail", "string", "jail name (default sshd)"}},
 	"GET /api/v1/system/fail2ban/whitelist":      {{"jail", "string", "jail name (default sshd)"}},
@@ -94,6 +94,9 @@ var docOps = []docOp{
 	{"POST", "/api/v1/backups", "Make a backup now (database dump and WireGuard configs)", "backups", nil, 201, backup.Info{}, false},
 	{"GET", "/api/v1/backups/{name}", "Download a backup", "backups", nil, 200, mediaType("application/gzip"), false},
 	{"DELETE", "/api/v1/backups/{name}", "Delete a backup", "backups", nil, 204, nil, false},
+	{"GET", "/api/v1/notifications/settings", "Telegram notification settings (the bot token is never returned)", "notifications", nil, 200, models.NotificationSettings{}, false},
+	{"PUT", "/api/v1/notifications/settings", "Update the Telegram notification settings; an empty bot_token keeps the stored one", "notifications", NotificationSettingsRequest{}, 200, models.NotificationSettings{}, false},
+	{"POST", "/api/v1/notifications/test", "Send a test message to the configured chat", "notifications", nil, 200, StatusMessageResponse{}, false},
 	{"GET", "/api/v1/debug/wireguard/{networkId}", "Compare DB nodes with live peers", "networks", nil, 200, DebugWireGuardResponse{}, false},
 	{"GET", "/api/v1/stats/overview", "Dashboard counters", "system", nil, 200, StatsOverviewResponse{}, false},
 	{"GET", "/api/v1/system/info", "Host CPU, memory, disk, uptime", "system", nil, 200, SystemInfoResponse{}, false},

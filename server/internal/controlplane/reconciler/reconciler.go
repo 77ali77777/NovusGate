@@ -83,6 +83,8 @@ type Reconciler struct {
 	Store Store
 	Peers func(iface string) PeerControl
 	Now   func() time.Time
+	// OnExpired, when set, hears about each node the expire step marks.
+	OnExpired func(*models.Node)
 
 	beforeApply func() // test hook: runs between planning and applying
 
@@ -131,6 +133,9 @@ func (r *Reconciler) RunOnce(ctx context.Context) Report {
 	for _, n := range expired {
 		rep.Expired = append(rep.Expired, n.Name)
 		slog.Info("reconciler: node expired", "node", n.Name, "interface", ifaces[n.NetworkID])
+		if r.OnExpired != nil {
+			r.OnExpired(n)
+		}
 	}
 
 	// Diff step.

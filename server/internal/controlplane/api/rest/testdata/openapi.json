@@ -1336,6 +1336,67 @@
         ],
         "type": "object"
       },
+      "NotificationSettings": {
+        "properties": {
+          "chat_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "fail2ban_ban": {
+            "type": "boolean"
+          },
+          "firewall_change": {
+            "type": "boolean"
+          },
+          "node_expired": {
+            "type": "boolean"
+          },
+          "node_offline": {
+            "type": "boolean"
+          },
+          "token_set": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "chat_id",
+          "enabled",
+          "fail2ban_ban",
+          "firewall_change",
+          "node_expired",
+          "node_offline",
+          "token_set"
+        ],
+        "type": "object"
+      },
+      "NotificationSettingsRequest": {
+        "properties": {
+          "bot_token": {
+            "type": "string"
+          },
+          "chat_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "fail2ban_ban": {
+            "type": "boolean"
+          },
+          "firewall_change": {
+            "type": "boolean"
+          },
+          "node_expired": {
+            "type": "boolean"
+          },
+          "node_offline": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "OKCheck": {
         "properties": {
           "ok": {
@@ -4127,6 +4188,107 @@
         "summary": "Traffic history of the node (bytes per interval)",
         "tags": [
           "nodes"
+        ]
+      }
+    },
+    "/api/v1/notifications/settings": {
+      "get": {
+        "operationId": "get_notifications_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Telegram notification settings (the bot token is never returned)",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "put": {
+        "operationId": "put_notifications_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Update the Telegram notification settings; an empty bot_token keeps the stored one",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/test": {
+      "post": {
+        "operationId": "post_notifications_test",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusMessageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Send a test message to the configured chat",
+        "tags": [
+          "notifications"
         ]
       }
     },
