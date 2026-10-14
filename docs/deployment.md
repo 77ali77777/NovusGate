@@ -30,6 +30,7 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
   - yeni quraşdırmada açarı özü yaradır (`openssl rand -hex 32`, `openssl` yoxdursa `/dev/urandom`);
   - reinstall və update `.env`-də açar yoxdursa və ya boşdursa əlavə edir; mövcud açarı heç vaxt dəyişmir.
 - **Əl ilə quraşdırma:** `MASTER_KEY=$(openssl rand -hex 32)` sətrini `server/deployments/docker/.env`-ə əlavə edin.
+- **Nümunə fayl:** `server/deployments/docker/.env.example` bütün dəyişənləri, icazə verilən dəyərləri və simvol qaydalarını izah edir: `cp .env.example .env && chmod 600 .env`, sonra hər `CHANGE_ME` dəyərini dəyişin. `DB_*` və `API_KEY` yalnız `A–Z a–z 0–9 . _ ~ -` ola bilər (`DB_PASSWORD` `DATABASE_URL`-in içinə düşür).
 - **Açar dəyişdirilməməlidir:** dəyişsə, köhnə key-lər açılmır. Açarı `.env` ilə birlikdə yedəkləyin.
 - **Rollback:** `docs/data-model.md`, 009 bölməsi.
 

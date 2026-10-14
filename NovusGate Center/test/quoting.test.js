@@ -29,7 +29,7 @@ test('scripts stay valid bash with awkward config values', () => {
 // quotes specially, so the Center accepts only characters safe there.
 test('validateInstallConfig accepts safe values and rejects the rest', () => {
   assert.strictEqual(validateInstallConfig({ adminUsername: 'admin', adminPassword: 'S3cure-pass_1!', dbName: 'NovusGate', dbUser: 'NovusGate', dbPassword: '', vpnIp: '10.99.0.1' }), '');
-  for (const [field, value] of [['adminPassword', 'a$b'], ['adminPassword', "a'b"], ['dbPassword', 'a"b'], ['adminUsername', 'a b'], ['dbName', 'x`y`'], ['vpnIp', '10.99.0.300']]) {
+  for (const [field, value] of [['adminPassword', 'a$b'], ['adminPassword', "a'b"], ['dbPassword', 'a"b'], ['adminUsername', 'a b'], ['dbName', 'x`y`'], ['vpnIp', '10.99.0.300'], ['dbPassword', 'p@ss'], ['dbPassword', 'a:b'], ['dbUser', 'u%x']]) {
     assert.notStrictEqual(validateInstallConfig({ [field]: value }), '', `${field}=${value} must be rejected`);
   }
 });
