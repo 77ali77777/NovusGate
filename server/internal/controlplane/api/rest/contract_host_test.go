@@ -128,6 +128,7 @@ func TestContractFirewall(t *testing.T) {
 	rule, _ := findRule(inputRules(t, s), "tcp", "8445")
 	run("fw_rule_delete", "POST", "/api/v1/firewall/host/rules/delete", `{"chain":"INPUT","line_number":`+itoa(rule.Number)+`}`)
 	run("fw_reset", "POST", "/api/v1/firewall/host/reset", "")
+	run("fw_vpn_apply", "POST", "/api/v1/firewall/vpn/apply", "")
 	run("fw_v2_service_now", "POST", "/api/v1/firewall/v2/services?confirm=false", `{"protocol":"tcp","port_from":9443}`)
 	run("fw_v2_egress_on", "PUT", "/api/v1/firewall/v2/egress/"+nd.ID+"?confirm=false", "")
 	run("fw_v2_egress_off", "DELETE", "/api/v1/firewall/v2/egress/"+nd.ID+"?confirm=false", "")

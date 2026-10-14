@@ -1,0 +1,8 @@
+{
+  "body": {
+    "message": "VPN firewall rules applied successfully",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}
