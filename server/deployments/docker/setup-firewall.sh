@@ -28,7 +28,8 @@ detect_ssh_ports() {
 firewall_engine() {
   local v=""
   if [ -f "$ENV_FILE" ]; then
-    v="$(grep -E '^FIREWALL_ENGINE=' "$ENV_FILE" | tail -n1 | cut -d= -f2- | tr -d "\"' \r" | tr '[:upper:]' '[:lower:]')"
+    # cut -d'#' drops a trailing "# comment" (engine names never contain #).
+    v="$(grep -E '^FIREWALL_ENGINE=' "$ENV_FILE" | tail -n1 | cut -d= -f2- | cut -d'#' -f1 | tr -d "\"' \t\r" | tr '[:upper:]' '[:lower:]')"
   fi
   echo "${v:-iptables}"
 }
@@ -91,6 +92,9 @@ configure_fail2ban() {
 # remove_nft_engine undoes FIREWALL_ENGINE=nft; call it only after the
 # iptables baseline (INPUT DROP) is back.
 remove_nft_engine() {
+  # An armed rollback timer would load the nft snapshot back after the
+  # table is gone; stop it first (it is not loaded when nothing is pending).
+  systemctl stop novusgate-fw-rollback.timer > /dev/null 2>&1 || true
   if nft list table inet novusgate > /dev/null 2>&1; then
     echo "[FIREWALL] Removing table inet novusgate (FIREWALL_ENGINE is not nft)..."
     nft delete table inet novusgate

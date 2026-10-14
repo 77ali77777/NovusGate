@@ -230,6 +230,17 @@ assert_has "$d/calls.log" "iptables -P INPUT DROP" "iptables mode, apt offline"
 out="$(run_offline nft)"
 [ "${out%% *}" != "rc=0" ] || fail "nft mode: a missing nftables must stop the script"
 
+# Case 12: a trailing comment after FIREWALL_ENGINE does not change the mode
+d="$(run_main "nft # switched in P3b" yes yes)"
+assert_not "$d/calls.log" "iptables " "nft mode with a comment"
+
+# Case 13: reverting stops an armed rollback timer before deleting the table,
+# so the timer cannot load the nft snapshot back afterwards
+d="$(run_main "" yes yes)"
+stop_at="$(grep -n -F "systemctl stop novusgate-fw-rollback.timer" "$d/calls.log" | cut -d: -f1)"
+del_at="$(grep -n -F "nft delete table inet novusgate" "$d/calls.log" | cut -d: -f1)"
+[ -n "$stop_at" ] && [ -n "$del_at" ] && [ "$stop_at" -lt "$del_at" ] || fail "revert: the rollback timer must be stopped before the table is deleted"
+
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"
   exit 1

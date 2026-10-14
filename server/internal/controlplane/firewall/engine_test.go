@@ -537,3 +537,32 @@ func TestAfterApplyWaitsForTheBootRuleset(t *testing.T) {
 		t.Fatalf("hand-over after the ruleset is written (err=%v, calls=%d)", err, calls)
 	}
 }
+
+// A narrower ban that outlives the block covering it is left out while the
+// cover stands and comes back when the cover expires: the engine reconciles
+// at the cover's expiry.
+func TestNarrowerBanReturnsWhenCoverExpires(t *testing.T) {
+	h := newHarness(ModeNft)
+	coverEnds, banEnds := engineNow.Add(time.Hour), engineNow.Add(5*time.Hour)
+	h.st.ipRules = []*models.FirewallIPRule{
+		{ID: "f1111111-1111-1111-1111-111111111111", Action: "block", Prefix: "198.51.100.0/24", ExpiresAt: &coverEnds},
+		{ID: "f2222222-2222-2222-2222-222222222222", Action: "block", Prefix: "198.51.100.7/32", ExpiresAt: &banEnds},
+	}
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(h.r.applied[len(h.r.applied)-1], "198.51.100.7") {
+		t.Fatal("the covered ban is not rendered while the cover stands")
+	}
+	next := h.timers[len(h.timers)-1]
+	if next.d != time.Hour+time.Second {
+		t.Fatalf("the next reconcile must run at the cover's expiry, got %s", next.d)
+	}
+	orig := engineNow
+	engineNow = coverEnds.Add(2 * time.Second)
+	defer func() { engineNow = orig }()
+	next.f()
+	if !strings.Contains(h.r.applied[len(h.r.applied)-1], "198.51.100.7") {
+		t.Fatalf("the narrower ban must return once the cover expired:\n%s", h.r.applied[len(h.r.applied)-1])
+	}
+}
