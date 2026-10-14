@@ -67,3 +67,26 @@ func TestFirewallAuditRecordsUser(t *testing.T) {
 		t.Fatalf("audit user = %q, want engine-admin", username.String)
 	}
 }
+
+// The create-server body cannot plant a key label either.
+func TestCreateServerIgnoresWireguardLabels(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	rec := callAs(t, s, "POST", "/api/v1/networks/"+seed.network.ID+"/servers",
+		`{"name":"contract-planted","labels":{"wireguard_private_key":"junk","role":"db"}}`, true)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	var created CreateServerResponse
+	decodeJSON(t, rec, &created)
+	got, err := st.GetNode(context.Background(), created.Node.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := got.Labels["wireguard_private_key"]; ok || got.Labels["role"] != "db" {
+		t.Fatalf("labels = %v", got.Labels)
+	}
+	if key, _ := st.NodePrivateKey(context.Background(), created.Node.ID); key == "junk" || key == "" {
+		t.Fatalf("stored key = %q, want the generated one", key)
+	}
+}

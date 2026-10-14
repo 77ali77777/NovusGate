@@ -32,7 +32,8 @@ Migration-lar `server/internal/controlplane/store/migrations_sql/` qovluğundad�
 - **`nodes.private_key_enc` TEXT NULL:** node-un WireGuard private key-i. Format: `v1:…` (AES-GCM) və ya `plain:…` (master açar yoxdursa). Node JSON-da əvəzinə `has_config` (`private_key_enc IS NOT NULL`) qaytarılır.
 - **`firewall_audit_log.user_id` UUID NULL:** `users(id)`, `ON DELETE SET NULL`.
 - **Rollback (sıra vacibdir):**
-  1. yeni binary və eyni master açarla `novusgate-server keys-to-labels` işə salınır, key-lər label-ə geri yazılır;
-  2. sonra `migrations_rollback/009_node_keys_and_audit_user.down.sql` işə salınır.
+  1. control-plane dayandırılır (`docker compose stop control-plane`), əks halda restart olanda 009 yenidən tətbiq olunur;
+  2. yeni image və eyni `MASTER_KEY` ilə key-lər label-ə geri yazılır: `docker compose run --rm control-plane keys-to-labels`;
+  3. `migrations_rollback/009_node_keys_and_audit_user.down.sql` psql ilə işə salınır, sonra köhnə image başladılır.
 
-  Sıra pozulsa, node key-ləri itir.
+  Down faylı key-lər yalnız sütunda olduqca işləməkdən imtina edir.

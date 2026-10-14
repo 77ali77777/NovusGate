@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"net"
+	"os"
 	"strings"
 	"testing"
 
@@ -156,4 +157,77 @@ func TestAuditUserSetNullOnDelete(t *testing.T) {
 		t.Fatal("deleting the user must keep the entry with user_id NULL")
 	}
 	s.db.ExecContext(ctx, "DELETE FROM firewall_audit_log WHERE action LIKE 'audit_test%'")
+}
+
+// A label planted on a node that already has a sealed key must not replace it.
+func TestMigrateNodeKeysKeepsExistingKey(t *testing.T) {
+	s := newTestStore(t)
+	box, _ := secretbox.New(testMasterKey)
+	s.SetKeyBox(box)
+	ctx := context.Background()
+	n := keyNode(t, s, map[string]string{})
+	s.SetNodePrivateKey(ctx, n.ID, "real-key")
+	s.db.ExecContext(ctx, `UPDATE nodes SET labels = '{"wireguard_private_key":"junk"}' WHERE id = $1`, n.ID)
+	if _, _, err := s.MigrateNodeKeys(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "real-key" {
+		t.Fatalf("key = %q, want the real key kept", key)
+	}
+	if got, _ := s.GetNode(ctx, n.ID); got.Labels["wireguard_private_key"] != "" {
+		t.Fatalf("the planted label must be removed: %v", got.Labels)
+	}
+}
+
+// Startup must notice a master key that cannot open the stored keys.
+func TestCheckNodeKeys(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "UPDATE nodes SET private_key_enc = NULL")
+	if err := s.CheckNodeKeys(ctx); err != nil {
+		t.Fatalf("no sealed keys = %v", err)
+	}
+	box, _ := secretbox.New(testMasterKey)
+	s.SetKeyBox(box)
+	n := keyNode(t, s, map[string]string{})
+	s.SetNodePrivateKey(ctx, n.ID, "real-key")
+	if err := s.CheckNodeKeys(ctx); err != nil {
+		t.Fatalf("right key = %v", err)
+	}
+	other, _ := secretbox.New(strings.Repeat("ab", 32))
+	s.SetKeyBox(other)
+	if err := s.CheckNodeKeys(ctx); err == nil {
+		t.Fatal("a different master key must be an error")
+	}
+	s.SetKeyBox(nil)
+	if err := s.CheckNodeKeys(ctx); err == nil {
+		t.Fatal("sealed keys without a master key must be an error")
+	}
+}
+
+// The rollback refuses to drop the column while keys live only there.
+func TestRollback009RefusesToLoseKeys(t *testing.T) {
+	s := newTestStore(t)
+	box, _ := secretbox.New(testMasterKey)
+	s.SetKeyBox(box)
+	ctx := context.Background()
+	n := keyNode(t, s, map[string]string{})
+	s.SetNodePrivateKey(ctx, n.ID, "real-key")
+	down, err := os.ReadFile("migrations_rollback/009_node_keys_and_audit_user.down.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = conn.ExecContext(ctx, string(down))
+	conn.ExecContext(ctx, "ROLLBACK")
+	conn.Close()
+	if err == nil || !strings.Contains(err.Error(), "keys-to-labels") {
+		t.Fatalf("down migration = %v, want a refusal naming keys-to-labels", err)
+	}
+	if key, _ := s.NodePrivateKey(ctx, n.ID); key != "real-key" {
+		t.Fatalf("key after refused rollback = %q", key)
+	}
 }

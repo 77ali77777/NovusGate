@@ -67,8 +67,9 @@ func (s *Store) MigrateNodeKeys(ctx context.Context) (moved, resealed int, err e
 			return moved, 0, err
 		}
 		// One statement: the key leaves labels exactly when the column gets it.
+		// A key already in the column wins over a label (labels are not trusted).
 		if _, err := s.db.ExecContext(ctx, `
-			UPDATE nodes SET private_key_enc = $2, labels = labels - 'wireguard_private_key'
+			UPDATE nodes SET private_key_enc = COALESCE(private_key_enc, $2), labels = labels - 'wireguard_private_key'
 			WHERE id = $1`, id, sealed); err != nil {
 			return moved, 0, fmt.Errorf("move key of node %s: %w", id, err)
 		}
@@ -146,4 +147,23 @@ func (s *Store) RestoreNodeKeysToLabels(ctx context.Context) (int, error) {
 		n++
 	}
 	return n, nil
+}
+
+// CheckNodeKeys verifies that the configured master key opens the stored
+// keys, so a changed or missing key stops the server at startup instead of
+// failing every config download later.
+func (s *Store) CheckNodeKeys(ctx context.Context) error {
+	var stored string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT private_key_enc FROM nodes WHERE private_key_enc LIKE 'v1:%' LIMIT 1`).Scan(&stored)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := secretbox.Open(s.box, stored); err != nil {
+		return fmt.Errorf("stored node keys cannot be opened (was %s changed or removed?): %w", secretbox.EnvVar, err)
+	}
+	return nil
 }

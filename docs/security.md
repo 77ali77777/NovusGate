@@ -32,6 +32,7 @@
   - **Master açar:** `NOVUSGATE_MASTER_KEY` (64 hex simvol, compose-da `.env`-dəki `MASTER_KEY`-dən).
   - **Açar yoxdursa:** dəyər `plain:` prefiksi ilə saxlanılır və server startup-da xəbərdarlıq verir. Açar sonradan təyin olunsa, növbəti startup bu dəyərləri şifrələyir.
   - **Açar səhvdirsə** (uzunluq və ya hex xətası): server başlamır.
+  - **Açar dəyişib və ya silinibsə** (mövcud şifrələnmiş key-ləri aça bilmirsə): server startup-da xəta ilə dayanır.
 - **API:**
   - node cavablarında key yoxdur;
   - `has_config` yalnız serverin key-i saxlayıb-saxlamadığını göstərir;

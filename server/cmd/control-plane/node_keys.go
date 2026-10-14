@@ -30,6 +30,9 @@ func setupNodeKeys(ctx context.Context, db *store.Store) error {
 		slog.Warn(fmt.Sprintf("%s is not set: node private keys are stored unencrypted", secretbox.EnvVar))
 	}
 	db.SetKeyBox(box)
+	if err := db.CheckNodeKeys(ctx); err != nil {
+		return err
+	}
 	moved, resealed, err := db.MigrateNodeKeys(ctx)
 	if err != nil {
 		return fmt.Errorf("migrate node keys: %w", err)

@@ -179,4 +179,4 @@ Bütün `/api` xəta cavabları bu formadadır:
 ## Node cavabları (P4c)
 - **`labels.wireguard_private_key` artıq qaytarılmır.** Key şifrələnmiş ayrıca sütunda saxlanılır.
 - **Yeni sahə `has_config` (bool):** server node-un private key-ini saxlayırsa `true` olur. Belə node üçün `GET /nodes/{id}/config`, `/qrcode` və `/install.sh` işləyir. İmport olunmuş peer-lər üçün `false`-dur.
-- **Checkin** `wireguard_*` label-lərini qəbul etmir (P4b), ona görə key label vasitəsilə yazıla bilməz.
+- **Checkin və server yaratma** `wireguard_*` label-lərini qəbul etmir, ona görə key label vasitəsilə yazıla bilməz. Startup miqrasiyası sütunda artıq olan key-i label ilə əvəz etmir.

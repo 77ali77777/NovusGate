@@ -70,3 +70,15 @@ done
 echo "WireGuard is up, but the check-in failed. Check the tunnel with: wg show" >&2
 exit 1
 `
+
+// withoutWireguardLabels drops label keys starting with "wireguard_": keys
+// and WireGuard settings are never set through labels.
+func withoutWireguardLabels(labels map[string]string) map[string]string {
+	out := make(map[string]string, len(labels))
+	for k, v := range labels {
+		if !strings.HasPrefix(k, "wireguard_") {
+			out[k] = v
+		}
+	}
+	return out
+}

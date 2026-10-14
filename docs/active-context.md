@@ -241,7 +241,13 @@
   - web `tsc` 0, biome 100/31.
 - **Kontrakt dəyişikliyi:** 5 node snapshot-unda label-dən key çıxdı, `has_config` əlavə olundu.
 - **Deploy qeydi:** mövcud quraşdırmalarda `MASTER_KEY` olmayana qədər key-lər `plain:` saxlanılır. Center-in update-i açarı əlavə edir.
-- **Davam:** final review, sonra P5.
+- **Final review (opus):** 3 Important RED→GREEN düzəldildi:
+  - server yaratma body-si label ilə real key-i əvəz etdirə bilirdi;
+  - dəyişmiş və ya silinmiş master açar startup-da aşkar olunmurdu;
+  - rollback faylı key-ləri silə bilirdi, indi qoruyucu var.
+
+  6 minor ledger-də.
+- **Davam:** P5 (UI kit). Vizual maket istifadəçinin təsdiqini tələb edir.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

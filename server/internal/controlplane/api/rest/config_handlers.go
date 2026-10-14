@@ -125,6 +125,7 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 
 	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
 	if err != nil {
+		slog.Error("read node private key", "node", node.ID, "error", err)
 		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
 		return
 	}
@@ -198,6 +199,7 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 
 	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
 	if err != nil {
+		slog.Error("read node private key", "node", node.ID, "error", err)
 		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
 		return
 	}
@@ -282,7 +284,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	node := &models.Node{
 		NetworkID: networkID,
 		Name:      req.Name,
-		Labels:    req.Labels,
+		Labels:    withoutWireguardLabels(req.Labels),
 		PublicKey: publicKey,
 		ExpiresAt: req.ExpiresAt,
 		Status:    "online",
@@ -376,6 +378,7 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	// 1. Get Config
 	privateKey, err := s.store.NodePrivateKey(r.Context(), node.ID)
 	if err != nil {
+		slog.Error("read node private key", "node", node.ID, "error", err)
 		errorResponse(w, http.StatusInternalServerError, "failed to read the node's private key")
 		return
 	}
