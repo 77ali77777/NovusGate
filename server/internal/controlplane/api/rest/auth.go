@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -98,4 +100,75 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// loginLimiter counts failed logins per client IP in a sliding window.
+type loginLimiter struct {
+	mu     sync.Mutex
+	max    int
+	window time.Duration
+	fails  map[string][]time.Time
+}
+
+func newLoginLimiter(max int, window time.Duration) *loginLimiter {
+	return &loginLimiter{max: max, window: window, fails: map[string][]time.Time{}}
+}
+
+// maxTrackedIPs bounds the limiter map before it prunes expired entries.
+const maxTrackedIPs = 10000
+
+// loginLimit guards POST /auth/login (replaced in tests).
+var loginLimit = newLoginLimiter(10, 15*time.Minute)
+
+// recent drops failures older than the window; callers hold mu.
+func (l *loginLimiter) recent(ip string, now time.Time) []time.Time {
+	kept := l.fails[ip][:0]
+	for _, at := range l.fails[ip] {
+		if now.Sub(at) < l.window {
+			kept = append(kept, at)
+		}
+	}
+	if len(kept) == 0 {
+		delete(l.fails, ip)
+		return nil
+	}
+	l.fails[ip] = kept
+	return kept
+}
+
+// blocked reports whether ip is over the limit and how long until it is not.
+func (l *loginLimiter) blocked(ip string, now time.Time) (time.Duration, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	f := l.recent(ip, now)
+	if len(f) < l.max {
+		return 0, false
+	}
+	return l.window - now.Sub(f[0]), true
+}
+
+func (l *loginLimiter) fail(ip string, now time.Time) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if len(l.fails) > maxTrackedIPs { // many distinct IPs: drop the ones whose failures expired
+		for other := range l.fails {
+			l.recent(other, now)
+		}
+	}
+	l.fails[ip] = append(l.recent(ip, now), now)
+}
+
+func (l *loginLimiter) reset(ip string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.fails, ip)
+}
+
+// clientIP is the request's remote address without the port.
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

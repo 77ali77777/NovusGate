@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
@@ -112,6 +113,9 @@ func newContractServer(t *testing.T) (*Server, *store.Store, *hostStub) {
 		peerActivity: map[string]*PeerActivity{}}
 	s.setupRoutes()
 	adminToken = testSession(t, st, "contract-user")
+	origLimit := loginLimit
+	loginLimit = newLoginLimiter(10, 15*time.Minute) // failures must not leak between tests
+	t.Cleanup(func() { loginLimit = origLimit })
 	return s, st, stub
 }
 

@@ -433,7 +433,14 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
+	ip, now := clientIP(r), authNow()
+	if wait, blocked := loginLimit.blocked(ip, now); blocked {
+		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+		errorWithCode(w, http.StatusTooManyRequests, "too_many_attempts", "too many failed logins, try again later")
+		return
+	}
+
 	var req LoginRequest
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -449,15 +456,18 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if user == nil {
+		loginLimit.fail(ip, now)
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		loginLimit.fail(ip, now)
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
 	
+	loginLimit.reset(ip)
 	s.store.DeleteExpiredSessions(r.Context(), authNow()) // housekeeping; a failure only leaves old rows
 	token, err := newSessionToken()
 	if err != nil {

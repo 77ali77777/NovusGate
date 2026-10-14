@@ -92,3 +92,28 @@ func TestLoginCreatesASessionForThatUser(t *testing.T) {
 		t.Fatalf("the new token must work: %d", rec.Code)
 	}
 }
+
+func TestLoginRateLimit(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	orig := loginLimit
+	t.Cleanup(func() { loginLimit = orig })
+	loginLimit = newLoginLimiter(3, 15*time.Minute)
+	good := `{"username":"contract-user","password":"contract-pw-1"}`
+	bad := `{"username":"contract-user","password":"wrong"}`
+	if rec := callAs(t, s, "POST", "/api/v1/auth/login", bad, false); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("first bad = %d", rec.Code)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/auth/login", good, false); rec.Code != http.StatusOK {
+		t.Fatalf("a good login under the limit = %d", rec.Code)
+	}
+	for i := 0; i < 3; i++ {
+		callAs(t, s, "POST", "/api/v1/auth/login", bad, false)
+	}
+	rec := callAs(t, s, "POST", "/api/v1/auth/login", good, false)
+	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("over the limit = %d %v, want 429 with Retry-After", rec.Code, rec.Header())
+	}
+	if code := errorCode(t, rec.Body.Bytes()); code != "too_many_attempts" {
+		t.Fatalf("code = %q", code)
+	}
+}
