@@ -1,0 +1,16 @@
+{
+  "body": {
+    "egress_interface": "eth0",
+    "egress_node_ids": [],
+    "forwards": [],
+    "ip_rules": [],
+    "mode": "nft",
+    "pending": null,
+    "services": [],
+    "ssh_ports": [
+      22
+    ]
+  },
+  "content_type": "application/json",
+  "status": 200
+}

@@ -1,0 +1,12 @@
+{
+  "body": {
+    "item": {
+      "egress": true,
+      "node_id": "<uuid>"
+    },
+    "pending": null,
+    "warnings": []
+  },
+  "content_type": "application/json",
+  "status": 200
+}

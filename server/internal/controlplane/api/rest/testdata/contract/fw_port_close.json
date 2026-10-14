@@ -1,0 +1,11 @@
+{
+  "body": {
+    "message": "Port 8444/tcp closed successfully",
+    "port": 8444,
+    "protocol": "tcp",
+    "rules_deleted": 1,
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

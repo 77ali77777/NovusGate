@@ -1,0 +1,8 @@
+{
+  "body": {
+    "message": "Jail sshd stoped successfully",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

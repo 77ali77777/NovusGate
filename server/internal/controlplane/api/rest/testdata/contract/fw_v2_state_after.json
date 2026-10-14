@@ -1,0 +1,33 @@
+{
+  "body": {
+    "egress_interface": "eth0",
+    "egress_node_ids": [],
+    "forwards": [],
+    "ip_rules": [],
+    "mode": "nft",
+    "pending": null,
+    "services": [
+      {
+        "created_at": "<time>",
+        "id": "<uuid>",
+        "port_from": 9443,
+        "port_to": 9443,
+        "protocol": "tcp",
+        "sources": []
+      },
+      {
+        "created_at": "<time>",
+        "id": "<uuid>",
+        "port_from": 9444,
+        "port_to": 9444,
+        "protocol": "tcp",
+        "sources": []
+      }
+    ],
+    "ssh_ports": [
+      22
+    ]
+  },
+  "content_type": "application/json",
+  "status": 200
+}

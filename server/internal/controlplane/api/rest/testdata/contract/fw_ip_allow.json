@@ -1,0 +1,10 @@
+{
+  "body": {
+    "ip": "192.0.2.77",
+    "message": "IP 192.0.2.77 allowed successfully",
+    "ports": "",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

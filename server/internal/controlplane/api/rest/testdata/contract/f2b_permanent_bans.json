@@ -1,0 +1,15 @@
+{
+  "body": {
+    "count": 1,
+    "permanent_bans": [
+      {
+        "ip": "203.0.113.9",
+        "line_number": "1",
+        "protocol": "all",
+        "target": "DROP"
+      }
+    ]
+  },
+  "content_type": "application/json",
+  "status": 200
+}

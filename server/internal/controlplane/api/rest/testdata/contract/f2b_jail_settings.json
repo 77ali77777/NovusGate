@@ -1,0 +1,10 @@
+{
+  "body": {
+    "bantime": "3600",
+    "findtime": "",
+    "jail": "sshd",
+    "maxretry": "3"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

@@ -1,0 +1,19 @@
+{
+  "body": {
+    "count": 2,
+    "logs": [
+      {
+        "action": "ban",
+        "raw": "2026-10-13 10:00:05,200 fail2ban.actions [812]: NOTICE  [sshd] Ban 203.0.113.9",
+        "timestamp": "2026-10-13 10:00:05,200"
+      },
+      {
+        "action": "unban",
+        "raw": "2026-10-13 11:00:05,300 fail2ban.actions [812]: NOTICE  [sshd] Unban 203.0.113.9",
+        "timestamp": "2026-10-13 11:00:05,300"
+      }
+    ]
+  },
+  "content_type": "application/json",
+  "status": 200
+}

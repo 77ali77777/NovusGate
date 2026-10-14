@@ -1,0 +1,8 @@
+{
+  "body": {
+    "alive": true,
+    "message": "Server replied: pong"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

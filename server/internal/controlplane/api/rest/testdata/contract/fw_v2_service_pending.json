@@ -1,0 +1,19 @@
+{
+  "body": {
+    "item": {
+      "created_at": "<time>",
+      "id": "<uuid>",
+      "port_from": 9444,
+      "port_to": 9444,
+      "protocol": "tcp",
+      "sources": []
+    },
+    "pending": {
+      "deadline": "<time>",
+      "id": "<pending-id>"
+    },
+    "warnings": []
+  },
+  "content_type": "application/json",
+  "status": 200
+}

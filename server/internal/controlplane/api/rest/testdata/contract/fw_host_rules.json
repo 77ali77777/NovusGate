@@ -1,0 +1,148 @@
+{
+  "body": {
+    "blocked_ips": 1,
+    "chains": [
+      {
+        "name": "INPUT",
+        "policy": "DROP",
+        "rules": [
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 1,
+            "options": "SSH",
+            "port": "22",
+            "protected": true,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 2,
+            "options": "WireGuard",
+            "port": "51820:51900",
+            "protected": true,
+            "protocol": "udp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 3,
+            "options": "WireGuard wg94",
+            "port": "51994",
+            "protected": true,
+            "protocol": "udp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "in_interface": "wg0",
+            "interface": "wg0",
+            "number": 4,
+            "options": "admin VPN only",
+            "port": "3007",
+            "protected": true,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "in_interface": "wg0",
+            "interface": "wg0",
+            "number": 5,
+            "options": "admin VPN only",
+            "port": "5432",
+            "protected": true,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "in_interface": "wg*",
+            "interface": "wg*",
+            "number": 6,
+            "options": "VPN only",
+            "port": "8080",
+            "protected": true,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "in_interface": "wg*",
+            "interface": "wg*",
+            "number": 7,
+            "options": "VPN only",
+            "port": "8443",
+            "protected": true,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 8,
+            "port": "8444",
+            "protected": false,
+            "protocol": "tcp",
+            "source": "anywhere",
+            "target": "ACCEPT"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 9,
+            "port": "",
+            "protected": false,
+            "protocol": "all",
+            "source": "192.0.2.66",
+            "target": "DROP"
+          },
+          {
+            "chain": "INPUT",
+            "destination": "anywhere",
+            "interface": "",
+            "number": 10,
+            "port": "",
+            "protected": false,
+            "protocol": "all",
+            "source": "192.0.2.77",
+            "target": "ACCEPT"
+          }
+        ]
+      },
+      {
+        "name": "FORWARD",
+        "policy": "ACCEPT",
+        "rules": []
+      },
+      {
+        "name": "OUTPUT",
+        "policy": "ACCEPT",
+        "rules": []
+      }
+    ],
+    "open_ports": 8,
+    "total_rules": 10
+  },
+  "content_type": "application/json",
+  "status": 200
+}

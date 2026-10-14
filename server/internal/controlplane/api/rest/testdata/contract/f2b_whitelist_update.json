@@ -1,0 +1,8 @@
+{
+  "body": {
+    "message": "IP 192.0.2.0/24 added in jail sshd whitelist",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

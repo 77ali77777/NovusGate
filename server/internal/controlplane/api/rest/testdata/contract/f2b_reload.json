@@ -1,0 +1,9 @@
+{
+  "body": {
+    "message": "Fail2Ban reloaded successfully",
+    "output": "OK",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

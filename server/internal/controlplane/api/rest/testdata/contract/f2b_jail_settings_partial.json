@@ -1,0 +1,13 @@
+{
+  "body": {
+    "errors": [
+      "maxretry: stub: \"fail2ban-client set sshd maxretry 9\" is not available"
+    ],
+    "status": "partial",
+    "updated": [
+      "bantime"
+    ]
+  },
+  "content_type": "application/json",
+  "status": 206
+}

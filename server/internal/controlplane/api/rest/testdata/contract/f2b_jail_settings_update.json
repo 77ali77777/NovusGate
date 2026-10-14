@@ -1,0 +1,10 @@
+{
+  "body": {
+    "status": "success",
+    "updated": [
+      "bantime"
+    ]
+  },
+  "content_type": "application/json",
+  "status": 200
+}

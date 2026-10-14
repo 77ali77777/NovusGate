@@ -15,6 +15,12 @@ const fail2banLogPath = "/var/log/fail2ban.log"
 // container (replaced in tests).
 var openFail2BanLog = func() (io.ReadCloser, error) { return os.Open(fail2banLogPath) }
 
+// fail2banLogExists reports whether the fail2ban log is there (replaced in tests).
+var fail2banLogExists = func(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
+
 // f2bActionRe matches "<date> <time>,<ms> fail2ban.actions [pid]: NOTICE  [jail] (Restore )?(Ban|Unban) <ip>".
 // The jail is the bracketed name directly before the action, not the [pid].
 var f2bActionRe = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) .*\[([^\]]+)\]\s+(?:Restore )?(Ban|Unban)\s+(\S+)`)

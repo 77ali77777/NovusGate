@@ -1,0 +1,21 @@
+{
+  "body": {
+    "config": "[Interface]\nPrivateKey = <key>\nAddress = 10.66.0.4\n\n[Peer]\nPublicKey = <key>\nEndpoint = 203.0.113.1\nAllowedIPs = 10.66.0.0/24\nPersistentKeepalive = 25\n",
+    "node": {
+      "created_at": "<time>",
+      "endpoints": null,
+      "id": "<uuid>",
+      "labels": {
+        "wireguard_private_key": "<key>"
+      },
+      "last_seen": "<time>",
+      "name": "contract-srv",
+      "network_id": "<uuid>",
+      "public_key": "<key>",
+      "status": "online",
+      "virtual_ip": "10.66.0.4"
+    }
+  },
+  "content_type": "application/json",
+  "status": 201
+}

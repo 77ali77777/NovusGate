@@ -1,0 +1,9 @@
+{
+  "body": {
+    "message": "IP 192.0.2.88 permanently banned via nftables",
+    "status": "success",
+    "type": "permanent"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

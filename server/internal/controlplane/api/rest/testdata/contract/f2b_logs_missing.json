@@ -1,0 +1,8 @@
+{
+  "body": {
+    "error": "fail2ban log not found",
+    "logs": []
+  },
+  "content_type": "application/json",
+  "status": 200
+}

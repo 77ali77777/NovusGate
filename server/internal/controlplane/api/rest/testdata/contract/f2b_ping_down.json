@@ -1,0 +1,9 @@
+{
+  "body": {
+    "alive": false,
+    "error": "stub: \"fail2ban-client ping\" is not available",
+    "message": "Fail2Ban is not responding"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

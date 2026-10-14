@@ -1453,7 +1453,7 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 	logPath := "/var/log/fail2ban.log"
 	
 	// Check if log exists
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+	if !fail2banLogExists(logPath) {
 		jsonResponse(w, http.StatusOK, map[string]interface{}{
 			"logs":  []string{},
 			"error": "fail2ban log not found",

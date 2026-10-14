@@ -1,0 +1,21 @@
+{
+  "body": {
+    "chain": "INPUT",
+    "deleted_rule": {
+      "chain": "INPUT",
+      "destination": "anywhere",
+      "interface": "",
+      "number": 8,
+      "port": "8445",
+      "protected": false,
+      "protocol": "tcp",
+      "source": "anywhere",
+      "target": "ACCEPT"
+    },
+    "line_number": 8,
+    "message": "Rule 8 deleted from chain INPUT",
+    "status": "success"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

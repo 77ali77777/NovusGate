@@ -1,0 +1,8 @@
+{
+  "body": {
+    "error": "network not found",
+    "network_id": "<uuid>"
+  },
+  "content_type": "application/json",
+  "status": 404
+}

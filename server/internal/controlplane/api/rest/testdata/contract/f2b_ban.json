@@ -1,0 +1,9 @@
+{
+  "body": {
+    "message": "IP 198.51.100.7 banned in jail sshd",
+    "status": "success",
+    "type": "temporary"
+  },
+  "content_type": "application/json",
+  "status": 200
+}

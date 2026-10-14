@@ -1,0 +1,20 @@
+{
+  "body": {
+    "installed": true,
+    "jails": [
+      {
+        "banned_count": 1,
+        "banned_ips": [
+          "203.0.113.9"
+        ],
+        "failed_count": 0,
+        "name": "sshd",
+        "total_banned": 2,
+        "total_failed": 5
+      }
+    ],
+    "running": true
+  },
+  "content_type": "application/json",
+  "status": 200
+}
