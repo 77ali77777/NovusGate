@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -608,6 +610,11 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	_, newNet, err := net.ParseCIDR(network.CIDR)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "invalid CIDR format: "+err.Error())
+		return
+	}
+	// The hub takes the first address; a /31 or /32 leaves no room for a peer.
+	if ones, bits := newNet.Mask.Size(); bits-ones < 2 {
+		errorWithCode(w, http.StatusBadRequest, "invalid_cidr", "CIDR "+network.CIDR+" is too small: a network needs room for the hub and at least one peer")
 		return
 	}
 
@@ -2105,16 +2112,20 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 	
 	// The log is read directly; nothing from the request reaches a shell.
 	history := []map[string]string{} // no log yet: empty history, as before
+	readErr := ""
 	if f, err := openFail2BanLog(); err == nil {
 		history = parseFail2BanHistory(f, jail, limit)
 		f.Close()
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		slog.Warn("fail2ban log cannot be read", "error", err)
+		readErr = "fail2ban log cannot be read: " + err.Error()
 	}
 
 	entries := make([]Fail2BanHistoryEntry, 0, len(history))
 	for _, m := range history {
 		entries = append(entries, Fail2BanHistoryEntry{Raw: m["raw"], Timestamp: m["timestamp"], Jail: m["jail"], Action: m["action"], IP: m["ip"]})
 	}
-	jsonResponse(w, http.StatusOK, Fail2BanHistoryResponse{History: entries, Count: len(entries), Jail: jail})
+	jsonResponse(w, http.StatusOK, Fail2BanHistoryResponse{History: entries, Count: len(entries), Jail: jail, Error: readErr})
 }
 
 // hubAddress returns the hub's interface address for a network: the first

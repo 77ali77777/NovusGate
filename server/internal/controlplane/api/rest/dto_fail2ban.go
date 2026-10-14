@@ -92,6 +92,7 @@ type Fail2BanHistoryResponse struct {
 	History []Fail2BanHistoryEntry `json:"history"`
 	Count   int                    `json:"count"`
 	Jail    string                 `json:"jail"`
+	Error   string                 `json:"error,omitempty"` // the log exists but could not be read
 }
 
 type Fail2BanHistoryEntry struct {

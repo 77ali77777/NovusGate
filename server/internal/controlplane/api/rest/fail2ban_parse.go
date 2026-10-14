@@ -25,7 +25,7 @@ var fail2banLogExists = func(path string) bool {
 // The jail is the bracketed name directly before the action, not the [pid].
 var f2bActionRe = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) .*\[([^\]]+)\]\s+(?:Restore )?(Ban|Unban)\s+(\S+)`)
 
-var hostnameRe = regexp.MustCompile(`^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$`)
+var hostnameRe = regexp.MustCompile(`^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$`) // dot-less names (localhost) too
 
 // fail2banLogAction classifies a fail2ban log line ("Unban" contains "Ban",
 // so it must be checked first).
@@ -76,20 +76,49 @@ func parseFail2BanHistory(log io.Reader, jail string, limit int) []map[string]st
 // parseIgnoreIPList extracts the entries of `fail2ban-client get <jail>
 // ignoreip`: the tree format ("|- 127.0.0.0/8", "`- ::1") and the legacy
 // single-line list, skipping the header and the "nothing ignored" message.
+// A tree line ("|- x", "`- x") holds exactly one entry, so a dot-less
+// hostname (localhost) is kept there; elsewhere only dotted names count,
+// which keeps the words of the header and messages out.
 func parseIgnoreIPList(out string) []string {
 	entries := []string{}
-	for _, tok := range strings.Fields(out) {
-		if net.ParseIP(tok) != nil {
-			entries = append(entries, tok)
+	for _, line := range strings.Split(out, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if rest, ok := cutTreeMarker(trimmed); ok {
+			if tok := strings.TrimSpace(rest); isIgnoreEntry(tok, true) {
+				entries = append(entries, tok)
+			}
 			continue
 		}
-		if _, _, err := net.ParseCIDR(tok); err == nil {
-			entries = append(entries, tok)
-			continue
-		}
-		if hostnameRe.MatchString(tok) {
-			entries = append(entries, tok)
+		for _, tok := range strings.Fields(trimmed) {
+			if isIgnoreEntry(tok, false) {
+				entries = append(entries, tok)
+			}
 		}
 	}
 	return entries
+}
+
+// cutTreeMarker strips fail2ban's "|- " / "`- " list prefix.
+func cutTreeMarker(line string) (string, bool) {
+	for _, marker := range []string{"|- ", "`- "} {
+		if rest, ok := strings.CutPrefix(line, marker); ok {
+			return rest, true
+		}
+	}
+	return "", false
+}
+
+// isIgnoreEntry reports whether tok is an IP, a CIDR or a hostname; dotless
+// hostnames only when the token stands alone on a list line.
+func isIgnoreEntry(tok string, listLine bool) bool {
+	if net.ParseIP(tok) != nil {
+		return true
+	}
+	if _, _, err := net.ParseCIDR(tok); err == nil {
+		return true
+	}
+	if !hostnameRe.MatchString(tok) {
+		return false
+	}
+	return listLine || strings.Contains(tok, ".")
 }

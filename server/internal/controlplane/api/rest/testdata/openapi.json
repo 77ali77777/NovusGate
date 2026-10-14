@@ -375,6 +375,9 @@
           "count": {
             "type": "integer"
           },
+          "error": {
+            "type": "string"
+          },
           "history": {
             "items": {
               "$ref": "#/components/schemas/Fail2BanHistoryEntry"
