@@ -61,6 +61,9 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 - **Non-root SSH istifadəçisi:** Center əmrləri `sudo -n` ilə işlədir, ona görə həmin istifadəçinin parolsuz sudo hüququ olmalıdır.
 - **Eyni server üçün iki əməliyyat:** ikincisi 409 alır və birincinin bitməsini gözləməlidir.
 
+## Center iş log-ları (2026-10-15)
+Server səhifəsində **Job logs** kartı hər işin tam çıxışını göstərir (👁️ baxmaq, ⬇️ yükləmək). API: `GET /api/servers/:id/jobs`, `GET /api/servers/:id/jobs/:name`. Log-lar `data/jobs`-dadır, avtomatik silinmir; parollar maskalanmır (`docs/security.md`).
+
 ## Center ilkin yoxlaması (2026-10-15)
 Center-in Install skripti hosta toxunmazdan əvvəl bunları yoxlayır və bütün problemləri birlikdə göstərir:
 - Ubuntu 20.04+ və ya Debian 11+;

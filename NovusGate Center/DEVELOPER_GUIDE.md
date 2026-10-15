@@ -27,7 +27,8 @@ NovusGate Center/
 ├── public/
 │   └── index.html         # Single-page frontend application
 ├── data/
-│   └── servers.json       # Persisted server credentials
+│   ├── servers.json       # Persisted server credentials
+│   └── jobs/<server>/     # Full output of every job (unmasked: contains passwords)
 ├── Dockerfile             # Container definition
 ├── docker-compose.yml     # Orchestration config
 ├── package.json           # Node.js dependencies

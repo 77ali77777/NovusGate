@@ -833,6 +833,16 @@
       </form>
     </div>
   </div>
+  <div class="modal" id="jobLogModal">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+      <h2 class="modal-title" id="jobLogTitle">🧾 Job log</h2>
+      <pre id="jobLogText" style="max-height: 60vh; overflow: auto; background: var(--bg); padding: 12px; border-radius: 6px; font-size: 0.75rem; white-space: pre-wrap;"></pre>
+      <div class="modal-actions">
+        <button class="btn btn-info" onclick="document.getElementById('jobLogModal').classList.remove('active')">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="terminalModal">
     <div class="modal-content" style="max-width: 900px; width: 95%;">
         <div class="card-header" style="margin-bottom: 0; border: none; padding-bottom: 10px;">
@@ -1494,13 +1504,23 @@
               ` : '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">No history</p>'}
             </div>
           </div>
+
+          <!-- Job logs: full output of install, update, uninstall, ... (data/jobs) -->
+          <div class="card">
+            <div class="card-header" style="padding-bottom: 8px; margin-bottom: 10px;">
+              <span class="card-title" style="font-size: 0.9rem;">🧾 Job logs</span>
+              <button class="btn btn-primary btn-icon btn-sm" onclick="loadJobLogs()">↻</button>
+            </div>
+            <div id="jobLogsContainer" style="max-height: 180px; overflow-y: auto;"><p style="color: var(--text-muted); font-size: 0.85rem;">Loading...</p></div>
+          </div>
         </div>
       `;
-      
-      // Load images, volumes and fail2ban
+
+      // Load images, volumes, fail2ban and job logs
       loadImages();
       loadVolumes();
       loadFail2ban();
+      loadJobLogs();
     }
     
     
@@ -2065,6 +2085,41 @@
     }
     
     // Load Docker Volumes
+    // Job logs keep the output as it is, passwords the scripts print included.
+    async function loadJobLogs() {
+      const container = document.getElementById('jobLogsContainer');
+      if (!container) return;
+      try {
+        const res = await fetch(`/api/servers/${selectedServer.id}/jobs`);
+        const { jobs } = await res.json();
+        if (!jobs || jobs.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">No job logs</p>';
+          return;
+        }
+        const badge = { success: 'badge-success', failed: 'badge-danger', running: 'badge-warning' };
+        container.innerHTML = jobs.map(j => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid var(--border); font-size: 0.8rem;">
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+              <span>${j.action}</span>
+              <span style="color: var(--text-muted); font-size: 0.7rem;"> ${j.startedAt ? new Date(j.startedAt).toLocaleString() : ''}</span>
+            </div>
+            <span class="badge ${badge[j.status] || ''}" style="font-size: 0.65rem; padding: 2px 6px; margin-right: 4px;">${j.status}</span>
+            <button class="btn-mini" onclick="viewJobLog('${j.name}')">👁️</button>
+            <a class="btn-mini" style="margin-left: 4px;" href="/api/servers/${selectedServer.id}/jobs/${j.name}?download=1">⬇️</a>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Job logs could not be loaded</p>';
+      }
+    }
+
+    async function viewJobLog(name) {
+      const res = await fetch(`/api/servers/${selectedServer.id}/jobs/${encodeURIComponent(name)}`);
+      document.getElementById('jobLogTitle').textContent = `🧾 ${name}`;
+      document.getElementById('jobLogText').textContent = res.ok ? await res.text() : 'Job log not found';
+      document.getElementById('jobLogModal').classList.add('active');
+    }
+
     async function loadVolumes() {
       const container = document.getElementById('volumesContainer');
       if (!container) return;

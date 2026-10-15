@@ -16,6 +16,7 @@ const {
 } = require('./lib/scripts');
 const { endWithError } = require('./lib/sse');
 const { runScript, doneMessage } = require('./lib/run');
+const { createJobLogs, teeSSE } = require('./lib/joblog');
 const { validateInstallConfig } = require('./lib/validate');
 const { createStore } = require('./lib/store');
 const { createJobLock } = require('./lib/jobs');
@@ -41,6 +42,8 @@ if (!fs.existsSync(DATA_DIR)) {
 // servers.json: every change re-reads the file and writes it atomically, so a
 // long job that records its result at the end keeps changes made meanwhile.
 const store = createStore(SERVERS_FILE);
+// Full output of every long operation, kept unmasked and unlimited (lib/joblog.js).
+const jobLogs = createJobLogs(path.join(DATA_DIR, 'jobs'));
 const loadServers = () => store.load();
 
 // One long operation per server at a time. startJob answers 409 and returns
@@ -52,6 +55,17 @@ function startJob(res, server, action) {
     res.status(409).json({ error: `${jobs.running(server.id)} is still running on ${server.name}; wait for it to finish` });
   }
   return release;
+}
+
+// logJob keeps the output of a job that does not stream (uninstall, prune).
+function logJob(server, action, result) {
+  try {
+    const log = jobLogs.start(server.id, action, server);
+    log.append((result.stdout || '') + (result.stderr || ''));
+    log.finish(result.code === 0, result.code);
+  } catch (err) {
+    console.error('Job log not written:', err.message);
+  }
 }
 
 // addHistory records an action on a server (newest first, last 50 kept).
@@ -382,7 +396,8 @@ app.post('/api/servers/:id/prune', async (req, res) => {
     
     const result = await execSSH(conn, command);
     conn.end();
-    
+    logJob(server, `prune-${type}`, result);
+
     addHistory(server.id, { action: `prune_${type}`, success: result.code === 0 });
 
     res.json({ success: result.code === 0, output: result.stdout + result.stderr });
@@ -556,6 +571,7 @@ app.post('/api/servers/:id/uninstall', async (req, res) => {
     const conn = await createSSHConnection(server);
     const result = await execSSH(conn, UNINSTALL_SCRIPT);
     conn.end();
+    logJob(server, 'uninstall', result);
 
     addHistory(server.id, { action: 'uninstall', success: result.code === 0 }, (s) => {
       s.status = 'not_installed';
@@ -567,6 +583,24 @@ app.post('/api/servers/:id/uninstall', async (req, res) => {
   } finally {
     release();
   }
+});
+
+// GET /api/servers/:id/jobs - the server's job logs, newest first
+app.get('/api/servers/:id/jobs', (req, res) => {
+  const server = loadServers().servers.find(s => s.id === req.params.id);
+  if (!server) return res.status(404).json({ error: 'Server not found' });
+  res.json({ jobs: jobLogs.list(server.id) });
+});
+
+// GET /api/servers/:id/jobs/:name - one job log as text (?download=1 saves it)
+app.get('/api/servers/:id/jobs/:name', (req, res) => {
+  const file = jobLogs.open(req.params.id, req.params.name);
+  if (!file) return res.status(404).json({ error: 'Job log not found' });
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  if (req.query.download) {
+    res.setHeader('Content-Disposition', `attachment; filename="${req.params.name}"`);
+  }
+  fs.createReadStream(file).pipe(res);
 });
 
 // POST /api/servers/:id/install - Install NovusGate
@@ -593,6 +627,7 @@ app.post('/api/servers/:id/install', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
+  teeSSE(res, jobLogs.start(server.id, jobAction, server));
 
   const sendLog = (text, isError = false) => {
     res.write(`data: ${JSON.stringify({ text: text + '\n', stderr: isError })}\n\n`);
@@ -744,6 +779,7 @@ app.post('/api/servers/:id/join-vpn', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
+  teeSSE(res, jobLogs.start(server.id, 'join-vpn', server));
   const sendLog = (text) => res.write(`data: ${JSON.stringify({ text: text + '\n' })}\n\n`);
 
   let conn = null;

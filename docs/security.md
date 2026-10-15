@@ -87,3 +87,9 @@
 - Paket testi ilə yoxlanıb (iki network namespace): köhnə üsulla drop qaydası keçirdi, yeni zəncirdə bloklayır.
 - **Diqqət:** Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları ilk dəfə trafiki kəsməyə başlayır.
 - Yeni qayda yaradılanda (əvvəl yalnız update və delete edirdi) bütün qaydalar yenidən sinxronlaşdırılır. Bu nft rejimində yeni qaydanın dərhal tətbiq olunmamasını da düzəldir.
+
+## Center iş log-ları (2026-10-15)
+- Hər uzun işin tam çıxışı `NovusGate Center/data/jobs/<server>/<vaxt>-<iş>.log`-da saxlanılır: install, update, reinstall, migrate, join-vpn, uninstall, prune.
+- **İstifadəçi qərarı ilə çıxış maskalanmır və silinmir.** Install-ın çap etdiyi `ADMIN PASS`, `API_KEY` və `DB_PASSWORD` log-da açıq qalır.
+- Qovluqlar 0700, fayllar 0600 icazə ilə yaradılır. `data/` git-ə düşmür (`.gitignore`) və install arxivinə daxil edilmir. Center konteynerində `./data` volume-dadır.
+- `servers.json` kimi, bu qovluq da Center-in olduğu maşında sirr saxlayır.

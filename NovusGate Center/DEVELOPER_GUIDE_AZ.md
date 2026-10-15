@@ -27,7 +27,8 @@ NovusGate Center/
 ├── public/
 │   └── index.html         # Tək səhifəli frontend tətbiqi
 ├── data/
-│   └── servers.json       # Saxlanılan server məlumatları
+│   ├── servers.json       # Saxlanılan server məlumatları
+│   └── jobs/<server>/     # Hər işin tam çıxışı (maskasız: parollar var)
 ├── Dockerfile             # Konteyner tərifi
 ├── docker-compose.yml     # Orkestrasiya konfiqurasiyası
 ├── package.json           # Node.js asılılıqları
