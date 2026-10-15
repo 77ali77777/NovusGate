@@ -1,3 +1,4 @@
 - [WSL docker shim expands $](wsl-docker-shim-dollar-expansion.md) — put shell logic in script files; `$?` inside docker args lies
 - [NovusGate rebuild roadmap](novusgate-rebuild-roadmap.md) — all phases done 2026-10-15; open items and user hand-offs
 - [Scripted edit pitfalls](scripted-edit-pitfalls.md) — JS replace with $ corrupts files; dry-run scripted edits on a copy
+- [Min host Ubuntu 22.04](min-host-ubuntu-2204.md) — no old servers; preflight requires Ubuntu 22.04+ / Debian 12+
