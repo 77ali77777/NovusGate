@@ -279,3 +279,14 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `POST /users` `role` qəbul edir (default `admin`). `PUT /users/{id}/role` `{role}` istifadəçini qaytarır.
 - Son admini aşağı salmaq və ya silmək 409 `last_admin` verir.
 - Siyahı `server/internal/controlplane/api/rest/roles.go` faylındadır; `TestOperatorRoutesExist` siyahıdakı hər route-un mövcud olduğunu yoxlayır.
+
+## Limit profilləri — `/api/v1/limits` (P9b, 2026-10-15)
+- `GET /limits` → `{profiles, node_limits, enforcing}`:
+  - `profiles[]`: `id`, `name`, `down_kbps`, `up_kbps`, `max_connections` (`null` = limitsiz), `schedule[]` (`days` 0=bazar…6=şənbə, `from`/`to` `HH:MM`, `to` `24:00` ola bilər, `to < from` gecə yarısını keçir), `timezone`, `node_ids`, `group_ids`;
+  - `node_limits[]`: hər limitli node üçün qüvvədə olan profil (`node_id`, `virtual_ip`, `profile_id`, qrupdan gəlirsə `group_id`);
+  - `enforcing`: yalnız nft mühərriki limitləri tətbiq edir; iptables rejimində `false`.
+- `POST /limits` → 201; `PUT /limits/{id}` → 200 (bağlı node-lar dərhal yeni limitləri alır); `DELETE /limits/{id}` → 204.
+- `PUT /limits/{id}/bindings` `{node_ids, group_ids}` → bağlamaları tam əvəz edir; başqa profildə olan node/qrup bu profilə keçir.
+- Xətalar: 400 (validasiya: ad 1–100, sürət 1–100 000 000 kbit/s, bağlantı 1–1 000 000, ən çox 28 pəncərə, naməlum saat qurşağı, heç bir limit/cədvəl yoxdursa), 409 `limit_name_taken`, 409 `limit_in_use` (bağlı profil silinmir), UUID olmayan id → 404, naməlum node/qrup → 400.
+- Rollar: GET hamıya, dəyişikliklər operator və admin.
+- `GET /firewall/policy-matrix` xanasında yeni `limited` sahəsi: tərəflərdən birində limitli node var və nft limitləri tətbiq edir. Verdikt dəyişmir.

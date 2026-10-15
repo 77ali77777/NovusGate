@@ -97,3 +97,7 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
   - işləyən fail2ban-a `fail2ban-client set logtarget`.
 
   Compose bu qovluğu konteynerə mount edir. Qovluq mount edildiyi üçün rotasiyadan sonra yeni fayl görünür. Paketin `/etc/logrotate.d/fail2ban` faylına (dpkg conffile) toxunulmur; əvvəlki versiyanın əlavə etdiyi `copytruncate` oradan silinir. `/var/log/fail2ban.log` artıq yenilənmir. Center uninstall bu faylları silir və log-u köhnə yola qaytarır.
+
+## Limit profilləri və saat qurşağı (P9b)
+- Boot unit-də (`novusgate-firewall.service`) `Environment=TZ=UTC` var. Center Update `setup-firewall.sh`-ı yenidən işlədir və unit yenilənir.
+- Funksional yoxlama: `bash server/scripts/limits-functional-check.sh` (NET_ADMIN + SYS_ADMIN, `--privileged` yox; netns ilə real trafik: sürət, bağlantı limiti, cədvəl; konteyner Asia/Baku saat qurşağında işləyir).

@@ -271,9 +271,19 @@
   - təxirə salınan minor: qrup set adlarının sürüşməsi (History diff səs-küyü), session ilə checkin operator üçün admin tələb edir.
 - **Davam:** P9b.
 
+### 2026-10-15: P9b — limit profilləri (sürət, bağlantı, vaxt cədvəli)
+- **Commit-lər:** nft qatı `e6c4a81`; DB/store/engine `e9ed0f3`; REST `1a9b122`; real trafik testi və burst düzəlişi `6812061`; matris `10b40e8`; UI `2c1eb43`.
+- **Ölçmə ilə tapılanlar:**
+  - nft `meta hour`-u prosesin TZ-i ilə çevirir (Bakı 08:00 → 04:00 UTC), `meta day`-i çevirmir → hər nft TZ=UTC ilə, pəncərələr Go-da UTC-yə çevrilir, DST anında reload;
+  - kernel bucket-i `rate+burst` tutur: burst=rate ilk saniyədə 2× buraxırdı (8 Mbit → 10.9) → burst `max(rate/4, 16 KiB)`.
+- **Yoxlamalar:** Go 14 paket `ok`; `nft-versions-check` (1.0.2/1.0.6/1.0.9, limit snapshot daxil) OK; `limits-functional-check.sh`: upload 7.88/8, download 3.90/4 Mbit/s, 4-cü bağlantı atılır, cədvəldən kənar bloklanır; TZ düzəlişi söndürüləndə test düşür (mutasiya); web 48/48, tsc, vite, i18nScan 0, biome 73.
+- **İcra olunmayıb:** brauzerdə real backend; real serverdə (Ubuntu 20.04 kernel 5.4 daxil).
+- **Davam:** P9b müstəqil review → P9c.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | P9b: limit profilləri (nft meter/ct count/cədvəl, 015, API, Limits tabı) | netctl/nft, firewall/{limits,preview,engine,matrix}.go, store/limits.go, rest/limits_handlers.go, setup-firewall.sh, web Limits | P9 spec · `e6c4a81`..`2c1eb43` |
 | 2026-10-15 | P9a review: son admin UUID, default-deny GET, rola görə UI, Nodes qrup filtri | store/roles.go, rest/roles.go, web/src/pages/** | review · `67beb5c` + UI commit |
 | 2026-10-15 | P9a: node qrupları, panel rolları, UI | store/{groups,roles}.go, migrations 013/014, rest/{groups_handlers,roles}.go, netctl/nft, firewall/build.go, web/src/pages/Groups, Settings, Firewall | P9 spec · `8d7867b`, `1ceb721`, `6cfab62` |
 | 2026-10-15 | i18n (az/en), OpenAPI tipləri, Audit, Sessions, Network detalı, Topologiya, ErrorBoundary, Center iş log-ları | web/src/**, server/.../rest/audit_handlers.go, store/{audit,sessions}.go, NovusGate Center/lib/joblog.js | P5/P6 yenidən analiz · `ef72424`..`ad3b99d` |

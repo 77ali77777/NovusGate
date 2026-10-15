@@ -95,3 +95,18 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `role` TEXT NOT NULL DEFAULT `'admin'`, CHECK `admin`/`operator`/`viewer`. Mövcud istifadəçilər admin olaraq qalır.
 - Son admin qorunur: `SetUserRole` və `DeleteUserKeepingAdmin` admin sətirlərini `FOR UPDATE` ilə kilidləyir.
 - Rollback: `migrations_rollback/014_user_roles.down.sql`.
+
+## `limit_profiles` (015, P9b)
+| Sütun | Tip | Qeyd |
+|---|---|---|
+| `id` | UUID | PK |
+| `name` | VARCHAR(100) | UNIQUE |
+| `down_kbps`, `up_kbps` | INTEGER NULL | kbit/s, `> 0`; NULL = limitsiz |
+| `max_connections` | INTEGER NULL | `> 0`; NULL = limitsiz |
+| `schedule` | JSONB | `[{"days":[1..5],"from":"08:00","to":"18:00"}]`, boş = həmişə |
+| `timezone` | TEXT | IANA adı, default `UTC` |
+| `created_at` | TIMESTAMPTZ | |
+
+- `nodes.limit_profile_id`, `node_groups.limit_profile_id` → `limit_profiles(id)` `ON DELETE RESTRICT`.
+- Qüvvədə olan profil: node-un öz profili, yoxdursa profili olan ilk qrupun (ad sırası ilə) profili (`store.ListNodeLimits`).
+- Rollback: `migrations_rollback/015_limit_profiles.down.sql` (profillər və bağlamalar silinir).

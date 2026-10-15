@@ -101,3 +101,9 @@
 - Son admin rolunu itirə və ya silinə bilməz. Paralel sorğularda bu, sətir kilidi ilə qorunur.
 - Son admin yoxlaması ID-ni UUID kimi normallaşdırır: böyük hərfli və ya `{...}` formalı ID ilə yeganə admini aşağı salmaq/silmək mümkün deyil (review düzəlişi).
 - UI rola görə düymələri gizlədir və ya deaktiv edir (Settings, Nodes, Networks, Groups, VPN qaydaları, host firewall, Advanced, History, Fail2Ban), amma qərarı yalnız backend verir.
+
+## Limit profilləri (P9b, 2026-10-15)
+- Limitlər nft `forward` zəncirində `ct state established`-dən əvvəldədir: mövcud bağlantılara da tətbiq olunur.
+- Sürət policing ilə məhdudlaşdırılır (`limit rate over … burst max(rate/4, 16 KiB)`). Ölçülüb: 8 Mbit/s limit → 7.88, 4 Mbit/s → 3.90 (iperf3, ilk 2 s atılmaqla). TCP üçün policing shaping qədər hamar deyil.
+- Vaxt cədvəli UTC-yə çevrilir. nft `meta hour`-u prosesin saat qurşağı ilə çevirir (ölçülüb), ona görə control-plane-in işlətdiyi hər nft, rollback timer-i (`systemd-run --setenv=TZ=UTC`) və boot unit-i (`Environment=TZ=UTC`) UTC ilə işləyir. Yay/qış vaxtı keçidində ruleset avtomatik yenidən qurulur.
+- iptables rejimində limitlər **tətbiq olunmur**; panel bunu açıq yazır.
