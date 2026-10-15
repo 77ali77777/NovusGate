@@ -405,6 +405,17 @@ export interface FirewallV2Live {
   error?: string
 }
 
+// GET /firewall/policy-matrix: cells[from][to] for every pair of VPN networks,
+// computed by the backend from the VPN rules and the firewall mode.
+export interface FirewallPolicyMatrix {
+  nft_enforcing: boolean
+  networks: { id: string; name: string }[]
+  cells: Record<
+    string,
+    Record<string, { verdict: 'allow' | 'deny' | 'partial'; reason: string; rules: string[] }>
+  >
+}
+
 // GET /firewall/v2/history: newest first; added/removed are readable lines.
 export interface FirewallV2HistoryEntry {
   id: string

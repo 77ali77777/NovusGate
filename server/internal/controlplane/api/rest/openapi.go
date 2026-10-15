@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -132,6 +133,7 @@ var docOps = []docOp{
 	{"POST", "/api/v1/firewall/vpn/apply", "Re-apply all VPN firewall rules", "firewall-vpn", nil, 200, StatusMessageResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/state", "nftables engine state", "firewall-v2", nil, 200, V2StateResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/preview", "Compiled nftables ruleset", "firewall-v2", nil, 200, V2PreviewResponse{}, false},
+	{"GET", "/api/v1/firewall/policy-matrix", "Network x network policy matrix from the VPN rules and the firewall mode", "firewall-vpn", nil, 200, firewall.Matrix{}, false},
 	{"GET", "/api/v1/firewall/v2/history", "Applied firewall changes, newest first, with the lines each added and removed", "firewall-v2", nil, 200, V2HistoryResponse{}, false},
 	{"POST", "/api/v1/firewall/v2/history/{id}/restore", "Restore the firewall state of a history entry (as a confirmable change)", "firewall-v2", nil, 200, V2ChangeResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/live", "Rule counters, sources dropped in the last hour and the conntrack table (any mode)", "firewall-v2", nil, 200, V2LiveResponse{}, false},

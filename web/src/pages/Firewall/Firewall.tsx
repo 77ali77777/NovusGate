@@ -25,7 +25,6 @@ import {
   useDeleteFirewallRule,
   useDeleteVPNFirewallRule,
   useFirewallRules,
-  useFirewallV2State,
   useNetworks,
   useOpenPort,
   useResetFirewall,
@@ -34,6 +33,7 @@ import {
 } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { Button, Card, Modal } from '@/components/ui'
+import { pairRulePriority } from '@/lib/policyMatrix'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
 import { AdvancedTab } from './AdvancedTab'
 import { BlockedIPsTab } from './BlockedIPsTab'
@@ -93,9 +93,6 @@ export const Firewall: React.FC = () => {
   } = useFirewallRules()
   const { data: vpnRules, isLoading: vpnLoading, refetch: refetchVPN } = useVPNFirewallRules()
   const { data: networks } = useNetworks()
-  // Without the nft engine the v2 state answers 409: iptables (or shadow) enforces.
-  // Only the VPN Rules tab (policy matrix) needs it here.
-  const { data: v2State } = useFirewallV2State(activeTab === 'vpn-rules')
 
   // Mutations
   const openPortMutation = useOpenPort()
@@ -317,7 +314,8 @@ export const Firewall: React.FC = () => {
   ) => {
     setEditingVPNRule(null)
     setVPNRuleForm({
-      name: `${from.name} → ${to.name}`,
+      // The name column holds 255 characters.
+      name: `${from.name} → ${to.name}`.slice(0, 255),
       description: '',
       source_type: 'network',
       source_network_id: from.id,
@@ -326,7 +324,7 @@ export const Firewall: React.FC = () => {
       protocol: 'all',
       port: '',
       action: 'accept',
-      priority: 100,
+      priority: pairRulePriority((vpnRules || []).map((r) => r.priority)),
       enabled: true,
     })
     setShowVPNRuleModal(true)
@@ -496,14 +494,7 @@ export const Firewall: React.FC = () => {
       )}
 
       {/* VPN Rules Tab */}
-      {activeTab === 'vpn-rules' && (
-        <PolicyMatrix
-          networks={(networks || []).map((n) => ({ id: n.id, name: n.name }))}
-          rules={vpnRules || []}
-          nftEnforcing={v2State?.mode === 'nft'}
-          onCreateRule={handleCreateRuleForPair}
-        />
-      )}
+      {activeTab === 'vpn-rules' && <PolicyMatrix onCreateRule={handleCreateRuleForPair} />}
       {activeTab === 'vpn-rules' && (
         <VPNRulesTab
           rules={vpnRules || []}

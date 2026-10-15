@@ -7,6 +7,7 @@ import type {
   DeleteRuleRequest,
   Fail2BanLogs,
   Fail2BanStatus,
+  FirewallPolicyMatrix,
   FirewallStatus,
   FirewallV2Change,
   FirewallV2ForwardRequest,
@@ -331,6 +332,11 @@ class ApiClient {
   // ====================
 
   // Get all VPN firewall rules
+  async getFirewallPolicyMatrix(): Promise<FirewallPolicyMatrix> {
+    const { data } = await this.client.get<FirewallPolicyMatrix>('/firewall/policy-matrix')
+    return data
+  }
+
   async getVPNFirewallRules(): Promise<VPNFirewallRule[]> {
     const { data } = await this.client.get<VPNFirewallRule[]>('/firewall/vpn/rules')
     return data
@@ -826,6 +832,16 @@ export function useResetFirewall() {
 // ====================
 // VPN Firewall Hooks
 // ====================
+
+// Network policy matrix; VPN rule changes invalidate ['firewall', 'vpn'].
+export function useFirewallPolicyMatrix(enabled: boolean) {
+  return useQuery({
+    queryKey: ['firewall', 'vpn', 'matrix'],
+    queryFn: () => api.getFirewallPolicyMatrix(),
+    enabled,
+    refetchInterval: 30000,
+  })
+}
 
 export function useVPNFirewallRules() {
   return useQuery({
