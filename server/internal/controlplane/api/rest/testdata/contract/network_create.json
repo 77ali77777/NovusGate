@@ -1,6 +1,7 @@
 {
   "body": {
     "cidr": "10.67.0.0/24",
+    "client_dns": "",
     "created_at": "<time>",
     "id": "<uuid-1>",
     "interface_name": "wg69",

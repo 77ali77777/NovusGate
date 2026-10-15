@@ -114,6 +114,14 @@
         ],
         "type": "object"
       },
+      "ClientDNSRequest": {
+        "properties": {
+          "client_dns": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ClosePortRequest": {
         "properties": {
           "force": {
@@ -1410,6 +1418,9 @@
           "cidr": {
             "type": "string"
           },
+          "client_dns": {
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "type": "string"
@@ -1439,6 +1450,7 @@
         },
         "required": [
           "cidr",
+          "client_dns",
           "created_at",
           "id",
           "interface_name",
@@ -1451,6 +1463,9 @@
       "NetworkInput": {
         "properties": {
           "cidr": {
+            "type": "string"
+          },
+          "client_dns": {
             "type": "string"
           },
           "created_at": {
@@ -5435,6 +5450,57 @@
           }
         },
         "summary": "Get a network",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/networks/{id}/dns": {
+      "put": {
+        "operationId": "put_networks_by_id_dns",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientDNSRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split)",
         "tags": [
           "networks"
         ]

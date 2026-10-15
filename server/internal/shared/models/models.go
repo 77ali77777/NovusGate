@@ -26,6 +26,7 @@ type Network struct {
 	ServerEndpoint   string    `json:"server_endpoint,omitempty"`   // Hub's endpoint (IP:Port)
 	ListenPort       int       `json:"listen_port"`                 // UDP port (e.g., 51820)
 	InterfaceName    string    `json:"interface_name"`              // Interface name (e.g., wg0)
+	ClientDNS        string    `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }

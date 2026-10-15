@@ -2,6 +2,7 @@
   "body": [
     {
       "cidr": "10.66.0.0/24",
+      "client_dns": "",
       "created_at": "<time>",
       "id": "<uuid-1>",
       "interface_name": "wg66",
@@ -13,6 +14,7 @@
     },
     {
       "cidr": "10.68.0.0/24",
+      "client_dns": "",
       "created_at": "<time>",
       "id": "<uuid-2>",
       "interface_name": "wg68",

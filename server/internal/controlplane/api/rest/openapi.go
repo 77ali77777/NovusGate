@@ -83,6 +83,7 @@ var docOps = []docOp{
 	{"POST", "/api/v1/networks", "Create a network", "networks", models.Network{}, 201, models.Network{}, false},
 	{"GET", "/api/v1/networks/{id}", "Get a network", "networks", nil, 200, models.Network{}, false},
 	{"DELETE", "/api/v1/networks/{id}", "Delete a network (not wg0)", "networks", nil, 204, nil, false},
+	{"PUT", "/api/v1/networks/{id}/dns", "Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split)", "networks", ClientDNSRequest{}, 200, models.Network{}, false},
 	{"GET", "/api/v1/networks/{networkId}/nodes", "List a network's nodes", "nodes", nil, 200, []models.Node{}, false},
 	{"POST", "/api/v1/networks/{networkId}/servers", "Create a node with its WireGuard config", "nodes", CreateServerRequest{}, 201, CreateServerResponse{}, false},
 	{"POST", "/api/v1/networks/{networkId}/sync", "Re-add missing peers of active nodes", "networks", nil, 200, SyncPeersResponse{}, false},

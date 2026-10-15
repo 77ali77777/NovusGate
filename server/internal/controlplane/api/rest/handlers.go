@@ -272,6 +272,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/networks", s.handleCreateNetwork).Methods("POST")
 	api.HandleFunc("/networks/{id}", s.handleGetNetwork).Methods("GET")
 	api.HandleFunc("/networks/{id}", s.handleDeleteNetwork).Methods("DELETE")
+	api.HandleFunc("/networks/{id}/dns", s.handleSetNetworkDNS).Methods("PUT")
 
 	// Nodes
 	api.HandleFunc("/networks/{networkId}/nodes", s.handleListNodes).Methods("GET")
@@ -636,6 +637,10 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	_, newNet, err := net.ParseCIDR(network.CIDR)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "invalid CIDR format: "+err.Error())
+		return
+	}
+	if network.ClientDNS, err = normalizeClientDNS(network.ClientDNS); err != nil {
+		errorWithCode(w, http.StatusBadRequest, "invalid_dns", err.Error())
 		return
 	}
 	// The hub takes the first address; a /31 or /32 leaves no room for a peer.
