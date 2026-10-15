@@ -61,6 +61,17 @@ Node checkin-i WireGuard qalxandan sonra VPN üzərindən edir, internetə heç 
 - **Non-root SSH istifadəçisi:** Center əmrləri `sudo -n` ilə işlədir, ona görə həmin istifadəçinin parolsuz sudo hüququ olmalıdır.
 - **Eyni server üçün iki əməliyyat:** ikincisi 409 alır və birincinin bitməsini gözləməlidir.
 
+## Center ilkin yoxlaması (2026-10-15)
+Center-in Install skripti hosta toxunmazdan əvvəl bunları yoxlayır və bütün problemləri birlikdə göstərir:
+- Ubuntu 20.04+ və ya Debian 11+;
+- x86_64 və ya aarch64;
+- ən azı 1 GB RAM (2 GB-dan az olanda xəbərdarlıq);
+- `/opt`-da 3 GB boş disk;
+- TCP 3007/5432/8080/8443 və UDP 51820 boş olmalıdır;
+- systemd.
+
+Uyğun gəlməsə exit 5 ilə dayanır və heç nə dəyişmir. Reinstall və Update bu yoxlamanı işlətmir: o hostda NovusGate artıq qurulub.
+
 ## Panel backup-ları və restore (P8)
 - **Yaratmaq:** Settings → Backups → "Backup now". Fayl `/var/backups/novusgate/panel/` qovluğundadır. Backup private açarları saxlayır; yüklənmiş faylı təhlükəsiz yerdə saxlayın.
 - **Restore (əl ilə):**

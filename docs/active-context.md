@@ -117,7 +117,7 @@
   `nft` rejimindən başqa rejimlərdə və təsdiq gözləyən dəyişiklik varkən dəyişiklik düymələri bağlıdır; önizləmə hər rejimdə işləyir.
 - **Kod:** `api/client.ts`-ə 10 v2 metodu və hook əlavə olundu. State gözləyən dəyişiklik varkən 5 s-dən bir, əks halda 30 s-dən bir yenilənir. Tiplər `types/index.ts`-dədir; `pending` `null` ola bilər. Köməkçilər `lib/firewallV2.ts`-dədir.
 - **Testlər:** `web/tests/firewallV2.test.mjs`, 4 test, əvvəl düşdü sonra keçdi; cəmi 12/12. `tsc` OK, biome 98/31 (yeni xəta yoxdur), `vite build` OK.
-- **P3c-dən qalanlar** (P3 spec §5): Live (sayğaclar, drop log-u, conntrack) və History (diff, rollback) üçün backend endpoint-i yoxdur. Bunlar backend işi tələb edir.
+- **P3c-dən qalanlar** (P3 spec §5): Live (sayğaclar, drop log-u, conntrack) və History (diff, rollback) üçün backend endpoint-i yoxdur. Bunlar backend işi tələb edir. *(2026-10-15: hər ikisi edildi, aşağıya baxın.)*
 - **Brauzerdə və real nft hostda yoxlanmayıb.**
 
 ### 2026-10-14: P7 — NovusGate Center
@@ -174,9 +174,37 @@
   - brauzerdə kartların görünüşü.
 - **Fail2Ban log rotasiyası:** `fail2ban.log` konteynerə tək fayl kimi mount olunub. Bu, sonradan `copytruncate` ilə həll olundu (aşağıdakı sessiyaya baxın).
 
+### 2026-10-15: Qalan işlər — Fail2Ban rotasiyası, Center, Firewall Live/History
+- **İstifadəçi qərarları:**
+  - qalan dörd işin hamısı edilir;
+  - Fail2Ban log-u üçün `copytruncate`;
+  - Center iş log-ları saxlanmır.
+- **Fail2Ban rotasiyası (`ba39d85`):** `setup-firewall.sh` `/etc/logrotate.d/fail2ban`-a marker sətri və `copytruncate` əlavə edir (təkrar işə salınanda yenidən əlavə etmir). Center uninstall bu iki sətri silir.
+- **Center ilkin yoxlaması (`72307f1`):** Install hosta toxunmazdan əvvəl OS, arxitektura, RAM, disk, portlar və systemd-ni yoxlayır, uyğun gəlməsə exit 5 ilə dayanır.
+- **Center skriptləri fayllarda (`36041ec`):** bash `NovusGate Center/scripts/*.sh`-dədir, `lib/scripts.js` `@@NAME@@` yerlərini doldurur. Çatışmayan və ya istifadə olunmayan placeholder xəta verir. Generasiya olunan skriptlər üç config üçün əvvəlki ilə bayt-bayt eynidir.
+- **Firewall Live:**
+  - `75f4d53`: ruleset `dropped_v4/v6` dinamik set-lərini doldurur;
+  - `18b6375`: snapshot yeniləndi;
+  - `ffd7188`: `GET /firewall/v2/live` — counter-lər, drop olunan mənbələr, conntrack.
+- **Firewall History (`0777603`):** miqrasiya 012 `fw_history`, tarixçə yazılışı, `Describe`/`DiffLines`, `GET /firewall/v2/history`, `POST …/history/{id}/restore` (təsdiqlə).
+- **UI (`cf31aee`):** Firewall-da "Live" və "History" tabları.
+- **Yoxlamalar:**
+  - Go: `test-with-postgres.sh` → 14 paket `ok`, `nft-versions-check.sh` → `NFT-VERSIONS-OK`;
+  - shell: `setup-firewall_test.sh` → `OK`;
+  - Center: 81/81;
+  - web: `tsc` OK, 20/20, biome 96/31, `vite build` OK.
+- **İcra olunmayıb:**
+  - real hostda dinamik set-in dolması və 5.4 kernel-də yüklənməsi; `nft -c` WSL kernel-ində yoxlanıb;
+  - real logrotate;
+  - preflight real serverdə;
+  - brauzerdə tablar.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | Firewall Live (counter-lər, drop olunan mənbələr, conntrack) və History (diff, restore) | netctl/nft/{compile,live}.go, netctl/conntrack, firewall/{live,history,describe,engine}.go, store/firewall_history.go + 012, api/rest/firewall_{live,history}.go, web Firewall Live/History tabları | P3c qalığı · `75f4d53`..`cf31aee` |
+| 2026-10-15 | Center: preflight, skriptlər `scripts/*.sh`-də | NovusGate Center/{lib/scripts.js,lib/run.js,scripts/,test/} | spec §4.5 · `72307f1`, `36041ec` |
+| 2026-10-15 | Fail2Ban log-u rotasiyadan sonra da oxunur (copytruncate) | setup-firewall.sh (+test), Center scripts | bildiriş məhdudiyyəti · `ba39d85` |
 | 2026-10-15 | Telegram bildirişləri: notify paketi, miqrasiya 011, `/api/v1/notifications/*`, firewall/expiry hook-ları, Settings kartı | server/internal/controlplane/{notify,store,api/rest,reconciler}, cmd/control-plane/main.go, web/src/{lib/notifications.ts,pages/Settings/*,api/client.ts,types}, docs | P8 · `8812781`, `3b64cd0` |
 | 2026-10-15 | Manual backup-lar (pg_dump + WireGuard config) | server/internal/controlplane/backup, api/rest/backup_handlers.go, Dockerfile, compose, web BackupsCard, docs | P8 · `846fd9d` |
 | 2026-10-15 | Node trafik tarixçəsi (5 dəq, 30 gün) | traffic/, store/traffic.go, miqrasiya 010, api/rest/traffic_handlers.go, web TrafficHistoryCard | P8 · `1bcae2a` |

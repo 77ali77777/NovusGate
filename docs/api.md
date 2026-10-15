@@ -20,6 +20,9 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 | DELETE | `/firewall/v2/forwards/{id}` | — | eyni |
 | PUT / DELETE | `/firewall/v2/egress/{nodeId}` | — | node-un serverdən internetə çıxışını (full tunnel) açır və ya bağlayır. Açıq olanda node-un config-i (`/nodes/{id}/config`, `/qrcode`, `install.sh`) `AllowedIPs = 0.0.0.0/0` və `DNS = 1.1.1.1` ilə gəlir (P8, 2026-10-15); cihazda config yenidən yüklənməlidir |
 | POST | `/firewall/v2/confirm/{id}` | — | `{"status":"confirmed"}` |
+| GET | `/firewall/v2/live` | — | `mode`, `table_loaded`, `counters[]` (`chain`, `rule`, `comment`, `packets`, `bytes`), `dropped[]` (`address`, `seconds_ago`), `conntrack` (`available`, `count`, `max`, `by_protocol`, `tcp_states`, `truncated`), `error`. Bütün rejimlərdə 200 qaytarır; nft cədvəli yoxdursa yalnız conntrack doldurulur (P3c, 2026-10-15) |
+| GET | `/firewall/v2/history?limit=50` | — | `entries[]`: `id`, `created_at`, `username`, `action` (`METHOD path`, `baseline` və ya `restore …`), `added[]`, `removed[]` (oxunaqlı sətirlər, əvvəlki yazı ilə müqayisədə). Ən yenisi birinci, `limit` ən çox 200. nft engine olmadan 409 `firewall_disabled` |
+| POST | `/firewall/v2/history/{id}/restore` | — | adi dəyişiklik kimi işləyir: `item` (`{"id"}`), `pending`, `warnings`, `?confirm=false` də keçərlidir. Müddəti bitmiş IP qaydaları və silinmiş node-ların egress-i geri qaytarılmır. Tapılmayan və ya səhv ID üçün 404 |
 
 **Status kodları:**
 - **400** — yanlış giriş və ya rədd edilmiş dəyişiklik (`firewall change rejected`). Səbəblər:

@@ -125,3 +125,15 @@
 - **`/health`:** `checks.reconciler {ok, mode, last_run, pending}`.
 - **P2c-2-yə saxlanılıb:** `wgN.conf`-a `[Peer]` bölmələrinin yazılması. `wg0.conf`-u installer yazır və bootstrap açarları ondan oxuyur. Reboot-dan sonra peer-ləri `restorePeers` bərpa edir.
 - **Logging qoruyucusu:** `TestRuntimeCodeLogsThroughSlog` və `TestLogLevelsMatchMessages` artıq bütün `internal/` ağacını yoxlayır və import alias-larını tanıyır.
+
+## Firewall Live və History (P3c, 2026-10-15)
+- **Drop olunan mənbələr:** kompilyator `input` zəncirinin sonunda, default drop-dan əvvəl `update @dropped_v4 { ip saddr }` / `@dropped_v6` sətirlərini yazır. Set-lər dinamikdir, 1 saat timeout və 4096 element limiti var. Qəbul və drop qərarları dəyişmir; set dolanda sadəcə yeni mənbələr yazılmır. Kernel log və ya NFLOG lazım deyil.
+- **Live:** `firewall.Engine.Live` iki əmr işlədir:
+  - `nft -a list table` → `nft.ParseCounters` (qaydanın mətni, counter, comment, handle);
+  - `nft -j list table` → `nft.ParseDropped`.
+
+  `netctl/conntrack.Read` `/proc`-dan sayı, limiti, protokol və TCP state üzrə bölgünü oxuyur (control-plane host şəbəkəsindədir). Sayğaclar hər tətbiqdə sıfırlanır, çünki cədvəl yenidən yaradılır.
+- **History:** `Engine.History` (`store`) `finish`-də, dəyişiklik host-da canlı olub DB-yə yazılandan sonra çağırılır. Yazı alınmasa yalnız log-a düşür.
+  - Kim və hansı endpoint: `firewallActorMiddleware` request kontekstinə `firewall.Actor` qoyur.
+  - `firewall.Describe` vəziyyəti oxunaqlı sətirlərə çevirir, `DiffLines` əlavə olunan və silinən sətirləri tapır.
+  - Restore `proposeV2` ilə adi dəyişiklik kimi işləyir: təsdiq və avtomatik rollback eynidir. Commit `store.ReplaceFirewallState` ilə bir transaksiyada gedir.

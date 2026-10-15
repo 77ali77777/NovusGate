@@ -64,3 +64,19 @@ Telegram bildiriş ayarları. Cədvəldə tək sətir var (`id = 1`, `CHECK`).
 
 - Sətir yoxdursa API default-ları qaytarır: söndürülüb, bütün hadisələr açıqdır, token yoxdur.
 - Rollback: `migrations_rollback/011_notification_settings.down.sql`.
+
+## `fw_history` (012, P3c)
+Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrakı engine vəziyyəti bir sətirdə saxlanılır.
+
+| Sütun | Tip | Qeyd |
+|---|---|---|
+| `id` | UUID | PK (tətbiq yaradır) |
+| `created_at` | TIMESTAMPTZ | indeks `created_at DESC` |
+| `user_id` | UUID NULL | `users(id)`, `ON DELETE SET NULL` |
+| `action` | TEXT | `METHOD path`, `baseline` və ya `restore <vaxt>` |
+| `state` | JSONB | `{"services","ip_rules","forwards","egress_node_ids"}` |
+
+- Ən yeni 200 sətir saxlanılır, köhnələri insert ilə eyni transaksiyada silinir.
+- İlk yazıdan əvvəl `baseline` sətri əlavə olunur: dəyişiklikdən əvvəlki vəziyyət.
+- Təsdiq gözləyən dəyişiklik yalnız Confirm-dən sonra yazılır, rollback olunan dəyişiklik heç vaxt yazılmır.
+- Rollback: `migrations_rollback/012_fw_history.down.sql`.
