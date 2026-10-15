@@ -284,9 +284,17 @@
   - qalan: models.go-dakı gofmt hizalaması (yalnız boşluq).
 - **Davam:** P9c (kvota). Qeyd: nümunələr 30 gün saxlanılır, ona görə kvota sayğacı `node_quota_state`-də artımla aparılacaq.
 
+### 2026-10-15: P9c — trafik kvotası
+- **Commit-lər:** backend `08f8ec5` (016, quota paketi, Tracker, quota_v4, API, bildiriş); UI `a434f65`.
+- **Ruling:** spesifikasiya kvotanı nümunələrdən cəmləməyi deyir; nümunələr 30 gün saxlanılır, ay 31 gün ola bilər → sayğac `node_quota_state`-də artımla aparılır.
+- **Yoxlamalar:** Go 15 paket `ok` (quota: dövr sərhədi, Bakı gecə yarısı, sayğac sıfırlanması, 80/100%, yeni dövr, nümunəsiz rollover, sıfırlama; tracker; nft quota_v4; engine blok; REST); `nft-versions-check` OK; web 53/53, tsc, vite, i18nScan 0, biome 73.
+- **İcra olunmayıb:** real serverdə kvota (WireGuard sayğacları ilə); brauzer; Telegram-a real göndəriş.
+- **Davam:** P9c müstəqil review → P10a.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | P9c: aylıq trafik kvotası (blok/yavaşlatma, 80% xəbərdarlıq, sıfırlama) | quota/, migrations 016, store/limits.go, firewall/limits.go, netctl/nft, traffic.go, main.go, web Limits/Nodes/Settings | P9 spec · `08f8ec5`, `a434f65` |
 | 2026-10-15 | P9b: limit profilləri (nft meter/ct count/cədvəl, 015, API, Limits tabı) | netctl/nft, firewall/{limits,preview,engine,matrix}.go, store/limits.go, rest/limits_handlers.go, setup-firewall.sh, web Limits | P9 spec · `e6c4a81`..`2c1eb43` |
 | 2026-10-15 | P9a review: son admin UUID, default-deny GET, rola görə UI, Nodes qrup filtri | store/roles.go, rest/roles.go, web/src/pages/** | review · `67beb5c` + UI commit |
 | 2026-10-15 | P9a: node qrupları, panel rolları, UI | store/{groups,roles}.go, migrations 013/014, rest/{groups_handlers,roles}.go, netctl/nft, firewall/build.go, web/src/pages/Groups, Settings, Firewall | P9 spec · `8d7867b`, `1ceb721`, `6cfab62` |

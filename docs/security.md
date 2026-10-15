@@ -107,3 +107,8 @@
 - Sürət policing ilə məhdudlaşdırılır (`limit rate over … burst max(rate/4, 64 KiB)`). Ölçülüb: 8 Mbit/s limit → 7.88, 4 Mbit/s → 3.90 (iperf3, ilk 2 s atılmaqla). TCP üçün policing shaping qədər hamar deyil.
 - Vaxt cədvəli UTC-yə çevrilir. nft `meta hour`-u prosesin saat qurşağı ilə çevirir (ölçülüb), ona görə control-plane-in işlətdiyi hər nft, rollback timer-i (`systemd-run --setenv=TZ=UTC`) və boot unit-i (`Environment=TZ=UTC`) UTC ilə işləyir. Yay/qış vaxtı keçidində ruleset avtomatik yenidən qurulur.
 - iptables rejimində limitlər **tətbiq olunmur**; panel bunu açıq yazır.
+
+## Trafik kvotası (P9c, 2026-10-15)
+- Kvotanı aşan node `block` rejimində `quota_v4` set-inə düşür: forward-da VPN trafiki hər iki istiqamətdə atılır, handshake (input) qalır. `throttle` rejimində node profilin "<id>:quota" surətinə keçir (`throttle_kbps`, digər limitlər saxlanılır).
+- Əvvəlki dövrə aid "aşıb" qeydi heç vaxt bloklamır; dövr dəyişəndə nümunə gəlməsə də blok götürülür (Rollover), firewall dərhal yenidən tətbiq olunur.
+- iptables rejimində kvota tətbiq olunmur (limitlər kimi).

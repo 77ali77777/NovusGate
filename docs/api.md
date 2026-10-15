@@ -290,3 +290,9 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - Xətalar: 400 (validasiya: ad 1–100, sürət 1–100 000 000 kbit/s, bağlantı 1–1 000 000, ən çox 28 pəncərə, naməlum saat qurşağı, heç bir limit/cədvəl yoxdursa), 409 `limit_name_taken`, 409 `limit_in_use` (bağlı profil silinmir), UUID olmayan id → 404, naməlum node/qrup → 400.
 - Rollar: GET hamıya, dəyişikliklər operator və admin.
 - `GET /firewall/policy-matrix` xanasında yeni `limited` sahəsi: tərəflərdən birində limitli node var və nft limitləri tətbiq edir. Verdikt dəyişmir.
+
+## Trafik kvotası (P9c, 2026-10-15)
+- Limit profilində yeni sahələr: `quota_mb` (aylıq, MB = 10⁶ bayt; `null` = kvota yoxdur), `quota_action` (`block` default, `throttle`), `throttle_kbps` (`throttle` üçün məcburi), `quota_reset_day` (1–28, default 1).
+- `GET /limits` cavabında `quota_states[]`: `node_id`, `period_start`, `used_bytes`, `warned_at`, `exceeded_at`.
+- `POST /nodes/{id}/quota/reset` → 204 (sayğac sıfırlanır, blok/yavaşlatma dərhal götürülür); sayğac yoxdursa və ya id UUID deyilsə 404. Rol: operator.
+- Bildiriş ayarlarında yeni `quota_exceeded` açarı (default `true`): 80% və 100%.

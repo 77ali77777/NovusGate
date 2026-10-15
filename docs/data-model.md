@@ -110,3 +110,10 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `nodes.limit_profile_id`, `node_groups.limit_profile_id` → `limit_profiles(id)` `ON DELETE RESTRICT`.
 - Qüvvədə olan profil: node-un öz profili, yoxdursa profili olan ilk qrupun (ad sırası ilə) profili (`store.ListNodeLimits`).
 - Rollback: `migrations_rollback/015_limit_profiles.down.sql` (profillər və bağlamalar silinir).
+
+## Trafik kvotası (016, P9c)
+- `limit_profiles`: `quota_mb` INTEGER NULL (`> 0`), `quota_action` TEXT (`block`/`throttle`), `throttle_kbps` INTEGER NULL, `quota_reset_day` SMALLINT (1–28).
+- `node_quota_state`: `node_id` PK → `nodes` (CASCADE), `period_start`, `used_bytes`, `last_rx`/`last_tx` (son nümunənin WireGuard sayğacları), `warned_at`, `exceeded_at`, `updated_at`.
+- Sayğac artımla aparılır: hər 5 dəqiqəlik nümunədə rx+tx fərqi əlavə olunur (sayğac azalanda sıfırdan sayılır). Nümunələrdən cəmlənmir, çünki nümunələr 30 gün saxlanılır, dövr isə 31 gün ola bilər.
+- `notification_settings.quota_exceeded` BOOLEAN DEFAULT TRUE.
+- Rollback: `migrations_rollback/016_traffic_quota.down.sql`.
