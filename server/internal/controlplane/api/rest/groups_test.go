@@ -154,3 +154,15 @@ func TestGroupNetworkCIDRs(t *testing.T) {
 		t.Fatalf("nil group = %v", got)
 	}
 }
+
+// Names are limited to 100 characters, not bytes: "ə" is two bytes.
+func TestGroupNameCountsCharacters(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	name := strings.Repeat("ə", 60) // 60 characters, 120 bytes
+	if rec := callAs(t, s, "POST", "/api/v1/groups", `{"name":"`+name+`"}`, true); rec.Code != 201 {
+		t.Fatalf("60-character name = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/groups", `{"name":"`+strings.Repeat("ə", 101)+`"}`, true); rec.Code != 400 {
+		t.Fatalf("101-character name = %d", rec.Code)
+	}
+}

@@ -3,6 +3,7 @@ package firewall
 import (
 	"net/netip"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -295,5 +296,15 @@ func TestSetNamesAreStable(t *testing.T) {
 	got, sets, errs := vpnRulesWithGroups(rules, nil, nil, groups)
 	if len(errs) != 0 || len(got) != 1 || got[0].SrcSet != "grp_12" || len(sets) != 1 || sets[0].Name != "grp_12" {
 		t.Fatalf("rules %+v sets %+v errs %v", got, sets, errs)
+	}
+}
+
+// The name limit counts characters, not bytes ("ə" is two bytes).
+func TestLimitProfileNameCountsCharacters(t *testing.T) {
+	if err := ValidateLimitProfile(models.LimitProfile{Name: strings.Repeat("ə", 60), Timezone: "UTC", DownKbps: intp(1000)}); err != nil {
+		t.Fatalf("60 characters: %v", err)
+	}
+	if err := ValidateLimitProfile(models.LimitProfile{Name: strings.Repeat("ə", 101), Timezone: "UTC", DownKbps: intp(1000)}); err == nil {
+		t.Fatal("101 characters must be refused")
 	}
 }

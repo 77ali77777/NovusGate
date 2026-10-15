@@ -66,3 +66,33 @@ func TestVPNRulesUseTheirOwnChainInIptablesMode(t *testing.T) {
 		t.Errorf("rules out of priority order (drop at %d, accept at %d):\n%s", drop, accept, calls)
 	}
 }
+
+// iptables writes port ranges as a:b; "8000-9000" (accepted by the form
+// and by nftables) was passed through, iptables refused it and the rule was
+// saved but never enforced.
+func TestVPNRulePortRangeInIptablesMode(t *testing.T) {
+	s, st, stub := newContractServer(t)
+	ctx := context.Background()
+	a := &models.Network{Name: "range-a", CIDR: "10.63.0.0/24", ListenPort: 51863, InterfaceName: "wg63"}
+	b := &models.Network{Name: "range-b", CIDR: "10.64.0.0/24", ListenPort: 51864, InterfaceName: "wg64"}
+	for _, n := range []*models.Network{a, b} {
+		if err := st.CreateNetwork(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN"} {
+		stub.out[cmd] = ""
+	}
+	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\n"
+	stub.calls = nil
+	rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", `{"name":"range","source_type":"network","source_network_id":"`+a.ID+
+		`","dest_type":"network","dest_network_id":"`+b.ID+`","protocol":"tcp","port":"8000-9000, 22","action":"drop","priority":100,"enabled":true}`, true)
+	if rec.Code != 201 || !strings.Contains(rec.Body.String(), `"port":"8000-9000, 22"`) {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	calls := strings.Join(stub.calls, "\n")
+	if !strings.Contains(calls, "-m multiport --dports 8000:9000,22 -j DROP") {
+		t.Fatalf("iptables ports not in a:b form:\n%s", calls)
+	}
+}

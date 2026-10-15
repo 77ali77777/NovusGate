@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -23,7 +24,7 @@ var clockRe = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
 
 // ValidateLimitProfile checks a profile before it is stored.
 func ValidateLimitProfile(p models.LimitProfile) error {
-	if name := strings.TrimSpace(p.Name); name == "" || len(name) > 100 {
+	if name := strings.TrimSpace(p.Name); name == "" || utf8.RuneCountInString(name) > 100 { // characters, not bytes
 		return fmt.Errorf("name must be 1-100 characters")
 	}
 	for label, v := range map[string]*int{"down_kbps": p.DownKbps, "up_kbps": p.UpKbps} {

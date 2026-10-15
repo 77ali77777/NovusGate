@@ -1297,10 +1297,11 @@ func appendVPNIptablesRule(rule *models.VPNFirewallRule, sourceIP, destIP string
 
 		// Add port (only for tcp/udp)
 		if rule.Port != "" && (rule.Protocol == "tcp" || rule.Protocol == "udp") {
-			if strings.Contains(rule.Port, ",") {
-				args = append(args, "-m", "multiport", "--dports", rule.Port)
+			ports := iptablesPorts(rule.Port)
+			if strings.Contains(ports, ",") {
+				args = append(args, "-m", "multiport", "--dports", ports)
 			} else {
-				args = append(args, "--dport", rule.Port)
+				args = append(args, "--dport", ports)
 			}
 		}
 	}
@@ -1648,4 +1649,10 @@ func (s *Server) clearNovusGateVPNRules() error {
 	execHostCommand("iptables", "-F", vpnChain)
 	execHostCommand("iptables", "-X", vpnChain)
 	return nil
+}
+
+// iptablesPorts writes a stored port list ("8000-9000, 22", accepted by
+// ParsePorts and by nftables) the way iptables reads it ("8000:9000,22").
+func iptablesPorts(ports string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(ports, " ", ""), "-", ":")
 }

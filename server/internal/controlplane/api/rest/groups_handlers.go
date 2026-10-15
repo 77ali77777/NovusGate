@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -48,7 +49,7 @@ func decodeGroupRequest(w http.ResponseWriter, r *http.Request) (NodeGroupReques
 		return req, false
 	}
 	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" || len(req.Name) > 100 {
+	if req.Name == "" || utf8.RuneCountInString(req.Name) > 100 { // characters, not bytes
 		errorResponse(w, http.StatusBadRequest, "name is required (at most 100 characters)")
 		return req, false
 	}
