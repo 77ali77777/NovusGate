@@ -31,7 +31,7 @@ test('quotaFor gives the used share of the node profile quota', () => {
 })
 
 test('quotaFor caps the bar at 100% and reports exceeded', () => {
-  const over = { ...limits, quota_states: [{ node_id: 'n1', used_bytes: 60e9, exceeded_at: '2026-10-15T00:00:00Z' }] }
+  const over = { ...limits, quota_states: [{ node_id: "n1", used_bytes: 60e9, exceeded_at: "2026-10-15T00:00:00Z", period_end: "2099-01-01T00:00:00Z" }] }
   const q = quotaFor('n1', over)
   assert.equal(q?.percent, 100)
   assert.equal(q?.exceeded, true)
@@ -53,4 +53,24 @@ test('formatBytes picks GB or MB', () => {
   assert.equal(formatBytes(32e9), '32.0 GB')
   assert.equal(formatBytes(512e6), '512 MB')
   assert.equal(formatBytes(0), '0 MB')
+})
+
+const now = Date.parse('2026-10-20T00:00:00Z')
+
+test('a count from an ended period shows as nothing used', () => {
+  const old = {
+    ...limits,
+    quota_states: [{ node_id: 'n1', used_bytes: 60e9, exceeded_at: 'x', period_end: '2026-10-01T00:00:00Z' }],
+  }
+  const q = quotaFor('n1', old, now)
+  assert.equal(q?.usedBytes, 0)
+  assert.equal(q?.exceeded, false)
+})
+
+test('exceeded follows the current quota, as the firewall does', () => {
+  const raised = {
+    ...limits,
+    quota_states: [{ node_id: 'n1', used_bytes: 40e9, exceeded_at: 'x', period_end: '2026-11-01T00:00:00Z' }],
+  }
+  assert.equal(quotaFor('n1', raised, now)?.exceeded, false) // 40 of 50 GB
 })

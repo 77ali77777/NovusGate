@@ -110,5 +110,8 @@
 
 ## Trafik kvotası (P9c, 2026-10-15)
 - Kvotanı aşan node `block` rejimində `quota_v4` set-inə düşür: forward-da VPN trafiki hər iki istiqamətdə atılır, handshake (input) qalır. `throttle` rejimində node profilin "<id>:quota" surətinə keçir (`throttle_kbps`, digər limitlər saxlanılır).
-- Əvvəlki dövrə aid "aşıb" qeydi heç vaxt bloklamır; dövr dəyişəndə nümunə gəlməsə də blok götürülür (Rollover), firewall dərhal yenidən tətbiq olunur.
+- Blok istifadənin **cari** kvota ilə müqayisəsindən asılıdır: kvota artırılanda blok dərhal götürülür, azaldılanda qoyulur.
+- Dövrün sonu (`period_end`) dövr başlayanda sabitlənir; sıfırlama günü və ya saat qurşağı dövr ortasında dəyişsə, yeni dəyər növbəti dövrdən tətbiq olunur. Dövr bitəndə engine o anda yenidən yüklənir (blok götürülür); tracker sayğacı ən gec 5 dəqiqə sonra sıfırlayır, nümunə gəlməsə və ya sampler xəta versə belə.
+- Tracker yalnız oxuduğu sətir dəyişməyibsə yazır, ona görə paneldən edilən paralel "sıfırla" itmir.
+- Məlum məhdudiyyətlər: control-plane dövr sərhədində işləməyibsə, son nümunədən sonrakı trafik yeni dövrə yazılır; WireGuard sayğacı sıfırlanıb əvvəlki dəyəri keçibsə, fərq az sayıla bilər (trafik tarixçəsindəki ilə eyni qayda).
 - iptables rejimində kvota tətbiq olunmur (limitlər kimi).

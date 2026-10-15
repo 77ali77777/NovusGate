@@ -175,6 +175,7 @@
     "blocked": "bloklanıb",
     "throttled": "sürəti azaldılıb",
     "reset": "İndi sıfırla",
-    "resetConfirm": "Bu node-un kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür."
+    "resetConfirm": "Bu node-un kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür.",
+    "notEnforced": "(tətbiq olunmur: iptables rejimi)"
   }
 }

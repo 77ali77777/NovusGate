@@ -117,3 +117,4 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - Sayğac artımla aparılır: hər 5 dəqiqəlik nümunədə rx+tx fərqi əlavə olunur (sayğac azalanda sıfırdan sayılır). Nümunələrdən cəmlənmir, çünki nümunələr 30 gün saxlanılır, dövr isə 31 gün ola bilər.
 - `notification_settings.quota_exceeded` BOOLEAN DEFAULT TRUE.
 - Rollback: `migrations_rollback/016_traffic_quota.down.sql`.
+- 017: `node_quota_state.period_end` (dövr başlayanda sabitlənir; mövcud sətirlərdə `period_start + 1 ay`), `updated_at` optimistik yazma üçün işlənir. Kvotası olmayan node-un sətri silinir. Rollback: `migrations_rollback/017_quota_period_end.down.sql`.

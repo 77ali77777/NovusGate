@@ -49,7 +49,7 @@ const formatBytes = (bytes: number = 0) => {
 }
 
 // QuotaBar: a node's use of its monthly traffic quota (P9c).
-const QuotaBar = ({ usage }: { usage: QuotaUsage }) => {
+const QuotaBar = ({ usage, enforcing }: { usage: QuotaUsage; enforcing: boolean }) => {
   const { t } = useTranslation('nodes')
   const color = usage.exceeded
     ? 'bg-red-500'
@@ -69,6 +69,7 @@ const QuotaBar = ({ usage }: { usage: QuotaUsage }) => {
         {usage.exceeded && (
           <span className="ml-1 text-red-600">
             {t(usage.action === 'throttle' ? 'quota.throttled' : 'quota.blocked')}
+            {!enforcing && ` ${t('quota.notEnforced')}`}
           </span>
         )}
       </p>
@@ -258,7 +259,11 @@ export const NodesPage: React.FC = () => {
       header: t('list.columns.quota'),
       render: (node: Node) => {
         const usage = quotaFor(node.id, limits)
-        return usage ? <QuotaBar usage={usage} /> : <span className="text-xs text-gray-400">—</span>
+        return usage ? (
+          <QuotaBar usage={usage} enforcing={limits?.enforcing ?? true} />
+        ) : (
+          <span className="text-xs text-gray-400">—</span>
+        )
       },
     },
     {
@@ -762,7 +767,7 @@ export const NodeDetailPage: React.FC = () => {
               <div className="flex items-center justify-between gap-3 py-2 text-sm">
                 <span className="text-gray-500">{t('quota.title')}</span>
                 <div className="flex items-center gap-2">
-                  <QuotaBar usage={quotaUsage} />
+                  <QuotaBar usage={quotaUsage} enforcing={limits?.enforcing ?? true} />
                   {canEdit && (
                     <Button
                       variant="secondary"

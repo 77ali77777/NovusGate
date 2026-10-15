@@ -289,7 +289,8 @@
 - **Ruling:** spesifikasiya kvotanı nümunələrdən cəmləməyi deyir; nümunələr 30 gün saxlanılır, ay 31 gün ola bilər → sayğac `node_quota_state`-də artımla aparılır.
 - **Yoxlamalar:** Go 15 paket `ok` (quota: dövr sərhədi, Bakı gecə yarısı, sayğac sıfırlanması, 80/100%, yeni dövr, nümunəsiz rollover, sıfırlama; tracker; nft quota_v4; engine blok; REST); `nft-versions-check` OK; web 53/53, tsc, vite, i18nScan 0, biome 73.
 - **İcra olunmayıb:** real serverdə kvota (WireGuard sayğacları ilə); brauzer; Telegram-a real göndəriş.
-- **Davam:** P9c müstəqil review → P10a.
+- **Review (opus) və düzəlişlər** (`3551916` + UI): Important: kvota artırılanda blok qalırdı; kvotasız dövrdən qalan baseline trafiki sayırdı; paralel "sıfırla" itə bilərdi; sıfırlama günü/TZ dəyişəndə sayğac silinirdi (017 `period_end`). Minor düzəldildi: iptables mətni, dövr sonunda reload, sampler xətasında rollover, throttle ≤ profil, UI validasiyası, bildiriş açarı, reset 204. Təxirə salındı (sənəddə): dövr sərhədində control-plane işləməyəndə trafikin bölünməsi, sayğac sıfırlanma heuristikası.
+- **Davam:** P10a (server idarəsi).
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

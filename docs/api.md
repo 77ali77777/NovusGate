@@ -294,5 +294,6 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 ## Trafik kvotası (P9c, 2026-10-15)
 - Limit profilində yeni sahələr: `quota_mb` (aylıq, MB = 10⁶ bayt; `null` = kvota yoxdur), `quota_action` (`block` default, `throttle`), `throttle_kbps` (`throttle` üçün məcburi), `quota_reset_day` (1–28, default 1).
 - `GET /limits` cavabında `quota_states[]`: `node_id`, `period_start`, `used_bytes`, `warned_at`, `exceeded_at`.
-- `POST /nodes/{id}/quota/reset` → 204 (sayğac sıfırlanır, blok/yavaşlatma dərhal götürülür); sayğac yoxdursa və ya id UUID deyilsə 404. Rol: operator.
+- `POST /nodes/{id}/quota/reset` → 204 (sayğac sıfırlanır, blok/yavaşlatma dərhal götürülür; sayğacı olmayan node üçün də 204); naməlum node və ya UUID olmayan id → 404. Rol: operator.
+- `quota_states[].period_end`: dövrün sonu; panel bitmiş dövrün sayğacını boş göstərir.
 - Bildiriş ayarlarında yeni `quota_exceeded` açarı (default `true`): 80% və 100%.

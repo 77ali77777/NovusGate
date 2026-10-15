@@ -175,6 +175,7 @@
     "blocked": "blocked",
     "throttled": "slowed down",
     "reset": "Reset now",
-    "resetConfirm": "Start this node’s quota count again? A block or slow-down is lifted at once."
+    "resetConfirm": "Start this node’s quota count again? A block or slow-down is lifted at once.",
+    "notEnforced": "(not enforced: iptables mode)"
   }
 }

@@ -234,10 +234,7 @@ const ProfileModal = ({
       return
     }
     const throttleKbps = mbpsToKbps(throttle)
-    if (
-      throttleKbps === 'invalid' ||
-      (quotaMb !== null && quotaAction === 'throttle' && throttleKbps === null)
-    ) {
+    if (throttleKbps === 'invalid' || (quotaAction === 'throttle' && throttleKbps === null)) {
       setError(t('errors.throttle'))
       return
     }

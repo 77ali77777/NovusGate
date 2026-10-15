@@ -1763,6 +1763,8 @@ export interface components {
             exceeded_at: string | null;
             node_id: string;
             /** Format: date-time */
+            period_end: string;
+            /** Format: date-time */
             period_start: string;
             used_bytes: number;
             /** Format: date-time */

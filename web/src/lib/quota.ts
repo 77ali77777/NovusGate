@@ -7,7 +7,9 @@ const maxMB = 1_000_000_000 // 1 PB, as the backend allows
 interface LimitsLike {
   profiles: { id: string; quota_mb: number | null; quota_action: string }[] | null
   node_limits: { node_id: string; profile_id: string }[] | null
-  quota_states: { node_id: string; used_bytes: number; exceeded_at: string | null }[] | null
+  quota_states:
+    | { node_id: string; used_bytes: number; exceeded_at: string | null; period_end?: string }[]
+    | null
 }
 
 export interface QuotaUsage {
@@ -19,18 +21,25 @@ export interface QuotaUsage {
 }
 
 // quotaFor is the node's use of its profile's quota, or null without one.
-export function quotaFor(nodeId: string, limits: LimitsLike | undefined): QuotaUsage | null {
+// Like the firewall, it compares the use with the current quota, and a count
+// whose period has ended (the tracker has not rolled it over yet) is empty.
+export function quotaFor(
+  nodeId: string,
+  limits: LimitsLike | undefined,
+  now: number = Date.now()
+): QuotaUsage | null {
   const nl = limits?.node_limits?.find((l) => l.node_id === nodeId)
   const profile = limits?.profiles?.find((p) => p.id === nl?.profile_id)
   if (!profile || profile.quota_mb == null) return null
   const st = limits?.quota_states?.find((s) => s.node_id === nodeId)
-  const usedBytes = st?.used_bytes ?? 0
+  const ended = st?.period_end != null && Date.parse(st.period_end) <= now
+  const usedBytes = ended ? 0 : (st?.used_bytes ?? 0)
   const quotaBytes = profile.quota_mb * 1e6
   return {
     usedBytes,
     quotaBytes,
     percent: Math.min(100, Math.round((usedBytes / quotaBytes) * 100)),
-    exceeded: st?.exceeded_at != null,
+    exceeded: usedBytes >= quotaBytes,
     action: profile.quota_action,
   }
 }
