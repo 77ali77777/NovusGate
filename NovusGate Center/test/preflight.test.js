@@ -56,6 +56,13 @@ test('preflight stops on an unsupported or old OS', () => {
   assert.match(r.out, /Ubuntu 18\.04 is too old/);
   r = runPreflight({ osRelease: 'ID=debian\nVERSION_ID="10"\n' });
   assert.match(r.out, /Debian 10 is too old/);
+  // The nft firewall, limits and quotas need nftables 1.0.2+ (Ubuntu 22.04,
+  // Debian 12); 20.04 and Debian 11 ship older ones.
+  r = runPreflight({ osRelease: 'ID=ubuntu\nVERSION_ID="20.04"\n' });
+  assert.notStrictEqual(r.code, 0);
+  assert.match(r.out, /Ubuntu 20\.04 is too old: NovusGate needs Ubuntu 22\.04 or newer/);
+  r = runPreflight({ osRelease: 'ID=debian\nVERSION_ID="11"\n' });
+  assert.match(r.out, /Debian 11 is too old: NovusGate needs Debian 12 or newer/);
 });
 
 test('preflight checks memory, disk and architecture', () => {

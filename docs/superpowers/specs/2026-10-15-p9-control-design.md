@@ -208,7 +208,7 @@ Hamısı `nsenter` ilə hostda işləyir. Mövcud `HostRunner`/`NsenterRunner` q
 
 | Risk | Azaltma |
 |---|---|
-| Limit qaydaları köhnə kernel-də yüklənmir | `nft -c` yalnız WSL kernel-də yoxlanıb; Ubuntu 20.04 (5.4) VM-də yoxlanacaq. Uğursuz olarsa həmin imkan host yoxlamasında söndürülür və panel bunu yazır |
+| Limit qaydaları köhnə kernel-də yüklənmir | Minimum Ubuntu 22.04 / Debian 12 (2026-10-15 qərarı; Center preflight bunu tələb edir). nft 1.0.2/1.0.6/1.0.9 parser-ləri yoxlanıb; real trafik testi WSL kernel-ində aparılıb, Ubuntu 22.04 kernel-ində (5.15) staging-də yoxlanmalıdır |
 | Vaxt cədvəli və DST | DST sərhədlərində reconcile; testlə |
 | Policing TCP-də sürəti "dişli" edir | Sənəddə yazılır; ehtiyac olarsa `tc` (ayrıca qərar) |
 | Server idarəsi girişi itirir | Hər yazma əməliyyatı təsdiq/rollback timer ilə; SSH və route ən sonda, staging runbook ilə |

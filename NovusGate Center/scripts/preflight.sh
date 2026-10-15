@@ -9,15 +9,16 @@ preflight() {
   major="${version%%.*}"
   case "$id" in
     ubuntu)
-      if ! [ "$major" -ge 20 ] 2>/dev/null; then
-        echo "[ERROR] Ubuntu $version is too old: NovusGate needs Ubuntu 20.04 or newer."; errors=$((errors + 1))
+      # nftables 1.0.2+ (the nft firewall, limits and quotas): Ubuntu 22.04, Debian 12.
+      if ! [ "$major" -ge 22 ] 2>/dev/null; then
+        echo "[ERROR] Ubuntu $version is too old: NovusGate needs Ubuntu 22.04 or newer."; errors=$((errors + 1))
       fi ;;
     debian)
-      if ! [ "$major" -ge 11 ] 2>/dev/null; then
-        echo "[ERROR] Debian $version is too old: NovusGate needs Debian 11 or newer."; errors=$((errors + 1))
+      if ! [ "$major" -ge 12 ] 2>/dev/null; then
+        echo "[ERROR] Debian $version is too old: NovusGate needs Debian 12 or newer."; errors=$((errors + 1))
       fi ;;
     *)
-      echo "[ERROR] Unsupported OS '${id:-unknown}': NovusGate installs on Ubuntu 20.04+ or Debian 11+."; errors=$((errors + 1)) ;;
+      echo "[ERROR] Unsupported OS '${id:-unknown}': NovusGate installs on Ubuntu 22.04+ or Debian 12+."; errors=$((errors + 1)) ;;
   esac
 
   arch="$(uname -m)"

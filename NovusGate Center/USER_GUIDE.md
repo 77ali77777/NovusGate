@@ -8,7 +8,7 @@ The NovusGate Center is a web-based control panel for deploying and managing Nov
 
 ### Prerequisites
 
-- **Target Server:** Ubuntu 22.04 LTS (or Debian 11+)
+- **Target Server:** Ubuntu 22.04 LTS or newer (or Debian 12+)
 - **Access:** Root SSH access (IP, username, password)
 - **Resources:** Minimum 1GB RAM, 10GB disk space
 - **Ports:** 22 (SSH), 51820 (WireGuard), 8080 (API), 3007 (Dashboard)

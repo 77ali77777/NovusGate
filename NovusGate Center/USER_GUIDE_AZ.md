@@ -8,7 +8,7 @@ NovusGate Center, NovusGate VPN serverlərinin yerləşdirilməsi və idarə edi
 
 ### Tələblər
 
-- **Hədəf Server:** Ubuntu 22.04 LTS (və ya Debian 11+)
+- **Hədəf Server:** Ubuntu 22.04 LTS və ya daha yeni (və ya Debian 12+)
 - **Giriş:** Root SSH girişi (IP, istifadəçi adı, parol)
 - **Resurslar:** Minimum 1GB RAM, 10GB disk sahəsi
 - **Portlar:** 22 (SSH), 51820 (WireGuard), 8080 (API), 3007 (Dashboard)

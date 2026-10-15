@@ -66,7 +66,7 @@ Server səhifəsində **Job logs** kartı hər işin tam çıxışını göstər
 
 ## Center ilkin yoxlaması (2026-10-15)
 Center-in Install skripti hosta toxunmazdan əvvəl bunları yoxlayır və bütün problemləri birlikdə göstərir:
-- Ubuntu 20.04+ və ya Debian 11+;
+- Ubuntu 22.04+ və ya Debian 12+ (nft firewall, limitlər və kvota nftables 1.0.2+ tələb edir; 2026-10-15 qərarı: köhnə serverlər istifadə olunmur);
 - x86_64 və ya aarch64;
 - ən azı 1 GB RAM (2 GB-dan az olanda xəbərdarlıq);
 - `/opt`-da 3 GB boş disk;

@@ -277,7 +277,7 @@
   - nft `meta hour`-u prosesin TZ-i ilə çevirir (Bakı 08:00 → 04:00 UTC), `meta day`-i çevirmir → hər nft TZ=UTC ilə, pəncərələr Go-da UTC-yə çevrilir, DST anında reload;
   - kernel bucket-i `rate+burst` tutur: burst=rate ilk saniyədə 2× buraxırdı (8 Mbit → 10.9) → burst `max(rate/4, 16 KiB)`.
 - **Yoxlamalar:** Go 14 paket `ok`; `nft-versions-check` (1.0.2/1.0.6/1.0.9, limit snapshot daxil) OK; `limits-functional-check.sh`: upload 7.88/8, download 3.90/4 Mbit/s, 4-cü bağlantı atılır, cədvəldən kənar bloklanır; TZ düzəlişi söndürüləndə test düşür (mutasiya); web 48/48, tsc, vite, i18nScan 0, biome 73.
-- **İcra olunmayıb:** brauzerdə real backend; real serverdə (Ubuntu 20.04 kernel 5.4 daxil).
+- **İcra olunmayıb:** brauzerdə real backend; real serverdə (minimum Ubuntu 22.04, kernel 5.15).
 - **Review (opus) və düzəlişlər** (`142925d`, `357a65e`):
   - Important: reload-dan sonra bağlantı limiti ikiqat olurdu (real trafiklə təkrarlandı), qrup silmə/ad dəyişmə limitləri yenidən tətbiq etmirdi;
   - Minor düzəldildi: gecə pəncərəsinin DST quyruğu, GRO üçün 64 KiB burst, lock altında DB sorğusuna 5 s limit, bağlamaların paralel sorğuları (row lock, testsiz), iptables rejimində node detalında qeyd, təkrarlanan React key-ləri;
