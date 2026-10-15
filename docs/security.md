@@ -93,3 +93,10 @@
 - **İstifadəçi qərarı ilə çıxış maskalanmır və silinmir.** Install-ın çap etdiyi `ADMIN PASS`, `API_KEY` və `DB_PASSWORD` log-da açıq qalır.
 - Qovluqlar 0700, fayllar 0600 icazə ilə yaradılır. `data/` git-ə düşmür (`.gitignore`) və install arxivinə daxil edilmir. Center konteynerində `./data` volume-dadır.
 - `servers.json` kimi, bu qovluq da Center-in olduğu maşında sirr saxlayır.
+
+## Panel rolları (P9a, 2026-10-15)
+- Hər sessiya sorğusu `roleMiddleware`-dən keçir. Siyahıda olmayan dəyişiklik avtomatik olaraq admin tələb edir (default-deny).
+- Yalnız API açarı ilə giriş yoxdur: sessiya həmişə tələb olunur.
+- Private key verən endpoint-lər (`config`, `qrcode`) və enrollment token yaradan `install.sh` viewer-ə bağlıdır. Backup yükləmə, debug, istifadəçilər və sessiyalar yalnız admin üçündür.
+- Son admin rolunu itirə və ya silinə bilməz. Paralel sorğularda bu, sətir kilidi ilə qorunur.
+- UI rola görə düymələri gizlədir, amma qərarı yalnız backend verir.

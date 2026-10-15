@@ -256,9 +256,20 @@
 - **Qeyd:** `registerNotificationRoutes` `8812781`-dən bəri iki dəfə çağırılırdı, `5e4f5f9`-da düzəldildi.
 - **İcra olunmayıb:** brauzerdə real backend ilə bütün səhifələr; real serverdə Center log-ları.
 
+### 2026-10-15: P9a — node qrupları və panel rolları (branch `feature/p9-control`)
+- **Tapşırıq:** spec `docs/superpowers/specs/2026-10-15-p9-control-design.md` (`598e09d`), P9a mərhələsi.
+- **Commit-lər:**
+  - qruplar (013, store, nft set-ləri, iptables genişlənməsi, REST): `8d7867b`;
+  - rollar (014, roleMiddleware, `/auth/me`, `/users/{id}/role`, son admin qoruması): `1ceb721`;
+  - UI (Qruplar səhifəsi, VPN qaydasında qrup, istifadəçi rolları, rola görə düymələr): `6cfab62`.
+- **Yoxlamalar:** Go 14 paket `ok`; web 41/41 (OpenAPI drift daxil), `tsc` OK, `vite build` OK, i18nScan 0, biome 73/30 (əvvəl 75).
+- **İcra olunmayıb:** brauzerdə real backend ilə; real serverdə nft qrup set-ləri.
+- **Davam:** P9a müstəqil review → P9b.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | P9a: node qrupları, panel rolları, UI | store/{groups,roles}.go, migrations 013/014, rest/{groups_handlers,roles}.go, netctl/nft, firewall/build.go, web/src/pages/Groups, Settings, Firewall | P9 spec · `8d7867b`, `1ceb721`, `6cfab62` |
 | 2026-10-15 | i18n (az/en), OpenAPI tipləri, Audit, Sessions, Network detalı, Topologiya, ErrorBoundary, Center iş log-ları | web/src/**, server/.../rest/audit_handlers.go, store/{audit,sessions}.go, NovusGate Center/lib/joblog.js | P5/P6 yenidən analiz · `ef72424`..`ad3b99d` |
 | 2026-10-15 | iptables VPN qaydaları öz zəncirində (drop/reject işləyir), create sync edir; matris backend-də; recidive və rollback düzəlişləri | firewall_handlers.go, firewall/matrix.go, api/rest/firewall_matrix.go, setup-firewall.sh, Center update/uninstall, web PolicyMatrix | ikinci review · `5ac6b9a`, `7396ddf`, `a48b55a` |
 | 2026-10-15 | Network Policies matrisi, System Rules tabı | web/src/lib/{policyMatrix,systemRules}.ts, pages/Firewall/{PolicyMatrix,SystemRulesTab,Firewall}.tsx | P3c qalığı · `2069c84` |

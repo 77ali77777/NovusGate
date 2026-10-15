@@ -259,3 +259,23 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - Default nəticə rejimdən asılıdır:
   - nft: eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`;
   - iptables və shadow: `allow`.
+
+## Node qrupları — `/api/v1/groups` (P9a, 2026-10-15)
+- `GET /groups` → `{groups: NodeGroup[]}`, ada görə sıralı. `NodeGroup`: `id`, `name`, `description`, `created_at`, `members[]` (`node_id`, `name`, `virtual_ip`, `network_id`).
+- `POST /groups` `{name, description}` → 201; ad təkrarlanırsa 409 `group_name_taken`.
+- `PUT /groups/{id}` → adı və təsviri dəyişir.
+- `DELETE /groups/{id}` → 204; VPN qaydası qrupu istifadə edirsə 409 `group_in_use`.
+- `PUT /groups/{id}/members` `{node_ids: []}` → üzvləri tam əvəz edir (transaksiya), sonra VPN qaydaları yenidən tətbiq olunur.
+- VPN qaydası: `source_type`/`dest_type` üçün yeni dəyər `group`; sorğuda `source_group_id`/`dest_group_id`, cavabda əlavə olaraq `source_group_name`/`dest_group_name`.
+- nft rejimində qrup `set grp_N { type ipv4_addr; }` kimi kompilyasiya olunur; iptables rejimində hər üzv cütü üçün ayrıca qayda yazılır.
+
+## Panel rolları (P9a, 2026-10-15)
+- Rollar: `admin` > `operator` > `viewer`. Yoxlama auth-dan sonra `roleMiddleware`-də aparılır, rədd edilən sorğu 403 `forbidden` alır.
+- **viewer:** bütün GET-lər, yalnız aşağıdakı həssas GET-lər istisnadır. Dəyişiklik kimi yalnız öz parolunu dəyişə və logout edə bilər.
+- **operator:** şəbəkələr (yarat/sil, server, sync), node-lar (PUT/PATCH/DELETE), qruplar və VPN qaydaları (CRUD + apply). Node config/QR/install.sh-ı ala bilər.
+- **admin:** qalan hər şey: istifadəçilər, host firewall, fail2ban, backup, bildirişlər, sessiyalar, debug.
+- Həssas GET-lər: `nodes/{id}/config`, `qrcode`, `install.sh` → operator; `backups/{name}`, `debug/wireguard/{networkId}`, `users`, `auth/sessions` → admin.
+- `GET /auth/me` → `{id, username, role}`. Login cavabında da `role` var.
+- `POST /users` `role` qəbul edir (default `admin`). `PUT /users/{id}/role` `{role}` istifadəçini qaytarır.
+- Son admini aşağı salmaq və ya silmək 409 `last_admin` verir.
+- Siyahı `server/internal/controlplane/api/rest/roles.go` faylındadır; `TestOperatorRoutesExist` siyahıdakı hər route-un mövcud olduğunu yoxlayır.

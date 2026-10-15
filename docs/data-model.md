@@ -80,3 +80,18 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - İlk yazıdan əvvəl `baseline` sətri əlavə olunur: dəyişiklikdən əvvəlki vəziyyət.
 - Təsdiq gözləyən dəyişiklik yalnız Confirm-dən sonra yazılır, rollback olunan dəyişiklik heç vaxt yazılmır.
 - Rollback: `migrations_rollback/012_fw_history.down.sql`.
+
+## `node_groups`, `node_group_members` (013, P9a)
+| Cədvəl | Sütunlar | Qeyd |
+|---|---|---|
+| `node_groups` | `id` UUID PK, `name` VARCHAR(100) UNIQUE, `description` TEXT, `created_at` TIMESTAMPTZ | |
+| `node_group_members` | `group_id` → `node_groups` (CASCADE), `node_id` → `nodes` (CASCADE) | PK `(group_id, node_id)`, indeks `node_id` |
+
+- `firewall_rules.source_group_id` / `dest_group_id` → `node_groups(id)` `ON DELETE RESTRICT`: qayda istifadə etdiyi qrupu silməyə imkan vermir.
+- `source_type`/`dest_type` CHECK-ə `group` əlavə olunub.
+- Rollback: `migrations_rollback/013_node_groups.down.sql`.
+
+## `users.role` (014, P9a)
+- `role` TEXT NOT NULL DEFAULT `'admin'`, CHECK `admin`/`operator`/`viewer`. Mövcud istifadəçilər admin olaraq qalır.
+- Son admin qorunur: `SetUserRole` və `DeleteUserKeepingAdmin` admin sətirlərini `FOR UPDATE` ilə kilidləyir.
+- Rollback: `migrations_rollback/014_user_roles.down.sql`.
