@@ -288,6 +288,7 @@ func (s *Server) setupRoutes() {
 	s.registerNotificationRoutes(api)
 	s.registerAuditRoutes(api)
 	s.registerGroupRoutes(api)
+	s.registerLimitRoutes(api)
 	s.registerRoleRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 

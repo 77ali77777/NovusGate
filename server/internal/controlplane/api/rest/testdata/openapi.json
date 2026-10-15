@@ -1081,6 +1081,145 @@
         ],
         "type": "object"
       },
+      "LimitBindingsRequest": {
+        "properties": {
+          "group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "LimitProfile": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "down_kbps": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "max_connections": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "schedule": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleWindow"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "up_kbps": {
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created_at",
+          "down_kbps",
+          "group_ids",
+          "id",
+          "max_connections",
+          "name",
+          "node_ids",
+          "schedule",
+          "timezone",
+          "up_kbps"
+        ],
+        "type": "object"
+      },
+      "LimitProfileRequest": {
+        "properties": {
+          "down_kbps": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "max_connections": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schedule": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleWindowInput"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "up_kbps": {
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "LimitProfilesResponse": {
+        "properties": {
+          "enforcing": {
+            "type": "boolean"
+          },
+          "node_limits": {
+            "items": {
+              "$ref": "#/components/schemas/NodeLimit"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "profiles": {
+            "items": {
+              "$ref": "#/components/schemas/LimitProfile"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "enforcing",
+          "node_limits",
+          "profiles"
+        ],
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "password": {
@@ -1578,6 +1717,28 @@
         },
         "type": "object"
       },
+      "NodeLimit": {
+        "properties": {
+          "group_id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "profile_id": {
+            "type": "string"
+          },
+          "virtual_ip": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "profile_id",
+          "virtual_ip"
+        ],
+        "type": "object"
+      },
       "NodeTrafficResponse": {
         "properties": {
           "bucket_seconds": {
@@ -1844,6 +2005,47 @@
           "packets",
           "rule"
         ],
+        "type": "object"
+      },
+      "ScheduleWindow": {
+        "properties": {
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "days",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "ScheduleWindowInput": {
+        "properties": {
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SessionInfo": {
@@ -4511,6 +4713,210 @@
         "summary": "Replace a group's members; VPN rules are re-applied",
         "tags": [
           "groups"
+        ]
+      }
+    },
+    "/api/v1/limits": {
+      "get": {
+        "operationId": "get_limits",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitProfilesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Limit profiles and the profile in force for each limited node (P9b)",
+        "tags": [
+          "limits"
+        ]
+      },
+      "post": {
+        "operationId": "post_limits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitProfile"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a limit profile (409 limit_name_taken)",
+        "tags": [
+          "limits"
+        ]
+      }
+    },
+    "/api/v1/limits/{id}": {
+      "delete": {
+        "operationId": "delete_limits_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a limit profile (409 limit_in_use while bound)",
+        "tags": [
+          "limits"
+        ]
+      },
+      "put": {
+        "operationId": "put_limits_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitProfile"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Replace a limit profile; bound nodes get it at once",
+        "tags": [
+          "limits"
+        ]
+      }
+    },
+    "/api/v1/limits/{id}/bindings": {
+      "put": {
+        "operationId": "put_limits_by_id_bindings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitBindingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitProfile"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Make these the nodes and groups bound to the profile",
+        "tags": [
+          "limits"
         ]
       }
     },
