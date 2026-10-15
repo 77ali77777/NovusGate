@@ -23,6 +23,7 @@ type State struct {
 	LastRx     int64 // the WireGuard counters of the last sample
 	LastTx     int64
 	HasLast    bool
+	LastAt     time.Time  // when the last sample was taken (zero: unknown)
 	WarnedAt   *time.Time // 80% reached in this period
 	ExceededAt *time.Time // 100% reached in this period
 }
@@ -120,11 +121,18 @@ func Rollover(st State, p Profile, now time.Time) (State, []Event) {
 // Advance adds one sample (cumulative rx and tx) to the count. The first
 // sample only sets the baseline.
 func Advance(st State, p Profile, rx, tx int64, now time.Time) (State, []Event) {
+	oldEnd := st.PeriodEnd
 	st, events := newPeriod(st, p, now)
 	if st.HasLast {
-		st.UsedBytes += delta(st.LastRx, rx) + delta(st.LastTx, tx)
+		d := delta(st.LastRx, rx) + delta(st.LastTx, tx)
+		// The gap since the last sample crosses the period end: only the
+		// part after it, by time, belongs to the new period.
+		if !oldEnd.IsZero() && !st.LastAt.IsZero() && st.LastAt.Before(oldEnd) && now.After(oldEnd) {
+			d = int64(float64(d) * float64(now.Sub(oldEnd)) / float64(now.Sub(st.LastAt)))
+		}
+		st.UsedBytes += d
 	}
-	st.LastRx, st.LastTx, st.HasLast = rx, tx, true
+	st.LastRx, st.LastTx, st.HasLast, st.LastAt = rx, tx, true, now
 	return evaluate(st, p, now, events)
 }
 

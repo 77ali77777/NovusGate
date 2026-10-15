@@ -103,8 +103,9 @@ func TestAdvanceBothThresholdsAtOnce(t *testing.T) {
 	}
 }
 
-// A new period starts from zero and lifts an exceeded quota; the traffic of
-// the sample that crosses the boundary counts in the new period.
+// A new period starts from zero and lifts an exceeded quota; of the traffic
+// of the sample that crosses the boundary (23:55-00:05) the half after
+// midnight counts in the new period.
 func TestAdvanceNewPeriod(t *testing.T) {
 	end := time.Date(2026, 10, 31, 23, 55, 0, 0, tz)
 	st, _ := Advance(State{}, profile(), 0, 0, end.Add(-time.Hour))
@@ -116,7 +117,7 @@ func TestAdvanceNewPeriod(t *testing.T) {
 	if len(ev) != 1 || ev[0] != Lifted {
 		t.Fatalf("events = %v", ev)
 	}
-	if st.UsedBytes != 700 || st.ExceededAt != nil || st.WarnedAt != nil ||
+	if st.UsedBytes != 350 || st.ExceededAt != nil || st.WarnedAt != nil ||
 		!st.PeriodStart.Equal(time.Date(2026, 11, 1, 0, 0, 0, 0, tz)) {
 		t.Fatalf("new period = %+v", st)
 	}
@@ -192,5 +193,22 @@ func TestResetDayChangeKeepsTheCount(t *testing.T) {
 	st, _ = Rollover(st, moved, time.Date(2026, 11, 1, 0, 0, 1, 0, tz))
 	if st.UsedBytes != 0 || !st.PeriodEnd.Equal(time.Date(2026, 11, 15, 0, 0, 0, 0, tz)) {
 		t.Fatalf("next period uses the new day: %+v", st)
+	}
+}
+
+// Traffic between a sample before the period end and one after it is split
+// by time: only the part after the end counts in the new period (the
+// control plane may have been down across the boundary).
+func TestNewPeriodSplitsTheGapByTime(t *testing.T) {
+	end := time.Date(2026, 11, 1, 0, 0, 0, 0, tz)
+	st, _ := Advance(State{}, profile(), 0, 0, end.Add(-3*time.Hour))
+	st.LastAt = end.Add(-3 * time.Hour)
+	// 4 GB over four hours, one of them in November.
+	st, _ = Advance(st, profile(), gb(4), 0, end.Add(time.Hour))
+	if st.UsedBytes != gb(1) {
+		t.Fatalf("used = %d, want %d (a quarter)", st.UsedBytes, gb(1))
+	}
+	if !st.LastAt.Equal(end.Add(time.Hour)) {
+		t.Fatalf("LastAt = %v", st.LastAt)
 	}
 }

@@ -121,3 +121,21 @@ func TestListInterfaceNames(t *testing.T) {
 		t.Fatalf("names = %v, want wg74 among them", names)
 	}
 }
+
+// Audit entries older than the retention are removed; newer ones stay.
+func TestDeleteAuditLogBefore(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "DELETE FROM firewall_audit_log")
+	s.db.ExecContext(ctx, `INSERT INTO firewall_audit_log (action, details, created_at) VALUES
+		('old', '{}', NOW() - INTERVAL '200 days'), ('new', '{}', NOW())`)
+	n, err := s.DeleteAuditLogBefore(ctx, time.Now().Add(-180*24*time.Hour))
+	if err != nil || n != 1 {
+		t.Fatalf("deleted = %d %v, want 1", n, err)
+	}
+	var left string
+	s.db.QueryRowContext(ctx, "SELECT action FROM firewall_audit_log").Scan(&left)
+	if left != "new" {
+		t.Fatalf("left = %q", left)
+	}
+}

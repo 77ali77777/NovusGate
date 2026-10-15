@@ -36,7 +36,7 @@ type Tracker struct {
 
 func toState(m models.NodeQuotaState) State {
 	return State{NodeID: m.NodeID, PeriodStart: m.PeriodStart, PeriodEnd: m.PeriodEnd, UsedBytes: m.UsedBytes, LastRx: m.LastRx,
-		LastTx: m.LastTx, HasLast: true, WarnedAt: m.WarnedAt, ExceededAt: m.ExceededAt}
+		LastTx: m.LastTx, HasLast: true, LastAt: m.UpdatedAt, WarnedAt: m.WarnedAt, ExceededAt: m.ExceededAt}
 }
 
 func toModel(s State) models.NodeQuotaState {

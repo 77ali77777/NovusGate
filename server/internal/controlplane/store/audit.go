@@ -40,3 +40,15 @@ func (s *Store) ListAuditLog(ctx context.Context, limit int, before *time.Time) 
 	}
 	return out, rows.Err()
 }
+
+// AuditRetention is how long audit entries are kept.
+const AuditRetention = 180 * 24 * time.Hour
+
+// DeleteAuditLogBefore removes audit entries older than t.
+func (s *Store) DeleteAuditLogBefore(ctx context.Context, t time.Time) (int64, error) {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM firewall_audit_log WHERE created_at < $1`, t)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}

@@ -56,6 +56,11 @@ func (s *Server) auditMiddleware(next http.Handler) http.Handler {
 		if auditSkipped(route) || (route != loginRoute && (status < 200 || status > 299)) {
 			return
 		}
+		// A rate-limited login costs the caller nothing (no password check):
+		// recording it would let anyone grow the table.
+		if route == loginRoute && status == http.StatusTooManyRequests {
+			return
+		}
 		action := r.Method + " " + route
 		if len(action) > 50 { // firewall_audit_log.action is VARCHAR(50)
 			action = action[:50]

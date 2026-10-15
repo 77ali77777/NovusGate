@@ -265,6 +265,24 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 	go sampler.Run(recCtx, 5*time.Minute)
 
+	// Audit entries are kept for 180 days, pruned every 6 hours.
+	go func() {
+		t := time.NewTicker(6 * time.Hour)
+		defer t.Stop()
+		for {
+			if n, err := db.DeleteAuditLogBefore(recCtx, time.Now().Add(-store.AuditRetention)); err != nil {
+				slog.Warn("audit log prune failed", "error", err)
+			} else if n > 0 {
+				slog.Info("audit log pruned", "rows", n)
+			}
+			select {
+			case <-recCtx.Done():
+				return
+			case <-t.C:
+			}
+		}
+	}()
+
 	// Firewall engine: iptables (default, legacy paths), shadow (check only) or nft.
 	fwMode, err := firewall.ParseMode(os.Getenv("FIREWALL_ENGINE"))
 	if err != nil {

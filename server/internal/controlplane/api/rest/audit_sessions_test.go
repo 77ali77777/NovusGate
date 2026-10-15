@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func clearRows(t *testing.T, query string) {
@@ -113,4 +114,26 @@ func TestSessionsListAndRevoke(t *testing.T) {
 		t.Fatalf("bad id = %d", rec.Code)
 	}
 	_ = context.Background()
+}
+
+// A rate-limited login (429) is not recorded: it costs the caller nothing
+// (no password check), so recording it let anyone grow the table.
+func TestRateLimitedLoginsAreNotAudited(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	clearTable(t, "firewall_audit_log")
+	orig := loginLimit
+	t.Cleanup(func() { loginLimit = orig })
+	loginLimit = newLoginLimiter(1, 15*time.Minute)
+	bad := `{"username":"contract-user","password":"wrong"}`
+	callAs(t, s, "POST", "/api/v1/auth/login", bad, false)
+	for i := 0; i < 3; i++ {
+		if rec := callAs(t, s, "POST", "/api/v1/auth/login", bad, false); rec.Code != 429 {
+			t.Fatalf("attempt %d = %d, want 429", i, rec.Code)
+		}
+	}
+	var got AuditLogResponse
+	json.Unmarshal(callAs(t, s, "GET", "/api/v1/audit?limit=10", "", true).Body.Bytes(), &got)
+	if len(got.Entries) != 1 || got.Entries[0].Details["status"] != float64(401) {
+		t.Fatalf("audit = %+v, want the 401 only", got.Entries)
+	}
 }
