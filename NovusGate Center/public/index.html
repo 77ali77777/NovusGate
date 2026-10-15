@@ -693,6 +693,51 @@
         overflow: hidden;
     }
     .xterm-viewport { overflow-y: auto !important; }
+
+    /* Help tips: the "?" beside a field label. One shared panel shows the
+       texts of the open tip (see initHelpTips in the script). */
+    .help-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
+      padding: 0;
+      border: 1px solid var(--text-muted);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      vertical-align: middle;
+      cursor: help;
+    }
+    .help-tip:hover, .help-tip:focus-visible, .help-tip[aria-expanded="true"] {
+      border-color: var(--accent);
+      color: var(--accent);
+      outline: none;
+    }
+    .help-tip-panel {
+      position: fixed;
+      z-index: 2000;
+      width: 320px;
+      max-width: calc(100vw - 16px);
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 400;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .help-tip-panel > span { display: block; }
+    .help-tip-panel > span + span { margin-top: 6px; }
+    .help-tip-panel b { color: var(--accent); font-weight: 600; }
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
@@ -745,19 +790,19 @@
       <h2 class="modal-title">🖥️ Add New Server</h2>
       <form id="addServerForm">
         <div class="form-group">
-          <label>Server Name</label>
+          <label for="serverName">Server Name <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> A label for this server in NovusGate Center&#x27;s list.</span><span><b>Who needs it:</b> You, to tell your servers apart.</span><span><b>If you change it:</b> It is only shown in Center and never sent to the server. A saved server cannot be edited: delete it and add it again.</span></span></label>
           <input type="text" id="serverName" required placeholder="e.g. Production Server">
         </div>
         <div class="form-group">
-          <label>Host (IP Address)</label>
+          <label for="serverHost">Host (IP Address) <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The IP address or DNS name Center connects to over SSH.</span><span><b>Who needs it:</b> Every server: Center cannot reach it otherwise.</span><span><b>If you change it:</b> A wrong address only makes the connection fail. The installer finds the server&#x27;s public IP for the VPN by itself; it does not use this field.</span></span></label>
           <input type="text" id="serverHost" required placeholder="e.g. 192.168.1.100">
         </div>
         <div class="form-group">
-          <label>SSH Port</label>
+          <label for="serverPort">SSH Port <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The TCP port of the server&#x27;s SSH service. Empty means 22.</span><span><b>Who needs it:</b> Servers whose SSH listens on a port other than 22.</span><span><b>If you change it:</b> It must match the port sshd really uses, or every install, status check and terminal fails to connect.</span></span></label>
           <input type="number" id="serverPort" value="22" placeholder="22">
         </div>
         <div class="form-group">
-          <label>Username</label>
+          <label for="serverUsername">Username <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The SSH login user on the server.</span><span><b>Who needs it:</b> Every server. Use root, or a user that may run sudo without a password: Center runs install and admin commands as root (sudo -n for other users); the web terminal opens a normal login shell for this user.</span><span><b>If you change it:</b> A user without passwordless sudo can log in, but every install and admin command fails.</span></span></label>
           <input type="text" id="serverUsername" required placeholder="root">
         </div>
         
@@ -805,7 +850,7 @@
         </style>
 
         <div class="form-group">
-            <label>Authentication Method</label>
+            <label>Authentication Method <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> How Center logs in over SSH: with the user&#x27;s password or with an SSH private key.</span><span><b>Who needs it:</b> Choose SSH Key when the server only allows key login (common on cloud servers).</span><span><b>If you change it:</b> Only the chosen method&#x27;s values are saved for this server.</span></span></label>
             <div class="auth-toggle">
                 <div class="auth-btn active" id="btnAuthPass" onclick="toggleAuthMethod('Pass')">Password</div>
                 <div class="auth-btn" id="btnAuthKey" onclick="toggleAuthMethod('Key')">SSH Key</div>
@@ -813,16 +858,16 @@
         </div>
 
         <div class="form-group" id="authPassGroup">
-          <label>Password</label>
+          <label for="serverPassword">Password <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The SSH password of the user above.</span><span><b>Who needs it:</b> Servers that allow password login.</span><span><b>If you change it:</b> It is saved, unencrypted, in Center&#x27;s data/servers.json on this computer and never sent back to the browser. A wrong password makes the connection fail.</span></span></label>
           <input type="password" id="serverPassword" placeholder="••••••••" autocomplete="current-password">
         </div>
 
         <div class="form-group" id="authKeyGroup" style="display: none;">
-            <label>Private Key (PEM Format)</label>
+            <label for="serverPrivateKey">Private Key (PEM Format) <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The full text of the private key file whose public key is in the user&#x27;s authorized_keys on the server.</span><span><b>Who needs it:</b> Servers that use SSH key login.</span><span><b>If you change it:</b> It is saved, unencrypted, in Center&#x27;s data/servers.json on this computer. When a key is set, Center logs in with it instead of a password.</span></span></label>
             <textarea id="serverPrivateKey" rows="5" placeholder="-----BEGIN RSA PRIVATE KEY-----..." style="font-family: monospace; font-size: 0.8rem;"></textarea>
             <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Paste your private key content here.</div>
 
-            <label style="margin-top: 10px;">Passphrase (Optional)</label>
+            <label for="serverPassphrase" style="margin-top: 10px;">Passphrase (Optional) <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The passphrase that unlocks the private key, if the key is encrypted.</span><span><b>Who needs it:</b> Only encrypted keys; leave it empty for a key without a passphrase.</span><span><b>If you change it:</b> A missing or wrong passphrase for an encrypted key makes every connection fail. It is saved next to the key.</span></span></label>
             <input type="password" id="serverPassphrase" placeholder="Key Passphrase (if encrypted)">
         </div>
 
@@ -863,18 +908,18 @@
           <!-- Admin Settings Row -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem;">👤 Admin Username</label>
+              <label for="confAdminUser" style="font-size: 0.85rem;">👤 Admin Username <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The login name of the NovusGate panel&#x27;s first admin (ADMIN_USERNAME in the server&#x27;s .env).</span><span><b>Who needs it:</b> Whoever will sign in to the panel after the install.</span><span><b>If you change it:</b> Letters, digits and . _ @ % + = : , ! ^ * ~ - only. The admin is created only while the database has no users; Reinstall keeps an existing .env, and editing .env later does not rename the existing admin.</span></span></label>
               <input type="text" id="confAdminUser" value="admin" required style="padding: 10px;">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem;">🔑 Admin Password <small>(auto if empty)</small></label>
+              <label for="confAdminPass" style="font-size: 0.85rem;">🔑 Admin Password <small>(auto if empty)</small> <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The panel password of that first admin (ADMIN_PASSWORD in .env).</span><span><b>Who needs it:</b> Leave it empty unless you want a password of your own.</span><span><b>If you change it:</b> Empty: the server generates a random one and shows it at the end of a fresh install&#x27;s log and always under Server Credentials. Same allowed characters as the user name; it only applies when the admin is first created.</span></span></label>
               <input type="text" id="confAdminPass" placeholder="Auto-generate" style="padding: 10px;">
             </div>
           </div>
           
           <!-- VPN IP Row -->
           <div class="form-group" style="margin-bottom: 12px;">
-            <label style="font-size: 0.85rem;">🌐 Admin VPN Gateway IP <small style="color: var(--text-muted);">(wg0 interface)</small></label>
+            <label for="confVpnIp" style="font-size: 0.85rem;">🌐 Admin VPN Gateway IP <small style="color: var(--text-muted);">(wg0 interface)</small> <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The hub&#x27;s own address on the admin VPN interface wg0 (default 10.99.0.1). Its /24 network (for example 10.99.0.0/24) becomes ADMIN_CIDR.</span><span><b>Who needs it:</b> Change it only if 10.99.0.x is already used by your LAN or another VPN.</span><span><b>If you change it:</b> Must be an IPv4 address. On a fresh install your admin WireGuard config gets the .2 address of the same /24 and the log prints the panel address https://&lt;this IP&gt;:3007; a reinstall keeps the existing admin VPN.</span></span></label>
             <input type="text" id="confVpnIp" value="10.99.0.1" required placeholder="e.g. 10.99.0.1" style="padding: 10px;">
           </div>
 
@@ -886,18 +931,18 @@
           <!-- Database Row 1 -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem;">Database Name</label>
+              <label for="confDbName" style="font-size: 0.85rem;">Database Name <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The name of the PostgreSQL database NovusGate stores its data in (DB_NAME in .env).</span><span><b>Who needs it:</b> Nobody needs to change it; only if your own naming rules require it.</span><span><b>If you change it:</b> Letters, digits and . _ ~ - only (it is part of the database URL). The database is created with this name on its first start; editing .env later does not rename it.</span></span></label>
               <input type="text" id="confDbName" value="NovusGate" required style="padding: 10px;">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 0.85rem;">Database User</label>
+              <label for="confDbUser" style="font-size: 0.85rem;">Database User <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The PostgreSQL user NovusGate connects as (DB_USER in .env).</span><span><b>Who needs it:</b> Nobody needs to change it; only if your own naming rules require it.</span><span><b>If you change it:</b> Letters, digits and . _ ~ - only. It is created on the database&#x27;s first start; editing .env later does not change the existing database user.</span></span></label>
               <input type="text" id="confDbUser" value="NovusGate" required style="padding: 10px;">
             </div>
           </div>
           
           <!-- Database Password -->
           <div class="form-group" style="margin-bottom: 16px;">
-            <label style="font-size: 0.85rem;">🔐 Database Password <small>(auto if empty)</small></label>
+            <label for="confDbPass" style="font-size: 0.85rem;">🔐 Database Password <small>(auto if empty)</small> <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The password of that database user (DB_PASSWORD in .env).</span><span><b>Who needs it:</b> Leave it empty unless you need a known password.</span><span><b>If you change it:</b> Empty: a random one is generated on the server. Letters, digits and . _ ~ - only. It is kept in .env (readable by root only) and shown under Server Credentials.</span></span></label>
             <input type="text" id="confDbPass" placeholder="Auto-generate secure password" style="padding: 10px;">
           </div>
 
@@ -933,7 +978,7 @@
         In the NovusGate panel open <strong>Nodes → Connect → Linux → Generate install script</strong>,
         copy it and paste it here. It works once, for 15 minutes; it runs on this server as root.
       </p>
-      <label for="joinVpnScript" style="font-size: 0.85rem; font-weight: 600;">Install script</label>
+      <label for="joinVpnScript" style="font-size: 0.85rem; font-weight: 600;">Install script <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> The node install script from the NovusGate panel (Nodes → Connect → Linux → Generate install script), pasted unchanged.</span><span><b>Who needs it:</b> Servers that should join the VPN as a node; not the server that runs the hub.</span><span><b>If you change it:</b> Center uploads it, runs it as root and deletes it. Its token works once, for 15 minutes. Text that does not start like the panel&#x27;s script is refused, and on the hub server it is refused because it would replace the hub&#x27;s wg0.</span></span></label>
       <textarea id="joinVpnScript" rows="8" spellcheck="false" placeholder="#!/bin/bash&#10;# NovusGate node installer. ..." style="width: 100%; margin-top: 6px; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary, #111); color: inherit; box-sizing: border-box;"></textarea>
       <div class="output-log" id="joinVpnLog" style="display: none; margin-top: 12px; max-height: 260px; overflow-y: auto;"></div>
       <div class="modal-actions" style="margin-top: 16px; padding-top: 12px;">
@@ -2597,6 +2642,88 @@
       }
     }
     
+    // initHelpTips: the "?" beside a field label. Each .help-tip button is
+    // followed by its hidden .help-tip-text; one shared panel (fixed, so a
+    // scrolling modal does not clip it) shows that text. It opens on hover,
+    // focus and click (a click keeps it open); Escape, a second click or a
+    // click elsewhere closes it.
+    (function initHelpTips() {
+      const panel = document.createElement('div');
+      panel.id = 'helpTipPanel';
+      panel.className = 'help-tip-panel';
+      panel.setAttribute('role', 'tooltip');
+      panel.hidden = true;
+      document.body.appendChild(panel);
+      let current = null;
+      let pinned = false;
+      const tipOf = (target) => (target && target.closest ? target.closest('.help-tip') : null);
+
+      function show(btn) {
+        const text = btn.nextElementSibling;
+        if (!text || !text.classList.contains('help-tip-text')) return;
+        if (current && current !== btn) hide();
+        current = btn;
+        panel.innerHTML = text.innerHTML;
+        panel.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-describedby', panel.id);
+        const r = btn.getBoundingClientRect();
+        const left = Math.max(8, Math.min(r.left, window.innerWidth - panel.offsetWidth - 8));
+        let top = r.bottom + 6;
+        if (top + panel.offsetHeight > window.innerHeight - 8) {
+          top = Math.max(8, r.top - panel.offsetHeight - 6);
+        }
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+      }
+
+      function hide() {
+        if (current) {
+          current.setAttribute('aria-expanded', 'false');
+          current.removeAttribute('aria-describedby');
+        }
+        current = null;
+        pinned = false;
+        panel.hidden = true;
+      }
+
+      document.addEventListener('mouseover', (e) => {
+        const btn = tipOf(e.target);
+        if (btn && !pinned) show(btn);
+      });
+      document.addEventListener('mouseout', (e) => {
+        const btn = tipOf(e.target);
+        if (btn && btn === current && !pinned && !btn.contains(e.relatedTarget)) hide();
+      });
+      document.addEventListener('focusin', (e) => {
+        const btn = tipOf(e.target);
+        if (btn && !pinned) show(btn);
+      });
+      document.addEventListener('focusout', (e) => {
+        if (e.target === current && !pinned) hide();
+      });
+      document.addEventListener('click', (e) => {
+        const btn = tipOf(e.target);
+        if (btn) {
+          e.preventDefault();
+          if (pinned && current === btn) {
+            hide();
+          } else {
+            show(btn);
+            pinned = true;
+          }
+          return;
+        }
+        if (current && !panel.contains(e.target)) hide();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && current) hide();
+      });
+      // The panel does not follow its button: close it when the page moves.
+      window.addEventListener('scroll', () => { if (current) hide(); }, true);
+      window.addEventListener('resize', () => { if (current) hide(); });
+    })();
+
     // Initialize
     loadServers();
   </script>

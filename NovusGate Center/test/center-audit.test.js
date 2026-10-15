@@ -118,3 +118,13 @@ test('update installs rsync instead of copying over the old tree', () => {
   assert.match(s, /command -v rsync[^\n]*\|\| apt_get install -y rsync/);
   assert.doesNotMatch(s, /cp -r "\$TEMP_DIR"\/\* "\$INSTALL_DIR\/"/);
 });
+
+// The .env holds the DB password, API key and master key: reinstall keeps it
+// root-only like install does, also its copy in /tmp.
+test('reinstall keeps .env readable by root only', () => {
+  const s = scripts.GENERATE_REINSTALL_SCRIPT(sampleConfig);
+  assert.match(s, /chmod 600 server\/deployments\/docker\/\.env/);
+  assert.ok(s.indexOf('chmod 600 server/deployments/docker/.env') > s.indexOf('cat <<EOF > server/deployments/docker/.env'),
+    'after the file is written or restored');
+  assert.doesNotMatch(s, /^\s*cp "\$INSTALL_DIR\/server\/deployments\/docker\/\.env" \/tmp/m, 'the /tmp copy keeps its mode (cp -p)');
+});

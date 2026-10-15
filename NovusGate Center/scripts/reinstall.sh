@@ -12,7 +12,7 @@ echo "=========================================="
 # Backup .env before deleting
 if [ -f "$INSTALL_DIR/server/deployments/docker/.env" ]; then
   echo "Preserving old config..."
-  cp "$INSTALL_DIR/server/deployments/docker/.env" /tmp/NovusGate.env.bak
+  cp -p "$INSTALL_DIR/server/deployments/docker/.env" /tmp/NovusGate.env.bak # keeps its 600 mode
   if [ -f "$INSTALL_DIR/web/.env" ]; then
     cp "$INSTALL_DIR/web/.env" /tmp/NovusGate.web.env.bak
   fi
@@ -100,6 +100,8 @@ EOF
   # No web/.env: since P4b the panel calls the API through its own nginx,
   # which adds the API key; the key is never copied into the web build.
 fi
+# DB password, API key and master key: root only, as install.sh writes it.
+chmod 600 server/deployments/docker/.env
 
 # sshd_source sets SSHD_SOURCE for the sshd jail: auth.log where syslog
 # writes one, else the journal (Debian 12 has no rsyslog by default).

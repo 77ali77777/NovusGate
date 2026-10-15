@@ -63,5 +63,5 @@ test('reinstall runs the database guard before anything is stopped or deleted', 
     'guard must run before the stack is stopped'
   );
   assert.ok(guard < script.indexOf('clean_install_dir "$INSTALL_DIR"'), 'guard must run before files are removed');
-  assert.ok(guard < script.indexOf('cp "$INSTALL_DIR/server/deployments/docker/.env"'), 'guard must run before the .env backup');
+  assert.ok(guard < script.indexOf('cp -p "$INSTALL_DIR/server/deployments/docker/.env"'), 'guard must run before the .env backup');
 });
