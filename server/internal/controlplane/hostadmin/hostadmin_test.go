@@ -131,6 +131,7 @@ func TestSysctlApplyArmsRollback(t *testing.T) {
 	if !r.ran("systemd-run --unit=novusgate-sysctl-rollback --on-active=90s --timer-property=AccuracySec=1s sh " + SysctlRollbackScript) {
 		t.Fatalf("rollback timer not armed: %v", r.calls)
 	}
+	r.out[timerActive] = "active\n" // the timer waits
 	if err := s.Confirm(); err != nil {
 		t.Fatal(err)
 	}
@@ -262,5 +263,84 @@ func TestSysctlRollbackScriptIsValidShell(t *testing.T) {
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("sh -n: %v\n%s\n%s", err, out, r.stdins["tee "+SysctlRollbackScript])
 		}
+	}
+}
+
+const timerActive = "systemctl is-active " + sysctlRollbackUnit + ".timer"
+
+// A second change while one waits for Confirm would overwrite the rollback
+// script with the first change's values: it is refused, nothing is written.
+func TestSysctlApplyRefusedWhilePending(t *testing.T) {
+	r := &fakeRunner{out: map[string]string{timerActive: "active\n"}}
+	s := &Sysctl{Runner: r, Timeout: time.Minute}
+	if err := s.Apply(map[string]string{"net.ipv4.ip_forward": "1"}); !errors.Is(err, ErrSysctlPending) {
+		t.Fatalf("err = %v, want ErrSysctlPending", err)
+	}
+	if r.ran("tee") || r.ran("sysctl -p") {
+		t.Fatalf("a refused change wrote something: %v", r.calls)
+	}
+}
+
+// Confirm after the timer fired (or with nothing applied) must not report
+// success: the host already has the old values back.
+func TestSysctlConfirmWithoutPending(t *testing.T) {
+	r := &fakeRunner{out: map[string]string{timerActive: "inactive\n"}, fail: map[string]error{timerActive: errors.New("exit status 3")}}
+	s := &Sysctl{Runner: r}
+	if err := s.Confirm(); !errors.Is(err, ErrSysctlNotPending) {
+		t.Fatalf("err = %v, want ErrSysctlNotPending", err)
+	}
+	if r.ran("systemctl stop") {
+		t.Fatal("nothing to stop")
+	}
+}
+
+// An elapsed transient timer can stay loaded; it is stopped before a new one
+// with the same name is armed.
+func TestSysctlApplyClearsElapsedTimer(t *testing.T) {
+	r := &fakeRunner{out: map[string]string{"sysctl -n net.ipv4.ip_forward": "0\n"}}
+	s := &Sysctl{Runner: r, Timeout: time.Minute}
+	if err := s.Apply(map[string]string{"net.ipv4.ip_forward": "1"}); err != nil {
+		t.Fatal(err)
+	}
+	stop, arm := -1, -1
+	for i, c := range r.calls {
+		if c == "systemctl stop "+sysctlRollbackUnit+".timer" {
+			stop = i
+		}
+		if strings.HasPrefix(c, "systemd-run") {
+			arm = i
+		}
+	}
+	if stop < 0 || arm < 0 || stop > arm {
+		t.Fatalf("stop at %d, arm at %d: %v", stop, arm, r.calls)
+	}
+	if until, ok := SysctlPendingUntil(); !ok || time.Until(until) <= 0 {
+		t.Fatalf("pending until = %v %v", until, ok)
+	}
+}
+
+// A failed write of the managed file may have left part of it: undo at once.
+func TestSysctlFileWriteFailureRollsBack(t *testing.T) {
+	r := &fakeRunner{
+		out:  map[string]string{"sysctl -n net.ipv4.ip_forward": "0\n"},
+		fail: map[string]error{"tee " + SysctlFile: errors.New("no space left on device")},
+	}
+	s := &Sysctl{Runner: r, Timeout: time.Minute}
+	if err := s.Apply(map[string]string{"net.ipv4.ip_forward": "1"}); err == nil {
+		t.Fatal("want the write error")
+	}
+	if !r.ran("sh " + SysctlRollbackScript) {
+		t.Fatalf("not rolled back: %v", r.calls)
+	}
+}
+
+// docker restarts without waiting: it stops this very container.
+func TestRestartDockerDoesNotBlock(t *testing.T) {
+	r := &fakeRunner{}
+	if err := Restart(r, "docker"); err != nil {
+		t.Fatal(err)
+	}
+	if !r.ran("systemctl restart --no-block docker") {
+		t.Fatalf("calls = %v", r.calls)
 	}
 }

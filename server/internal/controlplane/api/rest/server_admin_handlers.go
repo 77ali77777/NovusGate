@@ -36,6 +36,10 @@ type StepUpRequest struct {
 type SysctlResponse struct {
 	Keys   []string          `json:"keys"`
 	Values map[string]string `json:"values"`
+	// Pending: a change waits for confirm (the host's rollback timer is
+	// armed); PendingUntil is when it is undone, when this process knows it.
+	Pending      bool       `json:"pending"`
+	PendingUntil *time.Time `json:"pending_until"`
 }
 
 // SysctlChangeRequest sets kernel settings.
@@ -130,16 +134,17 @@ func (s *Server) handleStepUp(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusUnauthorized, "invalid_token", "invalid token")
 		return
 	}
-	// Counted per user: a stolen session must not guess the password.
+	var req StepUpRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
+		return
+	}
+	// Counted per user: a stolen session must not guess the password. Only
+	// password checks count, not malformed bodies.
 	key := "user:" + user.Username
 	if wait, ok := stepUpLimit.begin(key, authNow()); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		errorWithCode(w, http.StatusTooManyRequests, "too_many_attempts", "too many wrong passwords, try again later")
-		return
-	}
-	var req StepUpRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
-		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
 	u, err := s.store.GetUserByUsername(r.Context(), user.Username)
@@ -205,7 +210,12 @@ func (s *Server) handleRestartService(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetSysctl(w http.ResponseWriter, r *http.Request) {
-	jsonResponse(w, http.StatusOK, SysctlResponse{Keys: hostadmin.SysctlKeys(), Values: hostadmin.ReadSysctl(s.hostRunner())})
+	resp := SysctlResponse{Keys: hostadmin.SysctlKeys(), Values: hostadmin.ReadSysctl(s.hostRunner())}
+	resp.Pending = hostadmin.SysctlTimerWaiting(s.hostRunner())
+	if until, ok := hostadmin.SysctlPendingUntil(); ok && resp.Pending {
+		resp.PendingUntil = &until
+	}
+	jsonResponse(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleSetSysctl(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +229,10 @@ func (s *Server) handleSetSysctl(w http.ResponseWriter, r *http.Request) {
 	}
 	sc := &hostadmin.Sysctl{Runner: s.hostRunner(), Timeout: sysctlConfirmTimeout}
 	if err := sc.Apply(req.Values); err != nil {
+		if errors.Is(err, hostadmin.ErrSysctlPending) {
+			errorWithCode(w, http.StatusConflict, "sysctl_pending", "the last change waits for confirmation; keep it or let it undo first")
+			return
+		}
 		hostError(w, "sysctl change", err)
 		return
 	}
@@ -228,6 +242,10 @@ func (s *Server) handleSetSysctl(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfirmSysctl(w http.ResponseWriter, r *http.Request) {
 	sc := &hostadmin.Sysctl{Runner: s.hostRunner()}
 	if err := sc.Confirm(); err != nil {
+		if errors.Is(err, hostadmin.ErrSysctlNotPending) {
+			errorWithCode(w, http.StatusConflict, "sysctl_not_pending", "no change waits for confirmation; it may have been undone already")
+			return
+		}
 		hostError(w, "sysctl confirm", err)
 		return
 	}
@@ -314,12 +332,19 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	runner := s.hostRunner()
 	go func() {
 		var out bytes.Buffer
-		u, err := runner.Run("", "apt-get", "update")
+		// apt runs in its own transient host unit, not in this container's
+		// cgroup: a docker restart during the upgrade cannot kill dpkg with
+		// the container, and RuntimeMaxSec stops an apt that hangs.
+		unit := func(name, max string, args ...string) []string {
+			return append([]string{"--unit=" + name, "--wait", "--pipe", "--collect", "--quiet", "-p", "RuntimeMaxSec=" + max}, args...)
+		}
+		u, err := runner.Run("", "systemd-run", unit("novusgate-apt-update", "1800", "apt-get", "update")...)
 		out.WriteString(u)
 		if err == nil {
 			var o string
-			o, err = runner.Run("", "env", "DEBIAN_FRONTEND=noninteractive", "apt-get", "-y",
-				"-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold", "upgrade")
+			o, err = runner.Run("", "systemd-run", unit("novusgate-apt-upgrade", "3600",
+				"--setenv=DEBIAN_FRONTEND=noninteractive", "apt-get", "-y",
+				"-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold", "upgrade")...)
 			out.WriteString(o)
 		}
 		if err != nil {
@@ -341,6 +366,13 @@ func (s *Server) handleReboot(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Confirm != "reboot" {
 		errorResponse(w, http.StatusBadRequest, `confirm must be "reboot"`)
+		return
+	}
+	upgrades.mu.Lock()
+	running := upgrades.job.Running
+	upgrades.mu.Unlock()
+	if running {
+		errorWithCode(w, http.StatusConflict, "upgrade_running", "an upgrade is running; reboot when it has finished")
 		return
 	}
 	runner := s.hostRunner()

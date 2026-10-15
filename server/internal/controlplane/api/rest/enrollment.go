@@ -56,6 +56,17 @@ cat > /etc/wireguard/wg0.conf <<'WGCONF'
 WGCONF
 chmod 600 /etc/wireguard/wg0.conf
 
+# wg-quick applies a DNS line through resolvconf, which Ubuntu does not ship;
+# resolvectl (systemd-resolved) speaks it when called by that name.
+if grep -q '^DNS *=' /etc/wireguard/wg0.conf && ! command -v resolvconf > /dev/null 2>&1; then
+    if command -v resolvectl > /dev/null 2>&1; then
+        ln -sf "$(command -v resolvectl)" /usr/local/sbin/resolvconf
+    else
+        apt-get update
+        apt-get install -y openresolv
+    fi
+fi
+
 systemctl enable wg-quick@wg0
 systemctl restart wg-quick@wg0
 

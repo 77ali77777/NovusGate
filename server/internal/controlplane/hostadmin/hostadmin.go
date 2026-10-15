@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -83,7 +84,12 @@ func Restart(r Runner, unit string) error {
 	if !allowedUnit(unit) {
 		return fmt.Errorf("service %q: %w", unit, ErrNotAllowed)
 	}
-	if _, err := r.Run("", "systemctl", "restart", unit); err != nil {
+	args := []string{"restart", unit}
+	if unit == "docker" {
+		// Restarting docker stops this container too: do not wait for it.
+		args = []string{"restart", "--no-block", unit}
+	}
+	if _, err := r.Run("", "systemctl", args...); err != nil {
 		return fmt.Errorf("restart %s: %w", unit, err)
 	}
 	return nil
@@ -176,11 +182,50 @@ type Sysctl struct {
 	Timeout time.Duration
 }
 
+var (
+	// ErrSysctlPending: a change waits for Confirm; another one would
+	// overwrite its rollback with its own values.
+	ErrSysctlPending = errors.New("a kernel settings change waits for confirmation")
+	// ErrSysctlNotPending: nothing to confirm (never applied, or the timer
+	// already restored the old values).
+	ErrSysctlNotPending = errors.New("no kernel settings change waits for confirmation (it may have been undone already)")
+)
+
+// sysctlState serialises Apply and Confirm (one host) and remembers when the
+// pending change is undone, for the panel's countdown. The host's timer is
+// the truth; this is lost on restart.
+var sysctlState struct {
+	mu    sync.Mutex
+	until time.Time
+}
+
+// SysctlPendingUntil reports when the waiting change is undone, if this
+// process applied it and its time has not passed.
+func SysctlPendingUntil() (time.Time, bool) {
+	sysctlState.mu.Lock()
+	defer sysctlState.mu.Unlock()
+	if sysctlState.until.IsZero() || !time.Now().Before(sysctlState.until) {
+		return time.Time{}, false
+	}
+	return sysctlState.until, true
+}
+
+// timerWaiting reports whether the rollback timer is armed on the host.
+func (s *Sysctl) timerWaiting() bool {
+	out, err := s.Runner.Run("", "systemctl", "is-active", sysctlRollbackUnit+".timer")
+	return err == nil && strings.TrimSpace(out) == "active"
+}
+
 // Apply writes the managed file with the given settings (merged over the
 // ones it already manages), loads it and arms the rollback.
 func (s *Sysctl) Apply(values map[string]string) error {
 	if err := ValidateSysctl(values); err != nil {
 		return err
+	}
+	sysctlState.mu.Lock()
+	defer sysctlState.mu.Unlock()
+	if s.timerWaiting() {
+		return ErrSysctlPending
 	}
 	// The rollback: the old values of the keys that change, then the old file.
 	oldFile, _ := s.Runner.Run("", "cat", SysctlFile) // missing on a first change
@@ -213,7 +258,11 @@ func (s *Sysctl) Apply(values map[string]string) error {
 		merged[k] = v
 	}
 	if _, err := s.Runner.Run(renderSysctlFile(merged), "tee", SysctlFile); err != nil {
-		return fmt.Errorf("write %s: %w", SysctlFile, err)
+		// tee may have written part of the file: put the old one back.
+		if _, rbErr := s.Runner.Run("", "sh", SysctlRollbackScript); rbErr != nil {
+			return fmt.Errorf("write %s: %v; the rollback failed too: %w", SysctlFile, err, rbErr)
+		}
+		return fmt.Errorf("write %s (rolled back): %w", SysctlFile, err)
 	}
 	if _, err := s.Runner.Run("", "sysctl", "-p", SysctlFile); err != nil {
 		// Undo at once: the kernel took part of it at most.
@@ -222,7 +271,10 @@ func (s *Sysctl) Apply(values map[string]string) error {
 		}
 		return fmt.Errorf("load %s (rolled back): %w", SysctlFile, err)
 	}
-	s.Runner.Run("", "systemctl", "reset-failed", sysctlRollbackUnit+".service") // a previous run's leftovers
+	// A previous run's leftovers: an elapsed transient timer can stay loaded
+	// and would block a new one with the same name.
+	s.Runner.Run("", "systemctl", "stop", sysctlRollbackUnit+".timer")
+	s.Runner.Run("", "systemctl", "reset-failed", sysctlRollbackUnit+".service", sysctlRollbackUnit+".timer")
 	secs := int(s.Timeout / time.Second)
 	if secs < 1 {
 		secs = 1
@@ -234,14 +286,24 @@ func (s *Sysctl) Apply(values map[string]string) error {
 		s.Runner.Run("", "sh", SysctlRollbackScript)
 		return fmt.Errorf("arm the rollback (change undone): %w", err)
 	}
+	sysctlState.until = time.Now().Add(time.Duration(secs) * time.Second)
 	return nil
 }
 
 // Confirm keeps the applied settings: the rollback timer is stopped.
+// It fails with ErrSysctlNotPending when no timer waits: the change was
+// never applied or has been undone already.
 func (s *Sysctl) Confirm() error {
-	if _, err := s.Runner.Run("", "systemctl", "stop", sysctlRollbackUnit+".timer"); err != nil && !strings.Contains(err.Error(), "not loaded") {
+	sysctlState.mu.Lock()
+	defer sysctlState.mu.Unlock()
+	if !s.timerWaiting() {
+		sysctlState.until = time.Time{}
+		return ErrSysctlNotPending
+	}
+	if _, err := s.Runner.Run("", "systemctl", "stop", sysctlRollbackUnit+".timer"); err != nil {
 		return fmt.Errorf("stop the rollback timer: %w", err)
 	}
+	sysctlState.until = time.Time{}
 	return nil
 }
 
@@ -422,4 +484,10 @@ func Network(r Runner) (NetworkView, error) {
 		*item.dst = json.RawMessage(out)
 	}
 	return v, nil
+}
+
+// SysctlTimerWaiting reports whether a kernel settings change waits for
+// Confirm on the host (its rollback timer is armed).
+func SysctlTimerWaiting(r Runner) bool {
+	return (&Sysctl{Runner: r}).timerWaiting()
 }

@@ -65,6 +65,12 @@ func TestInstallScript(t *testing.T) {
 	if umask < 0 || umask > write {
 		t.Errorf("umask 077 must come before the config is written (umask at %d, write at %d)", umask, write)
 	}
+	// wg-quick applies a DNS line through resolvconf, which Ubuntu does not
+	// ship; resolvectl speaks it when called by that name.
+	dns := strings.Index(script, "ln -sf \"$(command -v resolvectl)\" /usr/local/sbin/resolvconf")
+	if dns < 0 || dns > strings.Index(script, "systemctl restart wg-quick@wg0") || !strings.Contains(script, "apt-get install -y openresolv") {
+		t.Errorf("no resolvconf before the tunnel starts (at %d)", dns)
+	}
 	up, checkin := strings.Index(script, "systemctl restart wg-quick@wg0"), strings.Index(script, "X-Enrollment-Token")
 	if up < 0 || checkin < 0 || up > checkin {
 		t.Errorf("WireGuard must be up before the checkin (up at %d, checkin at %d)", up, checkin)

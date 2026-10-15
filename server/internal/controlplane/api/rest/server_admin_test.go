@@ -124,6 +124,7 @@ func TestServerAdminReadsAndChanges(t *testing.T) {
 	if pending.ConfirmWithin <= 0 || !h.ran("sysctl -p /etc/sysctl.d/90-novusgate.conf") {
 		t.Fatalf("pending = %+v calls %v", pending, h.calls)
 	}
+	h.out["systemctl is-active novusgate-sysctl-rollback.timer"] = "active\n" // the rollback waits
 	if rec := callAs(t, s, "POST", "/api/v1/server/sysctl/confirm", "", true); rec.Code != 204 {
 		t.Fatalf("confirm = %d", rec.Code)
 	}
@@ -157,8 +158,10 @@ func TestServerAdminIsAdminOnly(t *testing.T) {
 // a second one is refused while it runs.
 func TestServerUpgradeJob(t *testing.T) {
 	s, h := newServerAdmin(t)
-	h.out["apt-get update"] = "Reading package lists...\n"
-	h.out["env DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade"] = "0 upgraded\n"
+	// apt runs in its own host unit: a docker restart during the upgrade
+	// cannot kill dpkg with this container, and a hung apt is stopped.
+	h.out["systemd-run --unit=novusgate-apt-update --wait --pipe --collect --quiet -p RuntimeMaxSec=1800 apt-get update"] = "Reading package lists...\n"
+	h.out["systemd-run --unit=novusgate-apt-upgrade --wait --pipe --collect --quiet -p RuntimeMaxSec=3600 --setenv=DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade"] = "0 upgraded\n"
 	callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
 	if rec := callAs(t, s, "POST", "/api/v1/server/packages/upgrade", `{"confirm":"upgrade"}`, true); rec.Code != 202 {
 		t.Fatalf("upgrade = %d %s", rec.Code, rec.Body)
@@ -203,5 +206,60 @@ func TestServerAdminHidesHostErrors(t *testing.T) {
 	rec := callAs(t, s, "GET", "/api/v1/server/system", "", true)
 	if rec.Code != 500 || strings.Contains(rec.Body.String(), "nsenter") || strings.Contains(rec.Body.String(), "/proc") {
 		t.Fatalf("system = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// A second kernel change while one waits is refused (409), and confirming
+// when nothing waits (already undone) is not reported as kept.
+func TestSysctlPendingConflicts(t *testing.T) {
+	s, h := newServerAdmin(t)
+	callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
+	h.out["systemctl is-active novusgate-sysctl-rollback.timer"] = "active\n"
+	rec := callAs(t, s, "PUT", "/api/v1/server/sysctl", `{"values":{"net.ipv4.ip_forward":"1"}}`, true)
+	if rec.Code != 409 || errorCode(t, rec.Body.Bytes()) != "sysctl_pending" {
+		t.Fatalf("second change = %d %s", rec.Code, rec.Body)
+	}
+	get := callAs(t, s, "GET", "/api/v1/server/sysctl", "", true)
+	if !strings.Contains(get.Body.String(), `"pending":true`) {
+		t.Fatalf("GET while pending = %s", get.Body)
+	}
+	assertMatchesSpec(t, s, "GET", "/api/v1/server/sysctl", get)
+	h.out["systemctl is-active novusgate-sysctl-rollback.timer"] = "inactive\n"
+	rec = callAs(t, s, "POST", "/api/v1/server/sysctl/confirm", "", true)
+	if rec.Code != 409 || errorCode(t, rec.Body.Bytes()) != "sysctl_not_pending" {
+		t.Fatalf("late confirm = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// Rebooting while apt runs would interrupt dpkg.
+func TestRebootRefusedWhileUpgrading(t *testing.T) {
+	s, h := newServerAdmin(t)
+	callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
+	upgrades.mu.Lock()
+	saved := upgrades.job
+	upgrades.job = UpgradeJob{Running: true}
+	upgrades.mu.Unlock()
+	defer func() { upgrades.mu.Lock(); upgrades.job = saved; upgrades.mu.Unlock() }()
+	rec := callAs(t, s, "POST", "/api/v1/server/reboot", `{"confirm":"reboot"}`, true)
+	if rec.Code != 409 || errorCode(t, rec.Body.Bytes()) != "upgrade_running" {
+		t.Fatalf("reboot during upgrade = %d %s", rec.Code, rec.Body)
+	}
+	time.Sleep(rebootDelay + 100*time.Millisecond)
+	if h.ran("systemctl reboot") {
+		t.Fatal("rebooted during an upgrade")
+	}
+}
+
+// A malformed step-up body is no password guess: it does not count.
+func TestStepUpBadBodyNotCounted(t *testing.T) {
+	saved := stepUpLimit
+	stepUpLimit = newLoginLimiter(5, 15*time.Minute)
+	defer func() { stepUpLimit = saved }()
+	s, _ := newServerAdmin(t)
+	for i := 0; i < 6; i++ {
+		callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":`, true)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true); rec.Code != 204 {
+		t.Fatalf("step-up after bad bodies = %d %s", rec.Code, rec.Body)
 	}
 }

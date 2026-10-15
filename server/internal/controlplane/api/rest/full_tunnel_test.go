@@ -39,7 +39,8 @@ func TestFullTunnelConfig(t *testing.T) {
 	}
 }
 
-// P10a: a network may name its own DNS servers for clients. They go into
+// P10a: a network may name its own DNS servers for clients (IPv4 only: full
+// tunnel routes 0.0.0.0/0, so an IPv6 server would be asked outside it). They go into
 // split and full tunnel configs alike; without them full tunnel keeps
 // fullTunnelDNS and split tunnel has no DNS line.
 func TestNetworkClientDNS(t *testing.T) {
@@ -48,7 +49,7 @@ func TestNetworkClientDNS(t *testing.T) {
 	path := "/api/v1/nodes/" + seed.node.ID + "/config"
 	dnsPath := "/api/v1/networks/" + seed.node.NetworkID + "/dns"
 
-	for _, bad := range []string{`{"client_dns":"not-an-ip"}`, `{"client_dns":"1.1.1.1, 8.8.8.8, 9.9.9.9, 1.0.0.1"}`, `{"client_dns":"1.1.1.1;reboot"}`} {
+	for _, bad := range []string{`{"client_dns":"not-an-ip"}`, `{"client_dns":"1.1.1.1, 8.8.8.8, 9.9.9.9, 1.0.0.1"}`, `{"client_dns":"1.1.1.1;reboot"}`, `{"client_dns":"2606:4700::1111"}`} {
 		if rec := callAs(t, s, "PUT", dnsPath, bad, true); rec.Code != 400 {
 			t.Errorf("%s = %d %s, want 400", bad, rec.Code, rec.Body)
 		}

@@ -2510,6 +2510,14 @@
             "nullable": true,
             "type": "array"
           },
+          "pending": {
+            "type": "boolean"
+          },
+          "pending_until": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "values": {
             "additionalProperties": {
               "type": "string"
@@ -2520,6 +2528,8 @@
         },
         "required": [
           "keys",
+          "pending",
+          "pending_until",
           "values"
         ],
         "type": "object"

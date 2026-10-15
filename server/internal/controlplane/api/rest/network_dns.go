@@ -16,12 +16,14 @@ const maxClientDNS = 3
 
 // ClientDNSRequest sets the DNS servers of a network's client configs.
 type ClientDNSRequest struct {
-	ClientDNS string `json:"client_dns"` // comma-separated IPv4/IPv6 addresses; empty: the default
+	ClientDNS string `json:"client_dns"` // comma-separated IPv4 addresses; empty: the default
 }
 
-// normalizeClientDNS checks a comma-separated list of IP addresses and
+// normalizeClientDNS checks a comma-separated list of IPv4 addresses and
 // returns it as "a, b". Only addresses pass, so the value is safe to write
-// into a WireGuard config and an install script.
+// into a WireGuard config and an install script. IPv6 is refused: the
+// tunnels carry IPv4 only (full tunnel routes 0.0.0.0/0), so an IPv6 server
+// would be asked outside the tunnel.
 func normalizeClientDNS(raw string) (string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return "", nil
@@ -32,9 +34,9 @@ func normalizeClientDNS(raw string) (string, error) {
 	}
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
-		ip := net.ParseIP(strings.TrimSpace(p))
+		ip := net.ParseIP(strings.TrimSpace(p)).To4()
 		if ip == nil {
-			return "", errors.New("not an IP address: " + strings.TrimSpace(p))
+			return "", errors.New("not an IPv4 address: " + strings.TrimSpace(p))
 		}
 		out = append(out, ip.String())
 	}
