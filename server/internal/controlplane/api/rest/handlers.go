@@ -458,6 +458,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	noteLoginUsername(r, req.Username)
 	// Validate credentials against DB
 	user, err := s.store.GetUserByUsername(r.Context(), req.Username)
 	if err != nil {

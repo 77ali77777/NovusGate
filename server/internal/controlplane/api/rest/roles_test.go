@@ -187,3 +187,51 @@ func TestOperatorRoutesExist(t *testing.T) {
 	}
 	_ = http.MethodGet
 }
+
+// Every role sees and ends its own sessions; only an admin sees and ends
+// everyone's. Another user's session is 404 to a non-admin (not revealed).
+func TestOwnSessionsForEveryRole(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	viewer := roleSession(t, st, "sess-viewer", "viewer")
+	roleSession(t, st, "sess-viewer", "viewer")       // a second session of the viewer
+	callAs(t, s, "GET", "/api/v1/networks", "", true) // the admin has one too
+
+	var list SessionsResponse
+	rec := callWith(t, s, viewer, "GET", "/api/v1/auth/sessions", "")
+	if rec.Code != 200 {
+		t.Fatalf("viewer list = %d %s", rec.Code, rec.Body)
+	}
+	json.Unmarshal(rec.Body.Bytes(), &list)
+	var mine, current string
+	for _, si := range list.Sessions {
+		if si.Username != "sess-viewer" {
+			t.Fatalf("a viewer must see only its own sessions: %+v", si)
+		}
+		if si.Current {
+			current = si.ID
+		} else {
+			mine = si.ID
+		}
+	}
+	if mine == "" || current == "" {
+		t.Fatalf("viewer sessions = %+v", list.Sessions)
+	}
+
+	var all SessionsResponse
+	json.Unmarshal(callAs(t, s, "GET", "/api/v1/auth/sessions", "", true).Body.Bytes(), &all)
+	var adminSession string
+	for _, si := range all.Sessions {
+		if si.Username == "contract-user" {
+			adminSession = si.ID
+		}
+	}
+	if adminSession == "" {
+		t.Fatalf("an admin sees every session: %+v", all.Sessions)
+	}
+	if rec := callWith(t, s, viewer, "DELETE", "/api/v1/auth/sessions/"+adminSession, ""); rec.Code != 404 {
+		t.Fatalf("viewer ending the admin's session = %d", rec.Code)
+	}
+	if rec := callWith(t, s, viewer, "DELETE", "/api/v1/auth/sessions/"+mine, ""); rec.Code != 204 {
+		t.Fatalf("viewer ending its own other session = %d %s", rec.Code, rec.Body)
+	}
+}

@@ -55,7 +55,7 @@ var docQueryParams = map[string][]docParam{
 	"DELETE /api/v1/firewall/v2/forwards/{id}":      {confirmParam},
 	"PUT /api/v1/firewall/v2/egress/{nodeId}":       {confirmParam},
 	"DELETE /api/v1/firewall/v2/egress/{nodeId}":    {confirmParam},
-	"GET /api/v1/audit":                             {{"limit", "integer", "entries to return (default 100, at most 500)"}, {"before", "string", "only entries older than this RFC 3339 time (paging)"}},
+	"GET /api/v1/audit":                             {{"limit", "integer", "entries to return (default 100, at most 500)"}, {"before", "string", "only entries older than this RFC 3339 time (paging)"}, {"before_id", "string", "with before: the id of the last entry shown, so entries with the same time are kept"}},
 	"GET /api/v1/firewall/v2/history":               {{"limit", "integer", "newest entries to return (default 50, at most 200)"}},
 	"POST /api/v1/firewall/v2/history/{id}/restore": {confirmParam},
 }

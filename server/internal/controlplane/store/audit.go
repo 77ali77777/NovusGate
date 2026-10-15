@@ -9,19 +9,27 @@ import (
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
-// ListAuditLog returns up to limit audit entries older than before (all
-// when before is nil), newest first.
-func (s *Store) ListAuditLog(ctx context.Context, limit int, before *time.Time) ([]*models.AuditEntry, error) {
+// ListAuditLog returns up to limit audit entries before the cursor (all when
+// before is nil), newest first. The cursor is the last entry shown: its time
+// and, so entries with the same time are not lost at a page edge, its id
+// (empty for a time-only cursor).
+func (s *Store) ListAuditLog(ctx context.Context, limit int, before *time.Time, beforeID string) ([]*models.AuditEntry, error) {
 	var b sql.NullTime
 	if before != nil {
 		b = sql.NullTime{Time: *before, Valid: true}
 	}
+	var id sql.NullString
+	if beforeID != "" {
+		id = sql.NullString{String: beforeID, Valid: true}
+	}
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT a.id, a.created_at, a.action, COALESCE(a.details, '{}'::jsonb)::text, COALESCE(a.user_ip, ''), COALESCE(u.username, '')
 		FROM firewall_audit_log a LEFT JOIN users u ON u.id = a.user_id
-		WHERE $1::timestamptz IS NULL OR a.created_at < $1
+		WHERE $1::timestamptz IS NULL
+			OR ($3::uuid IS NULL AND a.created_at < $1)
+			OR ($3::uuid IS NOT NULL AND (a.created_at, a.id) < ($1, $3::uuid))
 		ORDER BY a.created_at DESC, a.id DESC
-		LIMIT $2`, b, limit)
+		LIMIT $2`, b, limit, id)
 	if err != nil {
 		return nil, err
 	}

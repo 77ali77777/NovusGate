@@ -7,5 +7,6 @@
     "result": "Result",
     "address": "Address"
   },
-  "loadOlder": "Load older entries"
+  "loadOlder": "Load older entries",
+  "triedUser": "tried: {{name}}"
 }

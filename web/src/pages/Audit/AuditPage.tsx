@@ -50,7 +50,16 @@ export const AuditPage = () => {
                       <td className="whitespace-nowrap px-4 py-2 text-gray-500">
                         {formatDateTime(e.created_at)}
                       </td>
-                      <td className="px-4 py-2">{e.username || '—'}</td>
+                      <td className="px-4 py-2">
+                        {e.username ||
+                          (typeof e.details?.username === 'string' ? (
+                            <span className="italic text-gray-500">
+                              {t('triedUser', { name: e.details.username })}
+                            </span>
+                          ) : (
+                            '—'
+                          ))}
+                      </td>
                       <td className="px-4 py-2">
                         {method && (
                           <Badge variant={methodVariant[method] ?? 'default'}>{method}</Badge>

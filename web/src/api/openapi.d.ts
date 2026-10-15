@@ -2079,6 +2079,8 @@ export interface operations {
                 limit?: number;
                 /** @description only entries older than this RFC 3339 time (paging) */
                 before?: string;
+                /** @description with before: the id of the last entry shown, so entries with the same time are kept */
+                before_id?: string;
             };
             header?: never;
             path?: never;

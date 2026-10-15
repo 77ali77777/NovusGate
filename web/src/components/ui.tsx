@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import type React from 'react'
+import { useEffect, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 
 // Button component
@@ -250,6 +251,17 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  const { t } = useTranslation('common')
+  const titleId = useId()
+  // Escape closes the dialog, as the backdrop click does.
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
   if (!isOpen) return null
 
   const sizes = {
@@ -264,15 +276,22 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50\" onClick={onClose} />
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className={clsx(
             'relative w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl',
             sizes[size]
           )}
         >
           <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+            <h3 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-white">
+              {title}
+            </h3>
             <button
+              type="button"
               onClick={onClose}
+              aria-label={t('actions.close')}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

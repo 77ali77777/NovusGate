@@ -139,3 +139,21 @@ func TestDeleteAuditLogBefore(t *testing.T) {
 		t.Fatalf("left = %q", left)
 	}
 }
+
+// Entries with the same time are not lost at a page edge: the cursor is
+// (created_at, id), the same order the list uses.
+func TestAuditPagesKeepEntriesWithTheSameTime(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "DELETE FROM firewall_audit_log")
+	s.db.ExecContext(ctx, `INSERT INTO firewall_audit_log (action, details, created_at) VALUES
+		('a', '{}', '2026-10-15T10:00:00Z'), ('b', '{}', '2026-10-15T10:00:00Z')`)
+	first, err := s.ListAuditLog(ctx, 1, nil, "")
+	if err != nil || len(first) != 1 {
+		t.Fatalf("first page = %v %v", first, err)
+	}
+	second, err := s.ListAuditLog(ctx, 1, &first[0].CreatedAt, first[0].ID)
+	if err != nil || len(second) != 1 || second[0].ID == first[0].ID {
+		t.Fatalf("second page = %+v %v, want the other entry", second, err)
+	}
+}

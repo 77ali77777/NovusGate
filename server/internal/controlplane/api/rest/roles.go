@@ -46,6 +46,8 @@ var operatorRoutes = map[string]bool{
 var anyRoleRoutes = map[string]bool{
 	"PUT /api/v1/auth/password": true, // the handler allows only the caller's own password
 	"POST /api/v1/auth/logout":  true,
+	// the handler lets a non-admin end only its own sessions
+	"DELETE /api/v1/auth/sessions/{id}": true,
 }
 
 // sensitiveReads are GETs that hand out secrets, create tokens or dump the
@@ -57,7 +59,6 @@ var sensitiveReads = map[string]string{
 	"GET /api/v1/backups/{name}":              "admin",    // database dump and WireGuard keys
 	"GET /api/v1/debug/wireguard/{networkId}": "admin",
 	"GET /api/v1/users":                       "admin",
-	"GET /api/v1/auth/sessions":               "admin",
 	"GET /api/v1/firewall/host/export":        "admin", // the whole host ruleset
 	"GET /api/v1/notifications/settings":      "admin", // Telegram chat id
 }
@@ -67,6 +68,7 @@ var sensitiveReads = map[string]string{
 var viewerReads = map[string]bool{
 	"GET /api/v1/audit":                          true,
 	"GET /api/v1/auth/me":                        true,
+	"GET /api/v1/auth/sessions":                  true, // the handler shows a non-admin only its own
 	"GET /api/v1/backups":                        true,
 	"GET /api/v1/firewall/host/rules":            true,
 	"GET /api/v1/firewall/policy-matrix":         true,

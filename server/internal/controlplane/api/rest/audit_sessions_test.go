@@ -61,6 +61,10 @@ func TestAuditLogRecordsChanges(t *testing.T) {
 	if login.Action != "POST /api/v1/auth/login" || login.Details["status"] != float64(401) || login.UserIP == "" {
 		t.Fatalf("login entry = %+v", login)
 	}
+	// A login entry says which account was tried (there is no session yet).
+	if login.Details["username"] != "contract-user" {
+		t.Fatalf("login entry details = %+v, want the tried username", login.Details)
+	}
 	if create.Action != "POST /api/v1/networks" || create.Username != "contract-user" || create.Details["status"] != float64(201) {
 		t.Fatalf("create entry = %+v", create)
 	}

@@ -9,7 +9,8 @@ import { UserManagementCard } from './UserManagementCard'
 
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation('settings')
-  // Users, backups, notifications and sessions are admin-only (P9a).
+  // Users, backups and notifications are admin-only (P9a); every role sees
+  // its own sessions (an admin sees everyone's).
   const isAdmin = useCan('admin')
   return (
     <div className="space-y-8">
@@ -22,9 +23,9 @@ export const SettingsPage: React.FC = () => {
             <UserManagementCard />
             <BackupsCard />
             <NotificationsCard />
-            <SessionsCard />
           </>
         )}
+        <SessionsCard />
       </div>
     </div>
   )

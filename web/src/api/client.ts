@@ -415,9 +415,9 @@ class ApiClient {
   // ====================
 
   // Get all VPN firewall rules
-  async getAuditLog(before?: string): Promise<{ entries: AuditEntry[] }> {
+  async getAuditLog(cursor?: AuditCursor): Promise<{ entries: AuditEntry[] }> {
     const { data } = await this.client.get<{ entries: AuditEntry[] }>('/audit', {
-      params: { limit: AUDIT_PAGE, before },
+      params: { limit: AUDIT_PAGE, before: cursor?.before, before_id: cursor?.beforeId },
     })
     return data
   }
@@ -597,7 +597,7 @@ export const api = new ApiClient()
 
 // React Query hooks
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { nextBefore } from '@/lib/audit'
+import { type AuditCursor, nextBefore } from '@/lib/audit'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
 import { roleAtLeast } from '@/lib/roles'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
@@ -1067,7 +1067,7 @@ export function useAuditLog() {
   return useInfiniteQuery({
     queryKey: ['audit'],
     queryFn: ({ pageParam }) => api.getAuditLog(pageParam),
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: undefined as AuditCursor | undefined,
     getNextPageParam: (last) => nextBefore(last.entries, AUDIT_PAGE),
   })
 }

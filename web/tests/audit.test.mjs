@@ -8,9 +8,12 @@ test('parseAction splits method and route; old entries keep their name', () => {
   assert.deepEqual(parseAction('vpn_rule_created'), { method: '', target: 'vpn_rule_created' })
 })
 
-test('nextBefore pages from the oldest shown entry; none when the page was short', () => {
-  const page = [{ created_at: '2026-10-15T10:00:00Z' }, { created_at: '2026-10-15T09:00:00Z' }]
-  assert.equal(nextBefore(page, 2), '2026-10-15T09:00:00Z')
+test('nextBefore pages from the oldest shown entry (time and id); none when the page was short', () => {
+  const page = [
+    { id: 'a', created_at: '2026-10-15T10:00:00Z' },
+    { id: 'b', created_at: '2026-10-15T09:00:00Z' },
+  ]
+  assert.deepEqual(nextBefore(page, 2), { before: '2026-10-15T09:00:00Z', beforeId: 'b' })
   assert.equal(nextBefore(page, 100), undefined)
   assert.equal(nextBefore([], 100), undefined)
 })

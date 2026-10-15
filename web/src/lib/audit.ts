@@ -10,9 +10,19 @@ export function parseAction(action: string): { method: string; target: string } 
   return { method: m[1], target: m[2].replace(/^\/api\/v1/, '') }
 }
 
-// nextBefore is the paging cursor for the next (older) page, or undefined
-// when the last page was not full.
-export function nextBefore(page: { created_at: string }[], limit: number): string | undefined {
+export interface AuditCursor {
+  before: string
+  beforeId: string
+}
+
+// nextBefore is the paging cursor for the next (older) page: the time and id
+// of the oldest entry shown (the id keeps entries with the same time), or
+// undefined when the last page was not full.
+export function nextBefore(
+  page: { id: string; created_at: string }[],
+  limit: number
+): AuditCursor | undefined {
   if (page.length === 0 || page.length < limit) return undefined
-  return page[page.length - 1].created_at
+  const last = page[page.length - 1]
+  return { before: last.created_at, beforeId: last.id }
 }

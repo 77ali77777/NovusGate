@@ -2994,6 +2994,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "with before: the id of the last entry shown, so entries with the same time are kept",
+            "in": "query",
+            "name": "before_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

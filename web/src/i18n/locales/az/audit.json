@@ -7,5 +7,6 @@
     "result": "Nəticə",
     "address": "Ünvan"
   },
-  "loadOlder": "Köhnə qeydləri yüklə"
+  "loadOlder": "Köhnə qeydləri yüklə",
+  "triedUser": "cəhd: {{name}}"
 }
