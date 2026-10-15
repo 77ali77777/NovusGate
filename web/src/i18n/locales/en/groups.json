@@ -1,0 +1,21 @@
+{
+  "title": "Node groups",
+  "description": "Named sets of nodes, from any network, that VPN rules can use as a source or destination.",
+  "add": "New group",
+  "addTitle": "New group",
+  "editTitle": "Edit group",
+  "name": "Name",
+  "descriptionLabel": "Description (optional)",
+  "loadError": "Failed to load the groups",
+  "empty": "No groups yet",
+  "emptyHint": "Create a group, add nodes to it, then use it in a VPN rule.",
+  "noMembers": "No members",
+  "members": "Members",
+  "membersTitle": "Members of {{name}}",
+  "membersHint": "Saving re-applies the VPN rules that use this group.",
+  "selectNetwork": "Select a network…",
+  "noNodes": "This network has no nodes.",
+  "selected_one": "{{count}} node selected",
+  "selected_other": "{{count}} nodes selected",
+  "deleteConfirm": "Delete group {{name}}? A group used by a VPN rule cannot be deleted."
+}

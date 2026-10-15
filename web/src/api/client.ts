@@ -19,12 +19,17 @@ import type {
   FirewallV2ServiceRequest,
   FirewallV2State,
   ImportRulesRequest,
+  MeResponse,
   Network,
   Node,
+  NodeGroup,
+  NodeGroupsResponse,
   OpenPortRequest,
+  PanelUser,
   SessionInfo,
   StatsOverview,
   SystemInfo,
+  UserRole,
   VPNFirewallRule,
   VPNFirewallRuleRequest,
 } from '@/types'
@@ -155,13 +160,50 @@ class ApiClient {
     })
   }
 
-  async getUsers(): Promise<any[]> {
-    const { data } = await this.client.get('/users')
+  async getUsers(): Promise<PanelUser[]> {
+    const { data } = await this.client.get<PanelUser[]>('/users')
     return data
   }
 
-  async createUser(username: string, password: string): Promise<any> {
-    const { data } = await this.client.post('/users', { username, password })
+  async createUser(username: string, password: string, role?: UserRole): Promise<any> {
+    const { data } = await this.client.post('/users', { username, password, role })
+    return data
+  }
+
+  // Panel roles (P9a)
+  async getMe(): Promise<MeResponse> {
+    const { data } = await this.client.get<MeResponse>('/auth/me')
+    return data
+  }
+
+  async setUserRole(id: string, role: UserRole): Promise<void> {
+    await this.client.put(`/users/${id}/role`, { role })
+  }
+
+  // Node groups (P9a)
+  async getGroups(): Promise<NodeGroupsResponse> {
+    const { data } = await this.client.get<NodeGroupsResponse>('/groups')
+    return data
+  }
+
+  async createGroup(req: { name: string; description: string }): Promise<NodeGroup> {
+    const { data } = await this.client.post<NodeGroup>('/groups', req)
+    return data
+  }
+
+  async updateGroup(id: string, req: { name: string; description: string }): Promise<NodeGroup> {
+    const { data } = await this.client.put<NodeGroup>(`/groups/${id}`, req)
+    return data
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    await this.client.delete(`/groups/${id}`)
+  }
+
+  async setGroupMembers(id: string, nodeIds: string[]): Promise<NodeGroup> {
+    const { data } = await this.client.put<NodeGroup>(`/groups/${id}/members`, {
+      node_ids: nodeIds,
+    })
     return data
   }
 
@@ -521,6 +563,7 @@ export const api = new ApiClient()
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { nextBefore } from '@/lib/audit'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
+import { roleAtLeast } from '@/lib/roles'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 import type { BackupInfo, NotificationSettings } from '@/types'
 
@@ -694,12 +737,80 @@ export function useUsers() {
   })
 }
 
+// The signed-in user and role; the UI hides what the role cannot do (the
+// backend refuses it anyway).
+export function useMe() {
+  return useQuery({ queryKey: ['me'], queryFn: () => api.getMe(), staleTime: 60000 })
+}
+
+// useCan reports whether the signed-in role may do what need allows.
+export function useCan(need: UserRole): boolean {
+  const { data } = useMe()
+  return roleAtLeast(data?.role, need)
+}
+
+export function useSetUserRole() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToChangeRole', successTitle: 'toasts:roleChanged' },
+    mutationFn: (v: { id: string; role: UserRole }) => api.setUserRole(v.id, v.role),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
+export function useGroups() {
+  return useQuery({ queryKey: ['groups'], queryFn: () => api.getGroups() })
+}
+
+// Group changes also change the VPN rules that name the group.
+function useGroupMutation<T>(
+  fn: (v: T) => Promise<unknown>,
+  errorTitle: string,
+  successTitle: string
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle, successTitle },
+    mutationFn: fn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] })
+      queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn'] })
+    },
+  })
+}
+
+export const useCreateGroup = () =>
+  useGroupMutation(
+    (req: { name: string; description: string }) => api.createGroup(req),
+    'toasts:failedToCreateGroup',
+    'toasts:groupCreated'
+  )
+export const useUpdateGroup = () =>
+  useGroupMutation(
+    (v: { id: string; name: string; description: string }) =>
+      api.updateGroup(v.id, { name: v.name, description: v.description }),
+    'toasts:failedToUpdateGroup',
+    'toasts:groupUpdated'
+  )
+export const useDeleteGroup = () =>
+  useGroupMutation(
+    (id: string) => api.deleteGroup(id),
+    'toasts:failedToDeleteGroup',
+    'toasts:groupDeleted'
+  )
+export const useSetGroupMembers = () =>
+  useGroupMutation(
+    (v: { id: string; nodeIds: string[] }) => api.setGroupMembers(v.id, v.nodeIds),
+    'toasts:failedToSaveMembers',
+    'toasts:membersSaved'
+  )
+
 export function useCreateUser() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { inlineError: true, successTitle: 'toasts:userCreated' },
-    mutationFn: (data: { username: string; password: string }) =>
-      api.createUser(data.username, data.password),
+    mutationFn: (data: { username: string; password: string; role?: UserRole }) =>
+      api.createUser(data.username, data.password, data.role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
@@ -997,14 +1108,20 @@ export const useCreateFirewallV2Service = () =>
     'toasts:failedToOpenService'
   )
 export const useDeleteFirewallV2Service = () =>
-  useFirewallV2Mutation((id: string) => api.deleteFirewallV2Service(id), 'toasts:failedToRemoveService')
+  useFirewallV2Mutation(
+    (id: string) => api.deleteFirewallV2Service(id),
+    'toasts:failedToRemoveService'
+  )
 export const useCreateFirewallV2IPRule = () =>
   useFirewallV2Mutation(
     (req: FirewallV2IPRuleRequest) => api.createFirewallV2IPRule(req),
     'toasts:failedToAddIpRule'
   )
 export const useDeleteFirewallV2IPRule = () =>
-  useFirewallV2Mutation((id: string) => api.deleteFirewallV2IPRule(id), 'toasts:failedToRemoveIpRule')
+  useFirewallV2Mutation(
+    (id: string) => api.deleteFirewallV2IPRule(id),
+    'toasts:failedToRemoveIpRule'
+  )
 export const useCreateFirewallV2Forward = () =>
   useFirewallV2Mutation(
     (req: FirewallV2ForwardRequest) => api.createFirewallV2Forward(req),

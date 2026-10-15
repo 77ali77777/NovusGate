@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user and role */
+        get: operations["get_auth_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password": {
         parameters: {
             query?: never;
@@ -604,6 +621,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Node groups with their members, by name */
+        get: operations["get_groups"];
+        put?: never;
+        /** Create a node group (409 group_name_taken) */
+        post: operations["post_groups"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a node group */
+        put: operations["put_groups_by_id"];
+        post?: never;
+        /** Delete a node group (409 group_in_use while a VPN rule names it) */
+        delete: operations["delete_groups_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a group's members; VPN rules are re-applied */
+        put: operations["put_groups_by_id_members"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/networks": {
         parameters: {
             query?: never;
@@ -1107,6 +1177,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change a user's role (admin, operator, viewer; 409 last_admin) */
+        put: operations["put_users_by_id_role"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1184,6 +1271,7 @@ export interface components {
         };
         CreateUserRequest: {
             password?: string;
+            role?: string;
             username?: string;
         };
         DebugDBNode: {
@@ -1421,6 +1509,7 @@ export interface components {
             username?: string;
         };
         LoginResponse: {
+            role: string;
             token: string;
             username: string;
         };
@@ -1443,6 +1532,11 @@ export interface components {
         MatrixNetwork: {
             id: string;
             name: string;
+        };
+        MeResponse: {
+            id: string;
+            role: string;
+            username: string;
         };
         Network: {
             cidr: string;
@@ -1513,6 +1607,30 @@ export interface components {
                 [key: string]: string;
             } | null;
             node_info?: components["schemas"]["NodeInfoInput"] | null;
+        };
+        NodeGroup: {
+            /** Format: date-time */
+            created_at: string;
+            description: string;
+            id: string;
+            members: components["schemas"]["NodeGroupMember"][] | null;
+            name: string;
+        };
+        NodeGroupMember: {
+            name: string;
+            network_id: string;
+            node_id: string;
+            virtual_ip: string;
+        };
+        NodeGroupMembersRequest: {
+            node_ids?: string[] | null;
+        };
+        NodeGroupRequest: {
+            description?: string;
+            name?: string;
+        };
+        NodeGroupsResponse: {
+            groups: (components["schemas"]["NodeGroup"] | null)[] | null;
         };
         NodeInfo: {
             arch: string;
@@ -1611,6 +1729,9 @@ export interface components {
         SessionsResponse: {
             sessions: (components["schemas"]["SessionInfo"] | null)[] | null;
         };
+        SetUserRoleRequest: {
+            role?: string;
+        };
         StatsOverviewResponse: {
             expired_nodes: number;
             networks: components["schemas"]["NetworkStats"][] | null;
@@ -1680,6 +1801,7 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             id: string;
+            role: string;
             username: string;
         };
         V2ChangeResponse: {
@@ -1727,6 +1849,8 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             description?: string;
+            dest_group_id?: string | null;
+            dest_group_name?: string;
             dest_ip?: string;
             dest_network_id?: string | null;
             dest_network_name?: string;
@@ -1739,6 +1863,8 @@ export interface components {
             port?: string;
             priority: number;
             protocol: string;
+            source_group_id?: string | null;
+            source_group_name?: string;
             source_ip?: string;
             source_network_id?: string | null;
             source_network_name?: string;
@@ -1751,6 +1877,7 @@ export interface components {
         VPNFirewallRuleRequest: {
             action?: string;
             description?: string;
+            dest_group_id?: string | null;
             dest_ip?: string;
             dest_network_id?: string | null;
             dest_node_id?: string | null;
@@ -1760,6 +1887,7 @@ export interface components {
             port?: string;
             priority?: number;
             protocol?: string;
+            source_group_id?: string | null;
             source_ip?: string;
             source_network_id?: string | null;
             source_node_id?: string | null;
@@ -1886,6 +2014,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_auth_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
             };
             /** @description Error */
             default: {
@@ -3060,6 +3217,167 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_groups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeGroupsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_groups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeGroup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_groups_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeGroup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_groups_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_groups_by_id_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeGroupMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeGroup"];
+                };
             };
             /** @description Error */
             default: {
@@ -4298,6 +4616,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_users_by_id_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
             };
             /** @description Error */
             default: {

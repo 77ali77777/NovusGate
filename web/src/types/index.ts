@@ -117,13 +117,21 @@ export type DeleteRuleRequest = S['DeleteRuleRequest']
 export type ImportRulesRequest = S['ImportRulesRequest']
 
 // VPN Firewall types
-export type VPNEndpointType = 'any' | 'network' | 'node' | 'custom'
+export type VPNEndpointType = 'any' | 'network' | 'node' | 'group' | 'custom'
 export type VPNFirewallAction = 'accept' | 'drop' | 'reject'
 export type VPNFirewallProtocol = 'tcp' | 'udp' | 'icmp' | 'all'
 
 export type VPNFirewallRule = S['VPNFirewallRule']
 
 export type VPNFirewallRuleRequest = S['VPNFirewallRuleRequest']
+
+// Node groups and panel roles (P9a)
+export type NodeGroup = S['NodeGroup']
+export type NodeGroupMember = S['NodeGroupMember']
+export type NodeGroupsResponse = S['NodeGroupsResponse']
+export type MeResponse = S['MeResponse']
+export type PanelUser = S['User']
+export type UserRole = 'admin' | 'operator' | 'viewer'
 
 // Manual backup (P8): /api/v1/backups
 export type BackupInfo = S['Info']

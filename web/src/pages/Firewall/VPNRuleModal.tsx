@@ -1,7 +1,7 @@
 import { Globe, Server } from 'lucide-react'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api } from '@/api/client'
+import { api, useGroups } from '@/api/client'
 import { Button, Modal } from '@/components/ui'
 import type {
   Network as NetworkType,
@@ -36,6 +36,7 @@ export const VPNRuleModal = ({
   const { t } = useTranslation('firewall')
   const [sourceNodes, setSourceNodes] = useState<Node[]>([])
   const [destNodes, setDestNodes] = useState<Node[]>([])
+  const groups = (useGroups().data?.groups ?? []).filter((g) => g !== null)
 
   // Fetch nodes when network changes
   React.useEffect(() => {
@@ -64,6 +65,7 @@ export const VPNRuleModal = ({
     { value: 'any', label: t('common:state.any') },
     { value: 'network', label: t('common:fields.network') },
     { value: 'node', label: t('common:fields.node') },
+    { value: 'group', label: t('ruleModal.group') },
     { value: 'custom', label: t('ruleModal.customIp') },
   ]
 
@@ -144,6 +146,7 @@ export const VPNRuleModal = ({
                     source_type: e.target.value as VPNEndpointType,
                     source_network_id: undefined,
                     source_node_id: undefined,
+                    source_group_id: undefined,
                     source_ip: undefined,
                   })
                 }
@@ -224,6 +227,28 @@ export const VPNRuleModal = ({
                 </div>
               </>
             )}
+            {form.source_type === 'group' && (
+              <div>
+                <label htmlFor="source-group" className="block text-sm font-medium mb-1">
+                  {t('ruleModal.group')}
+                </label>
+                <select
+                  id="source-group"
+                  value={form.source_group_id || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, source_group_id: e.target.value || undefined })
+                  }
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                >
+                  <option value="">{t('ruleModal.selectGroup')}</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({t('ruleModal.groupMembers', { count: g.members?.length ?? 0 })})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {form.source_type === 'custom' && (
               <div>
                 <label className="block text-sm font-medium mb-1">IP/CIDR</label>
@@ -255,6 +280,7 @@ export const VPNRuleModal = ({
                     dest_type: e.target.value as VPNEndpointType,
                     dest_network_id: undefined,
                     dest_node_id: undefined,
+                    dest_group_id: undefined,
                     dest_ip: undefined,
                   })
                 }
@@ -334,6 +360,26 @@ export const VPNRuleModal = ({
                   </select>
                 </div>
               </>
+            )}
+            {form.dest_type === 'group' && (
+              <div>
+                <label htmlFor="dest-group" className="block text-sm font-medium mb-1">
+                  {t('ruleModal.group')}
+                </label>
+                <select
+                  id="dest-group"
+                  value={form.dest_group_id || ''}
+                  onChange={(e) => setForm({ ...form, dest_group_id: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                >
+                  <option value="">{t('ruleModal.selectGroup')}</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({t('ruleModal.groupMembers', { count: g.members?.length ?? 0 })})
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
             {form.dest_type === 'custom' && (
               <div>

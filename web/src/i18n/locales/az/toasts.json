@@ -53,5 +53,15 @@
   "vpnRuleCreated": "VPN qaydası yaradıldı",
   "vpnRuleDeleted": "VPN qaydası silindi",
   "vpnRuleUpdated": "VPN qaydası yeniləndi",
-  "vpnRulesApplied": "VPN qaydaları tətbiq edildi"
+  "vpnRulesApplied": "VPN qaydaları tətbiq edildi",
+  "failedToChangeRole": "Rol dəyişdirilmədi",
+  "roleChanged": "Rol dəyişdirildi",
+  "failedToCreateGroup": "Qrup yaradılmadı",
+  "groupCreated": "Qrup yaradıldı",
+  "failedToUpdateGroup": "Qrup yenilənmədi",
+  "groupUpdated": "Qrup yeniləndi",
+  "failedToDeleteGroup": "Qrup silinmədi",
+  "groupDeleted": "Qrup silindi",
+  "failedToSaveMembers": "Üzvlər yadda saxlanmadı",
+  "membersSaved": "Üzvlər yadda saxlanıldı"
 }

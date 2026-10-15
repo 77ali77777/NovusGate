@@ -53,5 +53,15 @@
   "vpnRuleCreated": "VPN rule created",
   "vpnRuleDeleted": "VPN rule deleted",
   "vpnRuleUpdated": "VPN rule updated",
-  "vpnRulesApplied": "VPN rules applied"
+  "vpnRulesApplied": "VPN rules applied",
+  "failedToChangeRole": "Failed to change the role",
+  "roleChanged": "Role changed",
+  "failedToCreateGroup": "Failed to create the group",
+  "groupCreated": "Group created",
+  "failedToUpdateGroup": "Failed to update the group",
+  "groupUpdated": "Group updated",
+  "failedToDeleteGroup": "Failed to delete the group",
+  "groupDeleted": "Group deleted",
+  "failedToSaveMembers": "Failed to save the members",
+  "membersSaved": "Members saved"
 }

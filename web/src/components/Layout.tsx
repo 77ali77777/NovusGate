@@ -11,6 +11,7 @@ import {
   Server,
   Settings,
   Shield,
+  Users,
   X,
 } from 'lucide-react'
 import type React from 'react'
@@ -35,6 +36,7 @@ const navigation: NavItem[] = [
   { labelKey: 'nav.networks', href: '/networks', icon: <Network className="w-5 h-5" /> },
   { labelKey: 'nav.nodes', href: '/nodes', icon: <Server className="w-5 h-5" /> },
   { labelKey: 'nav.topology', href: '/topology', icon: <GitFork className="w-5 h-5" /> },
+  { labelKey: 'nav.groups', href: '/groups', icon: <Users className="w-5 h-5" /> },
   { labelKey: 'nav.firewall', href: '/firewall', icon: <Flame className="w-5 h-5" /> },
   { labelKey: 'nav.fail2ban', href: '/fail2ban', icon: <Shield className="w-5 h-5" /> },
   { labelKey: 'nav.audit', href: '/audit', icon: <ClipboardList className="w-5 h-5" /> },

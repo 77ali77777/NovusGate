@@ -25,7 +25,19 @@
     "loading": "İstifadəçilər yüklənir...",
     "created": "Yaradılıb: {{date}}",
     "delete": "İstifadəçini sil",
-    "empty": "İstifadəçi tapılmadı"
+    "empty": "İstifadəçi tapılmadı",
+    "role": "Rol",
+    "roleFor": "{{username}} istifadəçisinin rolu",
+    "roles": {
+      "admin": "Admin",
+      "operator": "Operator",
+      "viewer": "İzləyici"
+    },
+    "roleHints": {
+      "admin": "Hər şey, o cümlədən istifadəçilər, ehtiyat nüsxələr və host firewall.",
+      "operator": "Şəbəkələr, node-lar, qruplar və VPN qaydaları; istifadəçilər və host firewall yox.",
+      "viewer": "Yalnız baxış; yalnız öz parolunu dəyişə bilər."
+    }
   },
   "backups": {
     "title": "Ehtiyat nüsxələr",

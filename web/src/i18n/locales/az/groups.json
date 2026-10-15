@@ -1,0 +1,21 @@
+{
+  "title": "Node qrupları",
+  "description": "İstənilən şəbəkədən node-ların adlı dəstləri; VPN qaydaları onları mənbə və ya hədəf kimi istifadə edə bilər.",
+  "add": "Yeni qrup",
+  "addTitle": "Yeni qrup",
+  "editTitle": "Qrupu redaktə et",
+  "name": "Ad",
+  "descriptionLabel": "Təsvir (istəyə bağlı)",
+  "loadError": "Qruplar yüklənmədi",
+  "empty": "Hələ qrup yoxdur",
+  "emptyHint": "Qrup yaradın, ona node-lar əlavə edin, sonra onu VPN qaydasında istifadə edin.",
+  "noMembers": "Üzv yoxdur",
+  "members": "Üzvlər",
+  "membersTitle": "{{name}} qrupunun üzvləri",
+  "membersHint": "Yadda saxlayanda bu qrupu istifadə edən VPN qaydaları yenidən tətbiq olunur.",
+  "selectNetwork": "Şəbəkə seçin…",
+  "noNodes": "Bu şəbəkədə node yoxdur.",
+  "selected_one": "{{count}} node seçilib",
+  "selected_other": "{{count}} node seçilib",
+  "deleteConfirm": "{{name}} qrupu silinsin? VPN qaydasının istifadə etdiyi qrup silinə bilməz."
+}

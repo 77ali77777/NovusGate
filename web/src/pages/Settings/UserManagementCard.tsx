@@ -1,28 +1,34 @@
 import { Shield, Trash2, User, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCreateUser, useDeleteUser, useUsers } from '@/api/client'
+import { useCreateUser, useDeleteUser, useSetUserRole, useUsers } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { locale } from '@/i18n'
+import type { UserRole } from '@/types'
+
+const roles: UserRole[] = ['admin', 'operator', 'viewer']
 
 export const UserManagementCard: React.FC = () => {
   const { t } = useTranslation('settings')
   const { data: users, isLoading } = useUsers()
   const createUser = useCreateUser()
   const deleteUser = useDeleteUser()
+  const setRole = useSetUserRole()
 
   const [isAdding, setIsAdding] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [newRole, setNewRole] = useState<UserRole>('viewer')
   const [error, setError] = useState('')
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     try {
-      await createUser.mutateAsync({ username: newUsername, password: newPassword })
+      await createUser.mutateAsync({ username: newUsername, password: newPassword, role: newRole })
       setNewUsername('')
       setNewPassword('')
+      setNewRole('viewer')
       setIsAdding(false)
     } catch (err: any) {
       setError(apiErrorMessage(err, t('users.failed')))
@@ -88,6 +94,23 @@ export const UserManagementCard: React.FC = () => {
                 required
               />
             </div>
+            <label className="block text-sm text-gray-700 dark:text-gray-300">
+              {t('users.role')}
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as UserRole)}
+                className="mt-1 w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {t(`users.roles.${r}`)}
+                  </option>
+                ))}
+              </select>
+              <span className="block mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t(`users.roleHints.${newRole}`)}
+              </span>
+            </label>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -132,16 +155,33 @@ export const UserManagementCard: React.FC = () => {
                   </div>
                 </div>
 
-                {user.username !== 'admin' && ( // Hide delete for admin
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(user.id, user.username)}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title={t('users.delete')}
+                <div className="flex items-center gap-2">
+                  <select
+                    aria-label={t('users.roleFor', { username: user.username })}
+                    value={user.role}
+                    disabled={setRole.isPending}
+                    onChange={(e) =>
+                      setRole.mutate({ id: user.id, role: e.target.value as UserRole })
+                    }
+                    className="px-2 py-1 text-xs border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+                    {roles.map((r) => (
+                      <option key={r} value={r}>
+                        {t(`users.roles.${r}`)}
+                      </option>
+                    ))}
+                  </select>
+                  {user.username !== 'admin' && ( // Hide delete for admin
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(user.id, user.username)}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title={t('users.delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {users?.length === 0 && (

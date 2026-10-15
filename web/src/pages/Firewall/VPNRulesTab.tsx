@@ -9,10 +9,12 @@ import {
   Server,
   Shield,
   Trash2,
+  Users,
   XCircle,
 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 
+import { useCan } from '@/api/client'
 import { Badge, Button, Card } from '@/components/ui'
 import type { VPNFirewallRule } from '@/types'
 
@@ -37,6 +39,7 @@ export const VPNRulesTab = ({
   deleteLoading,
 }: VPNRulesTabProps) => {
   const { t } = useTranslation('firewall')
+  const canEdit = useCan('operator')
   // Markup for the <accept> and <drop> tags of the step 4 translation.
   const acceptTag = <strong className="text-green-600" />
   const dropTag = <strong className="text-red-600" />
@@ -45,6 +48,7 @@ export const VPNRulesTab = ({
     const networkName = type === 'source' ? rule.source_network_name : rule.dest_network_name
     const nodeName = type === 'source' ? rule.source_node_name : rule.dest_node_name
     const ip = type === 'source' ? rule.source_ip : rule.dest_ip
+    const groupName = type === 'source' ? rule.source_group_name : rule.dest_group_name
 
     switch (endpointType) {
       case 'any':
@@ -61,6 +65,13 @@ export const VPNRulesTab = ({
           <span className="flex items-center gap-1">
             <Server className="w-3 h-3 text-green-500" />
             {nodeName || t('vpnRules.unknownNode')}
+          </span>
+        )
+      case 'group':
+        return (
+          <span className="flex items-center gap-1">
+            <Users className="w-3 h-3 text-purple-500" />
+            {groupName || t('vpnRules.unknownGroup')}
           </span>
         )
       case 'custom':
@@ -86,9 +97,11 @@ export const VPNRulesTab = ({
           <div>
             <p className="text-sm text-gray-500">{t('vpnRules.intro')}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={onApplyRules} loading={applyLoading}>
-            <RefreshCw className="w-4 h-4 mr-1" /> {t('actions.applyRules')}
-          </Button>
+          {canEdit && (
+            <Button variant="secondary" size="sm" onClick={onApplyRules} loading={applyLoading}>
+              <RefreshCw className="w-4 h-4 mr-1" /> {t('actions.applyRules')}
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -171,7 +184,7 @@ export const VPNRulesTab = ({
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
+                      <div className={canEdit ? 'flex items-center gap-1' : 'hidden'}>
                         <Button
                           variant="ghost"
                           size="sm"

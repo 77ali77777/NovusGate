@@ -21,6 +21,7 @@ import {
   useAllowIP,
   useApplyVPNFirewallRules,
   useBlockIP,
+  useCan,
   useClosePort,
   useCreateVPNFirewallRule,
   useDeleteFirewallRule,
@@ -61,6 +62,9 @@ type TabId =
 
 export const Firewall: React.FC = () => {
   const { t } = useTranslation('firewall')
+  // Host firewall changes are admin-only, VPN rules operator (P9a).
+  const isAdmin = useCan('admin')
+  const isOperator = useCan('operator')
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [selectedChain, setSelectedChain] = useState<string>('INPUT')
 
@@ -281,10 +285,12 @@ export const Firewall: React.FC = () => {
       source_type: rule.source_type,
       source_network_id: rule.source_network_id,
       source_node_id: rule.source_node_id,
+      source_group_id: rule.source_group_id,
       source_ip: rule.source_ip,
       dest_type: rule.dest_type,
       dest_network_id: rule.dest_network_id,
       dest_node_id: rule.dest_node_id,
+      dest_group_id: rule.dest_group_id,
       dest_ip: rule.dest_ip,
       protocol: rule.protocol,
       port: rule.port || '',
@@ -358,16 +364,20 @@ export const Firewall: React.FC = () => {
     <Card className="p-4 mb-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="primary" size="sm" onClick={() => setShowOpenPortModal(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t('actions.openPort')}
-          </Button>
-          <Button variant="danger" size="sm" onClick={() => setShowBlockIPModal(true)}>
-            <Ban className="w-4 h-4 mr-1" /> {t('actions.blockIp')}
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => setShowAllowIPModal(true)}>
-            <CheckCircle className="w-4 h-4 mr-1" /> {t('actions.allowIp')}
-          </Button>
-          {activeTab === 'vpn-rules' && (
+          {isAdmin && (
+            <>
+              <Button variant="primary" size="sm" onClick={() => setShowOpenPortModal(true)}>
+                <Plus className="w-4 h-4 mr-1" /> {t('actions.openPort')}
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => setShowBlockIPModal(true)}>
+                <Ban className="w-4 h-4 mr-1" /> {t('actions.blockIp')}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowAllowIPModal(true)}>
+                <CheckCircle className="w-4 h-4 mr-1" /> {t('actions.allowIp')}
+              </Button>
+            </>
+          )}
+          {activeTab === 'vpn-rules' && isOperator && (
             <Button
               variant="primary"
               size="sm"

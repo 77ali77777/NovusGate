@@ -121,7 +121,8 @@
       "step2": "Mənbə və təyinat şəbəkəsini/node-unu seçin",
       "step3": "Protokol və portu seçin (istəyə bağlı)",
       "step4": "Əməliyyatı seçin: <accept>Qəbul et</accept> (icazə ver) və ya <drop>At</drop> (blokla)"
-    }
+    },
+    "unknownGroup": "Naməlum qrup"
   },
   "ruleModal": {
     "titleAdd": "VPN qaydası əlavə et",
@@ -140,7 +141,11 @@
     "actionAccept": "Qəbul et",
     "actionDrop": "At (drop)",
     "actionReject": "Rədd et",
-    "enabled": "Qayda aktivdir"
+    "enabled": "Qayda aktivdir",
+    "group": "Qrup",
+    "selectGroup": "Qrup seçin…",
+    "groupMembers_one": "{{count}} node",
+    "groupMembers_other": "{{count}} node"
   },
   "matrix": {
     "loading": "Şəbəkə siyasətləri yüklənir…",

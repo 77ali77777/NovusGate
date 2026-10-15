@@ -25,7 +25,19 @@
     "loading": "Loading users...",
     "created": "Created: {{date}}",
     "delete": "Delete User",
-    "empty": "No users found"
+    "empty": "No users found",
+    "role": "Role",
+    "roleFor": "Role of {{username}}",
+    "roles": {
+      "admin": "Admin",
+      "operator": "Operator",
+      "viewer": "Viewer"
+    },
+    "roleHints": {
+      "admin": "Everything, including users, backups and the host firewall.",
+      "operator": "Networks, nodes, groups and VPN rules; no users or host firewall.",
+      "viewer": "Read-only; can change only their own password."
+    }
   },
   "backups": {
     "title": "Backups",

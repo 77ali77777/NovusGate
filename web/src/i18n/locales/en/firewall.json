@@ -121,7 +121,8 @@
       "step2": "Select source and destination network/node",
       "step3": "Choose protocol and port (optional)",
       "step4": "Select action: <accept>Accept</accept> (allow) or <drop>Drop</drop> (block)"
-    }
+    },
+    "unknownGroup": "Unknown group"
   },
   "ruleModal": {
     "titleAdd": "Add VPN Rule",
@@ -140,7 +141,11 @@
     "actionAccept": "Accept",
     "actionDrop": "Drop",
     "actionReject": "Reject",
-    "enabled": "Rule is enabled"
+    "enabled": "Rule is enabled",
+    "group": "Group",
+    "selectGroup": "Select a group…",
+    "groupMembers_one": "{{count}} node",
+    "groupMembers_other": "{{count}} nodes"
   },
   "matrix": {
     "loading": "Loading network policies…",

@@ -7,7 +7,8 @@
     "firewall": "Firewall",
     "fail2ban": "Fail2Ban",
     "audit": "Audit jurnalı",
-    "settings": "Parametrlər"
+    "settings": "Parametrlər",
+    "groups": "Qruplar"
   },
   "network": "Şəbəkə",
   "selectNetwork": "Şəbəkə seçin...",
