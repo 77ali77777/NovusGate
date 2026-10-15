@@ -367,9 +367,9 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 func (s *Store) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, username, password_hash, created_at
+		SELECT id, username, password_hash, role, created_at
 		FROM users WHERE username = $1
-	`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.CreatedAt)
+	`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -386,11 +386,14 @@ func (s *Store) CreateUser(ctx context.Context, user *models.User) error {
 		user.ID = uuid.New().String()
 	}
 	user.CreatedAt = time.Now()
+	if user.Role == "" {
+		user.Role = "admin" // the schema default; users created before roles were admins
+	}
 	
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO users (id, username, password_hash, created_at)
-		VALUES ($1, $2, $3, $4)
-	`, user.ID, user.Username, user.PasswordHash, user.CreatedAt)
+		INSERT INTO users (id, username, password_hash, role, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`, user.ID, user.Username, user.PasswordHash, user.Role, user.CreatedAt)
 	
 	return err
 }
@@ -418,7 +421,7 @@ func (s *Store) UpdateUserPassword(ctx context.Context, username, passwordHash s
 // ListUsers lists all users
 func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, username, created_at FROM users ORDER BY username
+		SELECT id, username, role, created_at FROM users ORDER BY username
 	`)
 	if err != nil {
 		return nil, err
@@ -428,7 +431,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 	users := []*models.User{}
 	for rows.Next() {
 		var user models.User
-		if err := rows.Scan(&user.ID, &user.Username, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.Role, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, &user)

@@ -2,6 +2,7 @@
   "body": {
     "created_at": "<time>",
     "id": "<uuid-1>",
+    "role": "admin",
     "username": "contract-user-2"
   },
   "content_type": "application/json",

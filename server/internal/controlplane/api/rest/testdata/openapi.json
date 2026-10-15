@@ -201,6 +201,9 @@
           "password": {
             "type": "string"
           },
+          "role": {
+            "type": "string"
+          },
           "username": {
             "type": "string"
           }
@@ -1091,6 +1094,9 @@
       },
       "LoginResponse": {
         "properties": {
+          "role": {
+            "type": "string"
+          },
           "token": {
             "type": "string"
           },
@@ -1099,6 +1105,7 @@
           }
         },
         "required": [
+          "role",
           "token",
           "username"
         ],
@@ -1177,6 +1184,25 @@
         "required": [
           "id",
           "name"
+        ],
+        "type": "object"
+      },
+      "MeResponse": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "username"
         ],
         "type": "object"
       },
@@ -1875,6 +1901,14 @@
         ],
         "type": "object"
       },
+      "SetUserRoleRequest": {
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "StatsOverviewResponse": {
         "properties": {
           "expired_nodes": {
@@ -2133,6 +2167,9 @@
           "id": {
             "type": "string"
           },
+          "role": {
+            "type": "string"
+          },
           "username": {
             "type": "string"
           }
@@ -2140,6 +2177,7 @@
         "required": [
           "created_at",
           "id",
+          "role",
           "username"
         ],
         "type": "object"
@@ -2757,6 +2795,37 @@
           }
         },
         "summary": "Log out (revokes this session)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "get_auth_me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "The signed-in user and role",
         "tags": [
           "auth"
         ]
@@ -6000,6 +6069,57 @@
           }
         },
         "summary": "Delete a user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/role": {
+      "put": {
+        "operationId": "put_users_by_id_role",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a user's role (admin, operator, viewer; 409 last_admin)",
         "tags": [
           "users"
         ]

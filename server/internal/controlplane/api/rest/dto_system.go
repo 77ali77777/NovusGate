@@ -16,6 +16,7 @@ type StatusMessageResponse struct {
 type LoginResponse struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`
+	Role     string `json:"role"` // admin, operator or viewer (P9a)
 }
 
 type CreateServerResponse struct {

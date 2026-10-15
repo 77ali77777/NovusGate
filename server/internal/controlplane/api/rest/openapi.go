@@ -98,6 +98,8 @@ var docOps = []docOp{
 	{"POST", "/api/v1/backups", "Make a backup now (database dump and WireGuard configs)", "backups", nil, 201, backup.Info{}, false},
 	{"GET", "/api/v1/backups/{name}", "Download a backup", "backups", nil, 200, mediaType("application/gzip"), false},
 	{"DELETE", "/api/v1/backups/{name}", "Delete a backup", "backups", nil, 204, nil, false},
+	{"GET", "/api/v1/auth/me", "The signed-in user and role", "auth", nil, 200, MeResponse{}, false},
+	{"PUT", "/api/v1/users/{id}/role", "Change a user's role (admin, operator, viewer; 409 last_admin)", "users", SetUserRoleRequest{}, 200, models.User{}, false},
 	{"GET", "/api/v1/groups", "Node groups with their members, by name", "groups", nil, 200, NodeGroupsResponse{}, false},
 	{"POST", "/api/v1/groups", "Create a node group (409 group_name_taken)", "groups", NodeGroupRequest{}, 201, models.NodeGroup{}, false},
 	{"PUT", "/api/v1/groups/{id}", "Rename a node group", "groups", NodeGroupRequest{}, 200, models.NodeGroup{}, false},

@@ -1,5 +1,6 @@
 {
   "body": {
+    "role": "admin",
     "token": "<token>",
     "username": "contract-user"
   },

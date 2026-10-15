@@ -262,7 +262,7 @@ func (s *Server) Router() http.Handler {
 func (s *Server) setupRoutes() {
 	// Route middleware: panic recovery, then auth. The request log wraps the
 	// whole mux in Router (it records the 500 that RecoverMiddleware writes).
-	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware, s.auditMiddleware, s.firewallActorMiddleware, s.firewallChangeMiddleware)
+	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware, s.roleMiddleware, s.auditMiddleware, s.firewallActorMiddleware, s.firewallChangeMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -288,6 +288,7 @@ func (s *Server) setupRoutes() {
 	s.registerNotificationRoutes(api)
 	s.registerAuditRoutes(api)
 	s.registerGroupRoutes(api)
+	s.registerRoleRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check
@@ -485,7 +486,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to create session")
 		return
 	}
-	jsonResponse(w, http.StatusOK, LoginResponse{Token: token, Username: user.Username})
+	jsonResponse(w, http.StatusOK, LoginResponse{Token: token, Username: user.Username, Role: user.Role})
 }
 
 // Update Password handler
@@ -567,6 +568,13 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusBadRequest, "username and password required")
 		return
 	}
+	if req.Role == "" {
+		req.Role = "admin" // API clients from before roles
+	}
+	if !store.ValidRole(req.Role) {
+		errorResponse(w, http.StatusBadRequest, "role must be admin, operator or viewer")
+		return
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -577,6 +585,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{
 		Username:     req.Username,
 		PasswordHash: string(hashedPassword),
+		Role:         req.Role,
 	}
 
 	if err := s.store.CreateUser(r.Context(), user); err != nil {
@@ -590,9 +599,9 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	// Prevent deleting the last admin if possible, but for MVP just delete
-	if err := s.store.DeleteUser(r.Context(), id); err != nil {
-		errorResponse(w, http.StatusInternalServerError, "failed to delete user")
+	// The last admin cannot be deleted (409 last_admin).
+	if err := s.store.DeleteUserKeepingAdmin(r.Context(), id); err != nil {
+		userRoleError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

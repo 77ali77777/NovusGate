@@ -24,6 +24,7 @@ type UpdatePasswordRequest struct {
 type CreateUserRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Role     string `json:"role,omitempty"` // admin (default), operator or viewer
 }
 
 type UpdateNodeRequest struct {
