@@ -17,6 +17,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { api, useNetworks } from '@/api/client'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
+import { ErrorBoundary } from './ErrorBoundary'
 import { Toaster } from './Toaster'
 
 interface NavItem {
@@ -212,7 +213,9 @@ export const Layout = () => {
 
         {/* Page content */}
         <main className="p-6">
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
       <Toaster />
