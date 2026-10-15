@@ -196,3 +196,26 @@ type FirewallHistoryEntry struct {
 	Action    string          `json:"action"`
 	State     json.RawMessage `json:"-"`
 }
+
+// AuditEntry is one row of the audit log: a change made through the API or
+// a login attempt (stored in firewall_audit_log, which predates it).
+type AuditEntry struct {
+	ID        string         `json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	Action    string         `json:"action"`
+	Details   map[string]any `json:"details"`
+	UserIP    string         `json:"user_ip,omitempty"`
+	Username  string         `json:"username,omitempty"`
+}
+
+// SessionInfo is a login session as the panel lists it; the token hash
+// stays on the server.
+type SessionInfo struct {
+	ID         string    `json:"id"`
+	Username   string    `json:"username"`
+	CreatedAt  time.Time `json:"created_at"`
+	LastUsedAt time.Time `json:"last_used_at"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	Current    bool      `json:"current"`
+	TokenHash  string    `json:"-"`
+}

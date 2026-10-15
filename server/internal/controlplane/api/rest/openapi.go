@@ -55,6 +55,7 @@ var docQueryParams = map[string][]docParam{
 	"DELETE /api/v1/firewall/v2/forwards/{id}":      {confirmParam},
 	"PUT /api/v1/firewall/v2/egress/{nodeId}":       {confirmParam},
 	"DELETE /api/v1/firewall/v2/egress/{nodeId}":    {confirmParam},
+	"GET /api/v1/audit":                             {{"limit", "integer", "entries to return (default 100, at most 500)"}, {"before", "string", "only entries older than this RFC 3339 time (paging)"}},
 	"GET /api/v1/firewall/v2/history":               {{"limit", "integer", "newest entries to return (default 50, at most 200)"}},
 	"POST /api/v1/firewall/v2/history/{id}/restore": {confirmParam},
 }
@@ -97,6 +98,9 @@ var docOps = []docOp{
 	{"POST", "/api/v1/backups", "Make a backup now (database dump and WireGuard configs)", "backups", nil, 201, backup.Info{}, false},
 	{"GET", "/api/v1/backups/{name}", "Download a backup", "backups", nil, 200, mediaType("application/gzip"), false},
 	{"DELETE", "/api/v1/backups/{name}", "Delete a backup", "backups", nil, 204, nil, false},
+	{"GET", "/api/v1/audit", "Audit log: changes made through the API and login attempts, newest first", "audit", nil, 200, AuditLogResponse{}, false},
+	{"GET", "/api/v1/auth/sessions", "Login sessions that have not expired (current marks the caller's)", "auth", nil, 200, SessionsResponse{}, false},
+	{"DELETE", "/api/v1/auth/sessions/{id}", "End a login session", "auth", nil, 204, nil, false},
 	{"GET", "/api/v1/notifications/settings", "Telegram notification settings (the bot token is never returned)", "notifications", nil, 200, models.NotificationSettings{}, false},
 	{"PUT", "/api/v1/notifications/settings", "Update the Telegram notification settings; an empty bot_token keeps the stored one", "notifications", NotificationSettingsRequest{}, 200, models.NotificationSettings{}, false},
 	{"POST", "/api/v1/notifications/test", "Send a test message to the configured chat", "notifications", nil, 200, StatusMessageResponse{}, false},

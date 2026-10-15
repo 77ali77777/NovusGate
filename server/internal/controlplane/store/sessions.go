@@ -99,3 +99,35 @@ func (s *Store) ListInterfaceNames(ctx context.Context) ([]string, error) {
 	}
 	return names, rows.Err()
 }
+
+// ListSessions returns the sessions that have not expired, newest use first.
+func (s *Store) ListSessions(ctx context.Context, now time.Time) ([]*models.SessionInfo, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT s.id, u.username, s.created_at, s.last_used_at, s.expires_at, s.token_hash
+		FROM sessions s JOIN users u ON u.id = s.user_id
+		WHERE s.expires_at > $1
+		ORDER BY s.last_used_at DESC`, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*models.SessionInfo{}
+	for rows.Next() {
+		si := &models.SessionInfo{}
+		if err := rows.Scan(&si.ID, &si.Username, &si.CreatedAt, &si.LastUsedAt, &si.ExpiresAt, &si.TokenHash); err != nil {
+			return nil, err
+		}
+		out = append(out, si)
+	}
+	return out, rows.Err()
+}
+
+// DeleteSessionByID ends one session; it reports whether it existed.
+func (s *Store) DeleteSessionByID(ctx context.Context, id string) (bool, error) {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE id = $1`, id)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}

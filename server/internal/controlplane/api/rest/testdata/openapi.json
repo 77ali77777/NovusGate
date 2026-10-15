@@ -12,6 +12,59 @@
         },
         "type": "object"
       },
+      "AuditEntry": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": {},
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "user_ip": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "created_at",
+          "details",
+          "id"
+        ],
+        "type": "object"
+      },
+      "AuditLogResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AuditEntry"
+                }
+              ],
+              "nullable": true,
+              "type": "object"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "type": "object"
+      },
       "BackupListResponse": {
         "properties": {
           "backups": {
@@ -1661,6 +1714,61 @@
         ],
         "type": "object"
       },
+      "SessionInfo": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "current",
+          "expires_at",
+          "id",
+          "last_used_at",
+          "username"
+        ],
+        "type": "object"
+      },
+      "SessionsResponse": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              ],
+              "nullable": true,
+              "type": "object"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "sessions"
+        ],
+        "type": "object"
+      },
       "StatsOverviewResponse": {
         "properties": {
           "expired_nodes": {
@@ -2409,6 +2517,57 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/api/v1/audit": {
+      "get": {
+        "operationId": "get_audit",
+        "parameters": [
+          {
+            "description": "entries to return (default 100, at most 500)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only entries older than this RFC 3339 time (paging)",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Audit log: changes made through the API and login attempts, newest first",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "post_auth_login",
@@ -2511,6 +2670,71 @@
           }
         },
         "summary": "Change a password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "operationId": "get_auth_sessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Login sessions that have not expired (current marks the caller's)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/{id}": {
+      "delete": {
+        "operationId": "delete_auth_sessions_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "End a login session",
         "tags": [
           "auth"
         ]
