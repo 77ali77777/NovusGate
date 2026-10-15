@@ -754,7 +754,11 @@ export function useSetUserRole() {
   return useMutation({
     meta: { errorTitle: 'toasts:failedToChangeRole', successTitle: 'toasts:roleChanged' },
     mutationFn: (v: { id: string; role: UserRole }) => api.setUserRole(v.id, v.role),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      // An admin may have changed their own role.
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
   })
 }
 
@@ -775,6 +779,8 @@ function useGroupMutation<T>(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups'] })
       queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn'] })
+      // nft mode compiles groups into the host ruleset.
+      queryClient.invalidateQueries({ queryKey: ['firewall', 'v2'] })
     },
   })
 }

@@ -35,7 +35,8 @@
       "transfer": "Transfer",
       "labels": "Labels",
       "expires": "Expires",
-      "config": "Config"
+      "config": "Config",
+      "groups": "Groups"
     },
     "configUnavailable": "Config not available for imported nodes",
     "downloadConfig": "Download Config",
@@ -44,7 +45,9 @@
       "title": "Delete Node",
       "body": "Are you sure you want to remove <strong>{{name}}</strong> from the network? This action cannot be undone.",
       "confirm": "Delete Node"
-    }
+    },
+    "groupFilter": "Group",
+    "allGroups": "All groups"
   },
   "detail": {
     "notFound": {

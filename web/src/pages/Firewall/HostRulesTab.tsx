@@ -1,5 +1,6 @@
 import { Lock, Shield, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useCan } from '@/api/client'
 import { Badge, Button, Card } from '@/components/ui'
 import type { ChainInfo, FirewallRule } from '@/types'
 
@@ -22,6 +23,7 @@ export const HostRulesTab = ({
   deleteLoading,
 }: HostRulesTabProps) => {
   const { t } = useTranslation('firewall')
+  const isAdmin = useCan('admin')
   return (
     <div className="space-y-4">
       {/* Chain Selector */}
@@ -116,14 +118,16 @@ export const HostRulesTab = ({
                           <Lock className="w-3 h-3" /> {t('hostRules.protected')}
                         </span>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDeleteRule(selectedChain, rule.number, rule.protected)}
-                          loading={deleteLoading}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
+                        isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDeleteRule(selectedChain, rule.number, rule.protected)}
+                            loading={deleteLoading}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        )
                       )}
                     </td>
                   </tr>

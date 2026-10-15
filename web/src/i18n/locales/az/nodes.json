@@ -35,7 +35,8 @@
       "transfer": "Trafik",
       "labels": "Etiketlər",
       "expires": "Müddət bitir",
-      "config": "Konfiqurasiya"
+      "config": "Konfiqurasiya",
+      "groups": "Qruplar"
     },
     "configUnavailable": "İdxal edilmiş node-lar üçün konfiqurasiya mövcud deyil",
     "downloadConfig": "Konfiqurasiyanı yüklə",
@@ -44,7 +45,9 @@
       "title": "Node-u sil",
       "body": "<strong>{{name}}</strong> node-unu şəbəkədən silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.",
       "confirm": "Node-u sil"
-    }
+    },
+    "groupFilter": "Qrup",
+    "allGroups": "Bütün qruplar"
   },
   "detail": {
     "notFound": {

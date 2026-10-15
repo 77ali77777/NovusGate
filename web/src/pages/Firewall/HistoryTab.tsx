@@ -1,6 +1,11 @@
 import { History, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useFirewallV2History, useFirewallV2State, useRestoreFirewallV2History } from '@/api/client'
+import {
+  useCan,
+  useFirewallV2History,
+  useFirewallV2State,
+  useRestoreFirewallV2History,
+} from '@/api/client'
 import { Badge, Button, Card } from '@/components/ui'
 import { formatDateTime } from '@/i18n'
 import { PendingBanner } from './AdvancedTab'
@@ -9,6 +14,7 @@ import { PendingBanner } from './AdvancedTab'
 // Restore is a normal change: it must be confirmed or it rolls back.
 export const HistoryTab = () => {
   const { t } = useTranslation('firewallv2')
+  const isAdmin = useCan('admin')
   const { data, isLoading } = useFirewallV2History()
   const { data: state } = useFirewallV2State()
   const restore = useRestoreFirewallV2History()
@@ -46,7 +52,7 @@ export const HistoryTab = () => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      disabled={!enforcing || !!state?.pending}
+                      disabled={!enforcing || !!state?.pending || !isAdmin}
                       loading={restore.isPending && restore.variables === e.id}
                       onClick={() => {
                         if (confirm(t('history.confirmRestore'))) restore.mutate(e.id)

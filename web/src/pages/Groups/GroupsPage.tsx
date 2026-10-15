@@ -90,7 +90,7 @@ export const GroupsPage = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(g)}
-                      loading={deleteGroup.isPending}
+                      loading={deleteGroup.isPending && deleteGroup.variables === g.id}
                       title={t('common:actions.delete')}
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
@@ -118,11 +118,11 @@ const GroupModal = ({ group, onClose }: { group: NodeGroup | null; onClose: () =
   const [description, setDescription] = useState(group?.description ?? '')
   const pending = create.isPending || update.isPending
 
-  const submit = async (e: React.FormEvent) => {
+  // On failure the mutation toast shows the error and the modal stays open.
+  const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (group) await update.mutateAsync({ id: group.id, name, description })
-    else await create.mutateAsync({ name, description })
-    onClose()
+    if (group) update.mutate({ id: group.id, name, description }, { onSuccess: onClose })
+    else create.mutate({ name, description }, { onSuccess: onClose })
   }
 
   return (
@@ -167,10 +167,8 @@ const MembersModal = ({ group, onClose }: { group: NodeGroup; onClose: () => voi
     setSelected(next)
   }
 
-  const save = async () => {
-    await setMembers.mutateAsync({ id: group.id, nodeIds: [...selected.keys()] })
-    onClose()
-  }
+  const save = () =>
+    setMembers.mutate({ id: group.id, nodeIds: [...selected.keys()] }, { onSuccess: onClose })
 
   return (
     <Modal isOpen onClose={onClose} title={t('membersTitle', { name: group.name })} size="lg">

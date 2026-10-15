@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api, useFail2BanLogs, useFail2BanStatus, useUnbanIP } from '@/api/client'
+import { api, useCan, useFail2BanLogs, useFail2BanStatus, useUnbanIP } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { Badge, Button, Card } from '@/components/ui'
 import { formatBantime } from './formatBantime'
@@ -162,6 +162,8 @@ export const Fail2BanPage = () => {
   const { data: pingStatus } = useFail2BanPing()
   const { data: banHistory, refetch: refetchHistory } = useBanHistory()
 
+  // Fail2Ban changes are admin-only (P9a).
+  const isAdmin = useCan('admin')
   const unbanMutation = useUnbanIP()
   const banMutation = useManualBan()
   const updateSettingsMutation = useUpdateJailSettings()
@@ -276,17 +278,21 @@ export const Fail2BanPage = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="danger" size="sm" onClick={() => setShowBanModal(true)}>
-              <Ban className="w-4 h-4 mr-1" /> {t('actions.banIp')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => reloadMutation.mutate(undefined)}
-              loading={reloadMutation.isPending}
-            >
-              <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reload')}
-            </Button>
+            {isAdmin && (
+              <Button variant="danger" size="sm" onClick={() => setShowBanModal(true)}>
+                <Ban className="w-4 h-4 mr-1" /> {t('actions.banIp')}
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => reloadMutation.mutate(undefined)}
+                loading={reloadMutation.isPending}
+              >
+                <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reload')}
+              </Button>
+            )}
             <Button variant="secondary" size="sm" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4 mr-1" /> {t('common:actions.refresh')}
             </Button>
@@ -437,17 +443,19 @@ export const Fail2BanPage = () => {
                       <Ban className="w-5 h-5 text-red-500" />
                       <span className="font-mono font-medium">{ip}</span>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm(t('banned.confirmUnban', { ip })))
-                          unbanMutation.mutate({ jail: selectedJail, ip })
-                      }}
-                      loading={unbanMutation.isPending}
-                    >
-                      <Unlock className="w-4 h-4 mr-1" /> {t('actions.unban')}
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t('banned.confirmUnban', { ip })))
+                            unbanMutation.mutate({ jail: selectedJail, ip })
+                        }}
+                        loading={unbanMutation.isPending}
+                      >
+                        <Unlock className="w-4 h-4 mr-1" /> {t('actions.unban')}
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -478,22 +486,24 @@ export const Fail2BanPage = () => {
                 onChange={(e) => setNewWhitelistIP(e.target.value)}
                 className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               />
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (newWhitelistIP) {
-                    updateWhitelistMutation.mutate({
-                      jail: selectedJail,
-                      action: 'add',
-                      ip: newWhitelistIP,
-                    })
-                    setNewWhitelistIP('')
-                  }
-                }}
-                loading={updateWhitelistMutation.isPending}
-              >
-                <Plus className="w-4 h-4 mr-1" /> {t('common:actions.add')}
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    if (newWhitelistIP) {
+                      updateWhitelistMutation.mutate({
+                        jail: selectedJail,
+                        action: 'add',
+                        ip: newWhitelistIP,
+                      })
+                      setNewWhitelistIP('')
+                    }
+                  }}
+                  loading={updateWhitelistMutation.isPending}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> {t('common:actions.add')}
+                </Button>
+              )}
             </div>
 
             {whitelist?.whitelist && whitelist.whitelist.length > 0 ? (
@@ -507,20 +517,22 @@ export const Fail2BanPage = () => {
                       <CheckCircle className="w-5 h-5 text-green-500" />
                       <span className="font-mono font-medium">{ip}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm(t('whitelist.confirmRemove', { ip })))
-                          updateWhitelistMutation.mutate({
-                            jail: selectedJail,
-                            action: 'remove',
-                            ip,
-                          })
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t('whitelist.confirmRemove', { ip })))
+                            updateWhitelistMutation.mutate({
+                              jail: selectedJail,
+                              action: 'remove',
+                              ip,
+                            })
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -577,15 +589,17 @@ export const Fail2BanPage = () => {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button
-                variant="primary"
-                onClick={() =>
-                  updateSettingsMutation.mutate({ jail: selectedJail, ...settingsForm })
-                }
-                loading={updateSettingsMutation.isPending}
-              >
-                <Save className="w-4 h-4 mr-1" /> {t('settings.save')}
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    updateSettingsMutation.mutate({ jail: selectedJail, ...settingsForm })
+                  }
+                  loading={updateSettingsMutation.isPending}
+                >
+                  <Save className="w-4 h-4 mr-1" /> {t('settings.save')}
+                </Button>
+              )}
             </div>
           </div>
         </Card>
@@ -621,17 +635,19 @@ export const Fail2BanPage = () => {
                           </p>
                         </div>
                       </div>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm(t('permanent.confirmRemove', { ip: ban.ip })))
-                            removePermanentBanMutation.mutate(ban.ip)
-                        }}
-                        loading={removePermanentBanMutation.isPending}
-                      >
-                        <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(t('permanent.confirmRemove', { ip: ban.ip })))
+                              removePermanentBanMutation.mutate(ban.ip)
+                          }}
+                          loading={removePermanentBanMutation.isPending}
+                        >
+                          <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
+                        </Button>
+                      )}
                     </div>
                   )
                 )}

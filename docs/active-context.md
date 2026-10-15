@@ -264,11 +264,17 @@
   - UI (Qruplar səhifəsi, VPN qaydasında qrup, istifadəçi rolları, rola görə düymələr): `6cfab62`.
 - **Yoxlamalar:** Go 14 paket `ok`; web 41/41 (OpenAPI drift daxil), `tsc` OK, `vite build` OK, i18nScan 0, biome 73/30 (əvvəl 75).
 - **İcra olunmayıb:** brauzerdə real backend ilə; real serverdə nft qrup set-ləri.
-- **Davam:** P9a müstəqil review → P9b.
+- **Review (opus) və düzəlişlər:**
+  - Important: son admin yoxlaması UUID-in yazılışı ilə keçilirdi (böyük hərfli ID yeganə admini silirdi); GET-lər default olaraq viewer-ə açıq idi → `67beb5c`;
+  - UI: Nodes-da qrup sütunu/filtr, bütün dəyişdirmə düymələri rola görə, cache və modal düzəlişləri → növbəti commit;
+  - real olmayan tapıntı: ünvansız qrup üzvü (`virtual_ip NOT NULL`);
+  - təxirə salınan minor: qrup set adlarının sürüşməsi (History diff səs-küyü), session ilə checkin operator üçün admin tələb edir.
+- **Davam:** P9b.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | P9a review: son admin UUID, default-deny GET, rola görə UI, Nodes qrup filtri | store/roles.go, rest/roles.go, web/src/pages/** | review · `67beb5c` + UI commit |
 | 2026-10-15 | P9a: node qrupları, panel rolları, UI | store/{groups,roles}.go, migrations 013/014, rest/{groups_handlers,roles}.go, netctl/nft, firewall/build.go, web/src/pages/Groups, Settings, Firewall | P9 spec · `8d7867b`, `1ceb721`, `6cfab62` |
 | 2026-10-15 | i18n (az/en), OpenAPI tipləri, Audit, Sessions, Network detalı, Topologiya, ErrorBoundary, Center iş log-ları | web/src/**, server/.../rest/audit_handlers.go, store/{audit,sessions}.go, NovusGate Center/lib/joblog.js | P5/P6 yenidən analiz · `ef72424`..`ad3b99d` |
 | 2026-10-15 | iptables VPN qaydaları öz zəncirində (drop/reject işləyir), create sync edir; matris backend-də; recidive və rollback düzəlişləri | firewall_handlers.go, firewall/matrix.go, api/rest/firewall_matrix.go, setup-firewall.sh, Center update/uninstall, web PolicyMatrix | ikinci review · `5ac6b9a`, `7396ddf`, `a48b55a` |

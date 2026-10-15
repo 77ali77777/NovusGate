@@ -1,5 +1,6 @@
 import { Ban, CheckCircle, Unlock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useCan } from '@/api/client'
 import { Button, Card } from '@/components/ui'
 import type { FirewallRule } from '@/types'
 
@@ -12,6 +13,7 @@ interface BlockedIPsTabProps {
 
 export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: BlockedIPsTabProps) => {
   const { t } = useTranslation('firewall')
+  const isAdmin = useCan('admin')
   return (
     <div className="space-y-4">
       {/* Blocked IPs List */}
@@ -42,14 +44,16 @@ export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: Blocked
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onUnblock(rule.chain, rule.number)}
-                  loading={unblockLoading}
-                >
-                  <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
-                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onUnblock(rule.chain, rule.number)}
+                    loading={unblockLoading}
+                  >
+                    <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
+                  </Button>
+                )}
               </div>
             ))}
           </div>

@@ -4,7 +4,7 @@ import type React from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
+import { useCan, useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
 import { dateFnsLocale } from '@/i18n'
@@ -12,6 +12,8 @@ import type { CreateNetworkForm } from '@/types'
 
 export const Networks = () => {
   const { t } = useTranslation('networks')
+  // Networks are changed by operators and admins (P9a).
+  const canEdit = useCan('operator')
   const { data: networks, isLoading } = useNetworks()
   const createMutation = useCreateNetwork()
   const deleteMutation = useDeleteNetwork()
@@ -66,14 +68,16 @@ export const Networks = () => {
         title={t('title')}
         description={t('description')}
         actions={
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('create')}
-          </button>
+          canEdit && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {t('create')}
+            </button>
+          )
         }
       />
 
@@ -119,14 +123,16 @@ export const Networks = () => {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(network.id, network.name)}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title={t('card.delete')}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(network.id, network.name)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    title={t('card.delete')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -188,19 +194,21 @@ export const Networks = () => {
         ))}
 
         {/* Add New Card (Empty State or Last Item) */}
-        <button
-          type="button"
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group min-h-[250px]"
-        >
-          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <span className="font-medium text-gray-900 dark:text-white">{t('newCard.title')}</span>
-          <p className="text-sm text-gray-500 text-center mt-2 max-w-[200px]">
-            {t('newCard.description')}
-          </p>
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group min-h-[250px]"
+          >
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="font-medium text-gray-900 dark:text-white">{t('newCard.title')}</span>
+            <p className="text-sm text-gray-500 text-center mt-2 max-w-[200px]">
+              {t('newCard.description')}
+            </p>
+          </button>
+        )}
       </div>
 
       {/* Create Modal */}

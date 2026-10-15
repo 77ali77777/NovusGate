@@ -17,8 +17,10 @@ import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  useCan,
   useCreateServerWithConfig,
   useDeleteNode,
+  useGroups,
   useNetworks,
   useNode,
   useNodes,
@@ -31,6 +33,7 @@ import { ServerConfigModal } from '@/components/ServerConfigModal'
 import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
 import { dateFnsLocale, formatDateTime } from '@/i18n'
+import { groupsByNode } from '@/lib/groups'
 import { useCurrentNetworkId } from '@/store'
 import type { Node } from '@/types'
 
@@ -46,7 +49,16 @@ export const NodesPage: React.FC = () => {
   const { t } = useTranslation('nodes')
   const navigate = useNavigate()
   const networkId = useCurrentNetworkId()
-  const { data: nodes, isLoading } = useNodes(networkId || '')
+  const { data: allNodes, isLoading } = useNodes(networkId || '')
+  // Config download and changes need an operator (P9a).
+  const canEdit = useCan('operator')
+  const { data: groupData } = useGroups()
+  const nodeGroups = groupsByNode(groupData?.groups)
+  const groupOptions = (groupData?.groups ?? []).filter((g) => g !== null)
+  const [groupFilter, setGroupFilter] = useState('')
+  const nodes = groupFilter
+    ? allNodes?.filter((n) => nodeGroups.get(n.id)?.some((g) => g.id === groupFilter))
+    : allNodes
   const deleteNode = useDeleteNode()
   const createServer = useCreateServerWithConfig()
   const updateNode = useUpdateNode()
@@ -197,6 +209,19 @@ export const NodesPage: React.FC = () => {
       ),
     },
     {
+      key: 'groups',
+      header: t('list.columns.groups'),
+      render: (node: Node) => (
+        <div className="flex flex-wrap gap-1">
+          {(nodeGroups.get(node.id) ?? []).map((g) => (
+            <Badge key={g.id} variant="info">
+              {g.name}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
       key: 'config',
       header: t('list.columns.config'),
       className: 'w-10',
@@ -260,10 +285,14 @@ export const NodesPage: React.FC = () => {
     },
   ]
 
-  const onlineCount = nodes?.filter((n) => n.status === 'online').length || 0
-  const pendingCount = nodes?.filter((n) => n.status === 'pending').length || 0
+  const visibleColumns = canEdit
+    ? columns
+    : columns.filter((c) => c.key !== 'config' && c.key !== 'actions')
+
+  const onlineCount = allNodes?.filter((n) => n.status === 'online').length || 0
+  const pendingCount = allNodes?.filter((n) => n.status === 'pending').length || 0
   const offlineCount =
-    nodes?.filter((n) => n.status === 'offline' || n.status === 'expired').length || 0
+    allNodes?.filter((n) => n.status === 'offline' || n.status === 'expired').length || 0
 
   return (
     <div>
@@ -271,10 +300,12 @@ export const NodesPage: React.FC = () => {
         title={t('list.title')}
         description={t('list.description')}
         actions={
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Server className="w-4 h-4 mr-2" />
-            {t('list.createPeer')}
-          </Button>
+          canEdit && (
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Server className="w-4 h-4 mr-2" />
+              {t('list.createPeer')}
+            </Button>
+          )
         }
       />
 
@@ -299,7 +330,7 @@ export const NodesPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">{t('list.summary.total')}</p>
-              <p className="text-2xl font-semibold">{nodes?.length || 0}</p>
+              <p className="text-2xl font-semibold">{allNodes?.length || 0}</p>
             </div>
             <Server className="w-8 h-8 text-gray-400" />
           </div>
@@ -333,10 +364,31 @@ export const NodesPage: React.FC = () => {
         </Card>
       </div>
 
+      {groupOptions.length > 0 && (
+        <div className="mb-4 flex items-center gap-2">
+          <label htmlFor="node-group-filter" className="text-sm text-gray-600 dark:text-gray-400">
+            {t('list.groupFilter')}
+          </label>
+          <select
+            id="node-group-filter"
+            value={groupFilter}
+            onChange={(e) => setGroupFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+          >
+            <option value="">{t('list.allGroups')}</option>
+            {groupOptions.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Nodes table */}
       <Card padding="none">
         <Table
-          columns={columns}
+          columns={visibleColumns}
           data={nodes || []}
           loading={isLoading}
           onRowClick={(node) => navigate(`/nodes/${node.id}`)}
@@ -427,6 +479,7 @@ export const NodesPage: React.FC = () => {
 // Node detail page
 export const NodeDetailPage: React.FC = () => {
   const { t } = useTranslation('nodes')
+  const canEdit = useCan('operator')
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [copied, setCopied] = useState(false)
@@ -531,10 +584,12 @@ export const NodeDetailPage: React.FC = () => {
           <Button variant="secondary" onClick={() => navigate('/nodes')}>
             {t('common:actions.back')}
           </Button>
-          <Button onClick={() => setShowEditModal(true)} className="flex items-center gap-2">
-            <Pencil className="w-4 h-4" />
-            {t('detail.editNode')}
-          </Button>
+          {canEdit && (
+            <Button onClick={() => setShowEditModal(true)} className="flex items-center gap-2">
+              <Pencil className="w-4 h-4" />
+              {t('detail.editNode')}
+            </Button>
+          )}
         </div>
       </div>
 

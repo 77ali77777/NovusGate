@@ -1,5 +1,6 @@
 import { AlertTriangle, Globe, Lock, XCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useCan } from '@/api/client'
 import { Badge, Button, Card } from '@/components/ui'
 import type { FirewallRule } from '@/types'
 
@@ -11,6 +12,7 @@ interface OpenPortsTabProps {
 
 export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPortsTabProps) => {
   const { t } = useTranslation('firewall')
+  const isAdmin = useCan('admin')
   // Parse port number from rule - handles formats like "22", "dpt:22", "8000:9000"
   const parsePort = (portStr: string | undefined): number => {
     if (!portStr || portStr === '-') return 0
@@ -106,14 +108,16 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
                           <Lock className="w-3 h-3" /> SSH/WireGuard/API
                         </span>
                       ) : (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleClosePortClick(rule)}
-                          loading={closeLoading}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" /> {t('common:actions.close')}
-                        </Button>
+                        isAdmin && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleClosePortClick(rule)}
+                            loading={closeLoading}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" /> {t('common:actions.close')}
+                          </Button>
+                        )
                       )}
                     </td>
                   </tr>

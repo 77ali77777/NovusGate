@@ -271,10 +271,10 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 
 ## Panel rolları (P9a, 2026-10-15)
 - Rollar: `admin` > `operator` > `viewer`. Yoxlama auth-dan sonra `roleMiddleware`-də aparılır, rədd edilən sorğu 403 `forbidden` alır.
-- **viewer:** bütün GET-lər, yalnız aşağıdakı həssas GET-lər istisnadır. Dəyişiklik kimi yalnız öz parolunu dəyişə və logout edə bilər.
+- **viewer:** `viewerReads` siyahısındakı GET-lər (şəbəkələr, node-lar, qruplar, firewall vəziyyəti, fail2ban, audit və s.). Dəyişiklik kimi yalnız öz parolunu dəyişə və logout edə bilər. Heç bir siyahıda olmayan GET admin tələb edir; `TestOperatorRoutesExist` təsnif olunmamış GET-i tutur.
 - **operator:** şəbəkələr (yarat/sil, server, sync), node-lar (PUT/PATCH/DELETE), qruplar və VPN qaydaları (CRUD + apply). Node config/QR/install.sh-ı ala bilər.
 - **admin:** qalan hər şey: istifadəçilər, host firewall, fail2ban, backup, bildirişlər, sessiyalar, debug.
-- Həssas GET-lər: `nodes/{id}/config`, `qrcode`, `install.sh` → operator; `backups/{name}`, `debug/wireguard/{networkId}`, `users`, `auth/sessions` → admin.
+- Həssas GET-lər: `nodes/{id}/config`, `qrcode`, `install.sh` → operator; `backups/{name}`, `debug/wireguard/{networkId}`, `users`, `auth/sessions`, `firewall/host/export`, `notifications/settings` → admin.
 - `GET /auth/me` → `{id, username, role}`. Login cavabında da `role` var.
 - `POST /users` `role` qəbul edir (default `admin`). `PUT /users/{id}/role` `{role}` istifadəçini qaytarır.
 - Son admini aşağı salmaq və ya silmək 409 `last_admin` verir.

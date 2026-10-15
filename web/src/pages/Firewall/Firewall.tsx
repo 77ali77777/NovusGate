@@ -392,14 +392,16 @@ export const Firewall: React.FC = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleExportRules}
-            title={t('actions.exportRules')}
-          >
-            <Download className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExportRules}
+              title={t('actions.exportRules')}
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -428,17 +430,21 @@ export const Firewall: React.FC = () => {
         description={t('page.description')}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={handleExportRules}>
-              <Download className="w-4 h-4 mr-1" /> {t('actions.export')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleResetFirewall}
-              loading={resetFirewallMutation.isPending}
-            >
-              <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reset')}
-            </Button>
+            {isAdmin && (
+              <Button variant="secondary" size="sm" onClick={handleExportRules}>
+                <Download className="w-4 h-4 mr-1" /> {t('actions.export')}
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleResetFirewall}
+                loading={resetFirewallMutation.isPending}
+              >
+                <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reset')}
+              </Button>
+            )}
             <Button variant="secondary" size="sm" onClick={handleRefresh}>
               <RefreshCw className="w-4 h-4 mr-1" /> {t('common:actions.refresh')}
             </Button>

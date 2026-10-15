@@ -3,6 +3,7 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import {
+  useCan,
   useConfirmFirewallV2,
   useCreateFirewallV2Forward,
   useCreateFirewallV2IPRule,
@@ -35,6 +36,7 @@ const protocolOptions = [
 export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
   const { t } = useTranslation('firewallv2')
   const confirm = useConfirmFirewallV2()
+  const isAdmin = useCan('admin')
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000)
@@ -60,7 +62,7 @@ export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
       <Button
         onClick={() => confirm.mutate(pending.id)}
         loading={confirm.isPending}
-        disabled={left === 0}
+        disabled={left === 0 || !isAdmin}
       >
         <CheckCircle className="mr-1 h-4 w-4" />
         {t('pending.confirm')}
@@ -562,10 +564,12 @@ const PreviewSection = () => {
 export const AdvancedTab = () => {
   const { t } = useTranslation('firewallv2')
   const { data: state, isLoading } = useFirewallV2State()
+  // Host firewall changes are admin-only (P9a).
+  const isAdmin = useCan('admin')
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
   if (!state) return <p className="text-sm text-gray-500">{t('engineUnavailable')}</p>
   const enforcing = state.mode === 'nft'
-  const locked = !enforcing || !!state.pending
+  const locked = !enforcing || !!state.pending || !isAdmin
   return (
     <div className="space-y-4">
       <Card>
