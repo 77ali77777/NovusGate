@@ -712,6 +712,9 @@ export const NodeDetailPage: React.FC = () => {
                       })
                     : limitProfile.name
                   : t('detail.noLimit')}
+                {limitProfile && limits && !limits.enforcing && (
+                  <span className="ml-1 text-amber-600">{t('detail.limitNotEnforced')}</span>
+                )}
               </span>
             </div>
           </div>

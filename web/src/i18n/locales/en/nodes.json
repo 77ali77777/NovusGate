@@ -67,7 +67,8 @@
     "copyPublicKey": "Copy Public Key",
     "limitProfile": "Limit profile",
     "limitViaGroup": "{{profile}} (from group {{group}})",
-    "noLimit": "None"
+    "noLimit": "None",
+    "limitNotEnforced": "(not enforced: iptables mode)"
   },
   "create": {
     "title": "Create New Peer",

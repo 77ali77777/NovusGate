@@ -67,7 +67,8 @@
     "copyPublicKey": "Açıq açarı kopyala",
     "limitProfile": "Limit profili",
     "limitViaGroup": "{{profile}} ({{group}} qrupundan)",
-    "noLimit": "Yoxdur"
+    "noLimit": "Yoxdur",
+    "limitNotEnforced": "(tətbiq olunmur: iptables rejimi)"
   },
   "create": {
     "title": "Yeni peer yarat",

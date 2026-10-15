@@ -214,8 +214,8 @@ const MembersModal = ({ group, onClose }: { group: NodeGroup; onClose: () => voi
         <div>
           <p className="text-sm font-medium">{t('selected', { count: selected.size })}</p>
           <div className="mt-1 flex flex-wrap gap-1">
-            {[...selected.values()].map((label) => (
-              <Badge key={label}>{label}</Badge>
+            {[...selected.entries()].map(([nodeId, label]) => (
+              <Badge key={nodeId}>{label}</Badge>
             ))}
           </div>
         </div>
