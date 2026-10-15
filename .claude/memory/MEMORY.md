@@ -2,3 +2,4 @@
 - [NovusGate rebuild roadmap](novusgate-rebuild-roadmap.md) — all phases done 2026-10-15; open items and user hand-offs
 - [Scripted edit pitfalls](scripted-edit-pitfalls.md) — JS replace with $ corrupts files; dry-run scripted edits on a copy
 - [Min host Ubuntu 22.04](min-host-ubuntu-2204.md) — no old servers; preflight requires Ubuntu 22.04+ / Debian 12+
+- [Help "?" on every input](help-tip-every-input.md) — what it is / who needs it / what happens; en+az; panel and Center
