@@ -155,6 +155,14 @@
         ],
         "type": "object"
       },
+      "ConfirmRequest": {
+        "properties": {
+          "confirm": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CreateServerRequest": {
         "properties": {
           "expires_at": {
@@ -1030,6 +1038,14 @@
         ],
         "type": "object"
       },
+      "HostnameRequest": {
+        "properties": {
+          "hostname": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "IPRuleResponse": {
         "properties": {
           "ip": {
@@ -1517,6 +1533,37 @@
         ],
         "type": "object"
       },
+      "NetworkView": {
+        "properties": {
+          "addresses": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "routes": {
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "addresses",
+          "links",
+          "routes"
+        ],
+        "type": "object"
+      },
       "Node": {
         "properties": {
           "created_at": {
@@ -1967,6 +2014,44 @@
         ],
         "type": "object"
       },
+      "Package": {
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "security": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "name",
+          "security",
+          "version"
+        ],
+        "type": "object"
+      },
+      "PackagesResponse": {
+        "properties": {
+          "packages": {
+            "items": {
+              "$ref": "#/components/schemas/Package"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "type": "object"
+      },
       "PendingChange": {
         "properties": {
           "deadline": {
@@ -2136,6 +2221,36 @@
         },
         "type": "object"
       },
+      "ServiceStatus": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ServicesResponse": {
+        "properties": {
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatus"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "services"
+        ],
+        "type": "object"
+      },
       "SessionInfo": {
         "properties": {
           "created_at": {
@@ -2272,6 +2387,14 @@
         ],
         "type": "object"
       },
+      "StepUpRequest": {
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Summary": {
         "properties": {
           "available": {
@@ -2334,6 +2457,83 @@
           "errors",
           "skipped",
           "total"
+        ],
+        "type": "object"
+      },
+      "SysctlChangeRequest": {
+        "properties": {
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "SysctlChangeResponse": {
+        "properties": {
+          "confirm_within": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "confirm_within"
+        ],
+        "type": "object"
+      },
+      "SysctlResponse": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "keys",
+          "values"
+        ],
+        "type": "object"
+      },
+      "SystemInfo": {
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "kernel": {
+            "type": "string"
+          },
+          "ntp": {
+            "type": "boolean"
+          },
+          "ntp_synchronized": {
+            "type": "boolean"
+          },
+          "os": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hostname",
+          "kernel",
+          "ntp",
+          "ntp_synchronized",
+          "os",
+          "timezone"
         ],
         "type": "object"
       },
@@ -2408,6 +2608,17 @@
         ],
         "type": "object"
       },
+      "TimezoneRequest": {
+        "properties": {
+          "ntp": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "UpdateNodeRequest": {
         "properties": {
           "expires_at": {
@@ -2446,6 +2657,37 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpgradeJob": {
+        "properties": {
+          "finished_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "output": {
+            "type": "string"
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "started_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "finished_at",
+          "ok",
+          "output",
+          "running",
+          "started_at"
+        ],
         "type": "object"
       },
       "User": {
@@ -3231,6 +3473,40 @@
           }
         },
         "summary": "End a login session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/step-up": {
+      "post": {
+        "operationId": "post_auth_step_up",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Enter the password again: server changes are allowed for 5 minutes (401 invalid_password)",
         "tags": [
           "auth"
         ]
@@ -5876,6 +6152,437 @@
         "summary": "This document",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/api/v1/server/network": {
+      "get": {
+        "operationId": "get_server_network",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Addresses, routes and links as ip -j reports them (read-only)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/packages": {
+      "get": {
+        "operationId": "get_server_packages",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackagesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Upgradable packages",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/packages/upgrade": {
+      "get": {
+        "operationId": "get_server_packages_upgrade",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeJob"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "The last package upgrade and its output",
+        "tags": [
+          "server"
+        ]
+      },
+      "post": {
+        "operationId": "post_server_packages_upgrade",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Start apt-get upgrade; confirm must be \"upgrade\" (step-up, 409 upgrade_running)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/reboot": {
+      "post": {
+        "operationId": "post_server_reboot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Reboot the host; confirm must be \"reboot\" (step-up)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/services": {
+      "get": {
+        "operationId": "get_server_services",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Managed services and their state (admin, P10a)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/services/{unit}/restart": {
+      "post": {
+        "operationId": "post_server_services_by_unit_restart",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "unit",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Restart docker, fail2ban or a wg-quick@ unit (step-up)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/sysctl": {
+      "get": {
+        "operationId": "get_server_sysctl",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SysctlResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Managed kernel settings and their values",
+        "tags": [
+          "server"
+        ]
+      },
+      "put": {
+        "operationId": "put_server_sysctl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SysctlChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SysctlChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change kernel settings; undone unless confirmed within confirm_within seconds (step-up)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/sysctl/confirm": {
+      "post": {
+        "operationId": "post_server_sysctl_confirm",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Keep the last kernel settings change (step-up)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/system": {
+      "get": {
+        "operationId": "get_server_system",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Host name, time zone, NTP, kernel and OS",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/system/hostname": {
+      "put": {
+        "operationId": "put_server_system_hostname",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostnameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change the host name (step-up)",
+        "tags": [
+          "server"
+        ]
+      }
+    },
+    "/api/v1/server/system/timezone": {
+      "put": {
+        "operationId": "put_server_system_timezone",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimezoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Set the time zone and NTP (step-up)",
+        "tags": [
+          "server"
         ]
       }
     },

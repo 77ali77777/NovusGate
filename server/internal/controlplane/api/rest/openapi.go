@@ -12,6 +12,7 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/hostadmin"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -110,6 +111,20 @@ var docOps = []docOp{
 	{"PUT", "/api/v1/limits/{id}", "Replace a limit profile; bound nodes get it at once", "limits", LimitProfileRequest{}, 200, models.LimitProfile{}, false},
 	{"DELETE", "/api/v1/limits/{id}", "Delete a limit profile (409 limit_in_use while bound)", "limits", nil, 204, nil, false},
 	{"PUT", "/api/v1/limits/{id}/bindings", "Make these the nodes and groups bound to the profile", "limits", LimitBindingsRequest{}, 200, models.LimitProfile{}, false},
+	{"POST", "/api/v1/auth/step-up", "Enter the password again: server changes are allowed for 5 minutes (401 invalid_password)", "auth", StepUpRequest{}, 204, nil, false},
+	{"GET", "/api/v1/server/services", "Managed services and their state (admin, P10a)", "server", nil, 200, ServicesResponse{}, false},
+	{"POST", "/api/v1/server/services/{unit}/restart", "Restart docker, fail2ban or a wg-quick@ unit (step-up)", "server", nil, 204, nil, false},
+	{"GET", "/api/v1/server/sysctl", "Managed kernel settings and their values", "server", nil, 200, SysctlResponse{}, false},
+	{"PUT", "/api/v1/server/sysctl", "Change kernel settings; undone unless confirmed within confirm_within seconds (step-up)", "server", SysctlChangeRequest{}, 200, SysctlChangeResponse{}, false},
+	{"POST", "/api/v1/server/sysctl/confirm", "Keep the last kernel settings change (step-up)", "server", nil, 204, nil, false},
+	{"GET", "/api/v1/server/system", "Host name, time zone, NTP, kernel and OS", "server", nil, 200, hostadmin.SystemInfo{}, false},
+	{"PUT", "/api/v1/server/system/hostname", "Change the host name (step-up)", "server", HostnameRequest{}, 200, hostadmin.SystemInfo{}, false},
+	{"PUT", "/api/v1/server/system/timezone", "Set the time zone and NTP (step-up)", "server", TimezoneRequest{}, 200, hostadmin.SystemInfo{}, false},
+	{"GET", "/api/v1/server/packages", "Upgradable packages", "server", nil, 200, PackagesResponse{}, false},
+	{"GET", "/api/v1/server/packages/upgrade", "The last package upgrade and its output", "server", nil, 200, UpgradeJob{}, false},
+	{"POST", "/api/v1/server/packages/upgrade", "Start apt-get upgrade; confirm must be \"upgrade\" (step-up, 409 upgrade_running)", "server", ConfirmRequest{}, 202, nil, false},
+	{"POST", "/api/v1/server/reboot", "Reboot the host; confirm must be \"reboot\" (step-up)", "server", ConfirmRequest{}, 202, nil, false},
+	{"GET", "/api/v1/server/network", "Addresses, routes and links as ip -j reports them (read-only)", "server", nil, 200, hostadmin.NetworkView{}, false},
 	{"POST", "/api/v1/nodes/{id}/quota/reset", "Start a node's traffic quota count again and lift its block (P9c)", "limits", nil, 204, nil, false},
 	{"GET", "/api/v1/audit", "Audit log: changes made through the API and login attempts, newest first", "audit", nil, 200, AuditLogResponse{}, false},
 	{"GET", "/api/v1/auth/sessions", "Login sessions that have not expired (current marks the caller's)", "auth", nil, 200, SessionsResponse{}, false},

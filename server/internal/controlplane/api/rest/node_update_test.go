@@ -10,7 +10,7 @@ func TestUpdateNodeValidatesInput(t *testing.T) {
 	seed := seedContract(t, st)
 	path := "/api/v1/nodes/" + seed.node.ID
 	for body, code := range map[string]string{
-		`{"status":"banana"}`:            "invalid_status",
+		`{"status":"banana"}`:           "invalid_status",
 		`{"expires_at":"next tuesday"}`: "invalid_expires_at",
 	} {
 		rec := callAs(t, s, "PUT", path, body, true)
@@ -22,7 +22,7 @@ func TestUpdateNodeValidatesInput(t *testing.T) {
 	for _, body := range []string{
 		`{"status":"offline"}`,
 		`{"expires_at":"2099-10-14T12:00:00.000Z"}`, // Date.toISOString()
-		`{"expires_at":""}`,                          // remove the expiry
+		`{"expires_at":""}`,                         // remove the expiry
 		`{"name":"contract-node-x"}`,
 	} {
 		if rec := callAs(t, s, "PUT", path, body, true); rec.Code != 200 {

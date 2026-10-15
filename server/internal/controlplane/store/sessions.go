@@ -131,3 +131,27 @@ func (s *Store) DeleteSessionByID(ctx context.Context, id string) (bool, error) 
 	n, err := res.RowsAffected()
 	return n > 0, err
 }
+
+// ElevateSession marks a session as stepped up (the password was entered
+// again) until the given time.
+func (s *Store) ElevateSession(ctx context.Context, tokenHash string, until time.Time) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET elevated_until = $2 WHERE token_hash = $1`, tokenHash, until)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// SessionElevatedUntil returns until when a session is stepped up (zero
+// when it never was).
+func (s *Store) SessionElevatedUntil(ctx context.Context, tokenHash string) (time.Time, error) {
+	var until sql.NullTime
+	err := s.db.QueryRowContext(ctx, `SELECT elevated_until FROM sessions WHERE token_hash = $1`, tokenHash).Scan(&until)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return until.Time, nil
+}

@@ -48,6 +48,7 @@ var anyRoleRoutes = map[string]bool{
 	"POST /api/v1/auth/logout":  true,
 	// the handler lets a non-admin end only its own sessions
 	"DELETE /api/v1/auth/sessions/{id}": true,
+	"POST /api/v1/auth/step-up":         true, // the caller's own password
 }
 
 // sensitiveReads are GETs that hand out secrets, create tokens or dump the
@@ -60,6 +61,12 @@ var sensitiveReads = map[string]string{
 	"GET /api/v1/debug/wireguard/{networkId}": "admin",
 	"GET /api/v1/users":                       "admin",
 	"GET /api/v1/firewall/host/export":        "admin", // the whole host ruleset
+	"GET /api/v1/server/services":             "admin", // server administration (P10a)
+	"GET /api/v1/server/sysctl":               "admin", // server administration (P10a)
+	"GET /api/v1/server/system":               "admin", // server administration (P10a)
+	"GET /api/v1/server/packages":             "admin", // server administration (P10a)
+	"GET /api/v1/server/packages/upgrade":     "admin", // server administration (P10a)
+	"GET /api/v1/server/network":              "admin", // server administration (P10a)
 	"GET /api/v1/notifications/settings":      "admin", // Telegram chat id
 }
 

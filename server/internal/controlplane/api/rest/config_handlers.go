@@ -42,16 +42,16 @@ func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []s
 	if err != nil || network == nil {
 		return []string{}
 	}
-	
+
 	cidrs := []string{network.CIDR}
 	cidrSet := map[string]bool{network.CIDR: true}
-	
+
 	// Get all VPN firewall rules
 	rules, err := s.store.ListVPNFirewallRules(r.Context())
 	if err != nil {
 		return cidrs
 	}
-	
+
 	// Get all networks for lookup
 	networks, err := s.store.ListNetworks(r.Context())
 	if err != nil {
@@ -61,13 +61,13 @@ func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []s
 	for _, n := range networks {
 		networkMap[n.ID] = n
 	}
-	
+
 	// Check each enabled ACCEPT rule
 	for _, rule := range rules {
 		if !rule.Enabled || rule.Action != "accept" {
 			continue
 		}
-		
+
 		// Check if this network is the source
 		isSource := false
 		switch rule.SourceType {
@@ -85,11 +85,11 @@ func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []s
 				}
 			}
 		}
-		
+
 		if !isSource {
 			continue
 		}
-		
+
 		// Add destination network CIDRs
 		switch rule.DestType {
 		case "any":
@@ -127,7 +127,7 @@ func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []s
 			}
 		}
 	}
-	
+
 	return cidrs
 }
 
@@ -186,11 +186,11 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 	}
-	
+
 	// Get all routed networks based on VPN firewall rules
 	allowedIPs := s.getRoutedNetworksForNode(r, node.NetworkID)
 	allowedIPsStr := strings.Join(allowedIPs, ", ")
-	
+
 	cfgGen := wireguard.NewConfigGenerator()
 	allowedIPsStr, dns := s.tunnelRouting(r, node, allowedIPsStr)
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -277,7 +277,7 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 // handleCreateServerWithConfig creates a node and returns config+keys
 func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Request) {
 	networkID := mux.Vars(r)["networkId"]
-	
+
 	var req CreateServerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -300,7 +300,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		ExpiresAt: req.ExpiresAt,
 		Status:    "online",
 	}
-	
+
 	// Allocate next available IP
 	ip, err := s.store.AllocateIP(r.Context(), networkID)
 	if err != nil {
@@ -339,7 +339,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		errorResponse(w, http.StatusInternalServerError, "failed to get network for config generation")
 		return
 	}
-	
+
 	var serverPublicKey, serverEndpoint string
 	if network.ServerPublicKey != "" {
 		serverPublicKey = network.ServerPublicKey
@@ -362,7 +362,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	response := CreateServerResponse{Node: node, Config: config}
-	
+
 	s.triggerReconcile()
 	jsonResponse(w, http.StatusCreated, response)
 }
@@ -418,7 +418,7 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		}
 		// If still empty, use placeholder to avoid crash, script will fail to connect but at least run
 		if serverPublicKey == "" {
-			serverPublicKey = "SERVER_KEY_NOT_FOUND" 
+			serverPublicKey = "SERVER_KEY_NOT_FOUND"
 		}
 	}
 
@@ -449,4 +449,3 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "text/x-shellscript")
 	w.Write([]byte(script))
 }
-

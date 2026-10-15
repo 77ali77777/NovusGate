@@ -21,6 +21,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+	"github.com/novusgate/novusgate/internal/controlplane/hostadmin"
 	"github.com/novusgate/novusgate/internal/controlplane/notify"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
@@ -39,7 +40,6 @@ func getEnvOrDefault(key, defaultValue string) string {
 	return defaultValue
 }
 
-
 // PeerActivity tracks the last known activity of a peer
 type PeerActivity struct {
 	LastRxBytes int64
@@ -50,14 +50,15 @@ type PeerActivity struct {
 type Server struct {
 	store        *store.Store
 	router       *mux.Router
-	managers   map[string]*wireguard.Manager
-	managersMu sync.RWMutex
+	managers     map[string]*wireguard.Manager
+	managersMu   sync.RWMutex
 	peerActivity map[string]*PeerActivity
-	firewall     *firewall.Engine // nil, or engine for FIREWALL_ENGINE=shadow|nft
+	firewall     *firewall.Engine       // nil, or engine for FIREWALL_ENGINE=shadow|nft
 	reconciler   *reconciler.Reconciler // nil when WG_RECONCILER=off
 	backups      *backup.Service        // nil: the backup endpoints answer 503
 	notifier     *notify.Notifier       // nil: no notifications (P8)
 	notifySender notify.Sender          // sends the test message
+	host         hostadmin.Runner       // host commands (P10a); nil: nsenter
 	activityMu   sync.RWMutex
 }
 
@@ -82,14 +83,14 @@ var loadNetworksDelay = 2 * time.Second
 func (s *Server) loadNetworks() {
 	// Give DB a moment to come up
 	time.Sleep(loadNetworksDelay)
-	
+
 	ctx := context.Background()
 	networks, err := s.store.ListNetworks(ctx)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Error loading networks: %v", err))
 		return
 	}
-	
+
 	for _, network := range networks {
 		if network.InterfaceName == "" {
 			continue
@@ -100,18 +101,18 @@ func (s *Server) loadNetworks() {
 			slog.Warn(fmt.Sprintf("Warning: WireGuard tools missing for %s", network.Name))
 			continue
 		}
-		
+
 		// If port is 0 (legacy), default to 51820
 		port := network.ListenPort
 		if port == 0 {
 			port = 51820
 		}
-		
+
 		// Ensure config exists/is valid (idempotent)
 		s.managersMu.Lock()
 		s.managers[network.ID] = mgr
 		s.managersMu.Unlock()
-		
+
 		// Ensure interface is UP
 		if err := mgr.Up(); err != nil {
 			slog.Info(fmt.Sprintf("Note: Interface %s might already be up: %v", network.InterfaceName, err))
@@ -123,37 +124,37 @@ func (s *Server) loadNetworks() {
 		peers, err := mgr.GetPeers()
 		if err == nil && len(peers) > 0 {
 			slog.Info(fmt.Sprintf("Syncing %d peers from %s to database...", len(peers), network.InterfaceName))
-			
+
 			// Get existing DB nodes to avoid duplicates
 			dbNodes, err := s.store.ListNodes(ctx, network.ID)
 			if err != nil {
 				slog.Error(fmt.Sprintf("Failed to list DB nodes: %v", err))
 				continue
 			}
-			
+
 			existingKeys := make(map[string]bool)
 			for _, n := range dbNodes {
 				existingKeys[n.PublicKey] = true
 			}
-			
+
 			for pubKey, peer := range peers {
 				if !existingKeys[pubKey] {
 					// Import this peer
 					slog.Info(fmt.Sprintf("Importing peer %s...", pubKey))
-					
+
 					// Parse IP from AllowedIPs (first one if comma separated)
 					ips := strings.Split(peer.AllowedIPs, ",")
 					if len(ips) == 0 {
 						slog.Warn(fmt.Sprintf("Warning: No AllowedIPs for peer %s, skipping import", pubKey))
 						continue
 					}
-					
+
 					// Take first IP and remove CIDR suffix if present
 					ipStr := strings.TrimSpace(ips[0])
 					if idx := strings.Index(ipStr, "/"); idx != -1 {
 						ipStr = ipStr[:idx]
 					}
-					
+
 					virtualIP := net.ParseIP(ipStr)
 					if virtualIP == nil {
 						slog.Warn(fmt.Sprintf("Warning: Invalid IP %s for peer %s, skipping import", ipStr, pubKey))
@@ -181,7 +182,7 @@ func (s *Server) loadNetworks() {
 							Architecture: "unknown",
 						},
 					}
-					
+
 					if err := s.store.CreateNode(ctx, node); err != nil {
 						slog.Error(fmt.Sprintf("Failed to import node %s: %v", pubKey, err))
 					} else {
@@ -220,25 +221,25 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	s.managersMu.RLock()
 	mgr := s.managers[networkID]
 	s.managersMu.RUnlock()
-	
+
 	if mgr != nil {
 		return mgr
 	}
-	
+
 	// Manager not found - try to create it from network config
 	ctx := context.Background()
 	network, err := s.store.GetNetwork(ctx, networkID)
 	if err != nil || network == nil || network.InterfaceName == "" {
 		return nil
 	}
-	
+
 	// Create and register manager
 	newMgr := wireguard.NewManager(network.InterfaceName)
 	if err := wgInit(newMgr); err != nil {
 		slog.Error(fmt.Sprintf("Warning: Failed to init WireGuard manager for %s: %v", network.Name, err))
 		return nil
 	}
-	
+
 	s.managersMu.Lock()
 	// Double-check another goroutine didn't create it
 	if existing := s.managers[networkID]; existing != nil {
@@ -247,7 +248,7 @@ func (s *Server) getManager(networkID string) *wireguard.Manager {
 	}
 	s.managers[networkID] = newMgr
 	s.managersMu.Unlock()
-	
+
 	slog.Info(fmt.Sprintf("Lazily initialized WireGuard manager for network %s (%s)", network.Name, network.InterfaceName))
 	return newMgr
 }
@@ -271,14 +272,14 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/networks", s.handleCreateNetwork).Methods("POST")
 	api.HandleFunc("/networks/{id}", s.handleGetNetwork).Methods("GET")
 	api.HandleFunc("/networks/{id}", s.handleDeleteNetwork).Methods("DELETE")
-	
+
 	// Nodes
 	api.HandleFunc("/networks/{networkId}/nodes", s.handleListNodes).Methods("GET")
 	api.HandleFunc("/nodes/{id}", s.handleGetNode).Methods("GET")
 	api.HandleFunc("/nodes/{id}", s.handleUpdateNode).Methods("PUT", "PATCH")
 	api.HandleFunc("/nodes/{id}", s.handleDeleteNode).Methods("DELETE")
 	api.HandleFunc("/nodes/{id}/checkin", s.handleNodeCheckIn).Methods("POST")
-	
+
 	// WireGuard Config & Utils
 	api.HandleFunc("/nodes/{id}/config", s.handleDownloadConfig).Methods("GET")
 	api.HandleFunc("/nodes/{id}/qrcode", s.handleGetQRCode).Methods("GET")
@@ -289,18 +290,19 @@ func (s *Server) setupRoutes() {
 	s.registerAuditRoutes(api)
 	s.registerGroupRoutes(api)
 	s.registerLimitRoutes(api)
+	s.registerServerAdminRoutes(api)
 	s.registerRoleRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check
 	s.router.HandleFunc("/health", s.handleHealth).Methods("GET")
-	
+
 	// Debug endpoint - shows WireGuard interface status
 	api.HandleFunc("/debug/wireguard/{networkId}", s.handleDebugWireGuard).Methods("GET")
-	
+
 	// Sync endpoint - syncs DB peers to WireGuard interface
 	api.HandleFunc("/networks/{networkId}/sync", s.handleSyncPeers).Methods("POST")
-	
+
 	// Auth
 	s.router.HandleFunc("/api/v1/auth/login", s.handleLogin).Methods("POST")
 	api.HandleFunc("/auth/password", s.handleUpdatePassword).Methods("PUT")
@@ -327,7 +329,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/system/fail2ban/reload", s.handleFail2BanReload).Methods("POST")
 	api.HandleFunc("/system/fail2ban/ping", s.handleFail2BanPing).Methods("GET")
 	api.HandleFunc("/system/fail2ban/ban-history", s.handleFail2BanHistory).Methods("GET")
-	
+
 	// All Networks Stats (for dashboard)
 	api.HandleFunc("/stats/overview", s.handleStatsOverview).Methods("GET")
 	api.HandleFunc("/openapi.json", s.handleOpenAPI).Methods("GET")
@@ -390,7 +392,6 @@ func (s *Server) handleSPA(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, fullPath)
 }
 
-
 // Response helpers
 func jsonResponse(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -452,12 +453,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req LoginRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	noteLoginUsername(r, req.Username)
 	// Validate credentials against DB
 	user, err := s.store.GetUserByUsername(r.Context(), req.Username)
@@ -465,7 +466,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to check user")
 		return
 	}
-	
+
 	if user == nil {
 		comparePassword(dummyPasswordHash, []byte(req.Password)) // same cost as a wrong password
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
@@ -476,7 +477,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 		return
 	}
-	
+
 	loginLimit.succeed(key)
 	s.store.DeleteExpiredSessions(r.Context(), authNow()) // housekeeping; a failure only leaves old rows
 	token, err := newSessionToken()
@@ -494,7 +495,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 // Update Password handler
 func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var req UpdatePasswordRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
@@ -560,12 +561,12 @@ func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Username == "" || req.Password == "" {
 		errorResponse(w, http.StatusBadRequest, "username and password required")
 		return
@@ -594,7 +595,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to create user")
 		return
 	}
-	
+
 	user.PasswordHash = "" // Don't return hash
 	jsonResponse(w, http.StatusCreated, user)
 }
@@ -656,7 +657,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue // Skip invalid existing CIDRs
 		}
-		
+
 		// Check if networks overlap
 		if networksOverlap(newNet, existingCIDR) {
 			errorWithCode(w, http.StatusConflict, "cidr_overlap", fmt.Sprintf(
@@ -666,12 +667,12 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	// 1. Assign Interface Name (wg0, wg1, etc)
 	// Find highest 'wgN'
 	maxIdx := -1
 	usedPorts := make(map[int]bool)
-	
+
 	for _, net := range existing {
 		if strings.HasPrefix(net.InterfaceName, "wg") {
 			var idx int
@@ -685,10 +686,10 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 			usedPorts[net.ListenPort] = true
 		}
 	}
-	
+
 	newIdx := maxIdx + 1
 	network.InterfaceName = fmt.Sprintf("wg%d", newIdx)
-	
+
 	// 2. Assign Port (Start at 51820)
 	port := 51820
 	for {
@@ -698,25 +699,25 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		port++
 	}
 	network.ListenPort = port
-	
+
 	// 3. Generate WireGuard keys BEFORE saving to DB
 	privateKey, publicKey, err := generateKeys()
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to generate WireGuard keys: "+err.Error())
 		return
 	}
-	
+
 	// Set keys and endpoint on network
 	network.ServerPrivateKey = privateKey
 	network.ServerPublicKey = publicKey
 	network.ServerEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
-	
+
 	// 4. Save to DB (now with keys)
 	if err := s.store.CreateNetwork(r.Context(), &network); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to create network: "+err.Error())
 		return
 	}
-	
+
 	// 5. Initialize WireGuard Interface
 	mgr := wireguard.NewManager(network.InterfaceName)
 	if err := wgInit(mgr); err != nil {
@@ -732,13 +733,13 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		} else {
 			slog.Info(fmt.Sprintf("WireGuard interface %s created for network %s", network.InterfaceName, network.Name))
 		}
-		
+
 		// Register manager
 		s.managersMu.Lock()
 		s.managers[network.ID] = mgr
 		s.managersMu.Unlock()
 	}
-	
+
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
 	jsonResponse(w, http.StatusCreated, network)
@@ -760,7 +761,7 @@ func (s *Server) handleGetNetwork(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	
+
 	// Get network first to get interface name
 	network, err := s.store.GetNetwork(r.Context(), id)
 	if err != nil {
@@ -771,13 +772,13 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
-	
+
 	// Prevent deleting Admin Network (wg0)
 	if network.InterfaceName == "wg0" {
 		errorWithCode(w, http.StatusForbidden, "admin_network_protected", "cannot delete Admin Management Network")
 		return
 	}
-	
+
 	// Bring down WireGuard interface
 	if network.InterfaceName != "" {
 		wgTeardown(network.InterfaceName)
@@ -787,13 +788,13 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 		delete(s.managers, id)
 		s.managersMu.Unlock()
 	}
-	
+
 	// Delete from DB
 	if err := s.store.DeleteNetwork(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to delete network")
 		return
 	}
-	
+
 	slog.Info(fmt.Sprintf("Network %s (%s) deleted", network.Name, network.InterfaceName))
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
@@ -860,7 +861,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 		if time.Now().After(*node.ExpiresAt) {
 			node.Status = models.NodeStatusExpired
 			isExpired = true
-			
+
 			// If expired and session exists in WG, remove it
 			mgr := s.getManager(node.NetworkID)
 			if mgr != nil && peers != nil {
@@ -882,11 +883,10 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 			if ep != "(none)" && ep != "" {
 				node.PublicIP = ep
 			}
-			
+
 			node.TransferRx = status.TransferRx
 			node.TransferTx = status.TransferTx
-			
-			
+
 			// Update activity map
 			s.activityMu.Lock()
 			activity, exists := s.peerActivity[node.PublicKey]
@@ -894,7 +894,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 				activity = &PeerActivity{}
 				s.peerActivity[node.PublicKey] = activity
 			}
-			
+
 			// If we received data since last check, update LastSeen to NOW
 			if status.TransferRx > activity.LastRxBytes {
 				activity.LastSeen = time.Now()
@@ -904,7 +904,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 
 			// Determine status
 			isOnline := false
-			
+
 			// 1. Check traffic activity (fast detection ~30-45s)
 			// Clients with PersistentKeepalive=25 will send data every ~25s
 			if !activity.LastSeen.IsZero() && time.Since(activity.LastSeen) < 45*time.Second {
@@ -924,7 +924,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 					node.LastSeen = hsTime
 				}
 			}
-			
+
 			if status.LatestHandshakeTime > 0 && node.LastSeen.IsZero() {
 				node.LastSeen = time.Unix(status.LatestHandshakeTime, 0)
 			}
@@ -956,7 +956,7 @@ func (s *Server) enrichNode(node *models.Node, peers map[string]wireguard.PeerSt
 
 func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	
+
 	var req UpdateNodeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
@@ -1053,7 +1053,7 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	
+
 	// Get node first to get public key
 	node, err := s.store.GetNode(r.Context(), id)
 	if err != nil {
@@ -1168,11 +1168,6 @@ func (s *Server) handleNodeCheckIn(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, node)
 }
 
-
-
-
-
-
 // interfaceUp reports whether a network interface exists and is up. The
 // control plane shares the host's network namespace (replaced in tests).
 var interfaceUp = func(name string) bool {
@@ -1259,12 +1254,12 @@ func (s *Server) healthDetailsAllowed(r *http.Request) bool {
 // System Info - CPU, RAM, Disk
 func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 	info := SystemInfoResponse{}
-	
+
 	// CPU Info
 	cpuInfo, _ := os.ReadFile("/proc/cpuinfo")
 	cpuCount := strings.Count(string(cpuInfo), "processor")
 	info.CPUCores = cpuCount
-	
+
 	// CPU Model
 	for _, line := range strings.Split(string(cpuInfo), "\n") {
 		if strings.HasPrefix(line, "model name") {
@@ -1276,7 +1271,7 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	// Load Average
 	loadAvg, _ := os.ReadFile("/proc/loadavg")
 	if len(loadAvg) > 0 {
@@ -1287,7 +1282,7 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 			info.Load15m = &parts[2]
 		}
 	}
-	
+
 	// Memory Info
 	memInfo, _ := os.ReadFile("/proc/meminfo")
 	memMap := make(map[string]int64)
@@ -1306,7 +1301,7 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 	info.MemoryUsed = memMap["MemTotal"] - memMap["MemAvailable"]
 	info.MemoryBuffers = memMap["Buffers"]
 	info.MemoryCached = memMap["Cached"]
-	
+
 	// Disk Info (root partition)
 	// Using df command for simplicity
 	dfOut, err := execCommand("df", "-B1", "/")
@@ -1325,7 +1320,7 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	// Uptime
 	uptimeData, _ := os.ReadFile("/proc/uptime")
 	if len(uptimeData) > 0 {
@@ -1334,11 +1329,11 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 		up := int64(uptime)
 		info.UptimeSeconds = &up
 	}
-	
+
 	// Hostname
 	hostname, _ := os.Hostname()
 	info.Hostname = hostname
-	
+
 	jsonResponse(w, http.StatusOK, info)
 }
 
@@ -1390,7 +1385,7 @@ func runHostCommand(name string, args ...string) (string, error) {
 	if err == nil {
 		return string(out), nil
 	}
-	
+
 	// If direct execution fails, try nsenter to run in host namespace
 	// nsenter -t 1 -m -u -i -n -- command args
 	nsenterArgs := []string{"-t", "1", "-m", "-u", "-i", "-n", "--", name}
@@ -1403,7 +1398,7 @@ func runHostCommand(name string, args ...string) (string, error) {
 // Fail2Ban Status
 func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 	result := Fail2BanStatusResponse{Jails: []Fail2BanJail{}}
-	
+
 	// Check if fail2ban is installed (try host command)
 	_, err := execHostCommand("fail2ban-client", "--version")
 	if err != nil {
@@ -1412,7 +1407,7 @@ func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result.Installed = true
-	
+
 	// Check if running
 	statusOut, err := execHostCommand("fail2ban-client", "status")
 	if err != nil {
@@ -1421,7 +1416,7 @@ func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result.Running = true
-	
+
 	// Parse jails
 	jails := []string{}
 	for _, line := range strings.Split(statusOut, "\n") {
@@ -1438,12 +1433,12 @@ func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	// Get details for each jail
 	jailDetails := []Fail2BanJail{}
 	for _, jail := range jails {
 		jailInfo := Fail2BanJail{Name: jail}
-		
+
 		jailStatus, err := execHostCommand("fail2ban-client", "status", jail)
 		if err == nil {
 			// Parse banned IPs and stats - handle different fail2ban output formats
@@ -1454,7 +1449,7 @@ func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 				line = strings.TrimPrefix(line, "|  |- ")
 				line = strings.TrimPrefix(line, "|  `- ")
 				line = strings.TrimPrefix(line, "`- ")
-				
+
 				if strings.HasPrefix(line, "Currently banned:") {
 					parts := strings.SplitN(line, ":", 2)
 					if len(parts) == 2 {
@@ -1503,7 +1498,7 @@ func (s *Server) handleFail2BanStatus(w http.ResponseWriter, r *http.Request) {
 		jailDetails = append(jailDetails, jailInfo)
 	}
 	result.Jails = jailDetails
-	
+
 	jsonResponse(w, http.StatusOK, result)
 }
 
@@ -1514,47 +1509,47 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 	if lines == "" {
 		lines = "100"
 	}
-	
+
 	logPath := Fail2BanLogPath
-	
+
 	// Check if log exists
 	if !fail2banLogExists(logPath) {
 		jsonResponse(w, http.StatusOK, Fail2BanLogsResponse{Logs: []Fail2BanLogEntry{}, Error: "fail2ban log not found"})
 		return
 	}
-	
+
 	// Use tail to get last N lines
 	out, err := execCommand("tail", "-n", lines, logPath)
 	if err != nil {
 		jsonResponse(w, http.StatusOK, Fail2BanLogsResponse{Logs: []Fail2BanLogEntry{}, Error: err.Error()})
 		return
 	}
-	
+
 	logLines := strings.Split(strings.TrimSpace(out), "\n")
-	
+
 	// Parse logs into structured format
 	parsedLogs := []Fail2BanLogEntry{}
 	for _, line := range logLines {
 		if line == "" {
 			continue
 		}
-		
+
 		logEntry := Fail2BanLogEntry{Raw: line}
-		
+
 		// Try to parse timestamp and action
 		// Format: 2024-01-15 10:30:45,123 fail2ban.actions [12345]: NOTICE [sshd] Ban 192.168.1.100
 		parts := strings.SplitN(line, " fail2ban.", 2)
 		if len(parts) >= 1 {
 			logEntry.Timestamp = strings.TrimSpace(parts[0])
 		}
-		
+
 		if action := fail2banLogAction(line); action != "" {
 			logEntry.Action = action
 		}
-		
+
 		parsedLogs = append(parsedLogs, logEntry)
 	}
-	
+
 	count := len(parsedLogs)
 	jsonResponse(w, http.StatusOK, Fail2BanLogsResponse{Logs: parsedLogs, Count: &count})
 }
@@ -1562,30 +1557,30 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 // Fail2Ban Unban IP
 func (s *Server) handleFail2BanUnban(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanJailIPRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Jail == "" || req.IP == "" {
 		errorResponse(w, http.StatusBadRequest, "jail and ip are required")
 		return
 	}
-	
+
 	// Validate IP format
 	if net.ParseIP(req.IP) == nil {
 		errorResponse(w, http.StatusBadRequest, "invalid IP address")
 		return
 	}
-	
+
 	// Execute unban
 	_, err := execHostCommand("fail2ban-client", "set", req.Jail, "unbanip", req.IP)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to unban IP: "+err.Error())
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, StatusMessageResponse{Status: "success",
 		Message: fmt.Sprintf("IP %s unbanned from jail %s", req.IP, req.Jail)})
 }
@@ -1593,14 +1588,14 @@ func (s *Server) handleFail2BanUnban(w http.ResponseWriter, r *http.Request) {
 // Stats Overview - All networks combined
 func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	// Get all networks
 	networks, err := s.store.ListNetworks(ctx)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to list networks")
 		return
 	}
-	
+
 	totalNodes := 0
 	onlineNodes := 0
 	offlineNodes := 0
@@ -1608,32 +1603,32 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 	expiredNodes := 0
 	totalRx := int64(0)
 	totalTx := int64(0)
-	
+
 	networkStats := []NetworkStats{}
-	
+
 	for _, network := range networks {
 		nodes, err := s.store.ListNodes(ctx, network.ID)
 		if err != nil {
 			continue
 		}
-		
+
 		// Get WireGuard peers for real-time status
 		var peers map[string]wireguard.PeerStatus
 		mgr := s.getManager(network.ID)
 		if mgr != nil {
 			peers, _ = mgr.GetPeers()
 		}
-		
+
 		netOnline := 0
 		netOffline := 0
 		netPending := 0
 		netExpired := 0
 		netRx := int64(0)
 		netTx := int64(0)
-		
+
 		for _, node := range nodes {
 			s.enrichNode(node, peers)
-			
+
 			switch node.Status {
 			case models.NodeStatusOnline:
 				netOnline++
@@ -1648,22 +1643,22 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 				netExpired++
 				expiredNodes++
 			}
-			
+
 			netRx += node.TransferRx
 			netTx += node.TransferTx
 		}
-		
+
 		totalNodes += len(nodes)
 		totalRx += netRx
 		totalTx += netTx
-		
+
 		networkStats = append(networkStats, NetworkStats{
 			ID: network.ID, Name: network.Name, CIDR: network.CIDR, Interface: network.InterfaceName,
 			TotalNodes: len(nodes), OnlineNodes: netOnline, OfflineNodes: netOffline,
 			PendingNodes: netPending, ExpiredNodes: netExpired, TransferRx: netRx, TransferTx: netTx,
 		})
 	}
-	
+
 	jsonResponse(w, http.StatusOK, StatsOverviewResponse{
 		TotalNetworks: len(networks), TotalNodes: totalNodes, OnlineNodes: onlineNodes,
 		OfflineNodes: offlineNodes, PendingNodes: pendingNodes, ExpiredNodes: expiredNodes,
@@ -1674,14 +1669,14 @@ func (s *Server) handleStatsOverview(w http.ResponseWriter, r *http.Request) {
 // Debug WireGuard - shows interface status and registered peers
 func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 	networkID := mux.Vars(r)["networkId"]
-	
+
 	// Get network info
 	network, err := s.store.GetNetwork(r.Context(), networkID)
 	if err != nil || network == nil {
 		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
-	
+
 	result := DebugWireGuardResponse{
 		NetworkID:       networkID,
 		NetworkName:     network.Name,
@@ -1689,14 +1684,14 @@ func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 		ServerPublicKey: network.ServerPublicKey,
 		ServerEndpoint:  network.ServerEndpoint,
 	}
-	
+
 	// Check manager
 	s.managersMu.RLock()
 	mgr := s.managers[networkID]
 	s.managersMu.RUnlock()
-	
+
 	result.ManagerRegistered = mgr != nil
-	
+
 	// Get peers from WireGuard
 	if mgr != nil {
 		peers, err := mgr.GetPeers()
@@ -1719,7 +1714,7 @@ func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 			result.WGPeers = &peerList
 		}
 	}
-	
+
 	// Get DB nodes for comparison
 	nodes, err := s.store.ListNodes(r.Context(), networkID)
 	if err == nil {
@@ -1736,35 +1731,35 @@ func (s *Server) handleDebugWireGuard(w http.ResponseWriter, r *http.Request) {
 		}
 		result.DBNodes = &nodeList
 	}
-	
+
 	jsonResponse(w, http.StatusOK, result)
 }
 
 // handleSyncPeers syncs all DB nodes to WireGuard interface
 func (s *Server) handleSyncPeers(w http.ResponseWriter, r *http.Request) {
 	networkID := mux.Vars(r)["networkId"]
-	
+
 	// Get manager
 	mgr := s.getManager(networkID)
 	if mgr == nil {
 		errorResponse(w, http.StatusInternalServerError, "WireGuard manager not available for this network")
 		return
 	}
-	
+
 	// Get all nodes from DB
 	nodes, err := s.store.ListNodes(r.Context(), networkID)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to list nodes: "+err.Error())
 		return
 	}
-	
+
 	// Get current WireGuard peers
 	currentPeers, err := mgr.GetPeers()
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to get WireGuard peers: "+err.Error())
 		return
 	}
-	
+
 	// Expired or disabled nodes are not re-added.
 	added, skipped, errs := restorePeers(mgr, nodes, currentPeers, time.Now())
 
@@ -1802,23 +1797,23 @@ func APIKeyMiddleware(next http.Handler) http.Handler {
 // Fail2Ban Manual Ban - Ban an IP address manually
 func (s *Server) handleFail2BanManualBan(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanBanRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Jail == "" || req.IP == "" {
 		errorResponse(w, http.StatusBadRequest, "jail and ip are required")
 		return
 	}
-	
+
 	// Validate IP format
 	if net.ParseIP(req.IP) == nil {
 		errorResponse(w, http.StatusBadRequest, "invalid IP address")
 		return
 	}
-	
+
 	if req.Permanent {
 		if s.engineEnforces() {
 			s.handleFail2BanPermanentBanNft(w, r, req.IP)
@@ -1832,19 +1827,19 @@ func (s *Server) handleFail2BanManualBan(w http.ResponseWriter, r *http.Request)
 		}
 		// Save iptables rules
 		execHostCommand("netfilter-persistent", "save")
-		
+
 		jsonResponse(w, http.StatusOK, Fail2BanBanResponse{Status: "success",
 			Message: fmt.Sprintf("IP %s permanently banned via iptables", req.IP), Type: "permanent"})
 		return
 	}
-	
+
 	// Regular fail2ban ban
 	_, err := execHostCommand("fail2ban-client", "set", req.Jail, "banip", req.IP)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to ban IP: "+err.Error())
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, Fail2BanBanResponse{Status: "success",
 		Message: fmt.Sprintf("IP %s banned in jail %s", req.IP, req.Jail), Type: "temporary"})
 }
@@ -1855,52 +1850,52 @@ func (s *Server) handleFail2BanGetJailSettings(w http.ResponseWriter, r *http.Re
 	if jail == "" {
 		jail = "sshd"
 	}
-	
+
 	settings := Fail2BanJailSettingsResponse{Jail: jail}
 	trimmed := func(out string) *string {
 		v := strings.TrimSpace(out)
 		return &v
 	}
-	
+
 	// Get bantime
 	if out, err := execHostCommand("fail2ban-client", "get", jail, "bantime"); err == nil {
 		settings.Bantime = trimmed(out)
 	}
-	
+
 	// Get maxretry
 	if out, err := execHostCommand("fail2ban-client", "get", jail, "maxretry"); err == nil {
 		settings.Maxretry = trimmed(out)
 	}
-	
+
 	// Get findtime
 	if out, err := execHostCommand("fail2ban-client", "get", jail, "findtime"); err == nil {
 		settings.Findtime = trimmed(out)
 	}
-	
+
 	// Get ignoreip (whitelist)
 	if out, err := execHostCommand("fail2ban-client", "get", jail, "ignoreip"); err == nil {
 		settings.IgnoreIP = trimmed(out)
 	}
-	
+
 	jsonResponse(w, http.StatusOK, settings)
 }
 
 // Fail2Ban Update Jail Settings - Update jail configuration
 func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanJailSettingsRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Jail == "" {
 		req.Jail = "sshd"
 	}
-	
+
 	updated := []string{}
 	errors := []string{}
-	
+
 	// Update bantime
 	if req.Bantime != "" {
 		if _, err := execHostCommand("fail2ban-client", "set", req.Jail, "bantime", req.Bantime); err != nil {
@@ -1909,7 +1904,7 @@ func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http
 			updated = append(updated, "bantime")
 		}
 	}
-	
+
 	// Update maxretry
 	if req.Maxretry != "" {
 		if _, err := execHostCommand("fail2ban-client", "set", req.Jail, "maxretry", req.Maxretry); err != nil {
@@ -1918,7 +1913,7 @@ func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http
 			updated = append(updated, "maxretry")
 		}
 	}
-	
+
 	// Update findtime
 	if req.Findtime != "" {
 		if _, err := execHostCommand("fail2ban-client", "set", req.Jail, "findtime", req.Findtime); err != nil {
@@ -1927,12 +1922,12 @@ func (s *Server) handleFail2BanUpdateJailSettings(w http.ResponseWriter, r *http
 			updated = append(updated, "findtime")
 		}
 	}
-	
+
 	if len(errors) > 0 {
 		jsonResponse(w, http.StatusPartialContent, Fail2BanUpdateSettingsResponse{Status: "partial", Updated: updated, Errors: errors})
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, Fail2BanUpdateSettingsResponse{Status: "success", Updated: updated})
 }
 
@@ -1942,36 +1937,36 @@ func (s *Server) handleFail2BanGetWhitelist(w http.ResponseWriter, r *http.Reque
 	if jail == "" {
 		jail = "sshd"
 	}
-	
+
 	out, err := execHostCommand("fail2ban-client", "get", jail, "ignoreip")
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to get whitelist: "+err.Error())
 		return
 	}
-	
+
 	ips := parseIgnoreIPList(out)
-	
+
 	jsonResponse(w, http.StatusOK, Fail2BanWhitelistResponse{Jail: jail, Whitelist: ips})
 }
 
 // Fail2Ban Update Whitelist - Add or remove IPs from whitelist
 func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanWhitelistRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Jail == "" {
 		req.Jail = "sshd"
 	}
-	
+
 	if req.Action == "" || req.IP == "" {
 		errorResponse(w, http.StatusBadRequest, "action and ip are required")
 		return
 	}
-	
+
 	// Validate IP/CIDR format
 	if net.ParseIP(req.IP) == nil {
 		// Try parsing as CIDR
@@ -1980,7 +1975,7 @@ func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
-	
+
 	var cmd string
 	switch req.Action {
 	case "add":
@@ -1991,13 +1986,13 @@ func (s *Server) handleFail2BanUpdateWhitelist(w http.ResponseWriter, r *http.Re
 		errorResponse(w, http.StatusBadRequest, "action must be 'add' or 'remove'")
 		return
 	}
-	
+
 	_, err := execHostCommand("fail2ban-client", "set", req.Jail, cmd, req.IP)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to update whitelist: "+err.Error())
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, StatusMessageResponse{Status: "success",
 		Message: fmt.Sprintf("IP %s %sed in jail %s whitelist", req.IP, req.Action, req.Jail)})
 }
@@ -2015,10 +2010,10 @@ func (s *Server) handleFail2BanGetPermanentBans(w http.ResponseWriter, r *http.R
 		errorResponse(w, http.StatusInternalServerError, "failed to get iptables rules: "+err.Error())
 		return
 	}
-	
+
 	bannedIPs := []PermanentBan{}
 	lines := strings.Split(out, "\n")
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		// Look for DROP rules with source IP
@@ -2035,24 +2030,24 @@ func (s *Server) handleFail2BanGetPermanentBans(w http.ResponseWriter, r *http.R
 			}
 		}
 	}
-	
+
 	jsonResponse(w, http.StatusOK, PermanentBansResponse{PermanentBans: bannedIPs, Count: len(bannedIPs)})
 }
 
 // Fail2Ban Remove Permanent Ban - Remove a permanently banned IP from iptables
 func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanIPRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.IP == "" {
 		errorResponse(w, http.StatusBadRequest, "ip is required")
 		return
 	}
-	
+
 	// Validate IP format
 	if net.ParseIP(req.IP) == nil {
 		// Try parsing as CIDR
@@ -2061,7 +2056,7 @@ func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http
 			return
 		}
 	}
-	
+
 	if s.engineEnforces() {
 		s.handleFail2BanRemovePermanentBanNft(w, r, req.IP)
 		return
@@ -2073,27 +2068,27 @@ func (s *Server) handleFail2BanRemovePermanentBan(w http.ResponseWriter, r *http
 		errorResponse(w, http.StatusInternalServerError, "failed to remove permanent ban: "+err.Error())
 		return
 	}
-	
+
 	// Save iptables rules
 	execHostCommand("netfilter-persistent", "save")
-	
+
 	jsonResponse(w, http.StatusOK, StatusMessageResponse{Status: "success", Message: fmt.Sprintf("Permanent ban removed for IP %s", req.IP)})
 }
 
 // Fail2Ban Jail Control - Start/Stop a jail
 func (s *Server) handleFail2BanJailControl(w http.ResponseWriter, r *http.Request) {
 	var req Fail2BanJailControlRequest
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	
+
 	if req.Jail == "" || req.Action == "" {
 		errorResponse(w, http.StatusBadRequest, "jail and action are required")
 		return
 	}
-	
+
 	var cmd string
 	switch req.Action {
 	case "start":
@@ -2104,23 +2099,23 @@ func (s *Server) handleFail2BanJailControl(w http.ResponseWriter, r *http.Reques
 		errorResponse(w, http.StatusBadRequest, "action must be 'start' or 'stop'")
 		return
 	}
-	
+
 	_, err := execHostCommand("fail2ban-client", cmd, req.Jail)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to %s jail: %s", cmd, err.Error()))
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, StatusMessageResponse{Status: "success", Message: fmt.Sprintf("Jail %s %sed successfully", req.Jail, cmd)})
 }
 
 // Fail2Ban Reload - Reload fail2ban without losing bans
 func (s *Server) handleFail2BanReload(w http.ResponseWriter, r *http.Request) {
 	jail := r.URL.Query().Get("jail")
-	
+
 	var out string
 	var err error
-	
+
 	if jail != "" {
 		// Reload specific jail
 		out, err = execHostCommand("fail2ban-client", "reload", jail)
@@ -2128,12 +2123,12 @@ func (s *Server) handleFail2BanReload(w http.ResponseWriter, r *http.Request) {
 		// Reload all
 		out, err = execHostCommand("fail2ban-client", "reload")
 	}
-	
+
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to reload: "+err.Error())
 		return
 	}
-	
+
 	jsonResponse(w, http.StatusOK, Fail2BanReloadResponse{Status: "success", Message: "Fail2Ban reloaded successfully", Output: strings.TrimSpace(out)})
 }
 
@@ -2144,10 +2139,10 @@ func (s *Server) handleFail2BanPing(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, http.StatusOK, Fail2BanPingResponse{Alive: false, Error: err.Error(), Message: "Fail2Ban is not responding"})
 		return
 	}
-	
+
 	// Expected output: "Server replied: pong"
 	alive := strings.Contains(out, "pong")
-	
+
 	jsonResponse(w, http.StatusOK, Fail2BanPingResponse{Alive: alive, Message: strings.TrimSpace(out)})
 }
 
@@ -2161,7 +2156,7 @@ func (s *Server) handleFail2BanHistory(w http.ResponseWriter, r *http.Request) {
 			limit = l
 		}
 	}
-	
+
 	// The log is read directly; nothing from the request reaches a shell.
 	history := []map[string]string{} // no log yet: empty history, as before
 	readErr := ""
