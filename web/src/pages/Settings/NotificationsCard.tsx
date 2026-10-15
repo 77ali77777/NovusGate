@@ -1,5 +1,6 @@
 import { Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useNotificationSettings,
   useTestNotification,
@@ -12,11 +13,12 @@ import {
   notificationUpdate,
 } from '@/lib/notifications'
 
-const EVENTS: { key: keyof NotificationEvents; label: string }[] = [
-  { key: 'node_offline', label: 'A node goes offline or comes back' },
-  { key: 'node_expired', label: "A node's access expires" },
-  { key: 'fail2ban_ban', label: 'Fail2Ban bans an address' },
-  { key: 'firewall_change', label: 'The firewall is changed' },
+// Each event's label is settings:notifications.events.<key>.
+const EVENTS: (keyof NotificationEvents)[] = [
+  'node_offline',
+  'node_expired',
+  'fail2ban_ban',
+  'firewall_change',
 ]
 
 const EMPTY: NotificationForm = {
@@ -32,10 +34,12 @@ const EMPTY: NotificationForm = {
 // NotificationsCard: Telegram notifications (P8). The bot token is write-only:
 // the server never returns it, and an empty field keeps the stored one.
 export const NotificationsCard = () => {
+  const { t } = useTranslation('settings')
   const { data, isLoading } = useNotificationSettings()
   const save = useUpdateNotificationSettings()
   const test = useTestNotification()
   const [form, setForm] = useState<NotificationForm>(EMPTY)
+  // error holds a settings locale key from notificationUpdate.
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -57,15 +61,12 @@ export const NotificationsCard = () => {
       <div className="mb-4 flex items-center gap-2">
         <Bell className="h-5 w-5 text-blue-500" />
         <div>
-          <h3 className="text-lg font-semibold">Telegram notifications</h3>
-          <p className="text-sm text-gray-500">
-            Create a bot with @BotFather, add it to your chat, then enter the bot token and the chat
-            ID.
-          </p>
+          <h3 className="text-lg font-semibold">{t('notifications.title')}</h3>
+          <p className="text-sm text-gray-500">{t('notifications.description')}</p>
         </div>
       </div>
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <div className="flex items-center gap-2">
@@ -77,46 +78,46 @@ export const NotificationsCard = () => {
               className="rounded"
             />
             <label htmlFor="notify-enabled" className="text-sm font-medium">
-              Send notifications
+              {t('notifications.enabled')}
             </label>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
-              label="Chat ID"
-              placeholder="-1001234567890 or @channel"
+              label={t('notifications.chatId')}
+              placeholder={t('notifications.chatIdPlaceholder')}
               value={form.chat_id}
               onChange={(e) => setForm({ ...form, chat_id: e.target.value })}
             />
             <Input
-              label="Bot token"
+              label={t('notifications.botToken')}
               type="password"
               autoComplete="off"
-              placeholder={tokenStored ? 'Stored — leave empty to keep it' : '123456789:ABC…'}
+              placeholder={tokenStored ? t('notifications.tokenStored') : '123456789:ABC…'}
               value={form.bot_token}
               onChange={(e) => setForm({ ...form, bot_token: e.target.value })}
             />
           </div>
           <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">Notify when</legend>
+            <legend className="mb-1 text-sm font-medium">{t('notifications.notifyWhen')}</legend>
             {EVENTS.map((ev) => (
-              <div key={ev.key} className="flex items-center gap-2">
+              <div key={ev} className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id={`notify-${ev.key}`}
-                  checked={form[ev.key]}
-                  onChange={(e) => setForm({ ...form, [ev.key]: e.target.checked })}
+                  id={`notify-${ev}`}
+                  checked={form[ev]}
+                  onChange={(e) => setForm({ ...form, [ev]: e.target.checked })}
                   className="rounded"
                 />
-                <label htmlFor={`notify-${ev.key}`} className="text-sm">
-                  {ev.label}
+                <label htmlFor={`notify-${ev}`} className="text-sm">
+                  {t(`notifications.events.${ev}`)}
                 </label>
               </div>
             ))}
           </fieldset>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600">{t(error)}</p>}
           <div className="flex flex-wrap gap-2">
             <Button type="submit" loading={save.isPending}>
-              Save
+              {t('common:actions.save')}
             </Button>
             <Button
               type="button"
@@ -125,7 +126,7 @@ export const NotificationsCard = () => {
               disabled={!tokenStored || !data?.chat_id}
               onClick={() => test.mutate()}
             >
-              Send test message
+              {t('notifications.sendTest')}
             </Button>
           </div>
         </form>

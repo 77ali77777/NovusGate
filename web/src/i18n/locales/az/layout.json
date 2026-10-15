@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "overview": "İcmal",
+    "networks": "Şəbəkələr",
+    "nodes": "Node-lar",
+    "topology": "Topologiya",
+    "firewall": "Firewall",
+    "fail2ban": "Fail2Ban",
+    "audit": "Audit jurnalı",
+    "settings": "Parametrlər"
+  },
+  "network": "Şəbəkə",
+  "selectNetwork": "Şəbəkə seçin...",
+  "cidr": "CIDR: {{cidr}}",
+  "language": "Dil",
+  "logout": "Çıxış",
+  "logoutConfirm": "Çıxmaq istədiyinizə əminsiniz?",
+  "connection": {
+    "vpn": "VPN ilə qoşulub",
+    "dev": "Developer rejimi",
+    "insecure": "Təhlükəsiz olmayan bağlantı",
+    "insecureHint": "Panelə açıq IP ilə daxil olmusunuz. Bu təhlükəsiz deyil."
+  },
+  "login": {
+    "subtitle": "Panelə daxil olun",
+    "username": "İstifadəçi adı",
+    "password": "Parol",
+    "signIn": "Daxil ol",
+    "signingIn": "Daxil olunur...",
+    "failed": "Giriş alınmadı"
+  },
+  "crash": {
+    "title": "Bu səhifə işləmir",
+    "retry": "Yenidən cəhd et",
+    "reload": "Paneli yenidən yüklə"
+  },
+  "dismiss": "Bağla",
+  "branding": {
+    "developedBy": "Hazırlayan",
+    "github": "GitHub profili",
+    "linkedin": "LinkedIn profili"
+  }
+}

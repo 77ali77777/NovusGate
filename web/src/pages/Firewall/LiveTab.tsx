@@ -1,4 +1,5 @@
 import { Activity } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useFirewallV2Live } from '@/api/client'
 import { Badge, Card, Table } from '@/components/ui'
 import { formatAgo, formatBytes, usagePercent } from '@/lib/firewallV2'
@@ -6,9 +7,10 @@ import { formatAgo, formatBytes, usagePercent } from '@/lib/firewallV2'
 // LiveTab: what the host's firewall does now. Counters and dropped sources
 // reset whenever a change is applied (the nftables table is replaced).
 export const LiveTab = () => {
+  const { t } = useTranslation('firewallv2')
   const { data: live, isLoading } = useFirewallV2Live()
-  if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  if (!live) return <p className="text-sm text-gray-500">The live view is not available.</p>
+  if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
+  if (!live) return <p className="text-sm text-gray-500">{t('live.unavailable')}</p>
 
   const counters = live.counters.map((c, i) => ({ ...c, id: String(i) }))
   const dropped = live.dropped.map((d) => ({ ...d, id: d.address }))
@@ -20,16 +22,15 @@ export const LiveTab = () => {
       <Card>
         <div className="flex flex-wrap items-center gap-3">
           <Activity className="h-5 w-5 text-blue-500" />
-          <span className="text-sm text-gray-500">Engine</span>
+          <span className="text-sm text-gray-500">{t('engine')}</span>
           <Badge variant={live.table_loaded ? 'success' : 'warning'} size="md">
             {live.mode}
           </Badge>
-          <span className="text-sm text-gray-500">Refreshes every 10 s</span>
+          <span className="text-sm text-gray-500">{t('live.refreshInterval')}</span>
         </div>
         {!live.table_loaded && (
           <p className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20">
-            The nftables table is not loaded (engine mode {live.mode}), so there are no rule
-            counters or dropped sources. Connection tracking is shown below.
+            {t('live.tableNotLoaded', { mode: live.mode })}
           </p>
         )}
         {live.error && (
@@ -40,15 +41,18 @@ export const LiveTab = () => {
       </Card>
 
       <Card>
-        <h3 className="mb-3 text-lg font-semibold">Connection tracking</h3>
+        <h3 className="mb-3 text-lg font-semibold">{t('live.conntrackTitle')}</h3>
         {!ct.available ? (
-          <p className="text-sm text-gray-500">conntrack is not available on this host.</p>
+          <p className="text-sm text-gray-500">{t('live.conntrackUnavailable')}</p>
         ) : (
           <div className="space-y-3">
             <div>
               <div className="mb-1 flex justify-between text-sm">
                 <span>
-                  {ct.count.toLocaleString()} of {ct.max.toLocaleString()} entries
+                  {t('live.conntrackUsage', {
+                    used: ct.count.toLocaleString(),
+                    max: ct.max.toLocaleString(),
+                  })}
                 </span>
                 <span className={pct >= 80 ? 'font-semibold text-red-600' : 'text-gray-500'}>
                   {pct}%
@@ -73,48 +77,46 @@ export const LiveTab = () => {
                 </Badge>
               ))}
             </div>
-            {ct.truncated && (
-              <p className="text-xs text-gray-500">Only the first 200,000 entries were counted.</p>
-            )}
+            {ct.truncated && <p className="text-xs text-gray-500">{t('live.truncated')}</p>}
           </div>
         )}
       </Card>
 
       <Card>
-        <h3 className="mb-1 text-lg font-semibold">Dropped sources (last hour)</h3>
-        <p className="mb-3 text-sm text-gray-500">
-          Addresses whose packets reached the default drop of the input chain, up to 4096 per IP
-          family.
-        </p>
+        <h3 className="mb-1 text-lg font-semibold">{t('live.droppedTitle')}</h3>
+        <p className="mb-3 text-sm text-gray-500">{t('live.droppedIntro')}</p>
         <Table<(typeof dropped)[number]>
           data={dropped}
-          emptyMessage={
-            live.table_loaded ? 'Nothing was dropped in the last hour' : 'Not available'
-          }
+          emptyMessage={live.table_loaded ? t('live.droppedEmpty') : t('live.notAvailable')}
           columns={[
             {
               key: 'address',
-              header: 'Address',
+              header: t('live.address'),
               render: (d) => <span className="font-mono">{d.address}</span>,
             },
-            { key: 'seen', header: 'Last dropped', render: (d) => formatAgo(d.seconds_ago) },
+            {
+              key: 'seen',
+              header: t('live.lastDropped'),
+              render: (d) => {
+                const ago = formatAgo(d.seconds_ago)
+                return t(ago.key, { count: ago.count })
+              },
+            },
           ]}
         />
       </Card>
 
       <Card>
-        <h3 className="mb-1 text-lg font-semibold">Rule counters</h3>
-        <p className="mb-3 text-sm text-gray-500">
-          Packets and bytes each counting rule matched since the last change.
-        </p>
+        <h3 className="mb-1 text-lg font-semibold">{t('live.countersTitle')}</h3>
+        <p className="mb-3 text-sm text-gray-500">{t('live.countersIntro')}</p>
         <Table<(typeof counters)[number]>
           data={counters}
-          emptyMessage="No counters"
+          emptyMessage={t('live.countersEmpty')}
           columns={[
-            { key: 'chain', header: 'Chain', render: (c) => <Badge>{c.chain}</Badge> },
+            { key: 'chain', header: t('live.chain'), render: (c) => <Badge>{c.chain}</Badge> },
             {
               key: 'rule',
-              header: 'Rule',
+              header: t('live.rule'),
               render: (c) => (
                 <div>
                   {c.comment && <p className="text-sm font-medium">{c.comment}</p>}
@@ -122,8 +124,12 @@ export const LiveTab = () => {
                 </div>
               ),
             },
-            { key: 'packets', header: 'Packets', render: (c) => c.packets.toLocaleString() },
-            { key: 'bytes', header: 'Bytes', render: (c) => formatBytes(c.bytes) },
+            {
+              key: 'packets',
+              header: t('live.packets'),
+              render: (c) => c.packets.toLocaleString(),
+            },
+            { key: 'bytes', header: t('live.bytes'), render: (c) => formatBytes(c.bytes) },
           ]}
         />
       </Card>

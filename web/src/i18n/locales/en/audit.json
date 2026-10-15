@@ -1,0 +1,11 @@
+{
+  "title": "Audit log",
+  "description": "Changes made through the panel or the API, and login attempts.",
+  "loadError": "The audit log could not be loaded.",
+  "empty": "Nothing recorded yet.",
+  "columns": {
+    "result": "Result",
+    "address": "Address"
+  },
+  "loadOlder": "Load older entries"
+}

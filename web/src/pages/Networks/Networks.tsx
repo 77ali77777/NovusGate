@@ -2,13 +2,16 @@ import { format } from 'date-fns'
 import { Activity, Network, Plus, Search, Shield, Trash2 } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
+import { dateFnsLocale } from '@/i18n'
 import type { CreateNetworkForm } from '@/types'
 
 export const Networks = () => {
+  const { t } = useTranslation('networks')
   const { data: networks, isLoading } = useNetworks()
   const createMutation = useCreateNetwork()
   const deleteMutation = useDeleteNetwork()
@@ -34,17 +37,13 @@ export const Networks = () => {
     } catch (error: any) {
       console.error('Failed to create network:', error)
       // Extract error message from response
-      const message = apiErrorMessage(error, 'Failed to create network')
+      const message = apiErrorMessage(error, t('createFailed'))
       setErrorMessage(message)
     }
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete network "${name}"? This action cannot be undone and will disconnect all nodes.`
-      )
-    ) {
+    if (confirm(t('deleteConfirm', { name }))) {
       try {
         await deleteMutation.mutateAsync(id)
       } catch (error) {
@@ -64,8 +63,8 @@ export const Networks = () => {
   return (
     <div>
       <PageHeader
-        title="Networks"
-        description="Manage your isolated VPN networks and Hub-and-Spoke configurations."
+        title={t('title')}
+        description={t('description')}
         actions={
           <button
             type="button"
@@ -73,7 +72,7 @@ export const Networks = () => {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Create Network
+            {t('create')}
           </button>
         }
       />
@@ -84,7 +83,7 @@ export const Networks = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search networks by name, CIDR, or interface..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
@@ -112,7 +111,11 @@ export const Networks = () => {
                       </Link>
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Created {format(new Date(network.created_at), 'MMM d, yyyy')}
+                      {t('card.created', {
+                        date: format(new Date(network.created_at), 'MMM d, yyyy', {
+                          locale: dateFnsLocale(),
+                        }),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -120,7 +123,7 @@ export const Networks = () => {
                   type="button"
                   onClick={() => handleDelete(network.id, network.name)}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  title="Delete Network"
+                  title={t('card.delete')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -131,7 +134,7 @@ export const Networks = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      CIDR Range
+                      {t('card.cidrRange')}
                     </label>
                     <span className="font-medium text-gray-900 dark:text-gray-200">
                       {network.cidr}
@@ -139,7 +142,7 @@ export const Networks = () => {
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Interface
+                      {t('common:fields.interface')}
                     </label>
                     <div className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-gray-200">
                       <Shield className="w-3.5 h-3.5 text-green-500" />
@@ -148,7 +151,7 @@ export const Networks = () => {
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Listen Port
+                      {t('card.listenPort')}
                     </label>
                     <span className="font-mono text-gray-900 dark:text-gray-200">
                       {network.listen_port || 51820}
@@ -156,13 +159,13 @@ export const Networks = () => {
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      Server Endpoint
+                      {t('card.serverEndpoint')}
                     </label>
                     <span
                       className="font-mono text-xs text-gray-900 dark:text-gray-200 truncate block"
                       title={network.server_endpoint}
                     >
-                      {network.server_endpoint || 'Auto-detected'}
+                      {network.server_endpoint || t('card.autoDetected')}
                     </span>
                   </div>
                 </div>
@@ -172,9 +175,11 @@ export const Networks = () => {
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
                       <Activity className="w-4 h-4" />
-                      Status
+                      {t('common:fields.status')}
                     </span>
-                    <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+                    <span className="text-green-600 dark:text-green-400 font-medium">
+                      {t('common:status.active')}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -191,9 +196,9 @@ export const Networks = () => {
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <span className="font-medium text-gray-900 dark:text-white">Create New Network</span>
+          <span className="font-medium text-gray-900 dark:text-white">{t('newCard.title')}</span>
           <p className="text-sm text-gray-500 text-center mt-2 max-w-[200px]">
-            Set up a completely isolated VPN environment with its own subnet.
+            {t('newCard.description')}
           </p>
         </button>
       </div>
@@ -203,13 +208,13 @@ export const Networks = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Create New Network
+              {t('form.title')}
             </h2>
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Network Name
+                    {t('form.name')}
                   </label>
                   <input
                     type="text"
@@ -217,12 +222,12 @@ export const Networks = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="e.g. My Secure Network"
+                    placeholder={t('form.namePlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    CIDR Range
+                    {t('card.cidrRange')}
                   </label>
                   <input
                     type="text"
@@ -230,28 +235,22 @@ export const Networks = () => {
                     value={formData.cidr}
                     onChange={(e) => setFormData({ ...formData, cidr: e.target.value })}
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="e.g. 10.10.0.0/24"
+                    placeholder={t('form.cidrPlaceholder')}
                     pattern="^10\.\d+\.\d+\.0\/24$"
-                    title="Must be a valid private network (10.x.x.0/24)"
+                    title={t('form.cidrTitle')}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Must be a /24 private subnet (e.g., 10.10.5.0/24). All networks are restricted
-                    to /24 for security and performance.
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">{t('form.cidrHint')}</p>
                 </div>
 
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex gap-3 text-sm text-blue-800 dark:text-blue-200">
                   <Shield className="w-5 h-5 shrink-0" />
-                  <p>
-                    A dedicated WireGuard interface and listening port will be automatically
-                    assigned to this network.
-                  </p>
+                  <p>{t('form.interfaceNote')}</p>
                 </div>
 
                 {/* Error Message */}
                 {errorMessage && (
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg text-sm text-red-700 dark:text-red-300">
-                    <strong>Error:</strong> {errorMessage}
+                    <strong>{t('error')}</strong> {errorMessage}
                   </div>
                 )}
               </div>
@@ -265,14 +264,14 @@ export const Networks = () => {
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  Cancel
+                  {t('common:actions.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {createMutation.isPending ? 'Creating...' : 'Create Network'}
+                  {createMutation.isPending ? t('creating') : t('create')}
                 </button>
               </div>
             </form>

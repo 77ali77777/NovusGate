@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle, Clock, Eye, Plus, Trash2 } from 'lucide-react'
 import type React from 'react'
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   useConfirmFirewallV2,
   useCreateFirewallV2Forward,
@@ -15,6 +16,7 @@ import {
   useSetFirewallV2Egress,
 } from '@/api/client'
 import { Badge, Button, Card, Input, Select, Table } from '@/components/ui'
+import { formatDateTime } from '@/i18n'
 import { formatPorts, parseList, secondsLeft, toRFC3339 } from '@/lib/firewallV2'
 import { useCurrentNetworkId } from '@/store'
 import type {
@@ -31,6 +33,7 @@ const protocolOptions = [
 
 // Pending change: the host already runs it; without Confirm it is rolled back.
 export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
+  const { t } = useTranslation('firewallv2')
   const confirm = useConfirmFirewallV2()
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -43,10 +46,14 @@ export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
       <div className="flex items-start gap-3">
         <Clock className="mt-0.5 h-5 w-5 text-amber-600" />
         <div>
-          <p className="font-semibold text-amber-800">Change applied — confirm it</p>
+          <p className="font-semibold text-amber-800">{t('pending.title')}</p>
           <p className="text-sm text-amber-700">
-            If you can still reach the panel, confirm. Without confirmation the previous rules come
-            back in <strong>{left} s</strong>.
+            <Trans
+              t={t}
+              i18nKey="pending.body"
+              values={{ left }}
+              components={{ strong: <strong /> }}
+            />
           </p>
         </div>
       </div>
@@ -56,7 +63,7 @@ export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
         disabled={left === 0}
       >
         <CheckCircle className="mr-1 h-4 w-4" />
-        Confirm change
+        {t('pending.confirm')}
       </Button>
     </div>
   )
@@ -69,6 +76,7 @@ const ServicesSection = ({
   services: FirewallV2Service[]
   disabled: boolean
 }) => {
+  const { t } = useTranslation('firewallv2')
   const create = useCreateFirewallV2Service()
   const remove = useDeleteFirewallV2Service()
   const [form, setForm] = useState({
@@ -96,19 +104,17 @@ const ServicesSection = ({
   }
   return (
     <Card>
-      <h3 className="mb-1 font-semibold">Services (open ports)</h3>
-      <p className="mb-4 text-sm text-gray-500">
-        Ports reachable on the server, optionally only from given sources.
-      </p>
+      <h3 className="mb-1 font-semibold">{t('services.title')}</h3>
+      <p className="mb-4 text-sm text-gray-500">{t('services.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Select
-          label="Protocol"
+          label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
-          label="Port"
+          label={t('common:fields.port')}
           type="number"
           min={1}
           max={65535}
@@ -117,7 +123,7 @@ const ServicesSection = ({
           onChange={(e) => setForm({ ...form, from: e.target.value })}
         />
         <Input
-          label="To port (optional)"
+          label={t('services.toPort')}
           type="number"
           min={1}
           max={65535}
@@ -125,54 +131,58 @@ const ServicesSection = ({
           onChange={(e) => setForm({ ...form, to: e.target.value })}
         />
         <Input
-          label="Sources (optional)"
-          placeholder="any, or 203.0.113.0/24, …"
+          label={t('services.sourcesOptional')}
+          placeholder={t('services.sourcesPlaceholder')}
           value={form.sources}
           onChange={(e) => setForm({ ...form, sources: e.target.value })}
         />
         <Input
-          label="Interface (optional)"
-          placeholder="e.g. wg1"
+          label={t('services.interfaceOptional')}
+          placeholder={t('services.interfacePlaceholder')}
           value={form.iface}
           onChange={(e) => setForm({ ...form, iface: e.target.value })}
         />
         <Input
-          label="Comment"
+          label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}
         />
         <div className="col-span-2 md:col-span-6 flex justify-end">
           <Button type="submit" size="sm" loading={create.isPending} disabled={disabled}>
             <Plus className="mr-1 h-4 w-4" />
-            Open service
+            {t('services.submit')}
           </Button>
         </div>
       </form>
       <Table<FirewallV2Service>
         data={services}
-        emptyMessage="No services"
+        emptyMessage={t('services.empty')}
         columns={[
           {
             key: 'protocol',
-            header: 'Protocol',
+            header: t('common:fields.protocol'),
             render: (s) => <Badge variant="info">{s.protocol.toUpperCase()}</Badge>,
           },
           {
             key: 'ports',
-            header: 'Port',
+            header: t('common:fields.port'),
             render: (s) => <span className="font-mono">{formatPorts(s.port_from, s.port_to)}</span>,
           },
           {
             key: 'sources',
-            header: 'Sources',
+            header: t('services.sources'),
             render: (s) => (
               <span className="font-mono text-xs">
-                {s.sources?.length ? s.sources.join(', ') : 'Any'}
+                {s.sources?.length ? s.sources.join(', ') : t('common:state.any')}
               </span>
             ),
           },
-          { key: 'interface', header: 'Interface', render: (s) => s.interface || '-' },
-          { key: 'comment', header: 'Comment', render: (s) => s.comment || '-' },
+          {
+            key: 'interface',
+            header: t('common:fields.interface'),
+            render: (s) => s.interface || '-',
+          },
+          { key: 'comment', header: t('common:fields.comment'), render: (s) => s.comment || '-' },
           {
             key: 'actions',
             header: '',
@@ -180,10 +190,17 @@ const ServicesSection = ({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label="Remove service"
+                aria-label={t('services.removeAria')}
                 disabled={disabled}
                 onClick={() => {
-                  if (confirm(`Close ${s.protocol}/${formatPorts(s.port_from, s.port_to)}?`))
+                  if (
+                    confirm(
+                      t('services.confirmRemove', {
+                        protocol: s.protocol,
+                        ports: formatPorts(s.port_from, s.port_to),
+                      })
+                    )
+                  )
                     remove.mutate(s.id)
                 }}
               >
@@ -198,6 +215,7 @@ const ServicesSection = ({
 }
 
 const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabled: boolean }) => {
+  const { t } = useTranslation('firewallv2')
   const create = useCreateFirewallV2IPRule()
   const remove = useDeleteFirewallV2IPRule()
   const [form, setForm] = useState({
@@ -224,48 +242,45 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
   }
   return (
     <Card>
-      <h3 className="mb-1 font-semibold">IP rules</h3>
-      <p className="mb-4 text-sm text-gray-500">
-        Block or allow an address, on all or some ports, optionally until a date. Allow never opens
-        the panel, database or API ports.
-      </p>
+      <h3 className="mb-1 font-semibold">{t('ipRules.title')}</h3>
+      <p className="mb-4 text-sm text-gray-500">{t('ipRules.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Select
-          label="Action"
+          label={t('common:fields.action')}
           options={[
-            { value: 'block', label: 'Block' },
-            { value: 'allow', label: 'Allow' },
+            { value: 'block', label: t('ipRules.block') },
+            { value: 'allow', label: t('ipRules.allow') },
           ]}
           value={form.action}
           onChange={(e) => setForm({ ...form, action: e.target.value })}
         />
         <Input
-          label="IP or CIDR"
+          label={t('ipRules.prefix')}
           required
           placeholder="203.0.113.7"
           value={form.prefix}
           onChange={(e) => setForm({ ...form, prefix: e.target.value })}
         />
         <Select
-          label="Protocol"
+          label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
-          label="Ports (optional)"
-          placeholder="all, or 22,80,8000-8100"
+          label={t('ipRules.portsOptional')}
+          placeholder={t('ipRules.portsPlaceholder')}
           value={form.ports}
           onChange={(e) => setForm({ ...form, ports: e.target.value })}
         />
         <Input
-          label="Expires (optional)"
+          label={t('ipRules.expiresOptional')}
           type="datetime-local"
           value={form.expires}
           onChange={(e) => setForm({ ...form, expires: e.target.value })}
         />
         <Input
-          label="Comment"
+          label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}
         />
@@ -278,41 +293,40 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
             disabled={disabled}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Add rule
+            {t('ipRules.submit')}
           </Button>
         </div>
       </form>
       <Table<FirewallV2IPRule>
         data={rules}
-        emptyMessage="No IP rules"
+        emptyMessage={t('ipRules.empty')}
         columns={[
           {
             key: 'action',
-            header: 'Action',
+            header: t('common:fields.action'),
             render: (r) => (
               <Badge variant={r.action === 'block' ? 'danger' : 'success'}>
-                {r.action.toUpperCase()}
+                {r.action === 'block' ? t('ipRules.badgeBlock') : t('ipRules.badgeAllow')}
               </Badge>
             ),
           },
           {
             key: 'prefix',
-            header: 'Address',
+            header: t('ipRules.address'),
             render: (r) => <span className="font-mono">{r.prefix}</span>,
           },
           {
             key: 'ports',
-            header: 'Ports',
-            render: (r) => (r.ports ? `${r.protocol ?? 'tcp'} ${r.ports}` : 'All'),
+            header: t('common:fields.ports'),
+            render: (r) => (r.ports ? `${r.protocol ?? 'tcp'} ${r.ports}` : t('ipRules.allPorts')),
           },
           {
             key: 'expires_at',
-            header: 'Expires',
-            render: (r) =>
-              r.expires_at ? new Date(r.expires_at).toLocaleString('az-AZ') : 'Never',
+            header: t('ipRules.expires'),
+            render: (r) => (r.expires_at ? formatDateTime(r.expires_at) : t('ipRules.never')),
           },
-          { key: 'origin', header: 'Origin', render: (r) => <Badge>{r.origin}</Badge> },
-          { key: 'comment', header: 'Comment', render: (r) => r.comment || '-' },
+          { key: 'origin', header: t('ipRules.origin'), render: (r) => <Badge>{r.origin}</Badge> },
+          { key: 'comment', header: t('common:fields.comment'), render: (r) => r.comment || '-' },
           {
             key: 'actions',
             header: '',
@@ -320,10 +334,14 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label="Remove IP rule"
+                aria-label={t('ipRules.removeAria')}
                 disabled={disabled}
                 onClick={() => {
-                  if (confirm(`Remove the ${r.action} rule for ${r.prefix}?`)) remove.mutate(r.id)
+                  const question =
+                    r.action === 'block'
+                      ? 'ipRules.confirmRemoveBlock'
+                      : 'ipRules.confirmRemoveAllow'
+                  if (confirm(t(question, { prefix: r.prefix }))) remove.mutate(r.id)
                 }}
               >
                 <Trash2 className="h-4 w-4 text-red-600" />
@@ -343,6 +361,7 @@ const ForwardsSection = ({
   forwards: FirewallV2Forward[]
   disabled: boolean
 }) => {
+  const { t } = useTranslation('firewallv2')
   const create = useCreateFirewallV2Forward()
   const remove = useDeleteFirewallV2Forward()
   const [form, setForm] = useState({
@@ -370,19 +389,17 @@ const ForwardsSection = ({
   }
   return (
     <Card>
-      <h3 className="mb-1 font-semibold">Port forwarding</h3>
-      <p className="mb-4 text-sm text-gray-500">
-        Publish a VPN node's port on the server's public address.
-      </p>
+      <h3 className="mb-1 font-semibold">{t('forwards.title')}</h3>
+      <p className="mb-4 text-sm text-gray-500">{t('forwards.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Select
-          label="Protocol"
+          label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
-          label="Public port"
+          label={t('forwards.publicPort')}
           type="number"
           min={1}
           max={65535}
@@ -391,53 +408,53 @@ const ForwardsSection = ({
           onChange={(e) => setForm({ ...form, publicPort: e.target.value })}
         />
         <Input
-          label="Node VPN IP"
+          label={t('forwards.targetIp')}
           required
           placeholder="10.20.0.5"
           value={form.targetIP}
           onChange={(e) => setForm({ ...form, targetIP: e.target.value })}
         />
         <Input
-          label="Node port"
+          label={t('forwards.targetPort')}
           type="number"
           min={1}
           max={65535}
-          placeholder="same as public"
+          placeholder={t('forwards.targetPortPlaceholder')}
           value={form.targetPort}
           onChange={(e) => setForm({ ...form, targetPort: e.target.value })}
         />
         <Input
-          label="Comment"
+          label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}
         />
         <div className="col-span-2 md:col-span-5 flex justify-end">
           <Button type="submit" size="sm" loading={create.isPending} disabled={disabled}>
             <Plus className="mr-1 h-4 w-4" />
-            Add forward
+            {t('forwards.submit')}
           </Button>
         </div>
       </form>
       <Table<FirewallV2Forward>
         data={forwards}
-        emptyMessage="No port forwards"
+        emptyMessage={t('forwards.empty')}
         columns={[
           {
             key: 'protocol',
-            header: 'Protocol',
+            header: t('common:fields.protocol'),
             render: (f) => <Badge variant="info">{f.protocol.toUpperCase()}</Badge>,
           },
           {
             key: 'public_port',
-            header: 'Public port',
+            header: t('forwards.publicPort'),
             render: (f) => <span className="font-mono">{f.public_port}</span>,
           },
           {
             key: 'target',
-            header: 'Target',
+            header: t('forwards.target'),
             render: (f) => <span className="font-mono">{`${f.target_ip}:${f.target_port}`}</span>,
           },
-          { key: 'comment', header: 'Comment', render: (f) => f.comment || '-' },
+          { key: 'comment', header: t('common:fields.comment'), render: (f) => f.comment || '-' },
           {
             key: 'actions',
             header: '',
@@ -445,10 +462,14 @@ const ForwardsSection = ({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label="Remove port forward"
+                aria-label={t('forwards.removeAria')}
                 disabled={disabled}
                 onClick={() => {
-                  if (confirm(`Remove the forward of ${f.protocol}/${f.public_port}?`))
+                  if (
+                    confirm(
+                      t('forwards.confirmRemove', { protocol: f.protocol, port: f.public_port })
+                    )
+                  )
                     remove.mutate(f.id)
                 }}
               >
@@ -464,18 +485,16 @@ const ForwardsSection = ({
 
 // Full tunnel: a node may send its internet traffic out through the server.
 const EgressSection = ({ egressIds, disabled }: { egressIds: string[]; disabled: boolean }) => {
+  const { t } = useTranslation('firewallv2')
   const networkId = useCurrentNetworkId()
   const { data: nodes = [] } = useNodes(networkId || '')
   const setEgress = useSetFirewallV2Egress()
   return (
     <Card>
-      <h3 className="mb-1 font-semibold">Full tunnel (internet through the server)</h3>
-      <p className="mb-4 text-sm text-gray-500">
-        Nodes of the network selected in the sidebar. Enabling it changes the node's config (all
-        IPv4 traffic, DNS 1.1.1.1): download the config again on the device.
-      </p>
+      <h3 className="mb-1 font-semibold">{t('egress.title')}</h3>
+      <p className="mb-4 text-sm text-gray-500">{t('egress.intro')}</p>
       {nodes.length === 0 ? (
-        <p className="text-sm text-gray-500">No nodes in the selected network.</p>
+        <p className="text-sm text-gray-500">{t('egress.noNodes')}</p>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {nodes.map((n) => {
@@ -493,7 +512,7 @@ const EgressSection = ({ egressIds, disabled }: { egressIds: string[]; disabled:
                   loading={setEgress.isPending && setEgress.variables?.nodeId === n.id}
                   onClick={() => setEgress.mutate({ nodeId: n.id, enabled: !on })}
                 >
-                  {on ? 'Disable' : 'Enable'}
+                  {on ? t('common:actions.disable') : t('common:actions.enable')}
                 </Button>
               </div>
             )
@@ -505,16 +524,15 @@ const EgressSection = ({ egressIds, disabled }: { egressIds: string[]; disabled:
 }
 
 const PreviewSection = () => {
+  const { t } = useTranslation('firewallv2')
   const [show, setShow] = useState(false)
   const { data, isFetching, refetch } = useFirewallV2Preview(show)
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold">Ruleset preview</h3>
-          <p className="text-sm text-gray-500">
-            The nftables ruleset the engine builds from the rules above.
-          </p>
+          <h3 className="font-semibold">{t('preview.title')}</h3>
+          <p className="text-sm text-gray-500">{t('preview.intro')}</p>
         </div>
         <Button
           variant="secondary"
@@ -523,7 +541,7 @@ const PreviewSection = () => {
           onClick={() => (show ? refetch() : setShow(true))}
         >
           <Eye className="mr-1 h-4 w-4" />
-          {show ? 'Refresh' : 'Show'}
+          {show ? t('common:actions.refresh') : t('common:actions.show')}
         </Button>
       </div>
       {data?.warnings?.map((w) => (
@@ -542,34 +560,39 @@ const PreviewSection = () => {
 }
 
 export const AdvancedTab = () => {
+  const { t } = useTranslation('firewallv2')
   const { data: state, isLoading } = useFirewallV2State()
-  if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  if (!state) return <p className="text-sm text-gray-500">The nftables engine is not available.</p>
+  if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
+  if (!state) return <p className="text-sm text-gray-500">{t('engineUnavailable')}</p>
   const enforcing = state.mode === 'nft'
   const locked = !enforcing || !!state.pending
   return (
     <div className="space-y-4">
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-gray-500">Engine</span>
+          <span className="text-sm text-gray-500">{t('engine')}</span>
           <Badge variant={enforcing ? 'success' : 'warning'} size="md">
             {state.mode}
           </Badge>
           {state.ssh_ports && (
             <span className="text-sm text-gray-500">
-              SSH protected: <span className="font-mono">{state.ssh_ports.join(', ')}</span>
+              {t('sshProtected')} <span className="font-mono">{state.ssh_ports.join(', ')}</span>
             </span>
           )}
           {state.egress_interface && (
             <span className="text-sm text-gray-500">
-              Internet interface: <span className="font-mono">{state.egress_interface}</span>
+              {t('internetInterface')} <span className="font-mono">{state.egress_interface}</span>
             </span>
           )}
         </div>
         {!enforcing && (
           <p className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20">
-            These rules are applied only with <span className="font-mono">FIREWALL_ENGINE=nft</span>
-            . In {state.mode} mode changes are refused; the preview works in every mode.
+            <Trans
+              t={t}
+              i18nKey="notEnforcing"
+              values={{ mode: state.mode }}
+              components={{ code: <span className="font-mono" /> }}
+            />
           </p>
         )}
         {state.host_error && (

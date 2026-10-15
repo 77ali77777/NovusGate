@@ -1,8 +1,10 @@
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { apiErrorMessage, errorBodyMessage } from './api/errors'
 import { Layout } from './components/Layout'
+import i18n from './i18n'
 import { AuditPage } from './pages/Audit/AuditPage'
 import { DashboardPage } from './pages/Dashboard/Dashboard'
 import { Fail2BanPage } from './pages/Fail2Ban/Fail2Ban'
@@ -17,20 +19,20 @@ import { useAppStore } from './store'
 // Create React Query client
 // Every mutation reports its result as a toast: errors always (with the
 // server's message) unless meta.inlineError says the form shows it itself;
-// successes when meta.successTitle is set.
+// successes when meta.successTitle is set. Titles are i18n keys ('toasts:...').
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: (error, _vars, _ctx, mutation) => {
       if (mutation.meta?.inlineError) return
       useAppStore.getState().addNotification({
         type: 'error',
-        title: (mutation.meta?.errorTitle as string) ?? 'Action failed',
-        message: apiErrorMessage(error, 'The server returned an error'),
+        title: i18n.t((mutation.meta?.errorTitle as string) ?? 'toasts:actionFailed'),
+        message: apiErrorMessage(error, i18n.t('toasts:serverError')),
       })
     },
     onSuccess: (_data, _vars, _ctx, mutation) => {
       const title = mutation.meta?.successTitle as string | undefined
-      if (title) useAppStore.getState().addNotification({ type: 'success', title })
+      if (title) useAppStore.getState().addNotification({ type: 'success', title: i18n.t(title) })
     },
   }),
   defaultOptions: {
@@ -42,6 +44,7 @@ const queryClient = new QueryClient({
 })
 
 const LoginPage = () => {
+  const { t } = useTranslation('layout')
   const [email, setEmail] = React.useState('admin')
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState('')
@@ -61,7 +64,7 @@ const LoginPage = () => {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(errorBodyMessage(data) ?? 'Login failed')
+        throw new Error(errorBodyMessage(data) ?? t('login.failed'))
       }
 
       const data = await response.json()
@@ -69,7 +72,7 @@ const LoginPage = () => {
       localStorage.setItem('auth_username', data.username)
       window.location.href = '/dashboard'
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : t('login.failed'))
     } finally {
       setLoading(false)
     }
@@ -95,7 +98,7 @@ const LoginPage = () => {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">NovusGate</h1>
-          <p className="text-gray-500 mt-2">Sign in to your dashboard</p>
+          <p className="text-gray-500 mt-2">{t('login.subtitle')}</p>
         </div>
 
         {error && (
@@ -105,7 +108,7 @@ const LoginPage = () => {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Username
+              {t('login.username')}
             </label>
             <input
               type="text"
@@ -117,7 +120,7 @@ const LoginPage = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
+              {t('login.password')}
             </label>
             <input
               type="password"
@@ -132,7 +135,7 @@ const LoginPage = () => {
             disabled={loading}
             className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('login.signingIn') : t('login.signIn')}
           </button>
         </form>
       </div>

@@ -1,4 +1,5 @@
 import { AlertTriangle, Globe, Lock, XCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge, Button, Card } from '@/components/ui'
 import type { FirewallRule } from '@/types'
 
@@ -9,6 +10,7 @@ interface OpenPortsTabProps {
 }
 
 export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPortsTabProps) => {
+  const { t } = useTranslation('firewall')
   // Parse port number from rule - handles formats like "22", "dpt:22", "8000:9000"
   const parsePort = (portStr: string | undefined): number => {
     if (!portStr || portStr === '-') return 0
@@ -21,7 +23,7 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
   const handleClosePortClick = (rule: FirewallRule) => {
     const port = parsePort(rule.port)
     if (port === 0) {
-      alert('Invalid port number')
+      alert(t('alerts.invalidPort'))
       return
     }
     // Ensure protocol is lowercase and valid for close port operation
@@ -43,22 +45,22 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Port
+                    {t('common:fields.port')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Protocol
+                    {t('common:fields.protocol')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Source
+                    {t('common:fields.source')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Interface
+                    {t('common:fields.interface')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    {t('common:fields.status')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
+                    {t('common:fields.actions')}
                   </th>
                 </tr>
               </thead>
@@ -81,7 +83,7 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
                     </td>
                     <td className="px-4 py-3 text-sm font-mono">
                       {rule.source === 'anywhere' || rule.source === '0.0.0.0/0' ? (
-                        <span className="text-gray-500">Any</span>
+                        <span className="text-gray-500">{t('common:state.any')}</span>
                       ) : (
                         rule.source
                       )}
@@ -92,10 +94,10 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
                     <td className="px-4 py-3">
                       {rule.protected ? (
                         <Badge variant="warning">
-                          <Lock className="w-3 h-3 mr-1" /> Protected
+                          <Lock className="w-3 h-3 mr-1" /> {t('openPorts.protected')}
                         </Badge>
                       ) : (
-                        <Badge variant="success">Open</Badge>
+                        <Badge variant="success">{t('openPorts.open')}</Badge>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -110,7 +112,7 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
                           onClick={() => handleClosePortClick(rule)}
                           loading={closeLoading}
                         >
-                          <XCircle className="w-4 h-4 mr-1" /> Close
+                          <XCircle className="w-4 h-4 mr-1" /> {t('common:actions.close')}
                         </Button>
                       )}
                     </td>
@@ -122,8 +124,8 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
         ) : (
           <div className="text-center py-12 text-gray-500">
             <Globe className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-            <p className="font-medium">No open ports</p>
-            <p className="text-sm">Use the "Open Port" button above</p>
+            <p className="font-medium">{t('openPorts.emptyTitle')}</p>
+            <p className="text-sm">{t('openPorts.emptyHint')}</p>
           </div>
         )}
       </Card>
@@ -133,10 +135,11 @@ export const OpenPortsTab = ({ openPorts, onClosePort, closeLoading }: OpenPorts
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-700 dark:text-blue-300">Protected Ports</h4>
+            <h4 className="font-medium text-blue-700 dark:text-blue-300">
+              {t('openPorts.protectedTitle')}
+            </h4>
             <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-              SSH (22), WireGuard (51820+) and Admin API ports are protected and cannot be closed.
-              Closing these ports could disconnect you from the server.
+              {t('openPorts.protectedText')}
             </p>
           </div>
         </div>

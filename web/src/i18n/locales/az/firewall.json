@@ -1,0 +1,159 @@
+{
+  "page": {
+    "title": "Firewall idarəetməsi",
+    "description": "Host firewall qaydalarını və VPN şəbəkələri arasında trafikə nəzarəti idarə edin"
+  },
+  "tabs": {
+    "overview": "İcmal",
+    "hostRules": "Host qaydaları",
+    "openPorts": "Açıq portlar",
+    "vpnRules": "VPN qaydaları",
+    "blockedIps": "Bloklanmış IP-lər",
+    "advanced": "Təkmil (nftables)",
+    "live": "Canlı",
+    "history": "Tarixçə",
+    "systemRules": "Sistem qaydaları"
+  },
+  "actions": {
+    "openPort": "Port aç",
+    "blockIp": "IP-ni blokla",
+    "allowIp": "IP-yə icazə ver",
+    "vpnRule": "VPN qaydası",
+    "export": "İxrac et",
+    "exportRules": "Qaydaları ixrac et",
+    "reset": "Sıfırla",
+    "unblock": "Blokdan çıxar",
+    "applyRules": "Qaydaları tətbiq et",
+    "createRule": "Qayda yarat",
+    "updateRule": "Qaydanı yenilə"
+  },
+  "confirm": {
+    "closePort": "{{port}}/{{protocol}} portunu bağlamaq istədiyinizə əminsiniz?",
+    "deleteRule": "{{chain}} zəncirindən #{{number}} qaydasını silmək istədiyinizə əminsiniz?",
+    "unblockIp": "Bu IP-ni blokdan çıxarmaq istədiyinizə əminsiniz?",
+    "reset": "Firewall-u NovusGate-in standart konfiqurasiyasına sıfırlamaq istədiyinizə əminsiniz? Bütün xüsusi qaydalar silinəcək.",
+    "deleteVpnRule": "\"{{name}}\" VPN qaydasını silmək istədiyinizə əminsiniz?"
+  },
+  "alerts": {
+    "portProtected": "Bu port qorunur və bağlana bilməz (SSH, WireGuard və ya Admin API).",
+    "ruleProtected": "Bu qayda qorunur və silinə bilməz.",
+    "invalidPort": "Yanlış port nömrəsi"
+  },
+  "forms": {
+    "portNumber": "Port nömrəsi",
+    "portPlaceholder": "məs., 8080",
+    "both": "Hər ikisi",
+    "sourceIpOptional": "Mənbə IP (istəyə bağlı)",
+    "sourceIpPlaceholder": "məs., 192.168.1.0/24 (istənilən mənbə üçün boş saxlayın)",
+    "ipOrCidr": "IP ünvanı və ya CIDR",
+    "ipPlaceholder": "məs., 192.168.1.100 və ya 10.0.0.0/8",
+    "portsOptional": "Portlar (istəyə bağlı)",
+    "portsPlaceholder": "məs., 22,80,443 (bütün portlar üçün boş saxlayın)",
+    "blockIpTitle": "IP ünvanını blokla",
+    "allowIpTitle": "IP ünvanına icazə ver"
+  },
+  "overview": {
+    "totalRules": "Ümumi qaydalar",
+    "blockedIps": "Bloklanmış IP-lər",
+    "openPorts": "Açıq portlar",
+    "vpnRules": "VPN qaydaları",
+    "chainPolicies": "Zəncir siyasətləri",
+    "chainPoliciesHint": "Hər iptables zənciri üçün standart əməliyyat",
+    "rulesCount_one": "{{count}} qayda",
+    "rulesCount_other": "{{count}} qayda",
+    "quickActions": "Sürətli əməliyyatlar",
+    "quickActionsHint": "Tez-tez istifadə olunan firewall əməliyyatları",
+    "openPortHint": "Gələn trafikə icazə ver",
+    "blockIpHint": "IP-dən gələn trafiki at (drop)",
+    "allowIpHint": "IP-dən gələn trafiki qəbul et"
+  },
+  "hostRules": {
+    "chain": "Zəncir:",
+    "policy": "Siyasət: {{policy}}",
+    "target": "Hədəf",
+    "protected": "Qorunur",
+    "emptyTitle": "Bu zəncirdə qayda yoxdur",
+    "emptyHint": "Yuxarıdakı düymələrlə qayda əlavə edin"
+  },
+  "openPorts": {
+    "protected": "Qorunur",
+    "open": "Açıq",
+    "emptyTitle": "Açıq port yoxdur",
+    "emptyHint": "Yuxarıdakı \"Port aç\" düyməsindən istifadə edin",
+    "protectedTitle": "Qorunan portlar",
+    "protectedText": "SSH (22), WireGuard (51820+) və Admin API portları qorunur və bağlana bilməz. Bu portları bağlamaq serverlə əlaqənizi kəsə bilər."
+  },
+  "blockedIps": {
+    "chain": "Zəncir: {{chain}}",
+    "rule": "Qayda #{{number}}",
+    "port": "Port: {{port}}",
+    "emptyTitle": "Bloklanmış IP yoxdur",
+    "emptyHint": "Yuxarıdakı \"IP-ni blokla\" düyməsindən istifadə edin"
+  },
+  "vpnRules": {
+    "intro": "VPN şəbəkələri arasında trafikə nəzarət (FORWARD zənciri)",
+    "unknownNetwork": "Naməlum şəbəkə",
+    "unknownNode": "Naməlum node",
+    "allPorts": "hamısı",
+    "empty": {
+      "title": "VPN şəbəkələrarası qaydalar",
+      "subtitle": "Trafikin VPN şəbəkələri arasında necə keçdiyini müəyyən edin",
+      "whatTitle": "VPN qaydaları nədir?",
+      "whatBody": "VPN qaydaları serverin <code>FORWARD</code> zəncirini idarə edir. Bu qaydalar trafikin müxtəlif VPN şəbəkələri arasında keçib-keçə bilməyəcəyini müəyyən edir. Bütün VPN trafiki serverdən keçdiyi üçün bu qaydalar şəbəkələrarası əlaqə üzərində tam nəzarət verir.",
+      "allowTitle": "Trafikə icazə ver",
+      "allow1": "Ofis şəbəkəsindən admin panelə giriş",
+      "allow2": "Müəyyən node-ların digər şəbəkələrə çıxışına icazə ver",
+      "allow3": "Yalnız müəyyən portlara icazə ver (HTTP, SSH)",
+      "blockTitle": "Trafiki blokla",
+      "block1": "Şəbəkələr arasında tam izolyasiya",
+      "block2": "Həssas resurslara girişi məhdudlaşdır",
+      "block3": "Müəyyən protokolları blokla",
+      "howTitle": "Necə işləyir",
+      "sourceNode": "Mənbə node",
+      "vpnServer": "VPN server",
+      "forwardRules": "FORWARD qaydaları",
+      "destNode": "Təyinat node",
+      "howBody": "Bütün VPN trafiki serverdən keçir. VPN qaydaları serverdə tətbiq olunur və hansı trafikin ötürülə biləcəyini müəyyən edir.",
+      "noteTitle": "Vacib qeyd",
+      "noteBody": "VPN qaydası yaratdığınız zaman mənbə node-un <code>AllowedIPs</code> konfiqurasiyası avtomatik yenilənir. Lakin artıq qoşulmuş cihazların konfiqurasiyanı yenidən yükləməsi lazım ola bilər.",
+      "startTitle": "Başlanğıc",
+      "step1": "Yuxarıdakı <strong>\"VPN qaydası\"</strong> düyməsini klikləyin",
+      "step2": "Mənbə və təyinat şəbəkəsini/node-unu seçin",
+      "step3": "Protokol və portu seçin (istəyə bağlı)",
+      "step4": "Əməliyyatı seçin: <accept>Qəbul et</accept> (icazə ver) və ya <drop>At</drop> (blokla)"
+    }
+  },
+  "ruleModal": {
+    "titleAdd": "VPN qaydası əlavə et",
+    "titleEdit": "VPN qaydasını redaktə et",
+    "ruleName": "Qaydanın adı",
+    "namePlaceholder": "məs., Veb trafikinə icazə ver",
+    "descriptionOptional": "Təsvir (istəyə bağlı)",
+    "descriptionPlaceholder": "Bu qaydanın qısa təsviri",
+    "customIp": "Xüsusi IP",
+    "selectNetwork": "Şəbəkə seçin",
+    "selectNode": "Node seçin",
+    "cidrPlaceholder": "məs., 10.10.0.0/24",
+    "portOptional": "Port (istəyə bağlı)",
+    "portPlaceholder": "məs., 80 və ya 8000-9000",
+    "protocolAll": "Hamısı",
+    "actionAccept": "Qəbul et",
+    "actionDrop": "At (drop)",
+    "actionReject": "Rədd et",
+    "enabled": "Qayda aktivdir"
+  },
+  "matrix": {
+    "loading": "Şəbəkə siyasətləri yüklənir…",
+    "loadError": "Şəbəkə siyasətləri yüklənə bilmədi.",
+    "title": "Şəbəkə siyasətləri",
+    "help": "Sətirlər mənbə şəbəkəsini, sütunlar isə təyinatı göstərir. Qismən: bəzi portlar, protokollar və ya hostlar fərqli işlənir. Həmin cüt üçün qayda əlavə etmək üçün xanaya klikləyin.",
+    "helpNft": "Qayda olmadıqda şəbəkələr bir-birindən təcrid olunur.",
+    "helpIptables": "iptables rejimində VPN trafiki, onu atan qayda olmadıqca, qəbul edilir.",
+    "fromTo": "haradan \\ haraya",
+    "allow": "İcazə",
+    "deny": "Qadağa",
+    "partial": "Qismən",
+    "cellTitle": "{{from}} → {{to}}: {{reason}}",
+    "cellRules": "Qaydalar: {{rules}}"
+  }
+}

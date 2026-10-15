@@ -1,7 +1,9 @@
 import { Archive, Download, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, useBackups, useCreateBackup, useDeleteBackup } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { Button, Card } from '@/components/ui'
+import { formatDateTime } from '@/i18n'
 import { useAppStore } from '@/store'
 
 const formatSize = (bytes: number) => {
@@ -13,6 +15,7 @@ const formatSize = (bytes: number) => {
 // BackupsCard: manual backups (P8). A backup is the database dump and the
 // WireGuard configs; it holds private keys. Restore is manual (docs).
 export const BackupsCard = () => {
+  const { t } = useTranslation('settings')
   const { data, isLoading } = useBackups()
   const create = useCreateBackup()
   const remove = useDeleteBackup()
@@ -32,8 +35,8 @@ export const BackupsCard = () => {
     } catch (err) {
       useAppStore.getState().addNotification({
         type: 'error',
-        title: 'Failed to download the backup',
-        message: apiErrorMessage(err, 'The server returned an error'),
+        title: t('backups.downloadFailed'),
+        message: apiErrorMessage(err, t('backups.serverError')),
       })
     }
   }
@@ -44,20 +47,18 @@ export const BackupsCard = () => {
         <div className="flex items-center gap-2">
           <Archive className="h-5 w-5 text-blue-500" />
           <div>
-            <h3 className="text-lg font-semibold">Backups</h3>
-            <p className="text-sm text-gray-500">
-              Database and WireGuard configs. Backups contain private keys: keep downloads safe.
-            </p>
+            <h3 className="text-lg font-semibold">{t('backups.title')}</h3>
+            <p className="text-sm text-gray-500">{t('backups.description')}</p>
           </div>
         </div>
         <Button onClick={() => create.mutate()} loading={create.isPending}>
-          Backup now
+          {t('backups.now')}
         </Button>
       </div>
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
       ) : backups.length === 0 ? (
-        <p className="text-sm text-gray-500">No backups yet.</p>
+        <p className="text-sm text-gray-500">{t('backups.empty')}</p>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {backups.map((b) => (
@@ -65,20 +66,20 @@ export const BackupsCard = () => {
               <div>
                 <p className="font-mono text-sm">{b.name}</p>
                 <p className="text-xs text-gray-500">
-                  {new Date(b.created_at).toLocaleString('az-AZ')} · {formatSize(b.size)}
+                  {formatDateTime(b.created_at)} · {formatSize(b.size)}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" onClick={() => download(b.name)}>
                   <Download className="mr-1 h-4 w-4" />
-                  Download
+                  {t('common:actions.download')}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  aria-label={`Delete ${b.name}`}
+                  aria-label={t('backups.deleteLabel', { name: b.name })}
                   onClick={() => {
-                    if (confirm(`Delete backup ${b.name}?`)) remove.mutate(b.name)
+                    if (confirm(t('backups.deleteConfirm', { name: b.name }))) remove.mutate(b.name)
                   }}
                 >
                   <Trash2 className="h-4 w-4 text-red-600" />

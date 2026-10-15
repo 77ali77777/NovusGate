@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { notificationUpdate } from '../src/lib/notifications.ts'
 
@@ -25,8 +26,21 @@ test('a new token is trimmed and sent', () => {
   assert.equal(request.bot_token, '123:abc')
 })
 
+// The error is a key of the "settings" namespace; it must exist in every language.
+const locale = (lang) =>
+  JSON.parse(readFileSync(new URL(`../src/i18n/locales/${lang}/settings.json`, import.meta.url), 'utf8'))
+const lookup = (tree, key) => key.split('.').reduce((o, k) => o?.[k], tree)
+
 test('enabling needs a chat and a token (new or stored)', () => {
-  assert.match(notificationUpdate({ ...base, chat_id: ' ' }, true).error, /chat/i)
-  assert.match(notificationUpdate(base, false).error, /token/i)
+  const noChat = notificationUpdate({ ...base, chat_id: ' ' }, true).error
+  const noToken = notificationUpdate(base, false).error
+  assert.equal(noChat, 'notifications.errors.chatIdRequired')
+  assert.equal(noToken, 'notifications.errors.botTokenRequired')
+  for (const lang of ['en', 'az']) {
+    assert.equal(typeof lookup(locale(lang), noChat), 'string', `${lang}: ${noChat}`)
+    assert.equal(typeof lookup(locale(lang), noToken), 'string', `${lang}: ${noToken}`)
+  }
+  assert.match(lookup(locale('en'), noChat), /chat/i)
+  assert.match(lookup(locale('en'), noToken), /token/i)
   assert.equal(notificationUpdate({ ...base, enabled: false }, false).error, undefined)
 })

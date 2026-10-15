@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import type React from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Button component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -141,6 +142,7 @@ interface StatusIndicatorProps {
 }
 
 export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, showLabel = true }) => {
+  const { t } = useTranslation('common')
   const colors = {
     online: 'bg-green-500',
     healthy: 'bg-green-500',
@@ -152,13 +154,13 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, showLa
   }
 
   const labels = {
-    online: 'Online',
-    healthy: 'Healthy',
-    offline: 'Offline',
-    pending: 'Pending',
-    unhealthy: 'Unhealthy',
-    expired: 'Expired',
-    unknown: 'Unknown',
+    online: t('status.online'),
+    healthy: t('status.healthy'),
+    offline: t('status.offline'),
+    pending: t('status.pending'),
+    unhealthy: t('status.unhealthy'),
+    expired: t('status.expired'),
+    unknown: t('status.unknown'),
   }
 
   return (
@@ -310,9 +312,10 @@ export function Table<T extends { id: string }>({
   columns,
   data,
   onRowClick,
-  emptyMessage = 'No data available',
+  emptyMessage,
   loading = false,
 }: TableProps<T>) {
+  const { t } = useTranslation('common')
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -336,7 +339,11 @@ export function Table<T extends { id: string }>({
   }
 
   if (data.length === 0) {
-    return <div className="text-center py-12 text-gray-500 dark:text-gray-400">{emptyMessage}</div>
+    return (
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        {emptyMessage ?? t('state.noData')}
+      </div>
+    )
   }
 
   return (

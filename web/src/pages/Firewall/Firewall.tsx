@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   api,
   useAllowIP,
@@ -59,6 +60,7 @@ type TabId =
   | 'system-rules'
 
 export const Firewall: React.FC = () => {
+  const { t } = useTranslation('firewall')
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [selectedChain, setSelectedChain] = useState<string>('INPUT')
 
@@ -152,10 +154,10 @@ export const Firewall: React.FC = () => {
   // Close port handler
   const handleClosePort = async (port: number, protocol: string, isProtected: boolean) => {
     if (isProtected) {
-      alert('This port is protected and cannot be closed (SSH, WireGuard or Admin API).')
+      alert(t('alerts.portProtected'))
       return
     }
-    if (!confirm(`Are you sure you want to close port ${port}/${protocol}?`)) return
+    if (!confirm(t('confirm.closePort', { port, protocol }))) return
     try {
       await closePortMutation.mutateAsync({ port, protocol })
     } catch (error: any) {
@@ -210,10 +212,10 @@ export const Firewall: React.FC = () => {
 
   const handleDeleteRule = async (chain: string, lineNumber: number, isProtected: boolean) => {
     if (isProtected) {
-      alert('This rule is protected and cannot be deleted.')
+      alert(t('alerts.ruleProtected'))
       return
     }
-    if (!confirm(`Are you sure you want to delete rule #${lineNumber} from ${chain}?`)) return
+    if (!confirm(t('confirm.deleteRule', { number: lineNumber, chain }))) return
     try {
       await deleteRuleMutation.mutateAsync({ chain, line_number: lineNumber })
     } catch (error) {
@@ -222,7 +224,7 @@ export const Firewall: React.FC = () => {
   }
 
   const handleUnblockIP = async (chain: string, lineNumber: number) => {
-    if (!confirm('Are you sure you want to unblock this IP?')) return
+    if (!confirm(t('confirm.unblockIp'))) return
     try {
       await deleteRuleMutation.mutateAsync({ chain, line_number: lineNumber, force: true })
     } catch (error) {
@@ -246,12 +248,7 @@ export const Firewall: React.FC = () => {
   }
 
   const handleResetFirewall = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to reset firewall to default NovusGate configuration? This will remove all custom rules.'
-      )
-    )
-      return
+    if (!confirm(t('confirm.reset'))) return
     try {
       await resetFirewallMutation.mutateAsync()
     } catch (error) {
@@ -299,7 +296,7 @@ export const Firewall: React.FC = () => {
   }
 
   const handleDeleteVPNRule = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete VPN rule "${name}"?`)) return
+    if (!confirm(t('confirm.deleteVpnRule', { name }))) return
     try {
       await deleteVPNRuleMutation.mutateAsync(id)
     } catch (error) {
@@ -345,15 +342,15 @@ export const Firewall: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'overview' as TabId, label: 'Overview', icon: Shield },
-    { id: 'host-rules' as TabId, label: 'Host Rules', icon: Lock },
-    { id: 'open-ports' as TabId, label: 'Open Ports', icon: Globe, count: openPorts },
-    { id: 'vpn-rules' as TabId, label: 'VPN Rules', icon: Network, count: vpnRuleCount },
-    { id: 'blocked-ips' as TabId, label: 'Blocked IPs', icon: Ban, count: blockedIPs },
-    { id: 'advanced' as TabId, label: 'Advanced (nftables)', icon: SlidersHorizontal },
-    { id: 'live' as TabId, label: 'Live', icon: Activity },
-    { id: 'history' as TabId, label: 'History', icon: History },
-    { id: 'system-rules' as TabId, label: 'System Rules', icon: ShieldCheck },
+    { id: 'overview' as TabId, label: t('tabs.overview'), icon: Shield },
+    { id: 'host-rules' as TabId, label: t('tabs.hostRules'), icon: Lock },
+    { id: 'open-ports' as TabId, label: t('tabs.openPorts'), icon: Globe, count: openPorts },
+    { id: 'vpn-rules' as TabId, label: t('tabs.vpnRules'), icon: Network, count: vpnRuleCount },
+    { id: 'blocked-ips' as TabId, label: t('tabs.blockedIps'), icon: Ban, count: blockedIPs },
+    { id: 'advanced' as TabId, label: t('tabs.advanced'), icon: SlidersHorizontal },
+    { id: 'live' as TabId, label: t('tabs.live'), icon: Activity },
+    { id: 'history' as TabId, label: t('tabs.history'), icon: History },
+    { id: 'system-rules' as TabId, label: t('tabs.systemRules'), icon: ShieldCheck },
   ]
 
   // Quick Actions Component - shown in all tabs
@@ -362,13 +359,13 @@ export const Firewall: React.FC = () => {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="primary" size="sm" onClick={() => setShowOpenPortModal(true)}>
-            <Plus className="w-4 h-4 mr-1" /> Open Port
+            <Plus className="w-4 h-4 mr-1" /> {t('actions.openPort')}
           </Button>
           <Button variant="danger" size="sm" onClick={() => setShowBlockIPModal(true)}>
-            <Ban className="w-4 h-4 mr-1" /> Block IP
+            <Ban className="w-4 h-4 mr-1" /> {t('actions.blockIp')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowAllowIPModal(true)}>
-            <CheckCircle className="w-4 h-4 mr-1" /> Allow IP
+            <CheckCircle className="w-4 h-4 mr-1" /> {t('actions.allowIp')}
           </Button>
           {activeTab === 'vpn-rules' && (
             <Button
@@ -380,15 +377,25 @@ export const Firewall: React.FC = () => {
                 setShowVPNRuleModal(true)
               }}
             >
-              <Plus className="w-4 h-4 mr-1" /> VPN Rule
+              <Plus className="w-4 h-4 mr-1" /> {t('actions.vpnRule')}
             </Button>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleExportRules} title="Export Rules">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportRules}
+            title={t('actions.exportRules')}
+          >
             <Download className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleRefresh} title="Refresh">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            title={t('common:actions.refresh')}
+          >
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
@@ -407,12 +414,12 @@ export const Firewall: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Firewall Management"
-        description="Manage host firewall rules and VPN network traffic control"
+        title={t('page.title')}
+        description={t('page.description')}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleExportRules}>
-              <Download className="w-4 h-4 mr-1" /> Export
+              <Download className="w-4 h-4 mr-1" /> {t('actions.export')}
             </Button>
             <Button
               variant="secondary"
@@ -420,10 +427,10 @@ export const Firewall: React.FC = () => {
               onClick={handleResetFirewall}
               loading={resetFirewallMutation.isPending}
             >
-              <RotateCcw className="w-4 h-4 mr-1" /> Reset
+              <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reset')}
             </Button>
             <Button variant="secondary" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+              <RefreshCw className="w-4 h-4 mr-1" /> {t('common:actions.refresh')}
             </Button>
           </div>
         }
@@ -528,12 +535,12 @@ export const Firewall: React.FC = () => {
       <Modal
         isOpen={showOpenPortModal}
         onClose={() => setShowOpenPortModal(false)}
-        title="Open Port"
+        title={t('actions.openPort')}
         size="md"
       >
         <form onSubmit={handleOpenPort} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Port Number</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.portNumber')}</label>
             <input
               type="number"
               required
@@ -542,11 +549,11 @@ export const Firewall: React.FC = () => {
               value={openPortForm.port}
               onChange={(e) => setOpenPortForm({ ...openPortForm, port: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 8080"
+              placeholder={t('forms.portPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Protocol</label>
+            <label className="block text-sm font-medium mb-1">{t('common:fields.protocol')}</label>
             <select
               value={openPortForm.protocol}
               onChange={(e) => setOpenPortForm({ ...openPortForm, protocol: e.target.value })}
@@ -554,25 +561,25 @@ export const Firewall: React.FC = () => {
             >
               <option value="tcp">TCP</option>
               <option value="udp">UDP</option>
-              <option value="both">Both</option>
+              <option value="both">{t('forms.both')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Source IP (Optional)</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.sourceIpOptional')}</label>
             <input
               type="text"
               value={openPortForm.source}
               onChange={(e) => setOpenPortForm({ ...openPortForm, source: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 192.168.1.0/24 (leave empty for any)"
+              placeholder={t('forms.sourceIpPlaceholder')}
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" type="button" onClick={() => setShowOpenPortModal(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant="primary" type="submit" loading={openPortMutation.isPending}>
-              Open Port
+              {t('actions.openPort')}
             </Button>
           </div>
         </form>
@@ -582,37 +589,37 @@ export const Firewall: React.FC = () => {
       <Modal
         isOpen={showBlockIPModal}
         onClose={() => setShowBlockIPModal(false)}
-        title="Block IP Address"
+        title={t('forms.blockIpTitle')}
         size="md"
       >
         <form onSubmit={handleBlockIP} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">IP Address or CIDR</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.ipOrCidr')}</label>
             <input
               type="text"
               required
               value={blockIPForm.ip}
               onChange={(e) => setBlockIPForm({ ...blockIPForm, ip: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 192.168.1.100 or 10.0.0.0/8"
+              placeholder={t('forms.ipPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Ports (Optional)</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.portsOptional')}</label>
             <input
               type="text"
               value={blockIPForm.ports}
               onChange={(e) => setBlockIPForm({ ...blockIPForm, ports: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 22,80,443 (leave empty for all ports)"
+              placeholder={t('forms.portsPlaceholder')}
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" type="button" onClick={() => setShowBlockIPModal(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant="danger" type="submit" loading={blockIPMutation.isPending}>
-              Block IP
+              {t('actions.blockIp')}
             </Button>
           </div>
         </form>
@@ -622,37 +629,37 @@ export const Firewall: React.FC = () => {
       <Modal
         isOpen={showAllowIPModal}
         onClose={() => setShowAllowIPModal(false)}
-        title="Allow IP Address"
+        title={t('forms.allowIpTitle')}
         size="md"
       >
         <form onSubmit={handleAllowIP} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">IP Address or CIDR</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.ipOrCidr')}</label>
             <input
               type="text"
               required
               value={allowIPForm.ip}
               onChange={(e) => setAllowIPForm({ ...allowIPForm, ip: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 192.168.1.100 or 10.0.0.0/8"
+              placeholder={t('forms.ipPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Ports (Optional)</label>
+            <label className="block text-sm font-medium mb-1">{t('forms.portsOptional')}</label>
             <input
               type="text"
               value={allowIPForm.ports}
               onChange={(e) => setAllowIPForm({ ...allowIPForm, ports: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 22,80,443 (leave empty for all ports)"
+              placeholder={t('forms.portsPlaceholder')}
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" type="button" onClick={() => setShowAllowIPModal(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant="primary" type="submit" loading={allowIPMutation.isPending}>
-              Allow IP
+              {t('actions.allowIp')}
             </Button>
           </div>
         </form>

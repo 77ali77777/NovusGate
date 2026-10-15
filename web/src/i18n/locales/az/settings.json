@@ -1,0 +1,71 @@
+{
+  "title": "Parametrlər",
+  "description": "Hesab profilinizi və sistem istifadəçilərini idarə edin.",
+  "password": {
+    "title": "Parolu dəyiş",
+    "username": "İstifadəçi adı",
+    "current": "Hazırkı parol",
+    "new": "Yeni parol",
+    "confirm": "Yeni parolu təsdiqlə",
+    "mismatch": "Yeni parollar uyğun gəlmir",
+    "success": "Parol uğurla yeniləndi",
+    "failed": "Parol yenilənə bilmədi",
+    "updating": "Yenilənir...",
+    "submit": "Parolu yenilə"
+  },
+  "users": {
+    "title": "Admin istifadəçilər",
+    "add": "İstifadəçi əlavə et",
+    "newDetails": "Yeni istifadəçinin məlumatları",
+    "usernamePlaceholder": "İstifadəçi adı",
+    "passwordPlaceholder": "Parol",
+    "failed": "İstifadəçi yaradıla bilmədi",
+    "cannotDeleteAdmin": "Əsas admin istifadəçisini silmək olmaz.",
+    "deleteConfirm": "{{username}} istifadəçisini silmək istədiyinizə əminsiniz?",
+    "loading": "İstifadəçilər yüklənir...",
+    "created": "Yaradılıb: {{date}}",
+    "delete": "İstifadəçini sil",
+    "empty": "İstifadəçi tapılmadı"
+  },
+  "backups": {
+    "title": "Ehtiyat nüsxələr",
+    "description": "Verilənlər bazası və WireGuard konfiqurasiyaları. Ehtiyat nüsxələrdə özəl açarlar var: yüklədiyiniz faylları təhlükəsiz saxlayın.",
+    "now": "İndi ehtiyat nüsxə al",
+    "empty": "Hələ ehtiyat nüsxə yoxdur.",
+    "downloadFailed": "Ehtiyat nüsxə yüklənə bilmədi",
+    "serverError": "Server xəta qaytardı",
+    "deleteLabel": "{{name}} faylını sil",
+    "deleteConfirm": "{{name}} ehtiyat nüsxəsi silinsin?"
+  },
+  "notifications": {
+    "title": "Telegram bildirişləri",
+    "description": "@BotFather ilə bot yaradın, onu çatınıza əlavə edin, sonra bot tokenini və chat ID-ni daxil edin.",
+    "enabled": "Bildiriş göndər",
+    "chatId": "Chat ID",
+    "chatIdPlaceholder": "-1001234567890 və ya @kanal",
+    "botToken": "Bot tokeni",
+    "tokenStored": "Saxlanılıb — saxlamaq üçün boş buraxın",
+    "notifyWhen": "Nə zaman bildirilsin",
+    "events": {
+      "node_offline": "Node oflayn olur və ya geri qayıdır",
+      "node_expired": "Node-un giriş müddəti bitir",
+      "fail2ban_ban": "Fail2Ban ünvanı bloklayır",
+      "firewall_change": "Firewall dəyişdirilir"
+    },
+    "errors": {
+      "chatIdRequired": "Bildirişləri aktivləşdirmək üçün chat ID-ni daxil edin.",
+      "botTokenRequired": "Bildirişləri aktivləşdirmək üçün bot tokenini daxil edin."
+    },
+    "sendTest": "Test mesajı göndər"
+  },
+  "sessions": {
+    "title": "Aktiv sessiyalar",
+    "description": "Hələ etibarlı olan girişlər. O brauzerdən çıxış etmək üçün sessiyanı bitirin.",
+    "empty": "Aktiv sessiya yoxdur.",
+    "thisBrowser": "bu brauzer",
+    "details": "Giriş: {{created}} · son istifadə: {{lastUsed}} · bitmə vaxtı: {{expires}}",
+    "endOwnConfirm": "Öz sessiyanız bitirilsin? Hesabdan çıxış ediləcək.",
+    "endConfirm": "{{username}} istifadəçisinin bu sessiyası bitirilsin?",
+    "end": "Sessiyanı bitir"
+  }
+}

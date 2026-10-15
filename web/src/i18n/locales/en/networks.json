@@ -1,0 +1,64 @@
+{
+  "title": "Networks",
+  "description": "Manage your isolated VPN networks and Hub-and-Spoke configurations.",
+  "create": "Create Network",
+  "creating": "Creating...",
+  "searchPlaceholder": "Search networks by name, CIDR, or interface...",
+  "deleteConfirm": "Are you sure you want to delete network \"{{name}}\"? This action cannot be undone and will disconnect all nodes.",
+  "createFailed": "Failed to create network",
+  "error": "Error:",
+  "card": {
+    "created": "Created {{date}}",
+    "delete": "Delete Network",
+    "cidrRange": "CIDR Range",
+    "listenPort": "Listen Port",
+    "serverEndpoint": "Server Endpoint",
+    "autoDetected": "Auto-detected"
+  },
+  "newCard": {
+    "title": "Create New Network",
+    "description": "Set up a completely isolated VPN environment with its own subnet."
+  },
+  "form": {
+    "title": "Create New Network",
+    "name": "Network Name",
+    "namePlaceholder": "e.g. My Secure Network",
+    "cidrPlaceholder": "e.g. 10.10.0.0/24",
+    "cidrTitle": "Must be a valid private network (10.x.x.0/24)",
+    "cidrHint": "Must be a /24 private subnet (e.g., 10.10.5.0/24). All networks are restricted to /24 for security and performance.",
+    "interfaceNote": "A dedicated WireGuard interface and listening port will be automatically assigned to this network."
+  },
+  "detail": {
+    "notFound": "Network not found.",
+    "summary_one": "{{cidr}} · {{online}} of {{count}} peer online",
+    "summary_other": "{{cidr}} · {{online}} of {{count}} peers online",
+    "hub": "Hub",
+    "addressRange": "Address range",
+    "listenPortUdp": "Listen port (UDP)",
+    "endpoint": "Endpoint",
+    "serverPublicKey": "Server public key",
+    "peers": "Peers",
+    "noPeers": "No peers in this network.",
+    "policies": "Policies",
+    "toIt": "to it",
+    "fromIt": "from it",
+    "rules": "VPN rules naming this network",
+    "noRules": "None."
+  },
+  "verdict": {
+    "allow": "allow",
+    "deny": "deny",
+    "partial": "partial"
+  },
+  "ruleAction": {
+    "accept": "accept",
+    "drop": "drop",
+    "reject": "reject"
+  },
+  "ruleEndpoint": {
+    "any": "any",
+    "network": "network",
+    "node": "node",
+    "custom": "custom"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "fields": {
+    "peerName": "Peer adı",
+    "peerNamePlaceholder": "məs. Telefonum, Ofis noutbuku",
+    "virtualIp": "Virtual IP",
+    "publicIp": "Açıq IP",
+    "lastSeen": "Son görülmə",
+    "expiration": "Müddət",
+    "forever": "Limitsiz",
+    "never": "Heç vaxt",
+    "downloadRx": "Qəbul edilən (Rx)",
+    "uploadTx": "Göndərilən (Tx)",
+    "os": "ƏS",
+    "operatingSystem": "Əməliyyat sistemi",
+    "architecture": "Arxitektura",
+    "hostname": "Host adı",
+    "publicKey": "Açıq açar"
+  },
+  "list": {
+    "title": "Node-lar",
+    "description": "Mesh şəbəkənizdəki node-ları idarə edin",
+    "createPeer": "Peer yarat",
+    "noNetwork": {
+      "title": "Şəbəkə seçilməyib",
+      "description": "Node-lara baxmaq üçün yan paneldən şəbəkə seçin"
+    },
+    "adminWarning": {
+      "title": "Admin şəbəkəsi üzrə təhlükəsizlik xəbərdarlığı",
+      "body": "Siz <strong>Admin idarəetmə şəbəkəsinə (wg0)</strong> baxırsınız. Bu şəbəkədə yaradılan node-lar Admin panelinə və daxili idarəetmə xidmətlərinə çıxış əldə edəcək. Burada peer-ləri yalnız etibarlı administratorlar üçün yaradın. Bu konfiqurasiyaları adi istifadəçilərlə paylaşmayın."
+    },
+    "summary": {
+      "total": "Cəmi node"
+    },
+    "columns": {
+      "transfer": "Trafik",
+      "labels": "Etiketlər",
+      "expires": "Müddət bitir",
+      "config": "Konfiqurasiya"
+    },
+    "configUnavailable": "İdxal edilmiş node-lar üçün konfiqurasiya mövcud deyil",
+    "downloadConfig": "Konfiqurasiyanı yüklə",
+    "empty": "Bu şəbəkədə node yoxdur. Node əlavə etmək üçün qeydiyyat tokeni yaradın.",
+    "delete": {
+      "title": "Node-u sil",
+      "body": "<strong>{{name}}</strong> node-unu şəbəkədən silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.",
+      "confirm": "Node-u sil"
+    }
+  },
+  "detail": {
+    "notFound": {
+      "title": "Node tapılmadı",
+      "body": "Sorğulanan node tapılmadı və ya silinib.",
+      "back": "Node-lara qayıt"
+    },
+    "editNode": "Node-u redaktə et",
+    "statusExpiration": "Status və müddət",
+    "connectionStatus": "Bağlantı statusu",
+    "reconnectHint": "Node qoşulmursa, belə yoxlayın: Redaktə et → Deaktiv → Yadda saxla, sonra Redaktə et → Aktiv → Yadda saxla.",
+    "unlimited": "Limitsiz (həmişəlik)",
+    "expiresIn": "Müddət bitir: {{time}}",
+    "networkActivity": "Şəbəkə aktivliyi",
+    "publicEndpoint": "Açıq endpoint",
+    "deviceSystem": "Cihaz və sistem",
+    "copyPublicKey": "Açıq açarı kopyala"
+  },
+  "create": {
+    "title": "Yeni peer yarat",
+    "expiryLabel": "Müddət (giriş müddəti)",
+    "expiry": {
+      "forever": "Həmişəlik (limitsiz)",
+      "1h": "1 saat",
+      "1d": "1 gün",
+      "1w": "1 həftə",
+      "custom": "Tarix seç"
+    },
+    "customDate": "Müddətin bitmə tarixi",
+    "autoDisableHint": "Bu peer göstərilən müddətdən sonra avtomatik deaktiv ediləcək.",
+    "submit": "Yarat və konfiqurasiyanı yüklə"
+  },
+  "edit": {
+    "title": "Redaktə: {{name}}",
+    "fallbackName": "Node",
+    "expiry": {
+      "keep": "Hazırkını saxla",
+      "foreverNoLimit": "Həmişəlik (limitsiz)",
+      "removeLimit": "Limiti götür (həmişəlik)",
+      "1h": "+1 saat uzat",
+      "1d": "+1 gün uzat",
+      "1w": "+1 həftə uzat",
+      "custom": "Tarix seç"
+    },
+    "dateTime": "Bitmə tarixi və saatı",
+    "pastExpiryKept": "Hazırkı müddət artıq keçib. Onu uzadın, əks halda node yenidən deaktiv ediləcək.",
+    "extendHint": "Bu, hazırkı müddəti uzadacaq.",
+    "reactivateHint": "Node yenidən aktivləşdiriləcək və WireGuard-a geri əlavə ediləcək.",
+    "deviceInfo": "Cihaz məlumatı (istəyə bağlı)",
+    "osPlaceholder": "məs. Linux, Android",
+    "archPlaceholder": "məs. amd64, arm64",
+    "hostnamePlaceholder": "məs. server-01",
+    "save": "Dəyişiklikləri yadda saxla",
+    "errors": {
+      "dateRequired": "Müddətin bitmə tarixini seçin.",
+      "dateInvalid": "Düzgün bitmə tarixi seçin.",
+      "mustBeFuture": "Bitmə tarixi gələcəkdə olmalıdır!",
+      "onlyExtend": "Müddəti qısaltmaq olmaz! Onu yalnız uzada bilərsiniz."
+    }
+  },
+  "connect": {
+    "title": "Qoşul: {{name}}",
+    "loadError": "Konfiqurasiya yüklənərkən xəta baş verdi",
+    "tabs": {
+      "general": "Konfiqurasiya və QR"
+    },
+    "general": {
+      "wgConfig": "WireGuard konfiqurasiyası",
+      "downloadConf": ".conf faylını yüklə",
+      "mobileScan": "Mobil skan",
+      "qrAlt": "WireGuard QR kod",
+      "scanHint": "WireGuard tətbiqini açın və skan edin"
+    },
+    "installWireGuard": "1. WireGuard-ı quraşdırın",
+    "importConfig": "2. Konfiqurasiyanı idxal edin",
+    "selectFile": "Yüklənmiş <code>.conf</code> faylını seçin.",
+    "activate": "Qoşulmaq üçün <strong>Activate</strong> düyməsini basın.",
+    "windows": {
+      "intro": "Windows üçün rəsmi WireGuard klientini yükləyib quraşdırın.",
+      "downloadInstaller": "Quraşdırıcını yüklə",
+      "open": "WireGuard tətbiqini açın.",
+      "import": "<strong>Import tunnel(s) from file</strong> düyməsini basın."
+    },
+    "mac": {
+      "intro": "WireGuard-ı Mac App Store-dan yükləyin.",
+      "store": "Mac App Store",
+      "open": "WireGuard-ı Applications qovluğundan açın.",
+      "import": "Menyu panelində <strong>Import tunnel(s) from file</strong> seçimini basın."
+    },
+    "linux": {
+      "installScript": "Quraşdırma skripti",
+      "generating": "Yaradılır...",
+      "regenerate": "Yenidən yarat",
+      "generate": "Quraşdırma skriptini yarat",
+      "scriptError": "Quraşdırma skriptini yaratmaq alınmadı",
+      "scriptHint": "Onu yeni serverdə root kimi işə salın. Skript bir dəfə, 15 dəqiqə ərzində işləyir; müddəti bitsə, yenisini yaradın.",
+      "manualInstall": "Əl ilə quraşdırma (Ubuntu/Debian)",
+      "saveConfig": "Konfiqurasiyanı saxlayın",
+      "pasteHint": "(Konfiqurasiyanın məzmununu bura yapışdırın)",
+      "startVpn": "VPN-i işə salın"
+    },
+    "docker": {
+      "intro": "WireGuard klientini Docker ilə asanlıqla işə sala bilərsiniz. <code>/path/to/wg0.conf</code> yolunu öz konfiqurasiya yolunuzla əvəz edin."
+    }
+  },
+  "traffic": {
+    "title": "Trafik tarixçəsi",
+    "range": "Aralıq",
+    "ranges": {
+      "24h": "24 saat",
+      "7d": "7 gün",
+      "30d": "30 gün"
+    },
+    "loadError": "Trafik tarixçəsini yükləmək mümkün olmadı.",
+    "empty": "Bu aralıqda hələ trafik qeydə alınmayıb. Ölçmələr hər 5 dəqiqədən bir götürülür."
+  }
+}

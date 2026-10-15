@@ -1,0 +1,113 @@
+{
+  "title": "Fail2Ban Control Panel",
+  "description": "Intrusion prevention and IP ban management",
+  "responsive": "Responsive",
+  "jailLabel": "Jail:",
+  "notInstalled": {
+    "description": "Intrusion prevention system",
+    "title": "Fail2Ban Not Installed",
+    "hint": "Install Fail2Ban to protect your server from brute-force attacks."
+  },
+  "tabs": {
+    "overview": "Overview",
+    "banned": "Banned IPs",
+    "whitelist": "Whitelist",
+    "settings": "Settings",
+    "permanent": "Permanent Bans",
+    "history": "History",
+    "logs": "Logs"
+  },
+  "actions": {
+    "banIp": "Ban IP",
+    "reload": "Reload",
+    "unban": "Unban",
+    "unblock": "Unblock"
+  },
+  "stats": {
+    "currentlyBanned": "Currently Banned",
+    "failedAttempts": "Failed Attempts",
+    "totalBanned": "Total Banned",
+    "permanentBans": "Permanent Bans"
+  },
+  "overview": {
+    "currentSettings": "Current Settings: {{jail}}",
+    "allJails": "All Jails",
+    "bannedCount_one": "{{count}} banned",
+    "bannedCount_other": "{{count}} banned",
+    "failedCount_one": "{{count}} failed",
+    "failedCount_other": "{{count}} failed"
+  },
+  "duration": {
+    "permanent": "Permanent",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "min_one": "{{count}} min",
+    "min_other": "{{count}} min",
+    "sec_one": "{{count}} sec",
+    "sec_other": "{{count}} sec"
+  },
+  "banned": {
+    "title": "Banned IPs in {{jail}}",
+    "subtitle": "IPs currently banned by Fail2Ban (temporary bans)",
+    "confirmUnban": "Unban {{ip}}?",
+    "emptyTitle": "No banned IPs",
+    "emptyHint": "All clear in {{jail}} jail"
+  },
+  "whitelist": {
+    "title": "Whitelist for {{jail}}",
+    "subtitle": "IPs that will never be banned",
+    "placeholder": "Enter IP or CIDR (e.g., 192.168.1.0/24)",
+    "confirmRemove": "Remove {{ip}} from whitelist?",
+    "empty": "No whitelisted IPs"
+  },
+  "settings": {
+    "title": "Settings for {{jail}}",
+    "subtitle": "Configure ban parameters (changes apply immediately)",
+    "bantime": "Ban Time",
+    "maxretry": "Max Retry",
+    "findtime": "Find Time",
+    "bantimeHint": "Seconds (-1 = permanent)",
+    "maxretryHint": "Failed attempts before ban",
+    "findtimeHint": "Time window (seconds)",
+    "save": "Save Settings"
+  },
+  "permanent": {
+    "title": "Permanent Bans (iptables)",
+    "subtitle": "IPs blocked via firewall rules - persist until manually removed",
+    "ruleInfo": "Rule #{{line}} • Protocol: {{protocol}}",
+    "confirmRemove": "Remove permanent ban for {{ip}}?",
+    "emptyTitle": "No permanent bans",
+    "emptyHint": "No IPs are permanently blocked"
+  },
+  "history": {
+    "title": "Ban History",
+    "subtitle": "Recent ban and unban events",
+    "empty": "No history available"
+  },
+  "logs": {
+    "title": "Fail2Ban Logs",
+    "subtitle": "Recent log entries",
+    "empty": "No logs available"
+  },
+  "banModal": {
+    "title": "Ban IP Address",
+    "ipPlaceholder": "e.g., 192.168.1.100",
+    "jail": "Jail",
+    "permanent": "Permanent ban (via iptables firewall)",
+    "permanentWarning": "Permanent bans are added to iptables and persist until manually removed."
+  },
+  "toasts": {
+    "banFailed": "Failed to ban IP",
+    "banned": "IP banned",
+    "settingsFailed": "Failed to save settings",
+    "settingsSaved": "Settings saved",
+    "whitelistFailed": "Failed to update whitelist",
+    "whitelistUpdated": "Whitelist updated",
+    "permanentRemoveFailed": "Failed to remove permanent ban",
+    "permanentRemoved": "Permanent ban removed",
+    "reloadFailed": "Failed to reload Fail2Ban",
+    "reloaded": "Fail2Ban reloaded"
+  }
+}

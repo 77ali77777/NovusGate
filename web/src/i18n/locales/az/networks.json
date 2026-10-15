@@ -1,0 +1,64 @@
+{
+  "title": "Şəbəkələr",
+  "description": "İzolə edilmiş VPN şəbəkələrinizi və Hub-and-Spoke konfiqurasiyalarını idarə edin.",
+  "create": "Şəbəkə yarat",
+  "creating": "Yaradılır...",
+  "searchPlaceholder": "Şəbəkələri ada, CIDR-ə və ya interfeysə görə axtarın...",
+  "deleteConfirm": "\"{{name}}\" şəbəkəsini silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz və bütün node-ların bağlantısını kəsəcək.",
+  "createFailed": "Şəbəkə yaradıla bilmədi",
+  "error": "Xəta:",
+  "card": {
+    "created": "Yaradılıb: {{date}}",
+    "delete": "Şəbəkəni sil",
+    "cidrRange": "CIDR diapazonu",
+    "listenPort": "Dinləmə portu",
+    "serverEndpoint": "Server endpoint-i",
+    "autoDetected": "Avtomatik təyin edilib"
+  },
+  "newCard": {
+    "title": "Yeni şəbəkə yarat",
+    "description": "Öz alt şəbəkəsi olan tamamilə izolə edilmiş VPN mühiti qurun."
+  },
+  "form": {
+    "title": "Yeni şəbəkə yarat",
+    "name": "Şəbəkənin adı",
+    "namePlaceholder": "məs. Təhlükəsiz şəbəkəm",
+    "cidrPlaceholder": "məs. 10.10.0.0/24",
+    "cidrTitle": "Etibarlı özəl şəbəkə olmalıdır (10.x.x.0/24)",
+    "cidrHint": "/24 özəl alt şəbəkə olmalıdır (məs. 10.10.5.0/24). Təhlükəsizlik və performans üçün bütün şəbəkələr /24 ilə məhdudlaşdırılır.",
+    "interfaceNote": "Bu şəbəkəyə avtomatik olaraq ayrıca WireGuard interfeysi və dinləmə portu təyin ediləcək."
+  },
+  "detail": {
+    "notFound": "Şəbəkə tapılmadı.",
+    "summary_one": "{{cidr}} · {{count}} peer-dən {{online}} onlayn",
+    "summary_other": "{{cidr}} · {{count}} peer-dən {{online}} onlayn",
+    "hub": "Hub",
+    "addressRange": "Ünvan diapazonu",
+    "listenPortUdp": "Dinləmə portu (UDP)",
+    "endpoint": "Endpoint",
+    "serverPublicKey": "Serverin açıq açarı",
+    "peers": "Peer-lər",
+    "noPeers": "Bu şəbəkədə peer yoxdur.",
+    "policies": "Siyasətlər",
+    "toIt": "ona",
+    "fromIt": "ondan",
+    "rules": "Bu şəbəkəni göstərən VPN qaydaları",
+    "noRules": "Yoxdur."
+  },
+  "verdict": {
+    "allow": "icazə",
+    "deny": "qadağa",
+    "partial": "qismən"
+  },
+  "ruleAction": {
+    "accept": "qəbul et",
+    "drop": "at",
+    "reject": "rədd et"
+  },
+  "ruleEndpoint": {
+    "any": "istənilən",
+    "network": "şəbəkə",
+    "node": "node",
+    "custom": "xüsusi"
+  }
+}

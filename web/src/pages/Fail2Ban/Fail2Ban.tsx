@@ -19,6 +19,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api, useFail2BanLogs, useFail2BanStatus, useUnbanIP } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { Badge, Button, Card } from '@/components/ui'
@@ -28,7 +29,7 @@ import { formatBantime } from './formatBantime'
 const useManualBan = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to ban IP', successTitle: 'IP banned' },
+    meta: { errorTitle: 'fail2ban:toasts.banFailed', successTitle: 'fail2ban:toasts.banned' },
     mutationFn: (data: { jail: string; ip: string; permanent: boolean }) =>
       api.banIP(data.jail, data.ip, data.permanent),
     onSuccess: () => {
@@ -48,7 +49,10 @@ const useJailSettings = (jail: string) =>
 const useUpdateJailSettings = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to save settings', successTitle: 'Settings saved' },
+    meta: {
+      errorTitle: 'fail2ban:toasts.settingsFailed',
+      successTitle: 'fail2ban:toasts.settingsSaved',
+    },
     mutationFn: (data: { jail: string; bantime?: string; maxretry?: string; findtime?: string }) =>
       api.updateJailSettings(data.jail, data),
     onSuccess: (_, v) => {
@@ -68,7 +72,10 @@ const useWhitelist = (jail: string) =>
 const useUpdateWhitelist = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to update whitelist', successTitle: 'Whitelist updated' },
+    meta: {
+      errorTitle: 'fail2ban:toasts.whitelistFailed',
+      successTitle: 'fail2ban:toasts.whitelistUpdated',
+    },
     mutationFn: (data: { jail: string; action: 'add' | 'remove'; ip: string }) =>
       api.updateWhitelist(data.jail, data.action, data.ip),
     onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['whitelist', v.jail] }),
@@ -81,7 +88,10 @@ const usePermanentBans = () =>
 const useRemovePermanentBan = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to remove permanent ban', successTitle: 'Permanent ban removed' },
+    meta: {
+      errorTitle: 'fail2ban:toasts.permanentRemoveFailed',
+      successTitle: 'fail2ban:toasts.permanentRemoved',
+    },
     mutationFn: (ip: string) => api.removePermanentBan(ip),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['permanent-bans'] }),
   })
@@ -90,7 +100,7 @@ const useRemovePermanentBan = () => {
 const useReloadFail2Ban = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to reload Fail2Ban', successTitle: 'Fail2Ban reloaded' },
+    meta: { errorTitle: 'fail2ban:toasts.reloadFailed', successTitle: 'fail2ban:toasts.reloaded' },
     mutationFn: (jail?: string) => api.reloadFail2Ban(jail),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fail2ban'] }),
   })
@@ -136,6 +146,7 @@ type ActiveTabProps =
   | 'logs'
 
 export const Fail2BanPage = () => {
+  const { t } = useTranslation('fail2ban')
   const [activeTab, setActiveTab] = useState<ActiveTabProps>('overview')
   const [selectedJail, setSelectedJail] = useState<string>('sshd')
   const [showBanModal, setShowBanModal] = useState(false)
@@ -187,6 +198,12 @@ export const Fail2BanPage = () => {
 
   const currentJail = status?.jails?.find((j: JailData) => j.name === selectedJail)
 
+  // Duration in the panel's language, e.g. "10 min" or "Permanent".
+  const duration = (s: string) => {
+    const { unit, count } = formatBantime(s)
+    return t(`duration.${unit}`, { count })
+  }
+
   if (statusLoading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -197,33 +214,28 @@ export const Fail2BanPage = () => {
   if (!status?.installed)
     return (
       <div className="space-y-6">
-        <PageHeader title="Fail2Ban" description="Intrusion prevention system" />
+        <PageHeader title="Fail2Ban" description={t('notInstalled.description')} />
         <Card className="text-center py-12">
           <ShieldOff className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Fail2Ban Not Installed</h2>
-          <p className="text-gray-500">
-            Install Fail2Ban to protect your server from brute-force attacks.
-          </p>
+          <h2 className="text-xl font-semibold mb-2">{t('notInstalled.title')}</h2>
+          <p className="text-gray-500">{t('notInstalled.hint')}</p>
         </Card>
       </div>
     )
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Shield, count: undefined },
-    { id: 'banned', label: 'Banned IPs', icon: Ban, count: currentJail?.banned_count },
-    { id: 'whitelist', label: 'Whitelist', icon: CheckCircle, count: undefined },
-    { id: 'settings', label: 'Settings', icon: Settings, count: undefined },
-    { id: 'permanent', label: 'Permanent Bans', icon: Ban, count: permanentBans?.count },
-    { id: 'history', label: 'History', icon: History, count: undefined },
-    { id: 'logs', label: 'Logs', icon: List, count: undefined },
+    { id: 'overview', label: t('tabs.overview'), icon: Shield, count: undefined },
+    { id: 'banned', label: t('tabs.banned'), icon: Ban, count: currentJail?.banned_count },
+    { id: 'whitelist', label: t('tabs.whitelist'), icon: CheckCircle, count: undefined },
+    { id: 'settings', label: t('tabs.settings'), icon: Settings, count: undefined },
+    { id: 'permanent', label: t('tabs.permanent'), icon: Ban, count: permanentBans?.count },
+    { id: 'history', label: t('tabs.history'), icon: History, count: undefined },
+    { id: 'logs', label: t('tabs.logs'), icon: List, count: undefined },
   ] as const
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Fail2Ban Control Panel"
-        description="Intrusion prevention and IP ban management"
-      />
+      <PageHeader title={t('title')} description={t('description')} />
 
       {/* Status Bar */}
       <Card className="p-4">
@@ -232,23 +244,23 @@ export const Fail2BanPage = () => {
             <Badge variant={status.running ? 'success' : 'danger'} size="md">
               {status.running ? (
                 <>
-                  <CheckCircle className="w-4 h-4 mr-1" /> Running
+                  <CheckCircle className="w-4 h-4 mr-1" /> {t('common:status.running')}
                 </>
               ) : (
                 <>
-                  <XCircle className="w-4 h-4 mr-1" /> Stopped
+                  <XCircle className="w-4 h-4 mr-1" /> {t('common:status.stopped')}
                 </>
               )}
             </Badge>
             {pingStatus?.alive && (
               <Badge variant="default" size="md">
-                <Activity className="w-4 h-4 mr-1" /> Responsive
+                <Activity className="w-4 h-4 mr-1" /> {t('responsive')}
               </Badge>
             )}
 
             {/* Jail Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Jail:</span>
+              <span className="text-sm text-gray-500">{t('jailLabel')}</span>
               <select
                 value={selectedJail}
                 onChange={(e) => setSelectedJail(e.target.value)}
@@ -265,7 +277,7 @@ export const Fail2BanPage = () => {
 
           <div className="flex items-center gap-2">
             <Button variant="danger" size="sm" onClick={() => setShowBanModal(true)}>
-              <Ban className="w-4 h-4 mr-1" /> Ban IP
+              <Ban className="w-4 h-4 mr-1" /> {t('actions.banIp')}
             </Button>
             <Button
               variant="secondary"
@@ -273,10 +285,10 @@ export const Fail2BanPage = () => {
               onClick={() => reloadMutation.mutate(undefined)}
               loading={reloadMutation.isPending}
             >
-              <RotateCcw className="w-4 h-4 mr-1" /> Reload
+              <RotateCcw className="w-4 h-4 mr-1" /> {t('actions.reload')}
             </Button>
             <Button variant="secondary" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+              <RefreshCw className="w-4 h-4 mr-1" /> {t('common:actions.refresh')}
             </Button>
           </div>
         </div>
@@ -315,7 +327,7 @@ export const Fail2BanPage = () => {
                 <Ban className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Currently Banned</p>
+                <p className="text-sm text-gray-500">{t('stats.currentlyBanned')}</p>
                 <p className="text-2xl font-bold text-red-600">{currentJail?.banned_count || 0}</p>
               </div>
             </div>
@@ -326,7 +338,7 @@ export const Fail2BanPage = () => {
                 <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Failed Attempts</p>
+                <p className="text-sm text-gray-500">{t('stats.failedAttempts')}</p>
                 <p className="text-2xl font-bold text-orange-600">
                   {currentJail?.failed_count || 0}
                 </p>
@@ -339,7 +351,7 @@ export const Fail2BanPage = () => {
                 <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Total Banned</p>
+                <p className="text-sm text-gray-500">{t('stats.totalBanned')}</p>
                 <p className="text-2xl font-bold text-blue-600">{currentJail?.total_banned || 0}</p>
               </div>
             </div>
@@ -350,7 +362,7 @@ export const Fail2BanPage = () => {
                 <Ban className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Permanent Bans</p>
+                <p className="text-sm text-gray-500">{t('stats.permanentBans')}</p>
                 <p className="text-2xl font-bold text-purple-600">{permanentBans?.count || 0}</p>
               </div>
             </div>
@@ -358,25 +370,27 @@ export const Fail2BanPage = () => {
 
           {/* Quick Info */}
           <Card className="p-4 md:col-span-2">
-            <h3 className="font-semibold mb-3">Current Settings: {selectedJail}</h3>
+            <h3 className="font-semibold mb-3">
+              {t('overview.currentSettings', { jail: selectedJail })}
+            </h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Ban Time</p>
-                <p className="font-bold">{formatBantime(jailSettings?.bantime || '0')}</p>
+                <p className="text-xs text-gray-500 mb-1">{t('settings.bantime')}</p>
+                <p className="font-bold">{duration(jailSettings?.bantime || '0')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Max Retry</p>
+                <p className="text-xs text-gray-500 mb-1">{t('settings.maxretry')}</p>
                 <p className="font-bold">{jailSettings?.maxretry || '0'}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Find Time</p>
-                <p className="font-bold">{formatBantime(jailSettings?.findtime || '0')}</p>
+                <p className="text-xs text-gray-500 mb-1">{t('settings.findtime')}</p>
+                <p className="font-bold">{duration(jailSettings?.findtime || '0')}</p>
               </div>
             </div>
           </Card>
 
           <Card className="p-4 md:col-span-2">
-            <h3 className="font-semibold mb-3">All Jails</h3>
+            <h3 className="font-semibold mb-3">{t('overview.allJails')}</h3>
             <div className="space-y-2">
               {status.jails?.map((jail: JailData) => (
                 <div
@@ -389,9 +403,13 @@ export const Fail2BanPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {(jail.banned_count || 0) > 0 && (
-                      <Badge variant="danger">{jail.banned_count} banned</Badge>
+                      <Badge variant="danger">
+                        {t('overview.bannedCount', { count: jail.banned_count })}
+                      </Badge>
                     )}
-                    <Badge variant="default">{jail.failed_count || 0} failed</Badge>
+                    <Badge variant="default">
+                      {t('overview.failedCount', { count: jail.failed_count || 0 })}
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -404,10 +422,8 @@ export const Fail2BanPage = () => {
       {activeTab === 'banned' && (
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold">Banned IPs in {selectedJail}</h3>
-            <p className="text-sm text-gray-500">
-              IPs currently banned by Fail2Ban (temporary bans)
-            </p>
+            <h3 className="font-semibold">{t('banned.title', { jail: selectedJail })}</h3>
+            <p className="text-sm text-gray-500">{t('banned.subtitle')}</p>
           </div>
           <div className="p-4">
             {currentJail?.banned_ips && currentJail.banned_ips.length > 0 ? (
@@ -425,12 +441,12 @@ export const Fail2BanPage = () => {
                       variant="secondary"
                       size="sm"
                       onClick={() => {
-                        if (confirm(`Unban ${ip}?`))
+                        if (confirm(t('banned.confirmUnban', { ip })))
                           unbanMutation.mutate({ jail: selectedJail, ip })
                       }}
                       loading={unbanMutation.isPending}
                     >
-                      <Unlock className="w-4 h-4 mr-1" /> Unban
+                      <Unlock className="w-4 h-4 mr-1" /> {t('actions.unban')}
                     </Button>
                   </div>
                 ))}
@@ -438,8 +454,8 @@ export const Fail2BanPage = () => {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                <p className="font-medium">No banned IPs</p>
-                <p className="text-sm">All clear in {selectedJail} jail</p>
+                <p className="font-medium">{t('banned.emptyTitle')}</p>
+                <p className="text-sm">{t('banned.emptyHint', { jail: selectedJail })}</p>
               </div>
             )}
           </div>
@@ -450,14 +466,14 @@ export const Fail2BanPage = () => {
       {activeTab === 'whitelist' && (
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold">Whitelist for {selectedJail}</h3>
-            <p className="text-sm text-gray-500">IPs that will never be banned</p>
+            <h3 className="font-semibold">{t('whitelist.title', { jail: selectedJail })}</h3>
+            <p className="text-sm text-gray-500">{t('whitelist.subtitle')}</p>
           </div>
           <div className="p-4 space-y-4">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Enter IP or CIDR (e.g., 192.168.1.0/24)"
+                placeholder={t('whitelist.placeholder')}
                 value={newWhitelistIP}
                 onChange={(e) => setNewWhitelistIP(e.target.value)}
                 className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
@@ -476,7 +492,7 @@ export const Fail2BanPage = () => {
                 }}
                 loading={updateWhitelistMutation.isPending}
               >
-                <Plus className="w-4 h-4 mr-1" /> Add
+                <Plus className="w-4 h-4 mr-1" /> {t('common:actions.add')}
               </Button>
             </div>
 
@@ -495,7 +511,7 @@ export const Fail2BanPage = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (confirm(`Remove ${ip} from whitelist?`))
+                        if (confirm(t('whitelist.confirmRemove', { ip })))
                           updateWhitelistMutation.mutate({
                             jail: selectedJail,
                             action: 'remove',
@@ -510,7 +526,7 @@ export const Fail2BanPage = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p>No whitelisted IPs</p>
+                <p>{t('whitelist.empty')}</p>
               </div>
             )}
           </div>
@@ -521,15 +537,13 @@ export const Fail2BanPage = () => {
       {activeTab === 'settings' && (
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold">Settings for {selectedJail}</h3>
-            <p className="text-sm text-gray-500">
-              Configure ban parameters (changes apply immediately)
-            </p>
+            <h3 className="font-semibold">{t('settings.title', { jail: selectedJail })}</h3>
+            <p className="text-sm text-gray-500">{t('settings.subtitle')}</p>
           </div>
           <div className="p-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Ban Time</label>
+                <label className="block text-sm font-medium mb-2">{t('settings.bantime')}</label>
                 <input
                   type="text"
                   placeholder="3600"
@@ -537,10 +551,10 @@ export const Fail2BanPage = () => {
                   onChange={(e) => setSettingsForm({ ...settingsForm, bantime: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1">Seconds (-1 = permanent)</p>
+                <p className="text-xs text-gray-500 mt-1">{t('settings.bantimeHint')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Max Retry</label>
+                <label className="block text-sm font-medium mb-2">{t('settings.maxretry')}</label>
                 <input
                   type="text"
                   placeholder="3"
@@ -548,10 +562,10 @@ export const Fail2BanPage = () => {
                   onChange={(e) => setSettingsForm({ ...settingsForm, maxretry: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1">Failed attempts before ban</p>
+                <p className="text-xs text-gray-500 mt-1">{t('settings.maxretryHint')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Find Time</label>
+                <label className="block text-sm font-medium mb-2">{t('settings.findtime')}</label>
                 <input
                   type="text"
                   placeholder="600"
@@ -559,7 +573,7 @@ export const Fail2BanPage = () => {
                   onChange={(e) => setSettingsForm({ ...settingsForm, findtime: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1">Time window (seconds)</p>
+                <p className="text-xs text-gray-500 mt-1">{t('settings.findtimeHint')}</p>
               </div>
             </div>
             <div className="flex justify-end">
@@ -570,7 +584,7 @@ export const Fail2BanPage = () => {
                 }
                 loading={updateSettingsMutation.isPending}
               >
-                <Save className="w-4 h-4 mr-1" /> Save Settings
+                <Save className="w-4 h-4 mr-1" /> {t('settings.save')}
               </Button>
             </div>
           </div>
@@ -581,10 +595,8 @@ export const Fail2BanPage = () => {
       {activeTab === 'permanent' && (
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold">Permanent Bans (iptables)</h3>
-            <p className="text-sm text-gray-500">
-              IPs blocked via firewall rules - persist until manually removed
-            </p>
+            <h3 className="font-semibold">{t('permanent.title')}</h3>
+            <p className="text-sm text-gray-500">{t('permanent.subtitle')}</p>
           </div>
           <div className="p-4">
             {permanentBans?.permanent_bans && permanentBans.permanent_bans.length > 0 ? (
@@ -602,7 +614,10 @@ export const Fail2BanPage = () => {
                         <div>
                           <span className="font-mono font-medium">{ban.ip}</span>
                           <p className="text-xs text-gray-500">
-                            Rule #{ban.line_number} • Protocol: {ban.protocol}
+                            {t('permanent.ruleInfo', {
+                              line: ban.line_number,
+                              protocol: ban.protocol,
+                            })}
                           </p>
                         </div>
                       </div>
@@ -610,12 +625,12 @@ export const Fail2BanPage = () => {
                         variant="danger"
                         size="sm"
                         onClick={() => {
-                          if (confirm(`Remove permanent ban for ${ban.ip}?`))
+                          if (confirm(t('permanent.confirmRemove', { ip: ban.ip })))
                             removePermanentBanMutation.mutate(ban.ip)
                         }}
                         loading={removePermanentBanMutation.isPending}
                       >
-                        <Unlock className="w-4 h-4 mr-1" /> Unblock
+                        <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
                       </Button>
                     </div>
                   )
@@ -624,8 +639,8 @@ export const Fail2BanPage = () => {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                <p className="font-medium">No permanent bans</p>
-                <p className="text-sm">No IPs are permanently blocked</p>
+                <p className="font-medium">{t('permanent.emptyTitle')}</p>
+                <p className="text-sm">{t('permanent.emptyHint')}</p>
               </div>
             )}
           </div>
@@ -637,8 +652,8 @@ export const Fail2BanPage = () => {
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Ban History</h3>
-              <p className="text-sm text-gray-500">Recent ban and unban events</p>
+              <h3 className="font-semibold">{t('history.title')}</h3>
+              <p className="text-sm text-gray-500">{t('history.subtitle')}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => refetchHistory()}>
               <RefreshCw className="w-4 h-4" />
@@ -671,7 +686,7 @@ export const Fail2BanPage = () => {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <History className="w-12 h-12 mx-auto mb-3" />
-                <p>No history available</p>
+                <p>{t('history.empty')}</p>
               </div>
             )}
           </div>
@@ -683,8 +698,8 @@ export const Fail2BanPage = () => {
         <Card>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold">Fail2Ban Logs</h3>
-              <p className="text-sm text-gray-500">Recent log entries</p>
+              <h3 className="font-semibold">{t('logs.title')}</h3>
+              <p className="text-sm text-gray-500">{t('logs.subtitle')}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => refetchLogs()}>
               <RefreshCw className="w-4 h-4" />
@@ -711,7 +726,7 @@ export const Fail2BanPage = () => {
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <List className="w-12 h-12 mx-auto mb-3" />
-                <p>No logs available</p>
+                <p>{t('logs.empty')}</p>
               </div>
             )}
           </div>
@@ -723,21 +738,23 @@ export const Fail2BanPage = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Ban className="w-5 h-5 text-red-500" /> Ban IP Address
+              <Ban className="w-5 h-5 text-red-500" /> {t('banModal.title')}
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">IP Address</label>
+                <label className="block text-sm font-medium mb-2">
+                  {t('common:fields.ipAddress')}
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g., 192.168.1.100"
+                  placeholder={t('banModal.ipPlaceholder')}
                   value={banForm.ip}
                   onChange={(e) => setBanForm({ ...banForm, ip: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Jail</label>
+                <label className="block text-sm font-medium mb-2">{t('banModal.jail')}</label>
                 <select
                   value={selectedJail}
                   onChange={(e) => setSelectedJail(e.target.value)}
@@ -759,21 +776,19 @@ export const Fail2BanPage = () => {
                   className="rounded"
                 />
                 <label htmlFor="permanent" className="text-sm">
-                  Permanent ban (via iptables firewall)
+                  {t('banModal.permanent')}
                 </label>
               </div>
               {banForm.permanent && (
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm text-yellow-700 dark:text-yellow-300 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>
-                    Permanent bans are added to iptables and persist until manually removed.
-                  </span>
+                  <span>{t('banModal.permanentWarning')}</span>
                 </div>
               )}
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="secondary" onClick={() => setShowBanModal(false)}>
-                Cancel
+                {t('common:actions.cancel')}
               </Button>
               <Button
                 variant="danger"
@@ -790,7 +805,7 @@ export const Fail2BanPage = () => {
                 }}
                 loading={banMutation.isPending}
               >
-                <Ban className="w-4 h-4 mr-1" /> Ban IP
+                <Ban className="w-4 h-4 mr-1" /> {t('actions.banIp')}
               </Button>
             </div>
           </div>

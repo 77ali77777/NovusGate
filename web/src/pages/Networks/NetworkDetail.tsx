@@ -1,4 +1,5 @@
 import { ArrowLeft, Network as NetworkIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import {
   useFirewallPolicyMatrix,
@@ -22,6 +23,7 @@ const Field = ({ label, value }: { label: string; value?: string | number }) => 
 // NetworkDetailPage: one VPN network with its peers, its policies towards
 // the other networks and the VPN rules that name it.
 export const NetworkDetailPage = () => {
+  const { t } = useTranslation('networks')
   const { id = '' } = useParams()
   const { data: network, isLoading } = useNetwork(id)
   const { data: nodes = [] } = useNodes(id)
@@ -29,8 +31,8 @@ export const NetworkDetailPage = () => {
   const { data: matrix } = useFirewallPolicyMatrix(!!id)
   const { data: rules = [] } = useVPNFirewallRules()
 
-  if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  if (!network) return <p className="text-sm text-gray-500">Network not found.</p>
+  if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
+  if (!network) return <p className="text-sm text-gray-500">{t('detail.notFound')}</p>
 
   const online = nodes.filter((n) => n.status === 'online').length
   const others = networks.filter((n) => n.id !== id)
@@ -42,33 +44,33 @@ export const NetworkDetailPage = () => {
         to="/networks"
         className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
       >
-        <ArrowLeft className="h-4 w-4" /> Networks
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
       <PageHeader
         title={network.name}
-        description={`${network.cidr} · ${online} of ${nodes.length} peers online`}
+        description={t('detail.summary', { cidr: network.cidr, online, count: nodes.length })}
       />
 
       <Card padding="lg">
         <div className="mb-4 flex items-center gap-2">
           <NetworkIcon className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Hub</h3>
+          <h3 className="text-lg font-semibold">{t('detail.hub')}</h3>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Field label="Address range" value={network.cidr} />
-          <Field label="Interface" value={network.interface_name} />
-          <Field label="Listen port (UDP)" value={network.listen_port} />
-          <Field label="Endpoint" value={network.server_endpoint} />
+          <Field label={t('detail.addressRange')} value={network.cidr} />
+          <Field label={t('common:fields.interface')} value={network.interface_name} />
+          <Field label={t('detail.listenPortUdp')} value={network.listen_port} />
+          <Field label={t('detail.endpoint')} value={network.server_endpoint} />
           <div className="md:col-span-2">
-            <Field label="Server public key" value={network.server_public_key} />
+            <Field label={t('detail.serverPublicKey')} value={network.server_public_key} />
           </div>
         </div>
       </Card>
 
       <Card padding="lg">
-        <h3 className="mb-3 text-lg font-semibold">Peers</h3>
+        <h3 className="mb-3 text-lg font-semibold">{t('detail.peers')}</h3>
         {nodes.length === 0 ? (
-          <p className="text-sm text-gray-500">No peers in this network.</p>
+          <p className="text-sm text-gray-500">{t('detail.noPeers')}</p>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {nodes.map((n) => (
@@ -89,7 +91,7 @@ export const NetworkDetailPage = () => {
                           : 'default'
                     }
                   >
-                    {n.status}
+                    {t(`common:status.${n.status}`, { defaultValue: n.status })}
                   </Badge>
                 </span>
               </Link>
@@ -100,7 +102,7 @@ export const NetworkDetailPage = () => {
 
       {matrix && others.length > 0 && (
         <Card padding="lg">
-          <h3 className="mb-3 text-lg font-semibold">Policies</h3>
+          <h3 className="mb-3 text-lg font-semibold">{t('detail.policies')}</h3>
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {others.map((o) => {
               const out = matrix.cells[id]?.[o.id]
@@ -119,12 +121,18 @@ export const NetworkDetailPage = () => {
                   <span className="flex items-center gap-3">
                     {out && (
                       <span title={out.reason}>
-                        to it <Badge variant={verdictVariant[out.verdict]}>{out.verdict}</Badge>
+                        {t('detail.toIt')}{' '}
+                        <Badge variant={verdictVariant[out.verdict]}>
+                          {t(`verdict.${out.verdict}`, { defaultValue: out.verdict })}
+                        </Badge>
                       </span>
                     )}
                     {into && (
                       <span title={into.reason}>
-                        from it <Badge variant={verdictVariant[into.verdict]}>{into.verdict}</Badge>
+                        {t('detail.fromIt')}{' '}
+                        <Badge variant={verdictVariant[into.verdict]}>
+                          {t(`verdict.${into.verdict}`, { defaultValue: into.verdict })}
+                        </Badge>
                       </span>
                     )}
                   </span>
@@ -136,9 +144,9 @@ export const NetworkDetailPage = () => {
       )}
 
       <Card padding="lg">
-        <h3 className="mb-3 text-lg font-semibold">VPN rules naming this network</h3>
+        <h3 className="mb-3 text-lg font-semibold">{t('detail.rules')}</h3>
         {myRules.length === 0 ? (
-          <p className="text-sm text-gray-500">None.</p>
+          <p className="text-sm text-gray-500">{t('detail.noRules')}</p>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {myRules.map((r) => (
@@ -149,11 +157,20 @@ export const NetworkDetailPage = () => {
                 <span className="font-medium">{r.name}</span>
                 <span className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">
-                    {r.source_network_name || r.source_node_name || r.source_ip || r.source_type} →{' '}
-                    {r.dest_network_name || r.dest_node_name || r.dest_ip || r.dest_type}
+                    {r.source_network_name ||
+                      r.source_node_name ||
+                      r.source_ip ||
+                      t(`ruleEndpoint.${r.source_type}`, { defaultValue: r.source_type })}{' '}
+                    →{' '}
+                    {r.dest_network_name ||
+                      r.dest_node_name ||
+                      r.dest_ip ||
+                      t(`ruleEndpoint.${r.dest_type}`, { defaultValue: r.dest_type })}
                   </span>
-                  <Badge variant={r.action === 'accept' ? 'success' : 'danger'}>{r.action}</Badge>
-                  {!r.enabled && <Badge>disabled</Badge>}
+                  <Badge variant={r.action === 'accept' ? 'success' : 'danger'}>
+                    {t(`ruleAction.${r.action}`, { defaultValue: r.action })}
+                  </Badge>
+                  {!r.enabled && <Badge>{t('common:status.disabled')}</Badge>}
                 </span>
               </div>
             ))}

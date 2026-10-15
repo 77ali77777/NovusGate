@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   useCreateServerWithConfig,
@@ -29,6 +30,7 @@ import { PageHeader } from '@/components/Layout'
 import { ServerConfigModal } from '@/components/ServerConfigModal'
 import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
+import { dateFnsLocale, formatDateTime } from '@/i18n'
 import { useCurrentNetworkId } from '@/store'
 import type { Node } from '@/types'
 
@@ -41,6 +43,7 @@ const formatBytes = (bytes: number = 0) => {
 }
 
 export const NodesPage: React.FC = () => {
+  const { t } = useTranslation('nodes')
   const navigate = useNavigate()
   const networkId = useCurrentNetworkId()
   const { data: nodes, isLoading } = useNodes(networkId || '')
@@ -62,8 +65,8 @@ export const NodesPage: React.FC = () => {
     return (
       <EmptyState
         icon={<Server className="w-12 h-12" />}
-        title="No network selected"
-        description="Select a network from the sidebar to view nodes"
+        title={t('list.noNetwork.title')}
+        description={t('list.noNetwork.description')}
       />
     )
   }
@@ -102,7 +105,7 @@ export const NodesPage: React.FC = () => {
   const columns = [
     {
       key: 'name',
-      header: 'Name',
+      header: t('common:fields.name'),
       render: (node: Node) => (
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -117,12 +120,12 @@ export const NodesPage: React.FC = () => {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common:fields.status'),
       render: (node: Node) => <StatusIndicator status={node.status} />,
     },
     {
       key: 'virtual_ip',
-      header: 'Virtual IP',
+      header: t('fields.virtualIp'),
       render: (node: Node) => (
         <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
           {node.virtual_ip}
@@ -131,7 +134,7 @@ export const NodesPage: React.FC = () => {
     },
     {
       key: 'public_ip',
-      header: 'Public IP',
+      header: t('fields.publicIp'),
       render: (node: Node) => (
         <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
           {node.public_ip || '-'}
@@ -140,7 +143,7 @@ export const NodesPage: React.FC = () => {
     },
     {
       key: 'transfer',
-      header: 'Transfer',
+      header: t('list.columns.transfer'),
       render: (node: Node) => (
         <div className="text-xs space-y-0.5">
           <p className="text-green-600">↓ {formatBytes(node.transfer_rx)}</p>
@@ -150,7 +153,7 @@ export const NodesPage: React.FC = () => {
     },
     {
       key: 'labels',
-      header: 'Labels',
+      header: t('list.columns.labels'),
       render: (node: Node) => (
         <div className="flex flex-wrap gap-1">
           {Object.entries(node.labels || {})
@@ -168,42 +171,40 @@ export const NodesPage: React.FC = () => {
     },
     {
       key: 'expires',
-      header: 'Expires',
+      header: t('list.columns.expires'),
       render: (node: Node) => (
         <span
           className={`text-sm ${node.status === 'expired' ? 'text-red-500 font-bold' : 'text-gray-500'}`}
         >
           {node.expires_at && node.expires_at !== '0001-01-01T00:00:00Z'
-            ? new Date(node.expires_at).toLocaleString('az-AZ', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'Forever'}
+            ? formatDateTime(node.expires_at)
+            : t('fields.forever')}
         </span>
       ),
     },
     {
       key: 'last_seen',
-      header: 'Last Seen',
+      header: t('fields.lastSeen'),
       render: (node: Node) => (
         <span className="text-gray-500">
           {node.last_seen && node.last_seen !== '0001-01-01T00:00:00Z'
-            ? formatDistanceToNow(new Date(node.last_seen), { addSuffix: true })
-            : 'Never'}
+            ? formatDistanceToNow(new Date(node.last_seen), {
+                addSuffix: true,
+                locale: dateFnsLocale(),
+              })
+            : t('fields.never')}
         </span>
       ),
     },
     {
       key: 'config',
-      header: 'Config',
+      header: t('list.columns.config'),
       className: 'w-10',
       render: (node: Node) => {
         // Hide download button for imported nodes (they don't have private keys)
         if (!node.has_config) {
           return (
-            <span className="text-xs text-gray-400" title="Config not available for imported nodes">
+            <span className="text-xs text-gray-400" title={t('list.configUnavailable')}>
               -
             </span>
           )
@@ -217,7 +218,7 @@ export const NodesPage: React.FC = () => {
               setShowConfigModal(true)
             }}
             className="p-1 text-primary-600 hover:text-primary-700"
-            title="Download Config"
+            title={t('list.downloadConfig')}
           >
             <Download className="w-4 h-4" />
           </button>
@@ -238,7 +239,7 @@ export const NodesPage: React.FC = () => {
               setShowEditModal(true)
             }}
             className="p-1 text-gray-400 hover:text-blue-600"
-            title="Edit"
+            title={t('common:actions.edit')}
           >
             <Pencil className="w-4 h-4" />
           </button>
@@ -250,7 +251,7 @@ export const NodesPage: React.FC = () => {
               setShowDeleteModal(true)
             }}
             className="p-1 text-gray-400 hover:text-red-600"
-            title="Delete"
+            title={t('common:actions.delete')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -267,12 +268,12 @@ export const NodesPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Nodes"
-        description="Manage nodes in your mesh network"
+        title={t('list.title')}
+        description={t('list.description')}
         actions={
           <Button onClick={() => setShowCreateModal(true)}>
             <Server className="w-4 h-4 mr-2" />
-            Create Peer
+            {t('list.createPeer')}
           </Button>
         }
       />
@@ -283,13 +284,10 @@ export const NodesPage: React.FC = () => {
           <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
           <div>
             <h3 className="text-sm font-semibold text-red-800 dark:text-red-300">
-              Admin Network Security Warning
+              {t('list.adminWarning.title')}
             </h3>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-              You are viewing the <strong>Admin Management Network (wg0)</strong>. Nodes created in
-              this network will have access to the Admin Panel and internal management services.
-              Only create peers here for trusted administrators. Do not share these configs with
-              regular users.
+              <Trans t={t} i18nKey="list.adminWarning.body" components={{ strong: <strong /> }} />
             </p>
           </div>
         </div>
@@ -300,7 +298,7 @@ export const NodesPage: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Nodes</p>
+              <p className="text-sm text-gray-500">{t('list.summary.total')}</p>
               <p className="text-2xl font-semibold">{nodes?.length || 0}</p>
             </div>
             <Server className="w-8 h-8 text-gray-400" />
@@ -309,7 +307,7 @@ export const NodesPage: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Online</p>
+              <p className="text-sm text-gray-500">{t('common:status.online')}</p>
               <p className="text-2xl font-semibold text-green-600">{onlineCount}</p>
             </div>
             <div className="w-3 h-3 bg-green-500 rounded-full" />
@@ -318,7 +316,7 @@ export const NodesPage: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-sm text-gray-500">{t('common:status.pending')}</p>
               <p className="text-2xl font-semibold text-orange-500">{pendingCount}</p>
             </div>
             <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
@@ -327,7 +325,7 @@ export const NodesPage: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Offline</p>
+              <p className="text-sm text-gray-500">{t('common:status.offline')}</p>
               <p className="text-2xl font-semibold text-gray-400">{offlineCount}</p>
             </div>
             <div className="w-3 h-3 bg-gray-400 rounded-full" />
@@ -342,23 +340,31 @@ export const NodesPage: React.FC = () => {
           data={nodes || []}
           loading={isLoading}
           onRowClick={(node) => navigate(`/nodes/${node.id}`)}
-          emptyMessage="No nodes in this network. Create an enrollment token to add nodes."
+          emptyMessage={t('list.empty')}
         />
       </Card>
 
       {/* Delete confirmation modal */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Node">
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title={t('list.delete.title')}
+      >
         <div className="space-y-4">
           <p className="text-gray-600 dark:text-gray-400">
-            Are you sure you want to remove <strong>{selectedNode?.name}</strong> from the network?
-            This action cannot be undone.
+            <Trans
+              t={t}
+              i18nKey="list.delete.body"
+              values={{ name: selectedNode?.name }}
+              components={{ strong: <strong /> }}
+            />
           </p>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDelete} loading={deleteNode.isPending}>
-              Delete Node
+              {t('list.delete.confirm')}
             </Button>
           </div>
         </div>
@@ -420,6 +426,7 @@ export const NodesPage: React.FC = () => {
 
 // Node detail page
 export const NodeDetailPage: React.FC = () => {
+  const { t } = useTranslation('nodes')
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [copied, setCopied] = useState(false)
@@ -469,12 +476,12 @@ export const NodeDetailPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <Server className="w-12 h-12 text-gray-300 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Node not found</h3>
-        <p className="text-gray-500 mb-4">
-          The requested node could not be found or has been deleted.
-        </p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          {t('detail.notFound.title')}
+        </h3>
+        <p className="text-gray-500 mb-4">{t('detail.notFound.body')}</p>
         <Button variant="secondary" onClick={() => navigate('/nodes')}>
-          Back to Nodes
+          {t('detail.notFound.back')}
         </Button>
       </div>
     )
@@ -522,11 +529,11 @@ export const NodeDetailPage: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => navigate('/nodes')}>
-            Back
+            {t('common:actions.back')}
           </Button>
           <Button onClick={() => setShowEditModal(true)} className="flex items-center gap-2">
             <Pencil className="w-4 h-4" />
-            Edit Node
+            {t('detail.editNode')}
           </Button>
         </div>
       </div>
@@ -536,50 +543,62 @@ export const NodeDetailPage: React.FC = () => {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary-500" />
-            <h3 className="text-lg font-semibold">Status & Expiration</h3>
+            <h3 className="text-lg font-semibold">{t('detail.statusExpiration')}</h3>
           </div>
 
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300">Connection Status</span>
+              <span className="text-gray-600 dark:text-gray-300">
+                {t('detail.connectionStatus')}
+              </span>
               <div className="flex items-center gap-2">
                 <div
                   className={`w-3 h-3 rounded-full ${node.status === 'online' ? 'bg-green-500 animate-pulse' : node.status === 'expired' ? 'bg-red-500' : 'bg-gray-400'}`}
                 ></div>
-                <span className="font-medium capitalize">{node.status}</span>
+                <span className="font-medium capitalize">
+                  {t(`common:status.${node.status}`, { defaultValue: node.status })}
+                </span>
               </div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
-              If node is not connecting, try: Edit → Disabled → Save, then Edit → Active → Save.
+              {t('detail.reconnectHint')}
             </div>
 
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300">Expiration</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('fields.expiration')}</span>
               <div className="text-right">
                 <div
                   className={`font-bold ${node.status === 'expired' ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}
                 >
                   {node.expires_at && node.expires_at !== '0001-01-01T00:00:00Z'
-                    ? new Date(node.expires_at).toLocaleString('az-AZ')
-                    : 'Unlimited (Forever)'}
+                    ? formatDateTime(node.expires_at)
+                    : t('detail.unlimited')}
                 </div>
                 {node.expires_at &&
                   node.expires_at !== '0001-01-01T00:00:00Z' &&
                   node.status !== 'expired' && (
                     <span className="text-xs text-gray-500">
-                      Expires {formatDistanceToNow(new Date(node.expires_at), { addSuffix: true })}
+                      {t('detail.expiresIn', {
+                        time: formatDistanceToNow(new Date(node.expires_at), {
+                          addSuffix: true,
+                          locale: dateFnsLocale(),
+                        }),
+                      })}
                     </span>
                   )}
               </div>
             </div>
 
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <span className="text-gray-600 dark:text-gray-300">Last Seen</span>
+              <span className="text-gray-600 dark:text-gray-300">{t('fields.lastSeen')}</span>
               <span className="font-mono">
                 {node.last_seen && node.last_seen !== '0001-01-01T00:00:00Z'
-                  ? formatDistanceToNow(new Date(node.last_seen), { addSuffix: true })
-                  : 'Never'}
+                  ? formatDistanceToNow(new Date(node.last_seen), {
+                      addSuffix: true,
+                      locale: dateFnsLocale(),
+                    })
+                  : t('fields.never')}
               </span>
             </div>
           </div>
@@ -589,18 +608,22 @@ export const NodeDetailPage: React.FC = () => {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-semibold">Network Activity</h3>
+            <h3 className="text-lg font-semibold">{t('detail.networkActivity')}</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30 text-center">
-              <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Download (Rx)</div>
+              <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">
+                {t('fields.downloadRx')}
+              </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatBytes(node.transfer_rx)}
               </div>
             </div>
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30 text-center">
-              <div className="text-sm text-green-600 dark:text-green-400 mb-1">Upload (Tx)</div>
+              <div className="text-sm text-green-600 dark:text-green-400 mb-1">
+                {t('fields.uploadTx')}
+              </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatBytes(node.transfer_tx)}
               </div>
@@ -609,12 +632,12 @@ export const NodeDetailPage: React.FC = () => {
 
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
-              <span className="text-gray-500">Virtual IP</span>
+              <span className="text-gray-500">{t('fields.virtualIp')}</span>
               <code className="font-mono">{node.virtual_ip}</code>
             </div>
             <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
-              <span className="text-gray-500">Public Endpoint</span>
-              <code className="font-mono">{node.public_ip || 'Unknown'}</code>
+              <span className="text-gray-500">{t('detail.publicEndpoint')}</span>
+              <code className="font-mono">{node.public_ip || t('common:status.unknown')}</code>
             </div>
           </div>
         </Card>
@@ -628,24 +651,30 @@ export const NodeDetailPage: React.FC = () => {
         <Card className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <Laptop className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold">Device & System</h3>
+            <h3 className="text-lg font-semibold">{t('detail.deviceSystem')}</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <dt className="text-sm text-gray-500">Operating System</dt>
-              <dd className="mt-1 font-medium">{node.node_info?.os || 'Unknown'}</dd>
+              <dt className="text-sm text-gray-500">{t('fields.operatingSystem')}</dt>
+              <dd className="mt-1 font-medium">
+                {node.node_info?.os || t('common:status.unknown')}
+              </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-500">Hostname</dt>
-              <dd className="mt-1 font-medium">{node.node_info?.hostname || 'Unknown'}</dd>
+              <dt className="text-sm text-gray-500">{t('fields.hostname')}</dt>
+              <dd className="mt-1 font-medium">
+                {node.node_info?.hostname || t('common:status.unknown')}
+              </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-500">Architecture</dt>
-              <dd className="mt-1 font-medium">{node.node_info?.arch || 'Unknown'}</dd>
+              <dt className="text-sm text-gray-500">{t('fields.architecture')}</dt>
+              <dd className="mt-1 font-medium">
+                {node.node_info?.arch || t('common:status.unknown')}
+              </dd>
             </div>
             <div className="col-span-full">
-              <dt className="text-sm text-gray-500">Public Key</dt>
+              <dt className="text-sm text-gray-500">{t('fields.publicKey')}</dt>
               <dd className="mt-1 flex items-center gap-2">
                 <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg text-sm flex-1 font-mono break-all">
                   {node.public_key}
@@ -654,7 +683,7 @@ export const NodeDetailPage: React.FC = () => {
                   type="button"
                   onClick={() => copyToClipboard(node.public_key)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Copy Public Key"
+                  title={t('detail.copyPublicKey')}
                 >
                   {copied ? (
                     <CheckCircle className="w-5 h-5 text-green-500" />

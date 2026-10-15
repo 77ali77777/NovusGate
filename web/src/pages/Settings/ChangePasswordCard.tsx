@@ -1,9 +1,11 @@
-import { useUpdatePassword } from '@/api/client'
-import { apiErrorMessage } from '@/api/errors'
 import { Key } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useUpdatePassword } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 
 export const ChangePasswordCard: React.FC = () => {
+  const { t } = useTranslation('settings')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -18,19 +20,19 @@ export const ChangePasswordCard: React.FC = () => {
     setSuccess('')
 
     if (newPassword !== confirmPassword) {
-      setError("New passwords don't match")
+      setError(t('password.mismatch'))
       return
     }
 
     try {
       // The server changes the password of the session's user.
       await updatePassword.mutateAsync({ oldPass: oldPassword, newPass: newPassword })
-      setSuccess('Password updated successfully')
+      setSuccess(t('password.success'))
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err: any) {
-      setError(apiErrorMessage(err, 'Failed to update password'))
+      setError(apiErrorMessage(err, t('password.failed')))
     }
   }
 
@@ -40,7 +42,9 @@ export const ChangePasswordCard: React.FC = () => {
         <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400">
           <Key className="w-5 h-5" />
         </div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {t('password.title')}
+        </h2>
       </div>
 
       <div className="p-6">
@@ -58,7 +62,7 @@ export const ChangePasswordCard: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Username
+              {t('password.username')}
             </label>
             <input
               type="text"
@@ -70,7 +74,7 @@ export const ChangePasswordCard: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Current Password
+              {t('password.current')}
             </label>
             <input
               type="password"
@@ -83,7 +87,7 @@ export const ChangePasswordCard: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              New Password
+              {t('password.new')}
             </label>
             <input
               type="password"
@@ -96,7 +100,7 @@ export const ChangePasswordCard: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Confirm New Password
+              {t('password.confirm')}
             </label>
             <input
               type="password"
@@ -112,7 +116,7 @@ export const ChangePasswordCard: React.FC = () => {
             disabled={updatePassword.isPending}
             className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {updatePassword.isPending ? 'Updating...' : 'Update Password'}
+            {updatePassword.isPending ? t('password.updating') : t('password.submit')}
           </button>
         </form>
       </div>

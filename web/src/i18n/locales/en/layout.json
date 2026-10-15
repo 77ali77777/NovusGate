@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "networks": "Networks",
+    "nodes": "Nodes",
+    "topology": "Topology",
+    "firewall": "Firewall",
+    "fail2ban": "Fail2Ban",
+    "audit": "Audit log",
+    "settings": "Settings"
+  },
+  "network": "Network",
+  "selectNetwork": "Select network...",
+  "cidr": "CIDR: {{cidr}}",
+  "language": "Language",
+  "logout": "Log Out",
+  "logoutConfirm": "Are you sure you want to log out?",
+  "connection": {
+    "vpn": "VPN Connected",
+    "dev": "Dev Mode",
+    "insecure": "Insecure Connection",
+    "insecureHint": "You are accessing via Public IP. This is insecure."
+  },
+  "login": {
+    "subtitle": "Sign in to your dashboard",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "failed": "Login failed"
+  },
+  "crash": {
+    "title": "This page stopped working",
+    "retry": "Try again",
+    "reload": "Reload the panel"
+  },
+  "dismiss": "Dismiss",
+  "branding": {
+    "developedBy": "Developed by",
+    "github": "GitHub Config",
+    "linkedin": "LinkedIn Profile"
+  }
+}

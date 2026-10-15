@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -14,11 +15,12 @@ import {
   WifiOff,
 } from 'lucide-react'
 import type React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useStatsOverview, useSystemInfo } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
-import { Badge, Button, Card, EmptyState } from '@/components/ui'
 import { ProgressBar } from '@/components/ProgressBar'
+import { Badge, Button, Card, EmptyState } from '@/components/ui'
 
 // Format bytes to human readable
 const formatBytes = (bytes: number = 0): string => {
@@ -30,16 +32,17 @@ const formatBytes = (bytes: number = 0): string => {
 }
 
 // Format uptime
-const formatUptime = (seconds: number): string => {
+const formatUptime = (seconds: number, t: TFunction): string => {
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
   const mins = Math.floor((seconds % 3600) / 60)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m`
+  if (days > 0) return t('uptimeFormat.daysHours', { days, hours })
+  if (hours > 0) return t('uptimeFormat.hoursMinutes', { hours, minutes: mins })
+  return t('uptimeFormat.minutes', { minutes: mins })
 }
 
 export const DashboardPage: React.FC = () => {
+  const { t } = useTranslation('dashboard')
   const navigate = useNavigate()
   const { data: stats, isLoading: statsLoading } = useStatsOverview()
   const { data: systemInfo, isLoading: sysLoading } = useSystemInfo()
@@ -54,7 +57,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description="Overview of your NovusGate infrastructure" />
+      <PageHeader title={t('title')} description={t('description')} />
 
       {/* Server Info Card */}
       {systemInfo && (
@@ -62,11 +65,11 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Server className="w-5 h-5" />
-              <h2 className="text-lg font-semibold">Server Status</h2>
+              <h2 className="text-lg font-semibold">{t('server.title')}</h2>
             </div>
             <Badge variant="success" size="md">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
-              Online
+              {t('common:status.online')}
             </Badge>
           </div>
 
@@ -77,19 +80,27 @@ export const DashboardPage: React.FC = () => {
                 <Cpu className="w-4 h-4" />
                 <span className="text-sm opacity-80">CPU</span>
               </div>
-              <p className="text-xl font-bold">{systemInfo.cpu_cores} Cores</p>
-              <p className="text-xs opacity-70 truncate">{systemInfo.cpu_model || 'Unknown'}</p>
-              {systemInfo.load_1m && <p className="text-xs mt-1">Load: {systemInfo.load_1m}</p>}
+              <p className="text-xl font-bold">
+                {t('server.cores', { count: systemInfo.cpu_cores })}
+              </p>
+              <p className="text-xs opacity-70 truncate">
+                {systemInfo.cpu_model || t('common:status.unknown')}
+              </p>
+              {systemInfo.load_1m && (
+                <p className="text-xs mt-1">{t('server.load', { load: systemInfo.load_1m })}</p>
+              )}
             </div>
 
             {/* Memory */}
             <div className="p-3 bg-white/10 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <MemoryStick className="w-4 h-4" />
-                <span className="text-sm opacity-80">Memory</span>
+                <span className="text-sm opacity-80">{t('server.memory')}</span>
               </div>
               <p className="text-xl font-bold">{formatBytes(systemInfo.memory_used)}</p>
-              <p className="text-xs opacity-70">of {formatBytes(systemInfo.memory_total)}</p>
+              <p className="text-xs opacity-70">
+                {t('server.ofTotal', { total: formatBytes(systemInfo.memory_total) })}
+              </p>
               <div className="mt-2">
                 <ProgressBar
                   value={systemInfo.memory_used}
@@ -103,10 +114,12 @@ export const DashboardPage: React.FC = () => {
             <div className="p-3 bg-white/10 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <HardDrive className="w-4 h-4" />
-                <span className="text-sm opacity-80">Disk</span>
+                <span className="text-sm opacity-80">{t('server.disk')}</span>
               </div>
               <p className="text-xl font-bold">{formatBytes(systemInfo.disk_used)}</p>
-              <p className="text-xs opacity-70">of {formatBytes(systemInfo.disk_total)}</p>
+              <p className="text-xs opacity-70">
+                {t('server.ofTotal', { total: formatBytes(systemInfo.disk_total) })}
+              </p>
               <div className="mt-2">
                 <ProgressBar
                   value={systemInfo.disk_used}
@@ -120,9 +133,9 @@ export const DashboardPage: React.FC = () => {
             <div className="p-3 bg-white/10 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm opacity-80">Uptime</span>
+                <span className="text-sm opacity-80">{t('server.uptime')}</span>
               </div>
-              <p className="text-xl font-bold">{formatUptime(systemInfo.uptime_seconds)}</p>
+              <p className="text-xl font-bold">{formatUptime(systemInfo.uptime_seconds, t)}</p>
               <p className="text-xs opacity-70">{systemInfo.hostname}</p>
             </div>
           </div>
@@ -134,7 +147,7 @@ export const DashboardPage: React.FC = () => {
         <Card className="relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Networks</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('stats.networks')}</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {stats?.total_networks || 0}
               </p>
@@ -149,7 +162,7 @@ export const DashboardPage: React.FC = () => {
         <Card className="relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Nodes</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('stats.totalNodes')}</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {stats?.total_nodes || 0}
               </p>
@@ -164,7 +177,9 @@ export const DashboardPage: React.FC = () => {
         <Card className="relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Online</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('common:status.online')}
+              </p>
               <p className="text-3xl font-bold text-green-600">{stats?.online_nodes || 0}</p>
             </div>
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
@@ -177,7 +192,9 @@ export const DashboardPage: React.FC = () => {
         <Card className="relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Offline</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('common:status.offline')}
+              </p>
               <p className="text-3xl font-bold text-gray-400">{stats?.offline_nodes || 0}</p>
             </div>
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
@@ -190,7 +207,9 @@ export const DashboardPage: React.FC = () => {
         <Card className="relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('common:status.pending')}
+              </p>
               <p className="text-3xl font-bold text-orange-500">{stats?.pending_nodes || 0}</p>
             </div>
             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
@@ -209,13 +228,13 @@ export const DashboardPage: React.FC = () => {
               <ArrowDownToLine className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Download</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('stats.totalDownload')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatBytes(stats?.total_rx || 0)}
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Across all networks</p>
+          <p className="text-xs text-gray-500">{t('stats.acrossNetworks')}</p>
         </Card>
 
         <Card>
@@ -224,13 +243,13 @@ export const DashboardPage: React.FC = () => {
               <ArrowUpFromLine className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Upload</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('stats.totalUpload')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatBytes(stats?.total_tx || 0)}
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-500">Across all networks</p>
+          <p className="text-xs text-gray-500">{t('stats.acrossNetworks')}</p>
         </Card>
       </div>
 
@@ -239,10 +258,12 @@ export const DashboardPage: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Network className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Networks</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t('networks.title')}
+            </h2>
           </div>
           <Button variant="ghost" size="sm" onClick={() => navigate('/networks')}>
-            View all <ChevronRight className="w-4 h-4 ml-1" />
+            {t('networks.viewAll')} <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
 
@@ -270,12 +291,16 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {network.total_nodes} nodes
+                      {t('networks.nodes', { count: network.total_nodes })}
                     </p>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-green-600">{network.online_nodes} online</span>
+                      <span className="text-green-600">
+                        {t('networks.online', { n: network.online_nodes })}
+                      </span>
                       <span className="text-gray-400">•</span>
-                      <span className="text-gray-500">{network.offline_nodes} offline</span>
+                      <span className="text-gray-500">
+                        {t('networks.offline', { n: network.offline_nodes })}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -285,25 +310,25 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full" />
                     <span className="text-gray-600 dark:text-gray-400">
-                      Online: {network.online_nodes}
+                      {t('networks.statOnline', { n: network.online_nodes })}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-gray-400 rounded-full" />
                     <span className="text-gray-600 dark:text-gray-400">
-                      Offline: {network.offline_nodes}
+                      {t('networks.statOffline', { n: network.offline_nodes })}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-orange-500 rounded-full" />
                     <span className="text-gray-600 dark:text-gray-400">
-                      Pending: {network.pending_nodes}
+                      {t('networks.statPending', { n: network.pending_nodes })}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-red-500 rounded-full" />
                     <span className="text-gray-600 dark:text-gray-400">
-                      Expired: {network.expired_nodes}
+                      {t('networks.statExpired', { n: network.expired_nodes })}
                     </span>
                   </div>
                 </div>
@@ -325,10 +350,10 @@ export const DashboardPage: React.FC = () => {
         ) : (
           <EmptyState
             icon={<Network className="w-12 h-12" />}
-            title="No networks"
-            description="Create your first network to get started"
+            title={t('networks.emptyTitle')}
+            description={t('networks.emptyDescription')}
             action={{
-              label: 'Create Network',
+              label: t('networks.create'),
               onClick: () => navigate('/networks'),
             }}
           />
@@ -344,11 +369,9 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="font-medium text-red-800 dark:text-red-300">
-                {stats.expired_nodes} node{stats.expired_nodes > 1 ? 's' : ''} expired
+                {t('expired.title', { count: stats.expired_nodes })}
               </p>
-              <p className="text-sm text-red-600 dark:text-red-400">
-                These nodes need attention - their access has expired
-              </p>
+              <p className="text-sm text-red-600 dark:text-red-400">{t('expired.description')}</p>
             </div>
             <Button
               variant="secondary"
@@ -356,7 +379,7 @@ export const DashboardPage: React.FC = () => {
               className="ml-auto"
               onClick={() => navigate('/nodes')}
             >
-              Manage Nodes
+              {t('expired.manage')}
             </Button>
           </div>
         </Card>

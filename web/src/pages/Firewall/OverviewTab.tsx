@@ -1,4 +1,5 @@
 import { Ban, CheckCircle, Globe, Lock, Network, Plus, Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge, Card } from '@/components/ui'
 import type { ChainInfo } from '@/types'
 
@@ -23,6 +24,7 @@ export const OverviewTab = ({
   onBlockIP,
   onAllowIP,
 }: OverviewTabProps) => {
+  const { t } = useTranslation('firewall')
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
@@ -33,7 +35,7 @@ export const OverviewTab = ({
               <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Rules</p>
+              <p className="text-sm text-gray-500">{t('overview.totalRules')}</p>
               <p className="text-2xl font-bold text-blue-600">{totalRules}</p>
             </div>
           </div>
@@ -44,7 +46,7 @@ export const OverviewTab = ({
               <Ban className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Blocked IPs</p>
+              <p className="text-sm text-gray-500">{t('overview.blockedIps')}</p>
               <p className="text-2xl font-bold text-red-600">{blockedIPs}</p>
             </div>
           </div>
@@ -55,7 +57,7 @@ export const OverviewTab = ({
               <Globe className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Open Ports</p>
+              <p className="text-sm text-gray-500">{t('overview.openPorts')}</p>
               <p className="text-2xl font-bold text-green-600">{openPorts}</p>
             </div>
           </div>
@@ -66,7 +68,7 @@ export const OverviewTab = ({
               <Network className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">VPN Rules</p>
+              <p className="text-sm text-gray-500">{t('overview.vpnRules')}</p>
               <p className="text-2xl font-bold text-purple-600">{vpnRuleCount}</p>
             </div>
           </div>
@@ -76,8 +78,8 @@ export const OverviewTab = ({
       {/* Chain Policies */}
       <Card padding="none">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold">Chain Policies</h3>
-          <p className="text-sm text-gray-500">Default action for each iptables chain</p>
+          <h3 className="font-semibold">{t('overview.chainPolicies')}</h3>
+          <p className="text-sm text-gray-500">{t('overview.chainPoliciesHint')}</p>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -94,7 +96,9 @@ export const OverviewTab = ({
                   <Badge variant={chain.policy === 'ACCEPT' ? 'success' : 'danger'}>
                     {chain.policy}
                   </Badge>
-                  <span className="text-sm text-gray-500">{chain.rules?.length || 0} rules</span>
+                  <span className="text-sm text-gray-500">
+                    {t('overview.rulesCount', { count: chain.rules?.length || 0 })}
+                  </span>
                 </div>
               </div>
             ))}
@@ -105,8 +109,8 @@ export const OverviewTab = ({
       {/* Quick Actions */}
       <Card padding="none">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold">Quick Actions</h3>
-          <p className="text-sm text-gray-500">Common firewall operations</p>
+          <h3 className="font-semibold">{t('overview.quickActions')}</h3>
+          <p className="text-sm text-gray-500">{t('overview.quickActionsHint')}</p>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -119,8 +123,12 @@ export const OverviewTab = ({
                 <Plus className="w-5 h-5 text-green-600" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-green-700 dark:text-green-300">Open Port</p>
-                <p className="text-sm text-green-600 dark:text-green-400">Allow incoming traffic</p>
+                <p className="font-medium text-green-700 dark:text-green-300">
+                  {t('actions.openPort')}
+                </p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  {t('overview.openPortHint')}
+                </p>
               </div>
             </button>
             <button
@@ -132,8 +140,10 @@ export const OverviewTab = ({
                 <Ban className="w-5 h-5 text-red-600" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-red-700 dark:text-red-300">Block IP</p>
-                <p className="text-sm text-red-600 dark:text-red-400">Drop traffic from IP</p>
+                <p className="font-medium text-red-700 dark:text-red-300">{t('actions.blockIp')}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {t('overview.blockIpHint')}
+                </p>
               </div>
             </button>
             <button
@@ -145,8 +155,12 @@ export const OverviewTab = ({
                 <CheckCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-blue-700 dark:text-blue-300">Allow IP</p>
-                <p className="text-sm text-blue-600 dark:text-blue-400">Accept traffic from IP</p>
+                <p className="font-medium text-blue-700 dark:text-blue-300">
+                  {t('actions.allowIp')}
+                </p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  {t('overview.allowIpHint')}
+                </p>
               </div>
             </button>
           </div>

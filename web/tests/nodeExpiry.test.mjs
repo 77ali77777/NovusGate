@@ -32,13 +32,13 @@ test('extensions start from the later of now and the current expiry', () => {
 test('a custom date must be in the future', () => {
   const r = computeExpiry({ choice: 'custom', current: null, customDate: '2026-10-13T10:00:00Z', now })
   assert.equal(r.ok, false)
-  assert.match(r.error, /future/)
+  assert.equal(r.error, 'nodes:edit.errors.mustBeFuture')
 })
 
 test('a custom date may not shorten a future expiry', () => {
   const r = computeExpiry({ choice: 'custom', current: future, customDate: '2026-11-01T10:00:00Z', now })
   assert.equal(r.ok, false)
-  assert.match(r.error, /only extend/)
+  assert.equal(r.error, 'nodes:edit.errors.onlyExtend')
 })
 
 test('a custom date after an expired limit is accepted', () => {
@@ -49,4 +49,10 @@ test('a custom date after an expired limit is accepted', () => {
 test('custom without a date is an error, not a silent no-op', () => {
   const r = computeExpiry({ choice: 'custom', current: null, customDate: '', now })
   assert.equal(r.ok, false)
+  assert.equal(r.error, 'nodes:edit.errors.dateRequired')
+})
+
+test('an unparsable custom date is an error', () => {
+  const r = computeExpiry({ choice: 'custom', current: null, customDate: 'not a date', now })
+  assert.deepEqual(r, { ok: false, error: 'nodes:edit.errors.dateInvalid' })
 })

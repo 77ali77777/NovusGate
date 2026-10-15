@@ -1,0 +1,71 @@
+{
+  "title": "Settings",
+  "description": "Manage your account profile and system users.",
+  "password": {
+    "title": "Change Password",
+    "username": "Username",
+    "current": "Current Password",
+    "new": "New Password",
+    "confirm": "Confirm New Password",
+    "mismatch": "New passwords don't match",
+    "success": "Password updated successfully",
+    "failed": "Failed to update password",
+    "updating": "Updating...",
+    "submit": "Update Password"
+  },
+  "users": {
+    "title": "Admin Users",
+    "add": "Add User",
+    "newDetails": "New User Details",
+    "usernamePlaceholder": "Username",
+    "passwordPlaceholder": "Password",
+    "failed": "Failed to create user",
+    "cannotDeleteAdmin": "Cannot delete the main admin user.",
+    "deleteConfirm": "Are you sure you want to delete user {{username}}?",
+    "loading": "Loading users...",
+    "created": "Created: {{date}}",
+    "delete": "Delete User",
+    "empty": "No users found"
+  },
+  "backups": {
+    "title": "Backups",
+    "description": "Database and WireGuard configs. Backups contain private keys: keep downloads safe.",
+    "now": "Backup now",
+    "empty": "No backups yet.",
+    "downloadFailed": "Failed to download the backup",
+    "serverError": "The server returned an error",
+    "deleteLabel": "Delete {{name}}",
+    "deleteConfirm": "Delete backup {{name}}?"
+  },
+  "notifications": {
+    "title": "Telegram notifications",
+    "description": "Create a bot with @BotFather, add it to your chat, then enter the bot token and the chat ID.",
+    "enabled": "Send notifications",
+    "chatId": "Chat ID",
+    "chatIdPlaceholder": "-1001234567890 or @channel",
+    "botToken": "Bot token",
+    "tokenStored": "Stored — leave empty to keep it",
+    "notifyWhen": "Notify when",
+    "events": {
+      "node_offline": "A node goes offline or comes back",
+      "node_expired": "A node's access expires",
+      "fail2ban_ban": "Fail2Ban bans an address",
+      "firewall_change": "The firewall is changed"
+    },
+    "errors": {
+      "chatIdRequired": "Enter the chat ID to enable notifications.",
+      "botTokenRequired": "Enter the bot token to enable notifications."
+    },
+    "sendTest": "Send test message"
+  },
+  "sessions": {
+    "title": "Active sessions",
+    "description": "Logins that are still valid. End one to sign that browser out.",
+    "empty": "No active sessions.",
+    "thisBrowser": "this browser",
+    "details": "Signed in {{created}} · last used {{lastUsed}} · expires {{expires}}",
+    "endOwnConfirm": "End your own session? You will be signed out.",
+    "endConfirm": "End this session of {{username}}?",
+    "end": "End"
+  }
+}

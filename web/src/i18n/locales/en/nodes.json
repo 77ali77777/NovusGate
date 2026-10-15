@@ -1,0 +1,164 @@
+{
+  "fields": {
+    "peerName": "Peer Name",
+    "peerNamePlaceholder": "e.g. My Phone, Office Laptop",
+    "virtualIp": "Virtual IP",
+    "publicIp": "Public IP",
+    "lastSeen": "Last Seen",
+    "expiration": "Expiration",
+    "forever": "Forever",
+    "never": "Never",
+    "downloadRx": "Download (Rx)",
+    "uploadTx": "Upload (Tx)",
+    "os": "OS",
+    "operatingSystem": "Operating System",
+    "architecture": "Architecture",
+    "hostname": "Hostname",
+    "publicKey": "Public Key"
+  },
+  "list": {
+    "title": "Nodes",
+    "description": "Manage nodes in your mesh network",
+    "createPeer": "Create Peer",
+    "noNetwork": {
+      "title": "No network selected",
+      "description": "Select a network from the sidebar to view nodes"
+    },
+    "adminWarning": {
+      "title": "Admin Network Security Warning",
+      "body": "You are viewing the <strong>Admin Management Network (wg0)</strong>. Nodes created in this network will have access to the Admin Panel and internal management services. Only create peers here for trusted administrators. Do not share these configs with regular users."
+    },
+    "summary": {
+      "total": "Total Nodes"
+    },
+    "columns": {
+      "transfer": "Transfer",
+      "labels": "Labels",
+      "expires": "Expires",
+      "config": "Config"
+    },
+    "configUnavailable": "Config not available for imported nodes",
+    "downloadConfig": "Download Config",
+    "empty": "No nodes in this network. Create an enrollment token to add nodes.",
+    "delete": {
+      "title": "Delete Node",
+      "body": "Are you sure you want to remove <strong>{{name}}</strong> from the network? This action cannot be undone.",
+      "confirm": "Delete Node"
+    }
+  },
+  "detail": {
+    "notFound": {
+      "title": "Node not found",
+      "body": "The requested node could not be found or has been deleted.",
+      "back": "Back to Nodes"
+    },
+    "editNode": "Edit Node",
+    "statusExpiration": "Status & Expiration",
+    "connectionStatus": "Connection Status",
+    "reconnectHint": "If node is not connecting, try: Edit → Disabled → Save, then Edit → Active → Save.",
+    "unlimited": "Unlimited (Forever)",
+    "expiresIn": "Expires {{time}}",
+    "networkActivity": "Network Activity",
+    "publicEndpoint": "Public Endpoint",
+    "deviceSystem": "Device & System",
+    "copyPublicKey": "Copy Public Key"
+  },
+  "create": {
+    "title": "Create New Peer",
+    "expiryLabel": "Expiration (Access Duration)",
+    "expiry": {
+      "forever": "Forever (No limit)",
+      "1h": "1 Hour",
+      "1d": "1 Day",
+      "1w": "1 Week",
+      "custom": "Custom Date"
+    },
+    "customDate": "Custom Expiration Date",
+    "autoDisableHint": "This peer will be automatically disabled after specified time.",
+    "submit": "Create & Download Config"
+  },
+  "edit": {
+    "title": "Edit: {{name}}",
+    "fallbackName": "Node",
+    "expiry": {
+      "keep": "Keep Current",
+      "foreverNoLimit": "Forever (No limit)",
+      "removeLimit": "Remove Limit (Forever)",
+      "1h": "Extend +1 Hour",
+      "1d": "Extend +1 Day",
+      "1w": "Extend +1 Week",
+      "custom": "Set Custom Date"
+    },
+    "dateTime": "Expiration Date & Time",
+    "pastExpiryKept": "The current expiration is in the past. Extend it, or the node is disabled again.",
+    "extendHint": "This will extend the current expiration time.",
+    "reactivateHint": "Node will be reactivated and added back to WireGuard.",
+    "deviceInfo": "Device Information (Optional)",
+    "osPlaceholder": "e.g. Linux, Android",
+    "archPlaceholder": "e.g. amd64, arm64",
+    "hostnamePlaceholder": "e.g. server-01",
+    "save": "Save Changes",
+    "errors": {
+      "dateRequired": "Choose an expiration date.",
+      "dateInvalid": "Choose a valid expiration date.",
+      "mustBeFuture": "Expiration date must be in the future!",
+      "onlyExtend": "Cannot reduce expiration time! You can only extend it."
+    }
+  },
+  "connect": {
+    "title": "Connect: {{name}}",
+    "loadError": "Error loading configuration",
+    "tabs": {
+      "general": "Config & QR"
+    },
+    "general": {
+      "wgConfig": "WireGuard Config",
+      "downloadConf": "Download .conf",
+      "mobileScan": "Mobile Scan",
+      "qrAlt": "WireGuard QR Code",
+      "scanHint": "Open the WireGuard app and scan"
+    },
+    "installWireGuard": "1. Install WireGuard",
+    "importConfig": "2. Import Config",
+    "selectFile": "Select the downloaded <code>.conf</code> file.",
+    "activate": "Click <strong>Activate</strong> to connect.",
+    "windows": {
+      "intro": "Download and install the official WireGuard client for Windows.",
+      "downloadInstaller": "Download Installer",
+      "open": "Open WireGuard application.",
+      "import": "Click on <strong>Import tunnel(s) from file</strong>."
+    },
+    "mac": {
+      "intro": "Download WireGuard from the Mac App Store.",
+      "store": "Mac App Store",
+      "open": "Open WireGuard from your Applications.",
+      "import": "Click <strong>Import tunnel(s) from file</strong> in the menu bar."
+    },
+    "linux": {
+      "installScript": "Install Script",
+      "generating": "Generating...",
+      "regenerate": "Regenerate",
+      "generate": "Generate install script",
+      "scriptError": "Failed to generate the install script",
+      "scriptHint": "Run it as root on the new server. It works once, for 15 minutes; generate a new one if it expires.",
+      "manualInstall": "Manual Install (Ubuntu/Debian)",
+      "saveConfig": "Save Config",
+      "pasteHint": "(Paste the config content here)",
+      "startVpn": "Start VPN"
+    },
+    "docker": {
+      "intro": "You can run a WireGuard client easily using Docker. Replace <code>/path/to/wg0.conf</code> with your config path."
+    }
+  },
+  "traffic": {
+    "title": "Traffic History",
+    "range": "Range",
+    "ranges": {
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d"
+    },
+    "loadError": "Traffic history could not be loaded.",
+    "empty": "No traffic recorded in this range yet. Samples are taken every 5 minutes."
+  }
+}

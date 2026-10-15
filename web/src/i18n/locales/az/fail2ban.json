@@ -1,0 +1,113 @@
+{
+  "title": "Fail2Ban idarəetmə paneli",
+  "description": "Müdaxilənin qarşısının alınması və IP ban idarəetməsi",
+  "responsive": "Cavab verir",
+  "jailLabel": "Jail:",
+  "notInstalled": {
+    "description": "Müdaxilənin qarşısını alan sistem",
+    "title": "Fail2Ban quraşdırılmayıb",
+    "hint": "Serverinizi brute-force hücumlarından qorumaq üçün Fail2Ban quraşdırın."
+  },
+  "tabs": {
+    "overview": "Ümumi baxış",
+    "banned": "Ban edilmiş IP-lər",
+    "whitelist": "Ağ siyahı",
+    "settings": "Parametrlər",
+    "permanent": "Daimi banlar",
+    "history": "Tarixçə",
+    "logs": "Log-lar"
+  },
+  "actions": {
+    "banIp": "IP-ni ban et",
+    "reload": "Yenidən yüklə",
+    "unban": "Bandan çıxar",
+    "unblock": "Blokdan çıxar"
+  },
+  "stats": {
+    "currentlyBanned": "Hazırda ban edilib",
+    "failedAttempts": "Uğursuz cəhdlər",
+    "totalBanned": "Cəmi ban edilib",
+    "permanentBans": "Daimi banlar"
+  },
+  "overview": {
+    "currentSettings": "Cari parametrlər: {{jail}}",
+    "allJails": "Bütün jail-lər",
+    "bannedCount_one": "{{count}} ban edilib",
+    "bannedCount_other": "{{count}} ban edilib",
+    "failedCount_one": "{{count}} uğursuz",
+    "failedCount_other": "{{count}} uğursuz"
+  },
+  "duration": {
+    "permanent": "Daimi",
+    "days_one": "{{count}} gün",
+    "days_other": "{{count}} gün",
+    "hours_one": "{{count}} saat",
+    "hours_other": "{{count}} saat",
+    "min_one": "{{count}} dəq",
+    "min_other": "{{count}} dəq",
+    "sec_one": "{{count}} san",
+    "sec_other": "{{count}} san"
+  },
+  "banned": {
+    "title": "{{jail}} jail-də ban edilmiş IP-lər",
+    "subtitle": "Fail2Ban tərəfindən hazırda ban edilmiş IP-lər (müvəqqəti banlar)",
+    "confirmUnban": "{{ip}} bandan çıxarılsın?",
+    "emptyTitle": "Ban edilmiş IP yoxdur",
+    "emptyHint": "{{jail}} jail-də hər şey qaydasındadır"
+  },
+  "whitelist": {
+    "title": "{{jail}} üçün ağ siyahı",
+    "subtitle": "Heç vaxt ban edilməyəcək IP-lər",
+    "placeholder": "IP və ya CIDR daxil edin (məs., 192.168.1.0/24)",
+    "confirmRemove": "{{ip}} ağ siyahıdan çıxarılsın?",
+    "empty": "Ağ siyahıda IP yoxdur"
+  },
+  "settings": {
+    "title": "{{jail}} üçün parametrlər",
+    "subtitle": "Ban parametrlərini tənzimləyin (dəyişikliklər dərhal tətbiq olunur)",
+    "bantime": "Ban müddəti",
+    "maxretry": "Maksimum cəhd",
+    "findtime": "Axtarış müddəti",
+    "bantimeHint": "Saniyə (-1 = daimi)",
+    "maxretryHint": "Ban-dan əvvəl uğursuz cəhdlərin sayı",
+    "findtimeHint": "Zaman pəncərəsi (saniyə)",
+    "save": "Parametrləri yadda saxla"
+  },
+  "permanent": {
+    "title": "Daimi banlar (iptables)",
+    "subtitle": "Firewall qaydaları ilə bloklanmış IP-lər — əl ilə silinənə qədər qalır",
+    "ruleInfo": "Qayda #{{line}} • Protokol: {{protocol}}",
+    "confirmRemove": "{{ip}} üçün daimi ban silinsin?",
+    "emptyTitle": "Daimi ban yoxdur",
+    "emptyHint": "Daimi bloklanmış IP yoxdur"
+  },
+  "history": {
+    "title": "Ban tarixçəsi",
+    "subtitle": "Son ban və bandan çıxarma hadisələri",
+    "empty": "Tarixçə yoxdur"
+  },
+  "logs": {
+    "title": "Fail2Ban log-ları",
+    "subtitle": "Son log qeydləri",
+    "empty": "Log yoxdur"
+  },
+  "banModal": {
+    "title": "IP ünvanını ban et",
+    "ipPlaceholder": "məs., 192.168.1.100",
+    "jail": "Jail",
+    "permanent": "Daimi ban (iptables firewall ilə)",
+    "permanentWarning": "Daimi banlar iptables-a əlavə olunur və əl ilə silinənə qədər qalır."
+  },
+  "toasts": {
+    "banFailed": "IP-ni ban etmək alınmadı",
+    "banned": "IP ban edildi",
+    "settingsFailed": "Parametrləri yadda saxlamaq alınmadı",
+    "settingsSaved": "Parametrlər yadda saxlanıldı",
+    "whitelistFailed": "Ağ siyahını yeniləmək alınmadı",
+    "whitelistUpdated": "Ağ siyahı yeniləndi",
+    "permanentRemoveFailed": "Daimi banı silmək alınmadı",
+    "permanentRemoved": "Daimi ban silindi",
+    "reloadFailed": "Fail2Ban-ı yenidən yükləmək alınmadı",
+    "reloaded": "Fail2Ban yenidən yükləndi"
+  }
+}

@@ -22,11 +22,13 @@ export interface NotificationSettingsRequest extends NotificationEvents {
 
 export interface NotificationUpdate {
   request: NotificationSettingsRequest
+  // error is a key in the "settings" locale namespace; the caller translates it.
   error?: string
 }
 
 // notificationUpdate trims the form and leaves an empty token out, so the
-// server keeps the stored one. Enabling needs a chat and a token.
+// server keeps the stored one. Enabling needs a chat and a token. Kept free
+// of imports so it runs under `node --experimental-strip-types` in web/tests.
 export function notificationUpdate(
   form: NotificationForm,
   tokenStored: boolean
@@ -43,9 +45,9 @@ export function notificationUpdate(
   }
   if (token !== '') request.bot_token = token
   if (form.enabled && chatId === '')
-    return { request, error: 'Enter the chat ID to enable notifications.' }
+    return { request, error: 'notifications.errors.chatIdRequired' }
   if (form.enabled && token === '' && !tokenStored) {
-    return { request, error: 'Enter the bot token to enable notifications.' }
+    return { request, error: 'notifications.errors.botTokenRequired' }
   }
   return { request }
 }

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { systemRules } from '../src/lib/systemRules.ts'
+
+// Explanations are translation keys; the English text is what the view shows.
+const en = JSON.parse(readFileSync(new URL('../src/i18n/locales/en/firewallv2.json', import.meta.url), 'utf8'))
+const english = (key) => key.split('.').reduce((o, k) => o?.[k], en)
 
 // A trimmed compiled ruleset (same shape as server/internal/netctl/nft/testdata/full.nft).
 const script = `table inet novusgate
@@ -46,10 +51,16 @@ test('systemRules keeps the rules NovusGate adds and explains them', () => {
       'vpn_policy|counter drop comment "vpn default drop"',
     ]
   )
-  assert.match(got[0].explanation, /loopback/i)
-  assert.match(got[3].explanation, /SSH/)
-  assert.match(got[4].explanation, /dropped/)
-  assert.match(got[5].explanation, /same network/)
+  assert.equal(got[0].explanation, 'systemRules.explain.loopback')
+  assert.equal(got[3].explanation, 'systemRules.explain.ssh')
+  assert.equal(got[4].explanation, 'systemRules.explain.defaultDrop')
+  assert.equal(got[5].explanation, 'systemRules.explain.sameNetwork')
+  assert.match(english(got[0].explanation), /loopback/i)
+  assert.match(english(got[3].explanation), /SSH/)
+  assert.match(english(got[4].explanation), /dropped/)
+  assert.match(english(got[5].explanation), /same network/)
+  // every explanation key has an English text
+  for (const r of got) assert.equal(typeof english(r.explanation), 'string', r.explanation)
 })
 
 test('systemRules reports each chain policy', () => {

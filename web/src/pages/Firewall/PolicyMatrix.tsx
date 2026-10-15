@@ -1,4 +1,5 @@
 import { Grid3x3 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useFirewallPolicyMatrix } from '@/api/client'
 import { Card } from '@/components/ui'
 
@@ -9,8 +10,6 @@ const cellStyle: Record<Verdict, string> = {
   deny: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
   partial: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 }
-
-const cellLabel: Record<Verdict, string> = { allow: 'Allow', deny: 'Deny', partial: 'Partial' }
 
 export interface MatrixNetwork {
   id: string
@@ -25,24 +24,25 @@ interface PolicyMatrixProps {
 // VPN rules like the firewall does (nodes and custom addresses resolved).
 // Clicking a cell opens a new rule for that pair.
 export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
+  const { t } = useTranslation('firewall')
   const { data: m, isLoading, isError } = useFirewallPolicyMatrix(true)
-  if (isLoading)
-    return <Card className="mb-4 text-sm text-gray-500">Loading network policies…</Card>
+  const cellLabel: Record<Verdict, string> = {
+    allow: t('matrix.allow'),
+    deny: t('matrix.deny'),
+    partial: t('matrix.partial'),
+  }
+  if (isLoading) return <Card className="mb-4 text-sm text-gray-500">{t('matrix.loading')}</Card>
   if (isError || !m)
-    return <Card className="mb-4 text-sm text-red-600">Network policies could not be loaded.</Card>
+    return <Card className="mb-4 text-sm text-red-600">{t('matrix.loadError')}</Card>
   if (m.networks.length === 0) return null
   return (
     <Card className="mb-4">
       <div className="mb-3 flex items-center gap-2">
         <Grid3x3 className="h-5 w-5 text-blue-500" />
         <div>
-          <h3 className="text-lg font-semibold">Network policies</h3>
+          <h3 className="text-lg font-semibold">{t('matrix.title')}</h3>
           <p className="text-sm text-gray-500">
-            Rows are the source network, columns the destination. Partial: some ports, protocols or
-            hosts are treated differently. Click a cell to add a rule for that pair.
-            {m.nft_enforcing
-              ? ' Without a rule, networks are isolated from each other.'
-              : ' In iptables mode VPN traffic is accepted unless a rule drops it.'}
+            {t('matrix.help')} {m.nft_enforcing ? t('matrix.helpNft') : t('matrix.helpIptables')}
           </p>
         </div>
       </div>
@@ -50,7 +50,7 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
         <table className="text-sm">
           <thead>
             <tr>
-              <th className="p-2 text-left text-xs text-gray-500">from \ to</th>
+              <th className="p-2 text-left text-xs text-gray-500">{t('matrix.fromTo')}</th>
               {m.networks.map((to) => (
                 <th key={to.id} className="p-2 text-left font-medium">
                   {to.name}
@@ -65,7 +65,7 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
                 {m.networks.map((to) => {
                   const c = m.cells[from.id]?.[to.id]
                   if (!c) return <td key={to.id} />
-                  const title = `${from.name} → ${to.name}: ${c.reason}${c.rules.length ? `\nRules: ${c.rules.join(', ')}` : ''}`
+                  const title = `${t('matrix.cellTitle', { from: from.name, to: to.name, reason: c.reason })}${c.rules.length ? `\n${t('matrix.cellRules', { rules: c.rules.join(', ') })}` : ''}`
                   return (
                     <td key={to.id} className="p-1">
                       <button

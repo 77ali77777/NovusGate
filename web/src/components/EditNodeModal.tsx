@@ -1,6 +1,7 @@
 import { Clock, Power, PowerOff } from 'lucide-react'
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select } from '@/components/ui'
 import { computeExpiry, type ExpiryChoice, initialExpiryChoice } from '@/lib/nodeExpiry'
 import type { Node } from '@/types'
@@ -32,9 +33,11 @@ export const EditNodeModal = ({
   onSubmit,
   isLoading,
 }: EditNodeModalProps) => {
+  const { t } = useTranslation('nodes')
   const [name, setName] = useState('')
   const [expiryType, setExpiryType] = useState<ExpiryChoice>('keep')
   const [customDate, setCustomDate] = useState('')
+  // i18n key of the validation error, '' when none
   const [formError, setFormError] = useState('')
   const [status, setStatus] = useState<string>('')
   const [os, setOs] = useState('')
@@ -64,20 +67,28 @@ export const EditNodeModal = ({
 
   const expiryOptions = useMemo(
     () => [
-      { value: 'keep', label: node?.expires_at ? 'Keep Current' : 'Forever (No limit)' },
-      { value: 'forever', label: 'Remove Limit (Forever)' },
-      { value: '1h', label: 'Extend +1 Hour' },
-      { value: '1d', label: 'Extend +1 Day' },
-      { value: '1w', label: 'Extend +1 Week' },
-      { value: 'custom', label: 'Set Custom Date' },
+      {
+        value: 'keep',
+        label: node?.expires_at ? t('edit.expiry.keep') : t('edit.expiry.foreverNoLimit'),
+      },
+      { value: 'forever', label: t('edit.expiry.removeLimit') },
+      { value: '1h', label: t('edit.expiry.1h') },
+      { value: '1d', label: t('edit.expiry.1d') },
+      { value: '1w', label: t('edit.expiry.1w') },
+      { value: 'custom', label: t('edit.expiry.custom') },
     ],
-    [node?.expires_at]
+    [node?.expires_at, t]
   )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const result = computeExpiry({ choice: expiryType, current: node?.expires_at, customDate, now: new Date() })
+    const result = computeExpiry({
+      choice: expiryType,
+      current: node?.expires_at,
+      customDate,
+      now: new Date(),
+    })
     if (!result.ok) {
       setFormError(result.error)
       return
@@ -102,11 +113,15 @@ export const EditNodeModal = ({
     new Date(node.expires_at).getTime() <= Date.now()
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Edit: ${node?.name || 'Node'}`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('edit.title', { name: node?.name || t('edit.fallbackName') })}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Peer Name"
-          placeholder="e.g. My Phone, Office Laptop"
+          label={t('fields.peerName')}
+          placeholder={t('fields.peerNamePlaceholder')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -115,7 +130,7 @@ export const EditNodeModal = ({
         {/* Status Control */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Status
+            {t('common:fields.status')}
           </label>
           <div className="flex gap-2">
             <button
@@ -128,7 +143,7 @@ export const EditNodeModal = ({
               }`}
             >
               <Power className="w-4 h-4" />
-              Active
+              {t('common:status.active')}
             </button>
             <button
               type="button"
@@ -140,7 +155,7 @@ export const EditNodeModal = ({
               }`}
             >
               <PowerOff className="w-4 h-4" />
-              Disabled
+              {t('common:status.disabled')}
             </button>
           </div>
         </div>
@@ -148,7 +163,7 @@ export const EditNodeModal = ({
         {/* Expiration Control */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Expiration
+            {t('fields.expiration')}
           </label>
           <Select
             options={expiryOptions}
@@ -159,7 +174,7 @@ export const EditNodeModal = ({
 
         {expiryType === 'custom' && (
           <Input
-            label="Expiration Date & Time"
+            label={t('edit.dateTime')}
             type="datetime-local"
             value={customDate}
             min={getMinDateTime()}
@@ -169,56 +184,57 @@ export const EditNodeModal = ({
         )}
 
         {formError && (
-          <div className="text-sm text-red-700 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg" role="alert">
-            {formError}
+          <div
+            className="text-sm text-red-700 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg"
+            role="alert"
+          >
+            {t(formError)}
           </div>
         )}
 
         {pastExpiryKept && (
           <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
             <Clock className="w-4 h-4" />
-            <span>The current expiration is in the past. Extend it, or the node is disabled again.</span>
+            <span>{t('edit.pastExpiryKept')}</span>
           </div>
         )}
 
-        {expiryType !== 'keep' &&
-          expiryType !== 'forever' &&
-          expiryType !== 'custom' && (
-            <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-              <Clock className="w-4 h-4" />
-              <span>This will extend the current expiration time.</span>
-            </div>
-          )}
+        {expiryType !== 'keep' && expiryType !== 'forever' && expiryType !== 'custom' && (
+          <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+            <Clock className="w-4 h-4" />
+            <span>{t('edit.extendHint')}</span>
+          </div>
+        )}
 
         {isExpired && status !== 'expired' && (
           <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
             <Power className="w-4 h-4" />
-            <span>Node will be reactivated and added back to WireGuard.</span>
+            <span>{t('edit.reactivateHint')}</span>
           </div>
         )}
 
         {/* Metadata Controls */}
         <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-            Device Information (Optional)
+            {t('edit.deviceInfo')}
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="OS"
-              placeholder="e.g. Linux, Android"
+              label={t('fields.os')}
+              placeholder={t('edit.osPlaceholder')}
               value={os}
               onChange={(e) => setOs(e.target.value)}
             />
             <Input
-              label="Architecture"
-              placeholder="e.g. amd64, arm64"
+              label={t('fields.architecture')}
+              placeholder={t('edit.archPlaceholder')}
               value={arch}
               onChange={(e) => setArch(e.target.value)}
             />
             <div className="col-span-2">
               <Input
-                label="Hostname"
-                placeholder="e.g. server-01"
+                label={t('fields.hostname')}
+                placeholder={t('edit.hostnamePlaceholder')}
                 value={hostname}
                 onChange={(e) => setHostname(e.target.value)}
               />
@@ -228,10 +244,10 @@ export const EditNodeModal = ({
 
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" loading={isLoading} disabled={!name}>
-            Save Changes
+            {t('edit.save')}
           </Button>
         </div>
       </form>

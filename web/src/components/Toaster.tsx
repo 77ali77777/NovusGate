@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle, Info, X, XCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAppStore, useNotifications } from '@/store'
 
 const styles = {
@@ -11,6 +12,7 @@ const styles = {
 // Toaster shows the store's notifications (mutation results). Errors stay
 // until closed; the store removes the others after 5 seconds.
 export const Toaster = () => {
+  const { t } = useTranslation('layout')
   const notifications = useNotifications()
   const remove = useAppStore((s) => s.removeNotification)
   if (notifications.length === 0) return null
@@ -31,7 +33,7 @@ export const Toaster = () => {
             </div>
             <button
               type="button"
-              aria-label="Dismiss"
+              aria-label={t('dismiss')}
               onClick={() => remove(n.id)}
               className="rounded p-1 opacity-70 hover:opacity-100"
             >

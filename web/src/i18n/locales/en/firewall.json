@@ -1,0 +1,159 @@
+{
+  "page": {
+    "title": "Firewall Management",
+    "description": "Manage host firewall rules and VPN network traffic control"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "hostRules": "Host Rules",
+    "openPorts": "Open Ports",
+    "vpnRules": "VPN Rules",
+    "blockedIps": "Blocked IPs",
+    "advanced": "Advanced (nftables)",
+    "live": "Live",
+    "history": "History",
+    "systemRules": "System Rules"
+  },
+  "actions": {
+    "openPort": "Open Port",
+    "blockIp": "Block IP",
+    "allowIp": "Allow IP",
+    "vpnRule": "VPN Rule",
+    "export": "Export",
+    "exportRules": "Export Rules",
+    "reset": "Reset",
+    "unblock": "Unblock",
+    "applyRules": "Apply Rules",
+    "createRule": "Create Rule",
+    "updateRule": "Update Rule"
+  },
+  "confirm": {
+    "closePort": "Are you sure you want to close port {{port}}/{{protocol}}?",
+    "deleteRule": "Are you sure you want to delete rule #{{number}} from {{chain}}?",
+    "unblockIp": "Are you sure you want to unblock this IP?",
+    "reset": "Are you sure you want to reset firewall to default NovusGate configuration? This will remove all custom rules.",
+    "deleteVpnRule": "Are you sure you want to delete VPN rule \"{{name}}\"?"
+  },
+  "alerts": {
+    "portProtected": "This port is protected and cannot be closed (SSH, WireGuard or Admin API).",
+    "ruleProtected": "This rule is protected and cannot be deleted.",
+    "invalidPort": "Invalid port number"
+  },
+  "forms": {
+    "portNumber": "Port Number",
+    "portPlaceholder": "e.g., 8080",
+    "both": "Both",
+    "sourceIpOptional": "Source IP (Optional)",
+    "sourceIpPlaceholder": "e.g., 192.168.1.0/24 (leave empty for any)",
+    "ipOrCidr": "IP Address or CIDR",
+    "ipPlaceholder": "e.g., 192.168.1.100 or 10.0.0.0/8",
+    "portsOptional": "Ports (Optional)",
+    "portsPlaceholder": "e.g., 22,80,443 (leave empty for all ports)",
+    "blockIpTitle": "Block IP Address",
+    "allowIpTitle": "Allow IP Address"
+  },
+  "overview": {
+    "totalRules": "Total Rules",
+    "blockedIps": "Blocked IPs",
+    "openPorts": "Open Ports",
+    "vpnRules": "VPN Rules",
+    "chainPolicies": "Chain Policies",
+    "chainPoliciesHint": "Default action for each iptables chain",
+    "rulesCount_one": "{{count}} rule",
+    "rulesCount_other": "{{count}} rules",
+    "quickActions": "Quick Actions",
+    "quickActionsHint": "Common firewall operations",
+    "openPortHint": "Allow incoming traffic",
+    "blockIpHint": "Drop traffic from IP",
+    "allowIpHint": "Accept traffic from IP"
+  },
+  "hostRules": {
+    "chain": "Chain:",
+    "policy": "Policy: {{policy}}",
+    "target": "Target",
+    "protected": "Protected",
+    "emptyTitle": "No rules in this chain",
+    "emptyHint": "Add rules using the buttons above"
+  },
+  "openPorts": {
+    "protected": "Protected",
+    "open": "Open",
+    "emptyTitle": "No open ports",
+    "emptyHint": "Use the \"Open Port\" button above",
+    "protectedTitle": "Protected Ports",
+    "protectedText": "SSH (22), WireGuard (51820+) and Admin API ports are protected and cannot be closed. Closing these ports could disconnect you from the server."
+  },
+  "blockedIps": {
+    "chain": "Chain: {{chain}}",
+    "rule": "Rule #{{number}}",
+    "port": "Port: {{port}}",
+    "emptyTitle": "No blocked IPs",
+    "emptyHint": "Use the \"Block IP\" button above"
+  },
+  "vpnRules": {
+    "intro": "Traffic control between VPN networks (FORWARD chain)",
+    "unknownNetwork": "Unknown Network",
+    "unknownNode": "Unknown Node",
+    "allPorts": "all",
+    "empty": {
+      "title": "VPN Inter-Network Rules",
+      "subtitle": "Define how traffic flows between VPN networks",
+      "whatTitle": "What are VPN Rules?",
+      "whatBody": "VPN rules control the server's <code>FORWARD</code> chain. These rules determine whether traffic can pass between different VPN networks. Since all VPN traffic flows through the server, these rules provide complete control over inter-network communication.",
+      "allowTitle": "Allow Traffic",
+      "allow1": "Access admin panel from office network",
+      "allow2": "Allow specific nodes to reach other networks",
+      "allow3": "Permit only certain ports (HTTP, SSH)",
+      "blockTitle": "Block Traffic",
+      "block1": "Complete isolation between networks",
+      "block2": "Restrict access to sensitive resources",
+      "block3": "Block specific protocols",
+      "howTitle": "How It Works",
+      "sourceNode": "Source Node",
+      "vpnServer": "VPN Server",
+      "forwardRules": "FORWARD rules",
+      "destNode": "Destination Node",
+      "howBody": "All VPN traffic flows through the server. VPN rules are applied on the server and determine which traffic can be forwarded.",
+      "noteTitle": "Important Note",
+      "noteBody": "When you create a VPN rule, the source node's <code>AllowedIPs</code> configuration is automatically updated. However, existing connected devices may need to reload their configuration.",
+      "startTitle": "Getting Started",
+      "step1": "Click the <strong>\"VPN Rule\"</strong> button above",
+      "step2": "Select source and destination network/node",
+      "step3": "Choose protocol and port (optional)",
+      "step4": "Select action: <accept>Accept</accept> (allow) or <drop>Drop</drop> (block)"
+    }
+  },
+  "ruleModal": {
+    "titleAdd": "Add VPN Rule",
+    "titleEdit": "Edit VPN Rule",
+    "ruleName": "Rule Name",
+    "namePlaceholder": "e.g., Allow Web Traffic",
+    "descriptionOptional": "Description (Optional)",
+    "descriptionPlaceholder": "Brief description of this rule",
+    "customIp": "Custom IP",
+    "selectNetwork": "Select Network",
+    "selectNode": "Select Node",
+    "cidrPlaceholder": "e.g., 10.10.0.0/24",
+    "portOptional": "Port (Optional)",
+    "portPlaceholder": "e.g., 80 or 8000-9000",
+    "protocolAll": "All",
+    "actionAccept": "Accept",
+    "actionDrop": "Drop",
+    "actionReject": "Reject",
+    "enabled": "Rule is enabled"
+  },
+  "matrix": {
+    "loading": "Loading network policies…",
+    "loadError": "Network policies could not be loaded.",
+    "title": "Network policies",
+    "help": "Rows are the source network, columns the destination. Partial: some ports, protocols or hosts are treated differently. Click a cell to add a rule for that pair.",
+    "helpNft": "Without a rule, networks are isolated from each other.",
+    "helpIptables": "In iptables mode VPN traffic is accepted unless a rule drops it.",
+    "fromTo": "from \\ to",
+    "allow": "Allow",
+    "deny": "Deny",
+    "partial": "Partial",
+    "cellTitle": "{{from}} → {{to}}: {{reason}}",
+    "cellRules": "Rules: {{rules}}"
+  }
+}

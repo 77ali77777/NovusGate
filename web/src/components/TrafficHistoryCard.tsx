@@ -1,5 +1,6 @@
 import { BarChart3 } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Bar,
   BarChart,
@@ -27,6 +28,7 @@ const formatBytes = (bytes = 0) => {
 // TrafficHistoryCard charts a node's traffic per interval (P8). The server
 // samples every 5 minutes and keeps 30 days.
 export const TrafficHistoryCard = ({ nodeId }: { nodeId: string }) => {
+  const { t } = useTranslation('nodes')
   const [range, setRange] = useState<TrafficRange>('24h')
   const { data, isLoading, isError } = useNodeTraffic(nodeId, range)
   const points = (data?.points ?? []).map((p) => ({ ...p, label: bucketLabel(p.t, range) }))
@@ -36,12 +38,12 @@ export const TrafficHistoryCard = ({ nodeId }: { nodeId: string }) => {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Traffic History</h3>
+          <h3 className="text-lg font-semibold">{t('traffic.title')}</h3>
         </div>
         <div
           className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800"
           role="tablist"
-          aria-label="Range"
+          aria-label={t('traffic.range')}
         >
           {RANGES.map((r) => (
             <button
@@ -54,29 +56,25 @@ export const TrafficHistoryCard = ({ nodeId }: { nodeId: string }) => {
                 range === r ? 'bg-white shadow-sm dark:bg-gray-700' : 'text-gray-500'
               }`}
             >
-              {r}
+              {t(`traffic.ranges.${r}`)}
             </button>
           ))}
         </div>
       </div>
       <div className="mb-3 flex gap-6 text-sm text-gray-600 dark:text-gray-400">
         <span>
-          Download (Rx): <strong className="text-blue-600">{formatBytes(sum.rx)}</strong>
+          {t('fields.downloadRx')}: <strong className="text-blue-600">{formatBytes(sum.rx)}</strong>
         </span>
         <span>
-          Upload (Tx): <strong className="text-green-600">{formatBytes(sum.tx)}</strong>
+          {t('fields.uploadTx')}: <strong className="text-green-600">{formatBytes(sum.tx)}</strong>
         </span>
       </div>
       {isLoading ? (
-        <p className="py-16 text-center text-sm text-gray-500">Loading…</p>
+        <p className="py-16 text-center text-sm text-gray-500">{t('common:state.loading')}</p>
       ) : isError ? (
-        <p className="py-16 text-center text-sm text-red-600">
-          Traffic history could not be loaded.
-        </p>
+        <p className="py-16 text-center text-sm text-red-600">{t('traffic.loadError')}</p>
       ) : sum.rx + sum.tx === 0 ? (
-        <p className="py-16 text-center text-sm text-gray-500">
-          No traffic recorded in this range yet. Samples are taken every 5 minutes.
-        </p>
+        <p className="py-16 text-center text-sm text-gray-500">{t('traffic.empty')}</p>
       ) : (
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -90,8 +88,8 @@ export const TrafficHistoryCard = ({ nodeId }: { nodeId: string }) => {
               />
               <Tooltip formatter={(v: number) => formatBytes(v)} />
               <Legend />
-              <Bar dataKey="rx" name="Download (Rx)" fill="#3b82f6" stackId="t" />
-              <Bar dataKey="tx" name="Upload (Tx)" fill="#22c55e" stackId="t" />
+              <Bar dataKey="rx" name={t('fields.downloadRx')} fill="#3b82f6" stackId="t" />
+              <Bar dataKey="tx" name={t('fields.uploadTx')} fill="#22c55e" stackId="t" />
             </BarChart>
           </ResponsiveContainer>
         </div>

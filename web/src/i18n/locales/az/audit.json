@@ -1,0 +1,11 @@
+{
+  "title": "Audit jurnalı",
+  "description": "Panel və ya API vasitəsilə edilən dəyişikliklər və giriş cəhdləri.",
+  "loadError": "Audit jurnalı yüklənə bilmədi.",
+  "empty": "Hələ heç nə qeydə alınmayıb.",
+  "columns": {
+    "result": "Nəticə",
+    "address": "Ünvan"
+  },
+  "loadOlder": "Köhnə qeydləri yüklə"
+}

@@ -1,6 +1,7 @@
 import { Box, Check, Copy, Download, Monitor, QrCode as QrIcon, Terminal } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { Button, Modal } from '@/components/ui'
@@ -38,6 +39,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   nodeId,
   nodeName,
 }) => {
+  const { t } = useTranslation('nodes')
   const [activeTab, setActiveTab] = useState<'general' | 'windows' | 'mac' | 'linux' | 'docker'>(
     'general'
   )
@@ -65,7 +67,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
       if (nodeIdRef.current === forNode) setInstallScript(script)
     } catch (err) {
       if (nodeIdRef.current === forNode) {
-        setScriptError(apiErrorMessage(err, 'Failed to generate the install script'))
+        setScriptError(apiErrorMessage(err, t('connect.linux.scriptError')))
       }
     } finally {
       setScriptLoading(false)
@@ -97,11 +99,11 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
       }
       reader.readAsDataURL(blob)
     } catch (err) {
-      setError(err.message || 'Error loading configuration')
+      setError(err.message || t('connect.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [nodeId])
+  }, [nodeId, t])
 
   useEffect(() => {
     if (isOpen && nodeId) {
@@ -160,7 +162,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  WireGuard Config
+                  {t('connect.general.wgConfig')}
                 </label>
                 <button
                   type="button"
@@ -168,7 +170,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                   className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-700"
                 >
                   {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? t('common:actions.copied') : t('common:actions.copy')}
                 </button>
               </div>
               <textarea
@@ -180,14 +182,16 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 onClick={handleDownload}
                 className="w-full flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" /> Download .conf
+                <Download className="w-4 h-4" /> {t('connect.general.downloadConf')}
               </Button>
             </div>
             <div className="flex flex-col items-center justify-center space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">Mobile Scan</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('connect.general.mobileScan')}
+              </h3>
               {qrCodeUrl ? (
                 <div className="bg-white p-3 rounded-lg shadow-sm">
-                  <img src={qrCodeUrl} alt="WireGuard QR Code" className="w-48 h-48" />
+                  <img src={qrCodeUrl} alt={t('connect.general.qrAlt')} className="w-48 h-48" />
                 </div>
               ) : (
                 <div className="w-48 h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg">
@@ -195,7 +199,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 </div>
               )}
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                WireGuard tətbiqini açın və skan edin
+                {t('connect.general.scanHint')}
               </p>
             </div>
           </div>
@@ -206,10 +210,10 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                1. Install WireGuard
+                {t('connect.installWireGuard')}
               </h4>
               <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-                Download and install the official WireGuard client for Windows.
+                {t('connect.windows.intro')}
               </p>
               <a
                 href="https://download.wireguard.com/windows-client/wireguard-installer.exe"
@@ -217,21 +221,27 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
               >
-                <Download className="w-4 h-4" /> Download Installer
+                <Download className="w-4 h-4" /> {t('connect.windows.downloadInstaller')}
               </a>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 dark:text-white">2. Import Config</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white">
+                {t('connect.importConfig')}
+              </h4>
               <ol className="list-decimal list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <li>Open WireGuard application.</li>
+                <li>{t('connect.windows.open')}</li>
                 <li>
-                  Click on <strong>Import tunnel(s) from file</strong>.
+                  <Trans
+                    t={t}
+                    i18nKey="connect.windows.import"
+                    components={{ strong: <strong /> }}
+                  />
                 </li>
                 <li>
-                  Select the downloaded <code>.conf</code> file.
+                  <Trans t={t} i18nKey="connect.selectFile" components={{ code: <code /> }} />
                 </li>
                 <li>
-                  Click <strong>Activate</strong> to connect.
+                  <Trans t={t} i18nKey="connect.activate" components={{ strong: <strong /> }} />
                 </li>
               </ol>
             </div>
@@ -243,10 +253,10 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                1. Install WireGuard
+                {t('connect.installWireGuard')}
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                Download WireGuard from the Mac App Store.
+                {t('connect.mac.intro')}
               </p>
               <a
                 href="https://apps.apple.com/us/app/wireguard/id1451685025?mt=12"
@@ -254,21 +264,23 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-md text-sm font-medium transition-colors"
               >
-                <Download className="w-4 h-4" /> Mac App Store
+                <Download className="w-4 h-4" /> {t('connect.mac.store')}
               </a>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-gray-900 dark:text-white">2. Import Config</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white">
+                {t('connect.importConfig')}
+              </h4>
               <ol className="list-decimal list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <li>Open WireGuard from your Applications.</li>
+                <li>{t('connect.mac.open')}</li>
                 <li>
-                  Click <strong>Import tunnel(s) from file</strong> in the menu bar.
+                  <Trans t={t} i18nKey="connect.mac.import" components={{ strong: <strong /> }} />
                 </li>
                 <li>
-                  Select the downloaded <code>.conf</code> file.
+                  <Trans t={t} i18nKey="connect.selectFile" components={{ code: <code /> }} />
                 </li>
                 <li>
-                  Click <strong>Activate</strong> to connect.
+                  <Trans t={t} i18nKey="connect.activate" components={{ strong: <strong /> }} />
                 </li>
               </ol>
             </div>
@@ -280,7 +292,9 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
           <div className="space-y-4">
             <div className="p-4 bg-gray-900 border border-gray-800 rounded-lg">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-sm font-semibold text-gray-400">Install Script</h4>
+                <h4 className="text-sm font-semibold text-gray-400">
+                  {t('connect.linux.installScript')}
+                </h4>
                 {installScript && (
                   <div className="flex items-center gap-3">
                     <button
@@ -289,7 +303,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                       className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
                     >
                       {scriptCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {scriptCopied ? 'Copied' : 'Copy'}
+                      {scriptCopied ? t('common:actions.copied') : t('common:actions.copy')}
                     </button>
                     <button
                       type="button"
@@ -297,7 +311,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                       className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300"
                     >
                       <Download className="w-3 h-3" />
-                      Download
+                      {t('common:actions.download')}
                     </button>
                     <button
                       type="button"
@@ -305,7 +319,9 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                       disabled={scriptLoading}
                       className="text-xs flex items-center gap-1 text-primary-400 hover:text-primary-300 disabled:opacity-50"
                     >
-                      {scriptLoading ? 'Generating...' : 'Regenerate'}
+                      {scriptLoading
+                        ? t('connect.linux.generating')
+                        : t('connect.linux.regenerate')}
                     </button>
                   </div>
                 )}
@@ -321,28 +337,25 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                   disabled={scriptLoading}
                   className="px-3 py-1.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {scriptLoading ? 'Generating...' : 'Generate install script'}
+                  {scriptLoading ? t('connect.linux.generating') : t('connect.linux.generate')}
                 </button>
               )}
               {scriptError && <p className="text-xs text-red-400 mt-2">{scriptError}</p>}
-              <p className="text-xs text-yellow-500 mt-2">
-                Run it as root on the new server. It works once, for 15 minutes; generate a new one
-                if it expires.
-              </p>
+              <p className="text-xs text-yellow-500 mt-2">{t('connect.linux.scriptHint')}</p>
             </div>
 
             <div className="space-y-4">
               <div className="p-4 bg-gray-900 text-gray-300 rounded-lg font-mono text-sm overflow-x-auto">
-                <p className="text-gray-500 mb-2"># Manual Install (Ubuntu/Debian)</p>
+                <p className="text-gray-500 mb-2"># {t('connect.linux.manualInstall')}</p>
                 <p className="mb-4 text-green-400">
                   sudo apt update && sudo apt install -y wireguard
                 </p>
 
-                <p className="text-gray-500 mb-2"># Save Config</p>
+                <p className="text-gray-500 mb-2"># {t('connect.linux.saveConfig')}</p>
                 <p className="mb-4 text-green-400">sudo nano /etc/wireguard/wg0.conf</p>
-                <p className="text-gray-500 italic mb-4 text-xs">(Paste the config content here)</p>
+                <p className="text-gray-500 italic mb-4 text-xs">{t('connect.linux.pasteHint')}</p>
 
-                <p className="text-gray-500 mb-2"># Start VPN</p>
+                <p className="text-gray-500 mb-2"># {t('connect.linux.startVpn')}</p>
                 <p className="text-green-400">sudo wg-quick up wg0</p>
               </div>
             </div>
@@ -354,8 +367,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
         return (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              You can run a WireGuard client easily using Docker. Replace{' '}
-              <code>/path/to/wg0.conf</code> with your config path.
+              <Trans t={t} i18nKey="connect.docker.intro" components={{ code: <code /> }} />
             </p>
             <div className="p-4 bg-gray-900 text-gray-300 rounded-lg font-mono text-sm overflow-x-auto relative group">
               <button
@@ -387,7 +399,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Connect: ${nodeName}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('connect.title', { name: nodeName })}>
       <div className="space-y-6">
         {loading ? (
           <div className="flex justify-center p-8">
@@ -401,7 +413,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
             <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700">
               <InstallTab
                 active={activeTab === 'general'}
-                label="Config & QR"
+                label={t('connect.tabs.general')}
                 icon={<QrIcon className="w-4 h-4" />}
                 onClick={() => setActiveTab('general')}
               />
@@ -438,7 +450,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
 
         <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
           <Button variant="secondary" onClick={onClose}>
-            Close
+            {t('common:actions.close')}
           </Button>
         </div>
       </div>

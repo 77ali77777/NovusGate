@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import ReactFlow, { Background, Controls, type Edge, MarkerType, type Node } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -25,6 +26,7 @@ const nodeStyle = (kind: string, status?: string): React.CSSProperties => {
 // may reach each other (green: allowed, amber: partly). Click a network or a
 // peer to open it.
 export const TopologyPage = () => {
+  const { t } = useTranslation('topology')
   const navigate = useNavigate()
   const { data: networks = [], isLoading } = useNetworks()
   const { data: matrix } = useFirewallPolicyMatrix(true)
@@ -75,13 +77,10 @@ export const TopologyPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Topology"
-        description="The hub, its VPN networks and peers. Green arrows: allowed between networks; amber: partly allowed."
-      />
+      <PageHeader title={t('title')} description={t('description')} />
       <Card padding="none">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-500">Loading…</p>
+          <p className="p-6 text-sm text-gray-500">{t('common:state.loading')}</p>
         ) : (
           <div style={{ height: '70vh' }}>
             <ReactFlow

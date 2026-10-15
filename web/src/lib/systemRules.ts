@@ -1,6 +1,6 @@
 // System Rules view: the rules NovusGate itself puts into table inet
 // novusgate, read from the compiled ruleset (GET /firewall/v2/preview), with
-// a short explanation. Panel-made entries (services, IP rules, VPN rules,
+// a short explanation (a translation key the view resolves). Panel-made entries (services, IP rules, VPN rules,
 // forwards) carry a "svc:", "ip:", "rule:" or "fwd:" comment and are left
 // out. Kept free of imports so it runs under `node --experimental-strip-types`.
 
@@ -8,58 +8,42 @@ export interface SystemRule {
   chain: string
   policy: string // the chain's policy ("drop", "accept"), "" for a regular chain
   rule: string
-  explanation: string
+  explanation: string // translation key (firewallv2 namespace), '' when unknown
 }
 
 const userComment = /comment "(svc|ip|rule|fwd):/
 
-// Most specific patterns first; the first match explains the rule.
+// Most specific patterns first; the first match explains the rule. Each
+// explanation is a translation key in the firewallv2 namespace.
 const explanations: [RegExp, string][] = [
-  [/iif "lo" accept/, 'Traffic of the server to itself (loopback).'],
-  [
-    /@blocked_v[46] .*drop/,
-    'Blocked addresses (Blocked IPs, Fail2Ban permanent bans) are dropped before anything else.',
-  ],
-  [/ct state established,related accept/, 'Replies to connections that were already allowed.'],
-  [/ct state invalid drop/, 'Malformed or out-of-state packets are dropped.'],
-  [
-    /@ssh_ports accept/,
-    'SSH stays reachable on every detected SSH port, whatever the other rules say.',
-  ],
-  [/@wg_ports accept/, 'WireGuard ports of all VPN networks.'],
-  [/dhcpv6 client/, "DHCPv6 replies for the server's own IPv6 address."],
-  [
-    /admin ports: VPN only/,
-    'Panel, database and API ports are dropped on every interface other than the VPN.',
-  ],
-  [/tcp dport \{ 8080, 8443 \} accept/, 'The API is reachable from the VPN networks.'],
-  [/tcp dport \{ 3007, 5432 \} accept/, 'Panel and database: admin VPN (wg0) only.'],
-  [/icmp/, 'Ping and other ICMP messages.'],
-  [
-    /update @dropped_v[46]/,
-    'Records the sources that reach the default drop (shown on the Live tab).',
-  ],
-  [/comment "default drop"/, 'Everything not allowed above is dropped by the chain policy.'],
-  [
-    /admin VPN to docker-published postgres/,
-    'The admin VPN keeps access to the database Docker publishes.',
-  ],
-  [
-    /docker-published postgres/,
-    'Docker publishes the database on all addresses; other interfaces cannot reach it.',
-  ],
-  [/jump vpn_policy/, 'Traffic from VPN clients goes through the VPN rules and network policies.'],
-  [/oifname "wg\*" ct status dnat accept/, 'Port forwards to VPN nodes.'],
-  [/oifname "wg\*" counter drop/, 'Other traffic into the VPN networks is dropped.'],
-  [/iifname "([^"]+)" oifname "\1" accept/, 'Peers of the same network can reach each other.'],
-  [/@egress_v4 accept/, 'Full-tunnel nodes may reach the internet through the server.'],
-  [/@egress_v4 masquerade/, 'Full-tunnel traffic leaves with the server address (NAT).'],
-  [/vpn default drop/, 'Traffic between VPN networks without an allowing rule is dropped.'],
+  [/iif "lo" accept/, 'systemRules.explain.loopback'],
+  [/@blocked_v[46] .*drop/, 'systemRules.explain.blocked'],
+  [/ct state established,related accept/, 'systemRules.explain.established'],
+  [/ct state invalid drop/, 'systemRules.explain.invalid'],
+  [/@ssh_ports accept/, 'systemRules.explain.ssh'],
+  [/@wg_ports accept/, 'systemRules.explain.wireguard'],
+  [/dhcpv6 client/, 'systemRules.explain.dhcpv6'],
+  [/admin ports: VPN only/, 'systemRules.explain.adminPortsVpnOnly'],
+  [/tcp dport \{ 8080, 8443 \} accept/, 'systemRules.explain.apiFromVpn'],
+  [/tcp dport \{ 3007, 5432 \} accept/, 'systemRules.explain.panelDbAdminVpn'],
+  [/icmp/, 'systemRules.explain.icmp'],
+  [/update @dropped_v[46]/, 'systemRules.explain.recordDropped'],
+  [/comment "default drop"/, 'systemRules.explain.defaultDrop'],
+  [/admin VPN to docker-published postgres/, 'systemRules.explain.adminVpnPostgres'],
+  [/docker-published postgres/, 'systemRules.explain.dockerPostgres'],
+  [/jump vpn_policy/, 'systemRules.explain.vpnPolicy'],
+  [/oifname "wg\*" ct status dnat accept/, 'systemRules.explain.forwardsToNodes'],
+  [/oifname "wg\*" counter drop/, 'systemRules.explain.vpnInboundDrop'],
+  [/iifname "([^"]+)" oifname "\1" accept/, 'systemRules.explain.sameNetwork'],
+  [/@egress_v4 accept/, 'systemRules.explain.egressAccept'],
+  [/@egress_v4 masquerade/, 'systemRules.explain.egressMasquerade'],
+  [/vpn default drop/, 'systemRules.explain.vpnDefaultDrop'],
 ]
 
+// explain returns the translation key of the rule's explanation, '' if none.
 function explain(rule: string): string {
-  for (const [re, text] of explanations) {
-    if (re.test(rule)) return text
+  for (const [re, key] of explanations) {
+    if (re.test(rule)) return key
   }
   return ''
 }

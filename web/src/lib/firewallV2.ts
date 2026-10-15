@@ -28,11 +28,18 @@ export function toRFC3339(local: string): string | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
 }
 
-// formatAgo says how long ago a dropped source was last seen.
-export function formatAgo(seconds: number): string {
-  if (seconds <= 0) return 'just now'
-  if (seconds < 60) return `${seconds} s ago`
-  return `${Math.floor(seconds / 60)} min ago`
+// AgoText is a translation key (firewallv2 namespace) with its count.
+export interface AgoText {
+  key: 'ago.justNow' | 'ago.seconds' | 'ago.minutes'
+  count: number
+}
+
+// formatAgo says how long ago a dropped source was last seen, as a
+// translation key and count the view resolves.
+export function formatAgo(seconds: number): AgoText {
+  if (seconds <= 0) return { key: 'ago.justNow', count: 0 }
+  if (seconds < 60) return { key: 'ago.seconds', count: seconds }
+  return { key: 'ago.minutes', count: Math.floor(seconds / 60) }
 }
 
 const byteUnits = ['B', 'KB', 'MB', 'GB', 'TB']

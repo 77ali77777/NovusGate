@@ -4,7 +4,7 @@
 export type ExpiryChoice = 'keep' | 'forever' | '1h' | '1d' | '1w' | 'custom'
 
 // ok: expiresAt is what to send (undefined: no change, null: no limit);
-// otherwise error says why. A plain shape: the web tsconfig is not strict,
+// otherwise error is the i18n key (nodes namespace) of the reason. A plain shape: the web tsconfig is not strict,
 // so a discriminated union would not narrow.
 export interface ExpiryResult {
   ok: boolean
@@ -36,16 +36,15 @@ export function computeExpiry(opts: {
     const base = Math.max(currentTime ?? now.getTime(), now.getTime())
     return { ok: true, expiresAt: new Date(base + EXTENSIONS[choice]).toISOString() }
   }
-  if (!customDate) return { ok: false, error: 'Choose an expiration date.' }
+  if (!customDate) return { ok: false, error: 'nodes:edit.errors.dateRequired' }
   const selected = new Date(customDate)
-  if (Number.isNaN(selected.getTime()))
-    return { ok: false, error: 'Choose a valid expiration date.' }
+  if (Number.isNaN(selected.getTime())) return { ok: false, error: 'nodes:edit.errors.dateInvalid' }
   if (selected.getTime() <= now.getTime()) {
-    return { ok: false, error: 'Expiration date must be in the future!' }
+    return { ok: false, error: 'nodes:edit.errors.mustBeFuture' }
   }
   // A limit that has not passed yet can only be extended.
   if (currentTime !== null && currentTime > now.getTime() && selected.getTime() < currentTime) {
-    return { ok: false, error: 'Cannot reduce expiration time! You can only extend it.' }
+    return { ok: false, error: 'nodes:edit.errors.onlyExtend' }
   }
   return { ok: true, expiresAt: selected.toISOString() }
 }

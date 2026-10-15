@@ -1,0 +1,47 @@
+{
+  "title": "İcmal",
+  "description": "NovusGate infrastrukturunuzun icmalı",
+  "server": {
+    "title": "Server vəziyyəti",
+    "cores_one": "{{count}} nüvə",
+    "cores_other": "{{count}} nüvə",
+    "load": "Yük: {{load}}",
+    "memory": "Yaddaş",
+    "disk": "Disk",
+    "uptime": "İş müddəti",
+    "ofTotal": "cəmi {{total}}"
+  },
+  "uptimeFormat": {
+    "daysHours": "{{days}} gün {{hours}} saat",
+    "hoursMinutes": "{{hours}} saat {{minutes}} dəq",
+    "minutes": "{{minutes}} dəq"
+  },
+  "stats": {
+    "networks": "Şəbəkələr",
+    "totalNodes": "Cəmi node",
+    "totalDownload": "Cəmi endirilən",
+    "totalUpload": "Cəmi göndərilən",
+    "acrossNetworks": "Bütün şəbəkələr üzrə"
+  },
+  "networks": {
+    "title": "Şəbəkələr",
+    "viewAll": "Hamısına bax",
+    "nodes_one": "{{count}} node",
+    "nodes_other": "{{count}} node",
+    "online": "{{n}} onlayn",
+    "offline": "{{n}} oflayn",
+    "statOnline": "Onlayn: {{n}}",
+    "statOffline": "Oflayn: {{n}}",
+    "statPending": "Gözləyir: {{n}}",
+    "statExpired": "Müddəti bitib: {{n}}",
+    "emptyTitle": "Şəbəkə yoxdur",
+    "emptyDescription": "Başlamaq üçün ilk şəbəkənizi yaradın",
+    "create": "Şəbəkə yarat"
+  },
+  "expired": {
+    "title_one": "{{count}} node-un müddəti bitib",
+    "title_other": "{{count}} node-un müddəti bitib",
+    "description": "Bu node-lar diqqət tələb edir — onların giriş müddəti bitib",
+    "manage": "Node-ları idarə et"
+  }
+}

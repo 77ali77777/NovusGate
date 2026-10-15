@@ -1,5 +1,6 @@
 import { Globe, Server } from 'lucide-react'
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { Button, Modal } from '@/components/ui'
 import type {
@@ -32,6 +33,7 @@ export const VPNRuleModal = ({
   loading,
   networks,
 }: VPNRuleModalProps) => {
+  const { t } = useTranslation('firewall')
   const [sourceNodes, setSourceNodes] = useState<Node[]>([])
   const [destNodes, setDestNodes] = useState<Node[]>([])
 
@@ -59,48 +61,48 @@ export const VPNRuleModal = ({
   }, [form.dest_network_id, form.dest_type])
 
   const endpointTypes: { value: VPNEndpointType; label: string }[] = [
-    { value: 'any', label: 'Any' },
-    { value: 'network', label: 'Network' },
-    { value: 'node', label: 'Node' },
-    { value: 'custom', label: 'Custom IP' },
+    { value: 'any', label: t('common:state.any') },
+    { value: 'network', label: t('common:fields.network') },
+    { value: 'node', label: t('common:fields.node') },
+    { value: 'custom', label: t('ruleModal.customIp') },
   ]
 
   const protocols: { value: VPNFirewallProtocol; label: string }[] = [
-    { value: 'all', label: 'All' },
+    { value: 'all', label: t('ruleModal.protocolAll') },
     { value: 'tcp', label: 'TCP' },
     { value: 'udp', label: 'UDP' },
     { value: 'icmp', label: 'ICMP' },
   ]
 
   const actions: { value: VPNFirewallAction; label: string }[] = [
-    { value: 'accept', label: 'Accept' },
-    { value: 'drop', label: 'Drop' },
-    { value: 'reject', label: 'Reject' },
+    { value: 'accept', label: t('ruleModal.actionAccept') },
+    { value: 'drop', label: t('ruleModal.actionDrop') },
+    { value: 'reject', label: t('ruleModal.actionReject') },
   ]
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Edit VPN Rule' : 'Add VPN Rule'}
+      title={isEditing ? t('ruleModal.titleEdit') : t('ruleModal.titleAdd')}
       size="lg"
     >
       <form onSubmit={onSubmit} className="space-y-4">
         {/* Basic Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Rule Name</label>
+            <label className="block text-sm font-medium mb-1">{t('ruleModal.ruleName')}</label>
             <input
               type="text"
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., Allow Web Traffic"
+              placeholder={t('ruleModal.namePlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Priority</label>
+            <label className="block text-sm font-medium mb-1">{t('common:fields.priority')}</label>
             <input
               type="number"
               required
@@ -114,24 +116,26 @@ export const VPNRuleModal = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+          <label className="block text-sm font-medium mb-1">
+            {t('ruleModal.descriptionOptional')}
+          </label>
           <input
             type="text"
             value={form.description || ''}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            placeholder="Brief description of this rule"
+            placeholder={t('ruleModal.descriptionPlaceholder')}
           />
         </div>
 
         {/* Source */}
         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-3">
           <h4 className="font-medium flex items-center gap-2">
-            <Globe className="w-4 h-4" /> Source
+            <Globe className="w-4 h-4" /> {t('common:fields.source')}
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
+              <label className="block text-sm font-medium mb-1">{t('common:fields.type')}</label>
               <select
                 value={form.source_type}
                 onChange={(e) =>
@@ -154,7 +158,9 @@ export const VPNRuleModal = ({
             </div>
             {form.source_type === 'network' && (
               <div>
-                <label className="block text-sm font-medium mb-1">Network</label>
+                <label className="block text-sm font-medium mb-1">
+                  {t('common:fields.network')}
+                </label>
                 <select
                   value={form.source_network_id || ''}
                   onChange={(e) =>
@@ -162,7 +168,7 @@ export const VPNRuleModal = ({
                   }
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 >
-                  <option value="">Select Network</option>
+                  <option value="">{t('ruleModal.selectNetwork')}</option>
                   {networks.map((n) => (
                     <option key={n.id} value={n.id}>
                       {n.name} ({n.cidr})
@@ -174,7 +180,9 @@ export const VPNRuleModal = ({
             {form.source_type === 'node' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Network</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('common:fields.network')}
+                  </label>
                   <select
                     value={form.source_network_id || ''}
                     onChange={(e) =>
@@ -186,7 +194,7 @@ export const VPNRuleModal = ({
                     }
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                   >
-                    <option value="">Select Network</option>
+                    <option value="">{t('ruleModal.selectNetwork')}</option>
                     {networks.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.name}
@@ -195,7 +203,9 @@ export const VPNRuleModal = ({
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Node</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('common:fields.node')}
+                  </label>
                   <select
                     value={form.source_node_id || ''}
                     onChange={(e) =>
@@ -204,7 +214,7 @@ export const VPNRuleModal = ({
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                     disabled={!form.source_network_id}
                   >
-                    <option value="">Select Node</option>
+                    <option value="">{t('ruleModal.selectNode')}</option>
                     {sourceNodes.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.name} ({n.virtual_ip})
@@ -222,7 +232,7 @@ export const VPNRuleModal = ({
                   value={form.source_ip || ''}
                   onChange={(e) => setForm({ ...form, source_ip: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                  placeholder="e.g., 10.10.0.0/24"
+                  placeholder={t('ruleModal.cidrPlaceholder')}
                 />
               </div>
             )}
@@ -232,11 +242,11 @@ export const VPNRuleModal = ({
         {/* Destination */}
         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-3">
           <h4 className="font-medium flex items-center gap-2">
-            <Server className="w-4 h-4" /> Destination
+            <Server className="w-4 h-4" /> {t('common:fields.destination')}
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
+              <label className="block text-sm font-medium mb-1">{t('common:fields.type')}</label>
               <select
                 value={form.dest_type}
                 onChange={(e) =>
@@ -259,7 +269,9 @@ export const VPNRuleModal = ({
             </div>
             {form.dest_type === 'network' && (
               <div>
-                <label className="block text-sm font-medium mb-1">Network</label>
+                <label className="block text-sm font-medium mb-1">
+                  {t('common:fields.network')}
+                </label>
                 <select
                   value={form.dest_network_id || ''}
                   onChange={(e) =>
@@ -267,7 +279,7 @@ export const VPNRuleModal = ({
                   }
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 >
-                  <option value="">Select Network</option>
+                  <option value="">{t('ruleModal.selectNetwork')}</option>
                   {networks.map((n) => (
                     <option key={n.id} value={n.id}>
                       {n.name} ({n.cidr})
@@ -279,7 +291,9 @@ export const VPNRuleModal = ({
             {form.dest_type === 'node' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Network</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('common:fields.network')}
+                  </label>
                   <select
                     value={form.dest_network_id || ''}
                     onChange={(e) =>
@@ -291,7 +305,7 @@ export const VPNRuleModal = ({
                     }
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                   >
-                    <option value="">Select Network</option>
+                    <option value="">{t('ruleModal.selectNetwork')}</option>
                     {networks.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.name}
@@ -300,7 +314,9 @@ export const VPNRuleModal = ({
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Node</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('common:fields.node')}
+                  </label>
                   <select
                     value={form.dest_node_id || ''}
                     onChange={(e) =>
@@ -309,7 +325,7 @@ export const VPNRuleModal = ({
                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                     disabled={!form.dest_network_id}
                   >
-                    <option value="">Select Node</option>
+                    <option value="">{t('ruleModal.selectNode')}</option>
                     {destNodes.map((n) => (
                       <option key={n.id} value={n.id}>
                         {n.name} ({n.virtual_ip})
@@ -327,7 +343,7 @@ export const VPNRuleModal = ({
                   value={form.dest_ip || ''}
                   onChange={(e) => setForm({ ...form, dest_ip: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                  placeholder="e.g., 10.10.0.0/24"
+                  placeholder={t('ruleModal.cidrPlaceholder')}
                 />
               </div>
             )}
@@ -337,7 +353,7 @@ export const VPNRuleModal = ({
         {/* Protocol, Port, Action */}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Protocol</label>
+            <label className="block text-sm font-medium mb-1">{t('common:fields.protocol')}</label>
             <select
               value={form.protocol}
               onChange={(e) =>
@@ -353,18 +369,18 @@ export const VPNRuleModal = ({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Port (Optional)</label>
+            <label className="block text-sm font-medium mb-1">{t('ruleModal.portOptional')}</label>
             <input
               type="text"
               value={form.port || ''}
               onChange={(e) => setForm({ ...form, port: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder="e.g., 80 or 8000-9000"
+              placeholder={t('ruleModal.portPlaceholder')}
               disabled={form.protocol === 'icmp' || form.protocol === 'all'}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Action</label>
+            <label className="block text-sm font-medium mb-1">{t('common:fields.action')}</label>
             <select
               value={form.action}
               onChange={(e) => setForm({ ...form, action: e.target.value as VPNFirewallAction })}
@@ -389,17 +405,17 @@ export const VPNRuleModal = ({
             className="rounded"
           />
           <label htmlFor="enabled" className="text-sm">
-            Rule is enabled
+            {t('ruleModal.enabled')}
           </label>
         </div>
 
         {/* Submit */}
         <div className="flex justify-end gap-2 pt-4 border-t dark:border-gray-700">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button variant="primary" type="submit" loading={loading}>
-            {isEditing ? 'Update Rule' : 'Create Rule'}
+            {isEditing ? t('actions.updateRule') : t('actions.createRule')}
           </Button>
         </div>
       </form>

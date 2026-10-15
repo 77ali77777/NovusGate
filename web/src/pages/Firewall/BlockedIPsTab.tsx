@@ -1,4 +1,5 @@
 import { Ban, CheckCircle, Unlock } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card } from '@/components/ui'
 import type { FirewallRule } from '@/types'
 
@@ -10,6 +11,7 @@ interface BlockedIPsTabProps {
 }
 
 export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: BlockedIPsTabProps) => {
+  const { t } = useTranslation('firewall')
   return (
     <div className="space-y-4">
       {/* Blocked IPs List */}
@@ -28,13 +30,13 @@ export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: Blocked
                   <div>
                     <span className="font-mono font-medium">{rule.source}</span>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>Chain: {rule.chain}</span>
+                      <span>{t('blockedIps.chain', { chain: rule.chain })}</span>
                       <span>•</span>
-                      <span>Rule #{rule.number}</span>
+                      <span>{t('blockedIps.rule', { number: rule.number })}</span>
                       {rule.port && (
                         <>
                           <span>•</span>
-                          <span>Port: {rule.port}</span>
+                          <span>{t('blockedIps.port', { port: rule.port })}</span>
                         </>
                       )}
                     </div>
@@ -46,7 +48,7 @@ export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: Blocked
                   onClick={() => onUnblock(rule.chain, rule.number)}
                   loading={unblockLoading}
                 >
-                  <Unlock className="w-4 h-4 mr-1" /> Unblock
+                  <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
                 </Button>
               </div>
             ))}
@@ -54,8 +56,8 @@ export const BlockedIPsTab = ({ blockedIPs, onUnblock, unblockLoading }: Blocked
         ) : (
           <div className="text-center py-12 text-gray-500">
             <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-            <p className="font-medium">No blocked IPs</p>
-            <p className="text-sm">Use the "Block IP" button above</p>
+            <p className="font-medium">{t('blockedIps.emptyTitle')}</p>
+            <p className="text-sm">{t('blockedIps.emptyHint')}</p>
           </div>
         )}
       </Card>

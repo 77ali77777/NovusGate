@@ -1,0 +1,47 @@
+{
+  "title": "Dashboard",
+  "description": "Overview of your NovusGate infrastructure",
+  "server": {
+    "title": "Server Status",
+    "cores_one": "{{count}} core",
+    "cores_other": "{{count}} cores",
+    "load": "Load: {{load}}",
+    "memory": "Memory",
+    "disk": "Disk",
+    "uptime": "Uptime",
+    "ofTotal": "of {{total}}"
+  },
+  "uptimeFormat": {
+    "daysHours": "{{days}}d {{hours}}h",
+    "hoursMinutes": "{{hours}}h {{minutes}}m",
+    "minutes": "{{minutes}}m"
+  },
+  "stats": {
+    "networks": "Networks",
+    "totalNodes": "Total Nodes",
+    "totalDownload": "Total Download",
+    "totalUpload": "Total Upload",
+    "acrossNetworks": "Across all networks"
+  },
+  "networks": {
+    "title": "Networks",
+    "viewAll": "View all",
+    "nodes_one": "{{count}} node",
+    "nodes_other": "{{count}} nodes",
+    "online": "{{n}} online",
+    "offline": "{{n}} offline",
+    "statOnline": "Online: {{n}}",
+    "statOffline": "Offline: {{n}}",
+    "statPending": "Pending: {{n}}",
+    "statExpired": "Expired: {{n}}",
+    "emptyTitle": "No networks",
+    "emptyDescription": "Create your first network to get started",
+    "create": "Create Network"
+  },
+  "expired": {
+    "title_one": "{{count}} node expired",
+    "title_other": "{{count}} nodes expired",
+    "description": "These nodes need attention - their access has expired",
+    "manage": "Manage Nodes"
+  }
+}
