@@ -1,5 +1,5 @@
 const { endWithError } = require('./sse');
-const { EXIT_ALREADY_INSTALLED, EXIT_DB_WITHOUT_ENV } = require('./scripts');
+const { EXIT_ALREADY_INSTALLED, EXIT_DB_WITHOUT_ENV, EXIT_PREFLIGHT } = require('./scripts');
 
 const send = (res, event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
 
@@ -38,6 +38,9 @@ function doneMessage(code, { install }) {
   if (code === 0) return '';
   if (install && code === EXIT_ALREADY_INSTALLED) {
     return 'NovusGate is already installed on this server. Use Update or Reinstall instead.';
+  }
+  if (install && code === EXIT_PREFLIGHT) {
+    return 'This server does not meet the requirements (see the [ERROR] lines in the log). Nothing was changed.';
   }
   if (code === EXIT_DB_WITHOUT_ENV) {
     return 'An existing database was found without its .env. Restore the .env (see the log) or remove server/data, then retry.';
