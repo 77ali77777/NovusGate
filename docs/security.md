@@ -115,3 +115,8 @@
 - Tracker yalnız oxuduğu sətir dəyişməyibsə yazır, ona görə paneldən edilən paralel "sıfırla" itmir.
 - Məlum məhdudiyyətlər: control-plane dövr sərhədində işləməyibsə, son nümunədən sonrakı trafik yeni dövrə yazılır; WireGuard sayğacı sıfırlanıb əvvəlki dəyəri keçibsə, fərq az sayıla bilər (trafik tarixçəsindəki ilə eyni qayda).
 - iptables rejimində kvota tətbiq olunmur (limitlər kimi).
+
+## Audit jurnalı və Center log-ları (2026-10-15, review düzəlişləri)
+- Rate limit-ə düşən login (429) audit-ə yazılmır: parol yoxlanmadan cavab verilir, yazılsaydı hər kəs cədvəli pulsuz böyüdə bilərdi. Audit yazıları 180 gün saxlanılır (6 saatdan bir təmizlənir).
+- Center iş log-ları server silinəndə silinir (parolları ola bilər); silinmiş serverin log-u 404 verir. Log yazılmasa (disk dolu) iş davam edir.
+- Məlum, dəyişməyən: Center auth-suz lokal alətdir (açıq CORS); log-larda parollar maskalanmır (istifadəçi qərarı).

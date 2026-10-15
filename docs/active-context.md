@@ -292,9 +292,16 @@
 - **Review (opus) və düzəlişlər** (`3551916` + UI): Important: kvota artırılanda blok qalırdı; kvotasız dövrdən qalan baseline trafiki sayırdı; paralel "sıfırla" itə bilərdi; sıfırlama günü/TZ dəyişəndə sayğac silinirdi (017 `period_end`). Minor düzəldildi: iptables mətni, dövr sonunda reload, sampler xətasında rollover, throttle ≤ profil, UI validasiyası, bildiriş açarı, reset 204. Təxirə salındı (sənəddə): dövr sərhədində control-plane işləməyəndə trafikin bölünməsi, sayğac sıfırlanma heuristikası.
 - **Davam:** P10a (server idarəsi).
 
+### 2026-10-15: Qalan işlər, köhnə paketin review-u, brauzer testi
+- **Qalan işlər:** sabit nft set adları (018 `set_no`, `e8fb974`); operator sessiya ilə checkin; kvota dövr sərhədində trafikin zamana görə bölünməsi (`37ca06c`).
+- **Köhnə paketin review-u** (audit, sessiyalar, Center log-ları, i18n, OpenAPI tipləri): audit 429 spam + 180 gün saxlanma (`37ca06c`); Center log-ları best-effort və serverlə silinir (`a6b431b`); `strictNullChecks` açıldı, 33 null yeri düzəldildi (`b149f03`); topologiyada sürükləmə, ErrorBoundary `location.key`, audit-də konkret path, Live rəqəmləri dilə görə (`5354ed5`). Təxirə: login yazısında username, audit cursor bərabər vaxtda, Center log siyahısının sürəti, viewer öz digər sessiyalarını bitirə bilmir, modalda `role=dialog` yoxdur.
+- **Minimum host:** Ubuntu 22.04 / Debian 12 (`323c177`).
+- **Brauzer testi (real backend, izolə stack, NET_ADMIN, privileged yox):** giriş, Qruplar, Limitlər (az/en), Audit path, topologiya sürükləmə + 30 s sonra yer saxlanılır, Settings rolları, viewer rolunda gizlənən düymələr — hamısı işlədi. **Tapılan bug:** alpine image-də tzdata yox idi, UTC-dən başqa saat qurşağı 400 verirdi → `time/tzdata` (`f65bce3`). Bir dəfə gözləmə zamanı səhifə `/firewall`-a keçdi, təkrarlanmadı (stack restartı zamanı köhnə tab ehtimalı).
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | Qalan işlər + köhnə paket review + brauzer testi: set_no, audit 429/retention, Center log, strictNullChecks, tzdata | migrations 018, store, firewall, rest, Center joblog, web, main.go | review və brauzer testi · `e8fb974`..`f65bce3` |
 | 2026-10-15 | P9c: aylıq trafik kvotası (blok/yavaşlatma, 80% xəbərdarlıq, sıfırlama) | quota/, migrations 016, store/limits.go, firewall/limits.go, netctl/nft, traffic.go, main.go, web Limits/Nodes/Settings | P9 spec · `08f8ec5`, `a434f65` |
 | 2026-10-15 | P9b: limit profilləri (nft meter/ct count/cədvəl, 015, API, Limits tabı) | netctl/nft, firewall/{limits,preview,engine,matrix}.go, store/limits.go, rest/limits_handlers.go, setup-firewall.sh, web Limits | P9 spec · `e6c4a81`..`2c1eb43` |
 | 2026-10-15 | P9a review: son admin UUID, default-deny GET, rola görə UI, Nodes qrup filtri | store/roles.go, rest/roles.go, web/src/pages/** | review · `67beb5c` + UI commit |
