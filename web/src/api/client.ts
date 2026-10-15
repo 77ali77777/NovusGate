@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios'
 import type {
   AllowIPRequest,
+  AuditEntry,
   BlockIPRequest,
   ClosePortRequest,
   CreateNetworkForm,
@@ -21,11 +22,15 @@ import type {
   Network,
   Node,
   OpenPortRequest,
+  SessionInfo,
   StatsOverview,
   SystemInfo,
   VPNFirewallRule,
   VPNFirewallRuleRequest,
 } from '@/types'
+
+// Audit log page size (GET /audit allows up to 500).
+const AUDIT_PAGE = 100
 
 class ApiClient {
   private client: AxiosInstance
@@ -332,6 +337,22 @@ class ApiClient {
   // ====================
 
   // Get all VPN firewall rules
+  async getAuditLog(before?: string): Promise<{ entries: AuditEntry[] }> {
+    const { data } = await this.client.get<{ entries: AuditEntry[] }>('/audit', {
+      params: { limit: AUDIT_PAGE, before },
+    })
+    return data
+  }
+
+  async getSessions(): Promise<{ sessions: SessionInfo[] }> {
+    const { data } = await this.client.get<{ sessions: SessionInfo[] }>('/auth/sessions')
+    return data
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    await this.client.delete(`/auth/sessions/${id}`)
+  }
+
   async getFirewallPolicyMatrix(): Promise<FirewallPolicyMatrix> {
     const { data } = await this.client.get<FirewallPolicyMatrix>('/firewall/policy-matrix')
     return data
@@ -497,7 +518,8 @@ class ApiClient {
 export const api = new ApiClient()
 
 // React Query hooks
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { nextBefore } from '@/lib/audit'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 import type { BackupInfo, NotificationSettings } from '@/types'
@@ -832,6 +854,33 @@ export function useResetFirewall() {
 // ====================
 // VPN Firewall Hooks
 // ====================
+
+// Audit log, newest first, one page of AUDIT_PAGE entries at a time.
+export function useAuditLog() {
+  return useInfiniteQuery({
+    queryKey: ['audit'],
+    queryFn: ({ pageParam }) => api.getAuditLog(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => nextBefore(last.entries, AUDIT_PAGE),
+  })
+}
+
+export function useSessions() {
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => api.getSessions(),
+    refetchInterval: 60000,
+  })
+}
+
+export function useDeleteSession() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'Failed to end the session', successTitle: 'Session ended' },
+    mutationFn: (id: string) => api.deleteSession(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions'] }),
+  })
+}
 
 // Network policy matrix; VPN rule changes invalidate ['firewall', 'vpn'].
 export function useFirewallPolicyMatrix(enabled: boolean) {

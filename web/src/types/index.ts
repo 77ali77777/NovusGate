@@ -405,6 +405,26 @@ export interface FirewallV2Live {
   error?: string
 }
 
+// GET /audit: changes made through the API and login attempts.
+export interface AuditEntry {
+  id: string
+  created_at: string
+  action: string
+  details: Record<string, unknown>
+  user_ip?: string
+  username?: string
+}
+
+// GET /auth/sessions: unexpired login sessions; current is the caller's.
+export interface SessionInfo {
+  id: string
+  username: string
+  created_at: string
+  last_used_at: string
+  expires_at: string
+  current: boolean
+}
+
 // GET /firewall/policy-matrix: cells[from][to] for every pair of VPN networks,
 // computed by the backend from the VPN rules and the firewall mode.
 export interface FirewallPolicyMatrix {

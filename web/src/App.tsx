@@ -3,6 +3,7 @@ import React from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { apiErrorMessage, errorBodyMessage } from './api/errors'
 import { Layout } from './components/Layout'
+import { AuditPage } from './pages/Audit/AuditPage'
 import { DashboardPage } from './pages/Dashboard/Dashboard'
 import { Fail2BanPage } from './pages/Fail2Ban/Fail2Ban'
 import { Firewall } from './pages/Firewall/Firewall'
@@ -167,6 +168,7 @@ function App() {
             <Route path="nodes/:id" element={<NodeDetailPage />} />
             <Route path="firewall" element={<Firewall />} />
             <Route path="fail2ban" element={<Fail2BanPage />} />
+            <Route path="audit" element={<AuditPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

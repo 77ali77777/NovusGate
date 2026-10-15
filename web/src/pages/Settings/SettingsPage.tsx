@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/Layout'
 import { BackupsCard } from './BackupsCard'
 import { ChangePasswordCard } from './ChangePasswordCard'
 import { NotificationsCard } from './NotificationsCard'
+import { SessionsCard } from './SessionsCard'
 import { UserManagementCard } from './UserManagementCard'
 
 export const SettingsPage: React.FC = () => {
@@ -14,6 +15,7 @@ export const SettingsPage: React.FC = () => {
         <UserManagementCard />
         <BackupsCard />
         <NotificationsCard />
+        <SessionsCard />
       </div>
     </div>
   )

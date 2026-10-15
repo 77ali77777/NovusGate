@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import {
   Activity,
   ChevronDown,
+  ClipboardList,
   Flame,
   LogOut,
   Menu,
@@ -32,6 +33,7 @@ const navigation: NavItem[] = [
   { name: 'Nodes', href: '/nodes', icon: <Server className="w-5 h-5" /> },
   { name: 'Firewall', href: '/firewall', icon: <Flame className="w-5 h-5" /> },
   { name: 'Fail2Ban', href: '/fail2ban', icon: <Shield className="w-5 h-5" /> },
+  { name: 'Audit log', href: '/audit', icon: <ClipboardList className="w-5 h-5" /> },
   { name: 'Settings', href: '/settings', icon: <Settings className="w-5 h-5" /> },
 ]
 
