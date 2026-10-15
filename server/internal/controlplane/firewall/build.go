@@ -4,6 +4,7 @@ package firewall
 import (
 	"fmt"
 	"net/netip"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -47,27 +48,65 @@ func NetworksFromModels(networks []*models.Network) ([]nft.VPNNetwork, []error) 
 // Disabled rules are skipped; a rule that cannot be converted is reported
 // and skipped so one bad rule never blocks the rest.
 func VPNRulesFromModels(rules []*models.VPNFirewallRule, networks map[string]*models.Network, nodes map[string]*models.Node) ([]nft.VPNRule, []error) {
+	out, _, errs := vpnRulesWithGroups(rules, networks, nodes, nil)
+	return out, errs
+}
+
+// vpnRulesWithGroups is VPNRulesFromModels with group endpoints (P9a): a
+// group becomes the set grp_<n> (n: the group's place in ID order) and the
+// sets the rules use are returned with their members' addresses.
+func vpnRulesWithGroups(rules []*models.VPNFirewallRule, networks map[string]*models.Network, nodes map[string]*models.Node,
+	groups []*models.NodeGroup) ([]nft.VPNRule, []nft.Group, []error) {
+	byID := map[string]*models.NodeGroup{}
+	ids := make([]string, 0, len(groups))
+	for _, g := range groups {
+		byID[g.ID] = g
+		ids = append(ids, g.ID)
+	}
+	sort.Strings(ids)
+	setName := map[string]string{}
+	for i, id := range ids {
+		setName[id] = fmt.Sprintf("grp_%d", i)
+	}
+	used := map[string]nft.Group{}
+	// end resolves one side of a rule to a set name or a prefix.
+	end := func(kind string, groupID, networkID, nodeID *string, custom string) (string, netip.Prefix, error) {
+		if kind == "group" {
+			if groupID == nil || byID[*groupID] == nil {
+				return "", netip.Prefix{}, fmt.Errorf("group not found")
+			}
+			name := setName[*groupID]
+			if _, ok := used[name]; !ok {
+				g := nft.Group{Name: name}
+				for _, m := range byID[*groupID].Members {
+					if a, err := netip.ParseAddr(m.VirtualIP); err == nil && a.Unmap().Is4() {
+						g.Members = append(g.Members, a.Unmap())
+					}
+				}
+				used[name] = g
+			}
+			return name, netip.Prefix{}, nil
+		}
+		p, err := endpoint(kind, networkID, nodeID, custom, networks, nodes)
+		if err != nil {
+			return "", p, err
+		}
+		p, err = ipv4Prefix(p)
+		return "", p, err
+	}
 	var out []nft.VPNRule
 	var errs []error
 	for _, r := range rules {
 		if !r.Enabled {
 			continue
 		}
-		src, err := endpoint(r.SourceType, r.SourceNetworkID, r.SourceNodeID, r.SourceIP, networks, nodes)
+		srcSet, src, err := end(r.SourceType, r.SourceGroupID, r.SourceNetworkID, r.SourceNodeID, r.SourceIP)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("rule %s source: %v", r.Name, err))
 			continue
 		}
-		dst, err := endpoint(r.DestType, r.DestNetworkID, r.DestNodeID, r.DestIP, networks, nodes)
+		dstSet, dst, err := end(r.DestType, r.DestGroupID, r.DestNetworkID, r.DestNodeID, r.DestIP)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("rule %s destination: %v", r.Name, err))
-			continue
-		}
-		if src, err = ipv4Prefix(src); err != nil {
-			errs = append(errs, fmt.Errorf("rule %s source: %v", r.Name, err))
-			continue
-		}
-		if dst, err = ipv4Prefix(dst); err != nil {
 			errs = append(errs, fmt.Errorf("rule %s destination: %v", r.Name, err))
 			continue
 		}
@@ -82,9 +121,14 @@ func VPNRulesFromModels(rules []*models.VPNFirewallRule, networks map[string]*mo
 				continue
 			}
 		}
-		out = append(out, nft.VPNRule{ID: r.ID, Src: src, Dst: dst, Proto: proto, Ports: ports, Action: r.Action})
+		out = append(out, nft.VPNRule{ID: r.ID, Src: src, Dst: dst, SrcSet: srcSet, DstSet: dstSet, Proto: proto, Ports: ports, Action: r.Action})
 	}
-	return out, errs
+	sets := make([]nft.Group, 0, len(used))
+	for _, g := range used {
+		sets = append(sets, g)
+	}
+	sort.Slice(sets, func(i, j int) bool { return sets[i].Name < sets[j].Name })
+	return out, sets, errs
 }
 
 func endpoint(kind string, networkID, nodeID *string, custom string, networks map[string]*models.Network, nodes map[string]*models.Node) (netip.Prefix, error) {

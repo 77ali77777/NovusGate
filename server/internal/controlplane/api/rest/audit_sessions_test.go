@@ -9,6 +9,18 @@ import (
 	"testing"
 )
 
+func clearRows(t *testing.T, query string) {
+	t.Helper()
+	db, err := sql.Open("postgres", os.Getenv("TEST_DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(query); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func clearTable(t *testing.T, table string) {
 	t.Helper()
 	db, err := sql.Open("postgres", os.Getenv("TEST_DATABASE_URL"))

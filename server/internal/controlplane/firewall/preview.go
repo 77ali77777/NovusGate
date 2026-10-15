@@ -15,6 +15,11 @@ type Source interface {
 	GetNode(ctx context.Context, id string) (*models.Node, error)
 }
 
+// GroupSource is a Source that also keeps node groups (P9a).
+type GroupSource interface {
+	ListNodeGroups(ctx context.Context) ([]*models.NodeGroup, error)
+}
+
 // DetectHost reads the host facts a ruleset depends on: the ports SSH must
 // stay reachable on and the interface that carries the default route.
 func DetectHost(r nft.Runner) ([]uint16, string, error) {
@@ -64,13 +69,21 @@ func BuildRuleset(ctx context.Context, src Source, sshPorts []uint16, egress str
 			}
 		}
 	}
+	// Node groups (P9a) come from sources that keep them (the store).
+	var groups []*models.NodeGroup
+	if gs, ok := src.(GroupSource); ok {
+		if groups, err = gs.ListNodeGroups(ctx); err != nil {
+			return nft.Ruleset{}, nil, fmt.Errorf("list node groups: %w", err)
+		}
+	}
 	vpnNetworks, warnings := NetworksFromModels(networks)
-	vpnRules, ruleWarnings := VPNRulesFromModels(rules, byID, nodes)
+	vpnRules, sets, ruleWarnings := vpnRulesWithGroups(rules, byID, nodes, groups)
 	warnings = append(warnings, ruleWarnings...)
 	return nft.Ruleset{
 		SSHPorts:        sshPorts,
 		EgressInterface: egress,
 		Networks:        vpnNetworks,
 		VPNRules:        vpnRules,
+		Groups:          sets,
 	}, warnings, nil
 }

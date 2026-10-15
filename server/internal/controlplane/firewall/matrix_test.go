@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -170,5 +171,65 @@ func TestMatrixReasonKeys(t *testing.T) {
 	}
 	if k := buildMatrix(t, nil, nil, false).Cells["a"]["b"].ReasonKey; k != "iptables_default" {
 		t.Errorf("iptables default key = %q", k)
+	}
+}
+
+// groupSource adds node groups to a matrixSource.
+type groupSource struct {
+	matrixSource
+	groups []*models.NodeGroup
+}
+
+func (g groupSource) ListNodeGroups(context.Context) ([]*models.NodeGroup, error) {
+	return g.groups, nil
+}
+
+// A group rule compiles to a set of its members' addresses and, in the
+// matrix, touches only the networks its members are in.
+func TestGroupRulesBuildAndMatrix(t *testing.T) {
+	nodes := map[string]*models.Node{}
+	src := groupSource{
+		matrixSource: matrixSource{networks: matrixNets(), nodes: nodes, rules: []*models.VPNFirewallRule{
+			vpnRule("staff to b", func(r *models.VPNFirewallRule) {
+				r.SourceType, r.SourceGroupID, r.DestNetworkID = "group", ptr("g1"), ptr("b")
+			}),
+			vpnRule("to empty group", func(r *models.VPNFirewallRule) {
+				r.SourceType, r.DestType, r.DestGroupID, r.Action = "any", "group", ptr("g2"), "drop"
+			}),
+		}},
+		groups: []*models.NodeGroup{
+			{ID: "g1", Name: "staff", Members: []models.NodeGroupMember{{NodeID: "n1", VirtualIP: "10.1.0.5"}, {NodeID: "n2", VirtualIP: "10.1.0.6"}}},
+			{ID: "g2", Name: "empty"},
+			{ID: "g3", Name: "unused", Members: []models.NodeGroupMember{{NodeID: "n9", VirtualIP: "10.3.0.9"}}},
+		},
+	}
+	rs, warnings, err := BuildRuleset(context.Background(), src, []uint16{22}, "eth0")
+	if err != nil || len(warnings) != 0 {
+		t.Fatalf("build = %v %v", err, warnings)
+	}
+	if len(rs.Groups) != 2 || rs.VPNRules[0].SrcSet == "" || rs.VPNRules[1].DstSet == "" {
+		t.Fatalf("ruleset groups = %+v rules = %+v", rs.Groups, rs.VPNRules)
+	}
+	var staff nft.Group
+	for _, g := range rs.Groups {
+		if g.Name == rs.VPNRules[0].SrcSet {
+			staff = g
+		}
+	}
+	if len(staff.Members) != 2 || staff.Members[0].String() != "10.1.0.5" {
+		t.Fatalf("staff set = %+v", staff)
+	}
+
+	m, _, err := PolicyMatrix(context.Background(), src, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// members are in A only: A->B partial, C->B untouched (deny by default)
+	if a, c := m.Cells["a"]["b"], m.Cells["c"]["b"]; a.Verdict != "partial" || c.Verdict != "deny" || len(c.Rules) != 0 {
+		t.Fatalf("a->b %+v c->b %+v", a, c)
+	}
+	// the empty group touches nothing
+	if cell := m.Cells["a"]["a"]; cell.Verdict != "allow" || len(cell.Rules) != 0 {
+		t.Fatalf("a->a %+v", cell)
 	}
 }

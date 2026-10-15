@@ -109,6 +109,10 @@ type VPNFirewallRule struct {
 	DestNodeID      *string   `json:"dest_node_id,omitempty"`
 	DestIP          string    `json:"dest_ip,omitempty"`
 	
+	// Group endpoints (source_type / dest_type "group", P9a)
+	SourceGroupID *string `json:"source_group_id,omitempty"`
+	DestGroupID   *string `json:"dest_group_id,omitempty"`
+	
 	// Rule details
 	Protocol        string    `json:"protocol"`          // tcp, udp, icmp, all
 	Port            string    `json:"port,omitempty"`    // port or range
@@ -125,6 +129,8 @@ type VPNFirewallRule struct {
 	SourceNodeName    string  `json:"source_node_name,omitempty"`
 	DestNetworkName   string  `json:"dest_network_name,omitempty"`
 	DestNodeName      string  `json:"dest_node_name,omitempty"`
+	SourceGroupName   string  `json:"source_group_name,omitempty"`
+	DestGroupName     string  `json:"dest_group_name,omitempty"`
 }
 
 // FirewallAuditLog represents an audit log entry for firewall changes
@@ -218,4 +224,22 @@ type SessionInfo struct {
 	ExpiresAt  time.Time `json:"expires_at"`
 	Current    bool      `json:"current"`
 	TokenHash  string    `json:"-"`
+}
+
+// NodeGroup is a named set of nodes (P9a); VPN rules and limits can name a
+// group instead of single nodes.
+type NodeGroup struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Members     []NodeGroupMember `json:"members"`
+	CreatedAt   time.Time         `json:"created_at"`
+}
+
+// NodeGroupMember is a node in a group, with what rules need of it.
+type NodeGroupMember struct {
+	NodeID    string `json:"node_id"`
+	Name      string `json:"name"`
+	VirtualIP string `json:"virtual_ip"`
+	NetworkID string `json:"network_id"`
 }

@@ -1420,6 +1420,105 @@
         },
         "type": "object"
       },
+      "NodeGroup": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/NodeGroupMember"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "description",
+          "id",
+          "members",
+          "name"
+        ],
+        "type": "object"
+      },
+      "NodeGroupMember": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "virtual_ip": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "network_id",
+          "node_id",
+          "virtual_ip"
+        ],
+        "type": "object"
+      },
+      "NodeGroupMembersRequest": {
+        "properties": {
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "NodeGroupRequest": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "NodeGroupsResponse": {
+        "properties": {
+          "groups": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/NodeGroup"
+                }
+              ],
+              "nullable": true,
+              "type": "object"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "type": "object"
+      },
       "NodeInfo": {
         "properties": {
           "arch": {
@@ -2278,6 +2377,13 @@
           "description": {
             "type": "string"
           },
+          "dest_group_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "dest_group_name": {
+            "type": "string"
+          },
           "dest_ip": {
             "type": "string"
           },
@@ -2314,6 +2420,13 @@
             "type": "integer"
           },
           "protocol": {
+            "type": "string"
+          },
+          "source_group_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "source_group_name": {
             "type": "string"
           },
           "source_ip": {
@@ -2363,6 +2476,10 @@
           "description": {
             "type": "string"
           },
+          "dest_group_id": {
+            "nullable": true,
+            "type": "string"
+          },
           "dest_ip": {
             "type": "string"
           },
@@ -2390,6 +2507,10 @@
             "type": "integer"
           },
           "protocol": {
+            "type": "string"
+          },
+          "source_group_id": {
+            "nullable": true,
             "type": "string"
           },
           "source_ip": {
@@ -4117,6 +4238,210 @@
         "summary": "Update a VPN firewall rule",
         "tags": [
           "firewall-vpn"
+        ]
+      }
+    },
+    "/api/v1/groups": {
+      "get": {
+        "operationId": "get_groups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeGroupsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Node groups with their members, by name",
+        "tags": [
+          "groups"
+        ]
+      },
+      "post": {
+        "operationId": "post_groups",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeGroup"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a node group (409 group_name_taken)",
+        "tags": [
+          "groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{id}": {
+      "delete": {
+        "operationId": "delete_groups_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a node group (409 group_in_use while a VPN rule names it)",
+        "tags": [
+          "groups"
+        ]
+      },
+      "put": {
+        "operationId": "put_groups_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rename a node group",
+        "tags": [
+          "groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{id}/members": {
+      "put": {
+        "operationId": "put_groups_by_id_members",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeGroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Replace a group's members; VPN rules are re-applied",
+        "tags": [
+          "groups"
         ]
       }
     },

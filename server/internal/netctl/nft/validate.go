@@ -2,12 +2,15 @@ package nft
 
 import (
 	"fmt"
+	"net/netip"
 	"regexp"
 )
 
 var (
 	ifaceRe = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,15}$`)
 	idRe    = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,64}$`)
+	// groupNameRe: short set names, well under old kernels' 32-byte limit.
+	groupNameRe = regexp.MustCompile(`^grp_[0-9]{1,6}$`)
 )
 
 // reservedPorts can never be opened as public services or used for forwards.
@@ -98,12 +101,38 @@ func Validate(rs Ruleset) error {
 			return fmt.Errorf("forward %s: target %s is not inside any VPN network", f.ID, f.TargetIP)
 		}
 	}
+	groups := map[string]bool{}
+	for _, g := range rs.Groups {
+		if !groupNameRe.MatchString(g.Name) {
+			return fmt.Errorf("invalid group set name %q", g.Name)
+		}
+		if groups[g.Name] {
+			return fmt.Errorf("duplicate group set %q", g.Name)
+		}
+		groups[g.Name] = true
+		for _, a := range g.Members {
+			if !a.Is4() {
+				return fmt.Errorf("group %s: member %s is not IPv4", g.Name, a)
+			}
+		}
+	}
 	for _, r := range rs.VPNRules {
 		if !idRe.MatchString(r.ID) {
 			return fmt.Errorf("invalid VPN rule id %q", r.ID)
 		}
-		if !r.Src.IsValid() || !r.Dst.IsValid() || !r.Src.Addr().Is4() || !r.Dst.Addr().Is4() {
-			return fmt.Errorf("VPN rule %s: source and destination must be IPv4 prefixes", r.ID)
+		for _, end := range []struct {
+			set    string
+			prefix netip.Prefix
+		}{{r.SrcSet, r.Src}, {r.DstSet, r.Dst}} {
+			if end.set != "" {
+				if !groups[end.set] {
+					return fmt.Errorf("VPN rule %s: unknown group set %q", r.ID, end.set)
+				}
+				continue
+			}
+			if !end.prefix.IsValid() || !end.prefix.Addr().Is4() {
+				return fmt.Errorf("VPN rule %s: source and destination must be IPv4 prefixes", r.ID)
+			}
 		}
 		switch r.Proto {
 		case TCP, UDP:

@@ -287,6 +287,7 @@ func (s *Server) setupRoutes() {
 	s.registerBackupRoutes(api)
 	s.registerNotificationRoutes(api)
 	s.registerAuditRoutes(api)
+	s.registerGroupRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check

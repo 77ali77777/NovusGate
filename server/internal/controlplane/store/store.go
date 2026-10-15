@@ -456,12 +456,16 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 			sn.name as source_network_name,
 			snode.name as source_node_name,
 			dn.name as dest_network_name,
-			dnode.name as dest_node_name
+			dnode.name as dest_node_name,
+			fr.source_group_id, fr.dest_group_id,
+			sg.name as source_group_name, dg.name as dest_group_name
 		FROM firewall_rules fr
 		LEFT JOIN networks sn ON fr.source_network_id = sn.id
 		LEFT JOIN nodes snode ON fr.source_node_id = snode.id
 		LEFT JOIN networks dn ON fr.dest_network_id = dn.id
 		LEFT JOIN nodes dnode ON fr.dest_node_id = dnode.id
+		LEFT JOIN node_groups sg ON fr.source_group_id = sg.id
+		LEFT JOIN node_groups dg ON fr.dest_group_id = dg.id
 		ORDER BY fr.priority ASC, fr.created_at ASC
 	`)
 	if err != nil {
@@ -475,6 +479,7 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 		var description, sourceIP, destIP, port sql.NullString
 		var sourceNetworkID, sourceNodeID, destNetworkID, destNodeID sql.NullString
 		var sourceNetworkName, sourceNodeName, destNetworkName, destNodeName sql.NullString
+	var sourceGroupID, destGroupID, sourceGroupName, destGroupName sql.NullString
 		
 		if err := rows.Scan(
 			&rule.ID, &rule.Name, &description,
@@ -483,6 +488,7 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 			&rule.Protocol, &port, &rule.Action,
 			&rule.Priority, &rule.Enabled, &rule.CreatedAt, &rule.UpdatedAt,
 			&sourceNetworkName, &sourceNodeName, &destNetworkName, &destNodeName,
+		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
 		); err != nil {
 			return nil, err
 		}
@@ -509,6 +515,14 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 		rule.SourceNodeName = sourceNodeName.String
 		rule.DestNetworkName = destNetworkName.String
 		rule.DestNodeName = destNodeName.String
+	rule.SourceGroupName = sourceGroupName.String
+	rule.DestGroupName = destGroupName.String
+	if sourceGroupID.Valid {
+		rule.SourceGroupID = &sourceGroupID.String
+	}
+	if destGroupID.Valid {
+		rule.DestGroupID = &destGroupID.String
+	}
 		
 		rules = append(rules, &rule)
 	}
@@ -521,6 +535,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 	var description, sourceIP, destIP, port sql.NullString
 	var sourceNetworkID, sourceNodeID, destNetworkID, destNodeID sql.NullString
 	var sourceNetworkName, sourceNodeName, destNetworkName, destNodeName sql.NullString
+	var sourceGroupID, destGroupID, sourceGroupName, destGroupName sql.NullString
 	
 	err := s.db.QueryRowContext(ctx, `
 		SELECT 
@@ -532,12 +547,16 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 			sn.name as source_network_name,
 			snode.name as source_node_name,
 			dn.name as dest_network_name,
-			dnode.name as dest_node_name
+			dnode.name as dest_node_name,
+			fr.source_group_id, fr.dest_group_id,
+			sg.name as source_group_name, dg.name as dest_group_name
 		FROM firewall_rules fr
 		LEFT JOIN networks sn ON fr.source_network_id = sn.id
 		LEFT JOIN nodes snode ON fr.source_node_id = snode.id
 		LEFT JOIN networks dn ON fr.dest_network_id = dn.id
 		LEFT JOIN nodes dnode ON fr.dest_node_id = dnode.id
+		LEFT JOIN node_groups sg ON fr.source_group_id = sg.id
+		LEFT JOIN node_groups dg ON fr.dest_group_id = dg.id
 		WHERE fr.id = $1
 	`, id).Scan(
 		&rule.ID, &rule.Name, &description,
@@ -546,6 +565,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 		&rule.Protocol, &port, &rule.Action,
 		&rule.Priority, &rule.Enabled, &rule.CreatedAt, &rule.UpdatedAt,
 		&sourceNetworkName, &sourceNodeName, &destNetworkName, &destNodeName,
+		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
 	)
 	
 	if err == sql.ErrNoRows {
@@ -577,6 +597,14 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 	rule.SourceNodeName = sourceNodeName.String
 	rule.DestNetworkName = destNetworkName.String
 	rule.DestNodeName = destNodeName.String
+	rule.SourceGroupName = sourceGroupName.String
+	rule.DestGroupName = destGroupName.String
+	if sourceGroupID.Valid {
+		rule.SourceGroupID = &sourceGroupID.String
+	}
+	if destGroupID.Valid {
+		rule.DestGroupID = &destGroupID.String
+	}
 	
 	return &rule, nil
 }
@@ -595,13 +623,15 @@ func (s *Store) CreateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 			source_type, source_network_id, source_node_id, source_ip,
 			dest_type, dest_network_id, dest_node_id, dest_ip,
 			protocol, port, action,
-			priority, enabled, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+			priority, enabled, created_at, updated_at,
+			source_group_id, dest_group_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 	`, rule.ID, rule.Name, nullString(rule.Description),
 		rule.SourceType, nullStringPtr(rule.SourceNetworkID), nullStringPtr(rule.SourceNodeID), nullString(rule.SourceIP),
 		rule.DestType, nullStringPtr(rule.DestNetworkID), nullStringPtr(rule.DestNodeID), nullString(rule.DestIP),
 		rule.Protocol, nullString(rule.Port), rule.Action,
-		rule.Priority, rule.Enabled, rule.CreatedAt, rule.UpdatedAt)
+		rule.Priority, rule.Enabled, rule.CreatedAt, rule.UpdatedAt,
+		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID))
 	
 	return err
 }
@@ -616,13 +646,15 @@ func (s *Store) UpdateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 			source_type = $4, source_network_id = $5, source_node_id = $6, source_ip = $7,
 			dest_type = $8, dest_network_id = $9, dest_node_id = $10, dest_ip = $11,
 			protocol = $12, port = $13, action = $14,
-			priority = $15, enabled = $16, updated_at = $17
+			priority = $15, enabled = $16, updated_at = $17,
+			source_group_id = $18, dest_group_id = $19
 		WHERE id = $1
 	`, rule.ID, rule.Name, nullString(rule.Description),
 		rule.SourceType, nullStringPtr(rule.SourceNetworkID), nullStringPtr(rule.SourceNodeID), nullString(rule.SourceIP),
 		rule.DestType, nullStringPtr(rule.DestNetworkID), nullStringPtr(rule.DestNodeID), nullString(rule.DestIP),
 		rule.Protocol, nullString(rule.Port), rule.Action,
-		rule.Priority, rule.Enabled, rule.UpdatedAt)
+		rule.Priority, rule.Enabled, rule.UpdatedAt,
+		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID))
 	
 	if err != nil {
 		return err

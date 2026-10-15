@@ -51,6 +51,20 @@ func prefixScope(p, n netip.Prefix) scope {
 	return scopeNone
 }
 
+// endScope is prefixScope for one side of a rule; a group set covers "some"
+// of a network when one of its members is inside it.
+func endScope(set string, p netip.Prefix, sets map[string][]netip.Addr, n netip.Prefix) scope {
+	if set == "" {
+		return prefixScope(p, n)
+	}
+	for _, a := range sets[set] {
+		if n.Contains(a) {
+			return scopeSome
+		}
+	}
+	return scopeNone
+}
+
 func verdictOf(action string) string {
 	if action == "accept" {
 		return "allow"
@@ -92,21 +106,25 @@ func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, [
 		cidrs[n.ID] = p.Masked()
 		m.Networks = append(m.Networks, MatrixNetwork{ID: n.ID, Name: n.Name})
 	}
+	sets := map[string][]netip.Addr{}
+	for _, g := range rs.Groups {
+		sets[g.Name] = g.Members
+	}
 	for _, from := range m.Networks {
 		m.Cells[from.ID] = map[string]MatrixCell{}
 		for _, to := range m.Networks {
-			m.Cells[from.ID][to.ID] = matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, names, nftEnforcing)
+			m.Cells[from.ID][to.ID] = matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, sets, names, nftEnforcing)
 		}
 	}
 	return m, warnings, nil
 }
 
-func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, names map[string]string, nftEnforcing bool) MatrixCell {
+func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, sets map[string][]netip.Addr, names map[string]string, nftEnforcing bool) MatrixCell {
 	touched := []string{}
 	var scoped []string
 	final, reason, key, rule := "", "", "", ""
 	for _, r := range rules {
-		s, d := prefixScope(r.Src, from), prefixScope(r.Dst, to)
+		s, d := endScope(r.SrcSet, r.Src, sets, from), endScope(r.DstSet, r.Dst, sets, to)
 		if s == scopeNone || d == scopeNone {
 			continue
 		}

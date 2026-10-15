@@ -69,6 +69,8 @@ type VPNRule struct {
 	ID     string
 	Src    netip.Prefix
 	Dst    netip.Prefix
+	SrcSet string // a Group name instead of Src (P9a)
+	DstSet string // a Group name instead of Dst
 	Proto  Protocol
 	Ports  []PortRange // only for tcp and udp
 	Action string      // accept, drop or reject
@@ -76,6 +78,12 @@ type VPNRule struct {
 
 // IPRule is a per-source input rule: a port-scoped block (drop) or an allow
 // (accept). Whole-address blocks without ports belong in Blocked.
+// Group is a named set of node addresses (P9a); its name is grp_<n>.
+type Group struct {
+	Name    string
+	Members []netip.Addr
+}
+
 type IPRule struct {
 	ID     string
 	Prefix netip.Prefix
@@ -95,6 +103,7 @@ type Ruleset struct {
 	VPNRules        []VPNRule
 	IPRules         []IPRule
 	Egress          []netip.Addr // full-tunnel nodes allowed to reach the internet
+	Groups          []Group
 }
 
 const (

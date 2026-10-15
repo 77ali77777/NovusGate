@@ -63,6 +63,12 @@ func writeSets(b *builder, rs Ruleset, now time.Time) {
 	b.set("blocked_v4", "ipv4_addr", []string{"interval", "timeout"}, v4)
 	b.set("blocked_v6", "ipv6_addr", []string{"interval", "timeout"}, v6)
 	b.set("egress_v4", "ipv4_addr", nil, addrElems(rs.Egress))
+	// Node groups (P9a), named by VPN rules.
+	groups := append([]Group(nil), rs.Groups...)
+	sort.Slice(groups, func(i, j int) bool { return groups[i].Name < groups[j].Name })
+	for _, g := range groups {
+		b.set(g.Name, "ipv4_addr", nil, addrElems(g.Members))
+	}
 	// Sources of packets the input policy drops, kept for an hour (Live view).
 	for _, d := range [][2]string{{"dropped_v4", "ipv4_addr"}, {"dropped_v6", "ipv6_addr"}} {
 		b.line(1, "set "+d[0]+" {")
@@ -195,10 +201,16 @@ func writeVPNPolicy(b *builder, rs Ruleset) {
 
 func vpnRuleLine(r VPNRule) string {
 	var parts []string
-	if r.Src.Bits() != 0 {
+	switch {
+	case r.SrcSet != "":
+		parts = append(parts, "ip saddr @"+r.SrcSet)
+	case r.Src.Bits() != 0:
 		parts = append(parts, "ip saddr "+r.Src.Masked().String())
 	}
-	if r.Dst.Bits() != 0 {
+	switch {
+	case r.DstSet != "":
+		parts = append(parts, "ip daddr @"+r.DstSet)
+	case r.Dst.Bits() != 0:
 		parts = append(parts, "ip daddr "+r.Dst.Masked().String())
 	}
 	switch r.Proto {

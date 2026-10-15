@@ -913,6 +913,8 @@ type VPNFirewallRuleRequest struct {
 	DestNetworkID   *string `json:"dest_network_id,omitempty"`
 	DestNodeID      *string `json:"dest_node_id,omitempty"`
 	DestIP          string  `json:"dest_ip,omitempty"`
+	SourceGroupID   *string `json:"source_group_id,omitempty"` // source_type group (P9a)
+	DestGroupID     *string `json:"dest_group_id,omitempty"`   // dest_type group
 	Protocol        string  `json:"protocol"`          // tcp, udp, icmp, all
 	Port            string  `json:"port,omitempty"`
 	Action          string  `json:"action"`            // accept, drop, reject
@@ -927,14 +929,27 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 	}
 	
 	// Validate source type
-	validTypes := map[string]bool{"any": true, "network": true, "node": true, "custom": true}
+	validTypes := map[string]bool{"any": true, "network": true, "node": true, "custom": true, "group": true}
 	if !validTypes[req.SourceType] {
-		return fmt.Errorf("invalid source_type: must be any, network, node, or custom")
+		return fmt.Errorf("invalid source_type: must be any, network, node, custom or group")
 	}
-	
+
 	// Validate destination type
 	if !validTypes[req.DestType] {
-		return fmt.Errorf("invalid dest_type: must be any, network, node, or custom")
+		return fmt.Errorf("invalid dest_type: must be any, network, node, custom or group")
+	}
+	if req.SourceType == "group" && (req.SourceGroupID == nil || *req.SourceGroupID == "") {
+		return fmt.Errorf("source_group_id is required when source_type is group")
+	}
+	if req.DestType == "group" && (req.DestGroupID == nil || *req.DestGroupID == "") {
+		return fmt.Errorf("dest_group_id is required when dest_type is group")
+	}
+	// A group ID only counts with the group type.
+	if req.SourceType != "group" {
+		req.SourceGroupID = nil
+	}
+	if req.DestType != "group" {
+		req.DestGroupID = nil
 	}
 	
 	// Validate source references based on type
@@ -1048,6 +1063,8 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 		DestNetworkID:   req.DestNetworkID,
 		DestNodeID:      req.DestNodeID,
 		DestIP:          req.DestIP,
+		SourceGroupID:   req.SourceGroupID,
+		DestGroupID:     req.DestGroupID,
 		Protocol:        req.Protocol,
 		Port:            req.Port,
 		Action:          req.Action,
@@ -1055,6 +1072,11 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 		Enabled:         req.Enabled,
 	}
 	
+	if err := s.checkRuleGroups(r.Context(), rule); err != nil {
+		errorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Save to database
 	if err := s.store.CreateVPNFirewallRule(r.Context(), rule); err != nil {
 		errorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to create VPN firewall rule: %v", err))
@@ -1123,6 +1145,8 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 		DestNetworkID:   req.DestNetworkID,
 		DestNodeID:      req.DestNodeID,
 		DestIP:          req.DestIP,
+		SourceGroupID:   req.SourceGroupID,
+		DestGroupID:     req.DestGroupID,
 		Protocol:        req.Protocol,
 		Port:            req.Port,
 		Action:          req.Action,
@@ -1130,6 +1154,11 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 		Enabled:         req.Enabled,
 	}
 	
+	if err := s.checkRuleGroups(r.Context(), rule); err != nil {
+		errorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Update in database
 	if err := s.store.UpdateVPNFirewallRule(r.Context(), rule); err != nil {
 		errorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to update VPN firewall rule: %v", err))
@@ -1212,31 +1241,67 @@ func (s *Server) handleVPNFirewallApply(w http.ResponseWriter, r *http.Request) 
 // applyVPNFirewallRule appends one VPN rule to chain NOVUSGATE-VPN (iptables
 // mode); syncVPNFirewallRules calls it for every enabled rule in order.
 func (s *Server) applyVPNFirewallRule(ctx context.Context, rule *models.VPNFirewallRule) error {
-	// Build source IP/CIDR
-	sourceIP, err := s.resolveVPNRuleEndpoint(ctx, rule.SourceType, rule.SourceNetworkID, rule.SourceNodeID, rule.SourceIP)
+	// A group endpoint (P9a) is its members' addresses: one iptables rule per
+	// source/destination pair; an empty group adds none (matches nothing).
+	sources, err := s.resolveVPNRuleEndpoints(ctx, rule.SourceType, rule.SourceGroupID, rule.SourceNetworkID, rule.SourceNodeID, rule.SourceIP)
 	if err != nil {
 		return fmt.Errorf("failed to resolve source: %w", err)
 	}
-	
-	// Build destination IP/CIDR
-	destIP, err := s.resolveVPNRuleEndpoint(ctx, rule.DestType, rule.DestNetworkID, rule.DestNodeID, rule.DestIP)
+	dests, err := s.resolveVPNRuleEndpoints(ctx, rule.DestType, rule.DestGroupID, rule.DestNetworkID, rule.DestNodeID, rule.DestIP)
 	if err != nil {
 		return fmt.Errorf("failed to resolve destination: %w", err)
 	}
-	
+	// One failed pair must not leave the other members without the rule.
+	var firstErr error
+	for _, sourceIP := range sources {
+		for _, destIP := range dests {
+			if err := appendVPNIptablesRule(rule, sourceIP, destIP); err != nil && firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+	return firstErr
+}
+
+// resolveVPNRuleEndpoints is resolveVPNRuleEndpoint for every endpoint type,
+// groups included.
+func (s *Server) resolveVPNRuleEndpoints(ctx context.Context, endpointType string, groupID, networkID, nodeID *string, customIP string) ([]string, error) {
+	if endpointType != "group" {
+		ip, err := s.resolveVPNRuleEndpoint(ctx, endpointType, networkID, nodeID, customIP)
+		return []string{ip}, err
+	}
+	if groupID == nil {
+		return nil, fmt.Errorf("group_id is required for group type")
+	}
+	g, err := s.store.GetNodeGroup(ctx, *groupID)
+	if err != nil {
+		return nil, err
+	}
+	if g == nil {
+		return nil, fmt.Errorf("group not found")
+	}
+	out := []string{}
+	for _, m := range g.Members {
+		out = append(out, m.VirtualIP+"/32")
+	}
+	return out, nil
+}
+
+// appendVPNIptablesRule appends one rule for a source/destination pair.
+func appendVPNIptablesRule(rule *models.VPNFirewallRule, sourceIP, destIP string) error {
 	// Build iptables command
 	args := []string{"-A", vpnChain}
-	
+
 	// Add source
 	if sourceIP != "" && sourceIP != "0.0.0.0/0" {
 		args = append(args, "-s", sourceIP)
 	}
-	
+
 	// Add destination
 	if destIP != "" && destIP != "0.0.0.0/0" {
 		args = append(args, "-d", destIP)
 	}
-	
+
 	// Add protocol
 	if rule.Protocol != "all" && rule.Protocol != "" {
 		args = append(args, "-p", rule.Protocol)
@@ -1259,11 +1324,10 @@ func (s *Server) applyVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 	args = append(args, "-m", "comment", "--comment", fmt.Sprintf("novusgate-vpn-%s", rule.ID))
 	
 	// Execute iptables command
-	_, err = execHostCommand("iptables", args...)
-	if err != nil {
+	if _, err := execHostCommand("iptables", args...); err != nil {
 		return fmt.Errorf("iptables command failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -1407,6 +1471,8 @@ func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFire
 					}
 				}
 			}
+		case "group":
+			sourceCIDRs = append(sourceCIDRs, s.groupNetworkCIDRs(ctx, rule.SourceGroupID, networkCIDRs)...)
 		}
 		
 		switch rule.DestType {
@@ -1429,6 +1495,8 @@ func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFire
 					}
 				}
 			}
+		case "group":
+			destCIDRs = append(destCIDRs, s.groupNetworkCIDRs(ctx, rule.DestGroupID, networkCIDRs)...)
 		}
 		
 		// For each source network, add destination CIDRs to its routes

@@ -323,3 +323,53 @@ func TestDroppedSourcesAreTracked(t *testing.T) {
 		t.Errorf("input must record sources just before the default drop; got:\n%s", got)
 	}
 }
+
+// Groups (P9a) become IPv4 sets; a VPN rule names a group set instead of a
+// prefix. An empty group compiles to an empty set: the rule matches nothing.
+func TestGroupSetsAndRules(t *testing.T) {
+	rs := fullRuleset()
+	rs.Groups = []Group{
+		{Name: "grp_0", Members: []netip.Addr{netip.MustParseAddr("10.20.0.6"), netip.MustParseAddr("10.20.0.5")}},
+		{Name: "grp_1"},
+	}
+	rs.VPNRules = append(rs.VPNRules,
+		VPNRule{ID: "g-src", SrcSet: "grp_0", Dst: netip.MustParsePrefix("10.30.0.0/24"), Proto: All, Action: "accept"},
+		VPNRule{ID: "g-dst", Src: netip.MustParsePrefix("10.20.0.0/24"), DstSet: "grp_1", Proto: TCP,
+			Ports: []PortRange{{From: 22, To: 22}}, Action: "drop"})
+	got, err := Compile(rs, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{
+		"set grp_0 {\n\t\ttype ipv4_addr\n\t\telements = { 10.20.0.5, 10.20.0.6 }\n\t}",
+		"set grp_1 {\n\t\ttype ipv4_addr\n\t}",
+		`ip saddr @grp_0 ip daddr 10.30.0.0/24 counter accept comment "rule:g-src"`,
+		`ip saddr 10.20.0.0/24 ip daddr @grp_1 tcp dport { 22 } counter drop comment "rule:g-dst"`,
+	} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing:\n%s", s)
+		}
+	}
+	if os.Getenv("NFT_CHECK") == "1" {
+		cmd := exec.Command("nft", "-c", "-f", "-")
+		cmd.Stdin = strings.NewReader(got)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("nft -c: %v\n%s", err, out)
+		}
+	}
+}
+
+func TestGroupValidation(t *testing.T) {
+	bad := []Ruleset{
+		{Groups: []Group{{Name: "staff"}}},                                                            // not grp_<n>
+		{Groups: []Group{{Name: "grp_0"}, {Name: "grp_0"}}},                                           // duplicate
+		{Groups: []Group{{Name: "grp_0", Members: []netip.Addr{netip.MustParseAddr("2001:db8::1")}}}}, // IPv6 member
+		{VPNRules: []VPNRule{{ID: "x", SrcSet: "grp_9", Proto: All, Action: "accept"}}},               // unknown set
+	}
+	for i, rs := range bad {
+		rs.SSHPorts = []uint16{22}
+		if err := Validate(rs); err == nil {
+			t.Errorf("case %d: want an error", i)
+		}
+	}
+}
