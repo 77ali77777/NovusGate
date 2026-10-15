@@ -102,10 +102,10 @@ table inet novusgate {
 	chain limits {
 		ip saddr @lim_0 jump lim_0_time
 		ip daddr @lim_0 jump lim_0_time
-		ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 31250 bytes } counter drop comment "limit:office:up"
-		ip daddr @lim_0 update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 62500 bytes } counter drop comment "limit:office:down"
-		ct state new ip saddr @lim_0 add @lim_0_ct { ip saddr ct count over 50 } counter drop comment "limit:office:conn"
-		ip daddr @lim_1 update @lim_1_down { ip daddr limit rate over 62500 bytes/second burst 16384 bytes } counter drop comment "limit:guests:down"
+		ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 65536 bytes } counter drop comment "limit:office:up"
+		ip daddr @lim_0 update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 65536 bytes } counter drop comment "limit:office:down"
+		ip saddr @lim_0 add @lim_0_ct { ip saddr ct count over 50 } ct state new counter drop comment "limit:office:conn"
+		ip daddr @lim_1 update @lim_1_down { ip daddr limit rate over 62500 bytes/second burst 65536 bytes } counter drop comment "limit:guests:down"
 	}
 	chain lim_0_time {
 		meta day "Sunday" meta hour "22:00:00"-"23:59:59" return

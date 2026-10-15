@@ -127,14 +127,14 @@ func listLimits(ctx context.Context, ls LimitSource) ([]models.LimitProfile, []m
 // NextLimitReload is when the ruleset must be rebuilt so limit schedules
 // keep matching local time: the earliest UTC offset change among the time
 // zones of the scheduled profiles in use.
-func NextLimitReload(ctx context.Context, src Source, now time.Time) (time.Time, bool) {
+func NextLimitReload(ctx context.Context, src Source, now time.Time) (time.Time, bool, error) {
 	ls, ok := src.(LimitSource)
 	if !ok {
-		return time.Time{}, false
+		return time.Time{}, false, nil
 	}
 	profiles, nodeLimits, err := listLimits(ctx, ls)
 	if err != nil {
-		return time.Time{}, false
+		return time.Time{}, false, err
 	}
 	used := map[string]bool{}
 	for _, l := range nodeLimits {
@@ -154,5 +154,5 @@ func NextLimitReload(ctx context.Context, src Source, now time.Time) (time.Time,
 			next, found = t, true
 		}
 	}
-	return next, found
+	return next, found, nil
 }

@@ -78,8 +78,9 @@ func clockSeconds(s string) (int, int) {
 }
 
 // UTCWindows turns a profile's local schedule into UTC day windows for the
-// coming seven days: each weekday uses the offset of its next date, so a
-// reload at every offset change (NextOffsetChange) keeps them exact.
+// week around now (yesterday to five days ahead): each weekday uses the
+// offset of that date, so a reload at every offset change
+// (NextOffsetChange) keeps them exact.
 // Windows that cross a UTC midnight are split.
 func UTCWindows(schedule []models.ScheduleWindow, loc *time.Location, now time.Time) []nft.TimeWindow {
 	today := now.In(loc)
@@ -89,7 +90,9 @@ func UTCWindows(schedule []models.ScheduleWindow, loc *time.Location, now time.T
 		fh, fm := clockSeconds(sw.From)
 		th, tm := clockSeconds(sw.To)
 		for _, d := range sw.Days {
-			offset := (d - int(today.Weekday()) + 7) % 7
+			// Dates from yesterday to five days ahead: a window that began
+			// yesterday and is still running keeps yesterday's offset.
+			offset := (d-int(today.Weekday())+8)%7 - 1
 			y, mo, dd := today.AddDate(0, 0, offset).Date()
 			start := time.Date(y, mo, dd, fh, fm, 0, 0, loc)
 			end := time.Date(y, mo, dd, th, tm, 0, 0, loc)

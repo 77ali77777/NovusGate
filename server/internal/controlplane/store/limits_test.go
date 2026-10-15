@@ -77,8 +77,8 @@ func TestLimitProfiles(t *testing.T) {
 	// An unknown node fails the whole binding.
 	p2 := &models.LimitProfile{Name: "p2", Timezone: "UTC"}
 	s.CreateLimitProfile(ctx, p2)
-	if err := s.SetLimitProfileBindings(ctx, p2.ID, []string{a.ID, "00000000-0000-0000-0000-000000000000"}, nil); err == nil {
-		t.Fatal("unknown node: want an error")
+	if err := s.SetLimitProfileBindings(ctx, p2.ID, []string{a.ID, "00000000-0000-0000-0000-000000000000"}, nil); !errors.Is(err, ErrLimitMemberNotFound) {
+		t.Fatalf("unknown node = %v, want ErrLimitMemberNotFound", err)
 	}
 	list, _ = s.ListLimitProfiles(ctx)
 	for _, l := range list {

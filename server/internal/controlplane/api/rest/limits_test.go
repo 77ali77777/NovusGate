@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
+
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -119,5 +121,55 @@ func TestLimitRoles(t *testing.T) {
 	}
 	if rec := callWith(t, s, operator, "POST", "/api/v1/limits", `{"name":"o","up_kbps":1,"timezone":"UTC"}`); rec.Code != 201 {
 		t.Errorf("operator create = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// A group bound to a limit profile can be deleted (the foreign key points
+// from the group to the profile) or renamed (the first group by name decides
+// a node's profile); both must re-apply the firewall at once.
+func TestGroupChangesReapplyLimits(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	ctx := context.Background()
+	clearLimits(t)
+	_, a, _ := groupNodes(t, s)
+	up1, up2 := 1000, 2000
+	p1 := &models.LimitProfile{Name: "p1", UpKbps: &up1, Timezone: "UTC"}
+	p2 := &models.LimitProfile{Name: "p2", UpKbps: &up2, Timezone: "UTC"}
+	for _, p := range []*models.LimitProfile{p1, p2} {
+		if err := s.store.CreateLimitProfile(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gB := &models.NodeGroup{Name: "b-group"}
+	gC := &models.NodeGroup{Name: "c-group"}
+	for _, g := range []*models.NodeGroup{gB, gC} {
+		if err := s.store.CreateNodeGroup(ctx, g); err != nil {
+			t.Fatal(err)
+		}
+		s.store.SetNodeGroupMembers(ctx, g.ID, []string{a.ID})
+	}
+	s.store.SetLimitProfileBindings(ctx, p1.ID, nil, []string{gB.ID})
+	s.store.SetLimitProfileBindings(ctx, p2.ID, nil, []string{gC.ID})
+	if _, err := s.firewall.Reconcile(ctx, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(r.last(), "limit rate over 125000 bytes/second") {
+		t.Fatalf("b-group's profile (125000 B/s) must win:\n%s", r.last())
+	}
+	// Renaming c-group to a-group makes it first by name: p2 now applies.
+	if rec := call(t, s, "PUT", "/api/v1/groups/"+gC.ID, `{"name":"a-group"}`); rec.Code != 200 {
+		t.Fatalf("rename = %d %s", rec.Code, rec.Body)
+	}
+	if !strings.Contains(r.last(), "limit rate over 250000 bytes/second") {
+		t.Fatalf("after the rename p2 must apply:\n%s", r.last())
+	}
+	// Deleting both groups leaves the node without limits.
+	for _, g := range []*models.NodeGroup{gB, gC} {
+		if rec := call(t, s, "DELETE", "/api/v1/groups/"+g.ID, ""); rec.Code != 204 {
+			t.Fatalf("delete = %d %s", rec.Code, rec.Body)
+		}
+	}
+	if strings.Contains(r.last(), "jump limits") {
+		t.Fatalf("no group, no limits:\n%s", r.last())
 	}
 }

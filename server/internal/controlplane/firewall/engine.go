@@ -355,6 +355,9 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 	return nil, nil
 }
 
+// limitReloadTimeout bounds the database queries scheduleExpiry makes.
+var limitReloadTimeout = 5 * time.Second
+
 // scheduleExpiry re-runs reconcile when the next IP rule expires, so rules the
 // kernel cannot time out on its own (port-scoped rules, allows, bans longer
 // than nft's timeout limit) are removed on time, and when a limit schedule's
@@ -374,7 +377,14 @@ func (e *Engine) scheduleExpiry(st State) {
 			next = r.ExpiresAt
 		}
 	}
-	if reload, ok := NextLimitReload(context.Background(), e.Store, now); ok && (next == nil || reload.Before(*next)) {
+	// Runs under the engine lock: the database gets a bounded time.
+	ctx, cancel := context.WithTimeout(context.Background(), limitReloadTimeout)
+	reload, ok, err := NextLimitReload(ctx, e.Store, now)
+	cancel()
+	if err != nil {
+		slog.Warn(fmt.Sprintf("firewall: limit schedules not planned for reload: %v", err))
+	}
+	if ok && (next == nil || reload.Before(*next)) {
 		next = &reload
 	}
 	if next == nil {

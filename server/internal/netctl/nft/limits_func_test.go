@@ -115,12 +115,20 @@ ip netns exec %[1]s ip route add default via 10.6%[2]d.0.1`, ns, n))
 	sh("ip netns exec nsB sh -c 'ncat -lk 9000 > /dev/null 2>&1 &'")
 	time.Sleep(300 * time.Millisecond)
 	for i := 1; i <= 3; i++ {
-		// bash keeps the connection open on fd 3 while it sleeps.
-		sh("ip netns exec nsA bash -c 'exec 3<>/dev/tcp/10.62.0.2/9000; sleep 30' > /dev/null 2>&1 &")
+		// bash keeps the connection open on fd 3 and writes to it twice a
+		// second, as a live connection does.
+		sh("ip netns exec nsA bash -c 'exec 3<>/dev/tcp/10.62.0.2/9000; while true; do echo x >&3; sleep 0.5; done' > /dev/null 2>&1 &")
 	}
 	time.Sleep(time.Second)
 	if exec.Command("ip", "netns", "exec", "nsA", "ncat", "-w", "2", "-z", "10.62.0.2", "9000").Run() == nil {
 		t.Error("the 4th connection must be dropped")
+	}
+	// Every apply replaces the table, which empties the connection sets;
+	// the open connections must count again, or the cap would double.
+	apply(Limit{Name: "lim_0", ID: "conns", Members: []netip.Addr{nodeA}, MaxConns: 3})
+	time.Sleep(1500 * time.Millisecond)
+	if exec.Command("ip", "netns", "exec", "nsA", "ncat", "-w", "2", "-z", "10.62.0.2", "9000").Run() == nil {
+		t.Error("after a reload the 4th connection must still be dropped")
 	}
 	// Not through sh: pkill -f would match the shell's own command line.
 	// The sleep inherited the socket, so it goes too.
@@ -137,7 +145,16 @@ ip netns exec %[1]s ip route add default via 10.6%[2]d.0.1`, ns, n))
 	other := TimeWindow{Day: (now.Weekday() + 3) % 7, From: 0, To: 86400}
 	apply(Limit{Name: "lim_0", ID: "sched", Members: []netip.Addr{nodeA}, Windows: []TimeWindow{other}})
 	if ping() {
-		t.Error("outside the schedule A must be blocked")
+		t.Error("outside the schedule (another day) A must be blocked")
+	}
+	// Today, but hours away from now.
+	away := TimeWindow{Day: now.Weekday(), From: sec + 3600, To: sec + 7200}
+	if sec >= 43200 {
+		away = TimeWindow{Day: now.Weekday(), From: sec - 7200, To: sec - 3600}
+	}
+	apply(Limit{Name: "lim_0", ID: "sched", Members: []netip.Addr{nodeA}, Windows: []TimeWindow{other, away}})
+	if ping() {
+		t.Error("outside the schedule (another hour today) A must be blocked")
 	}
 	from, to := sec-600, sec+600
 	if from < 0 {

@@ -57,6 +57,9 @@ func limitStoreError(w http.ResponseWriter, err error) {
 		errorWithCode(w, http.StatusConflict, "limit_name_taken", err.Error())
 	case errors.Is(err, store.ErrLimitInUse):
 		errorWithCode(w, http.StatusConflict, "limit_in_use", err.Error())
+	case errors.Is(err, store.ErrLimitMemberNotFound):
+		// A node or group deleted after the handler checked it.
+		errorResponse(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, sql.ErrNoRows):
 		errorResponse(w, http.StatusNotFound, "limit profile not found")
 	default:

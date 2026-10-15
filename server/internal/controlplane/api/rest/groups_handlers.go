@@ -115,6 +115,8 @@ func (s *Server) handleUpdateGroup(w http.ResponseWriter, r *http.Request) {
 		groupStoreError(w, err)
 		return
 	}
+	// The first group by name decides an inherited limit profile (P9b).
+	s.applyLimits(r.Context())
 	g, err := s.store.GetNodeGroup(r.Context(), id)
 	if err != nil {
 		groupStoreError(w, err)
@@ -132,6 +134,8 @@ func (s *Server) handleDeleteGroup(w http.ResponseWriter, r *http.Request) {
 		groupStoreError(w, err)
 		return
 	}
+	// Its members may lose an inherited limit profile (P9b).
+	s.applyLimits(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }
 

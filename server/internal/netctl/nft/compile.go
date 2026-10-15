@@ -269,8 +269,10 @@ func sortedLimits(limits []Limit) []Limit {
 	return out
 }
 
-// minBurst keeps a few full-size packets in the bucket at low rates.
-const minBurst = 16384
+// minBurst keeps the bucket (rate+burst) larger than one 64 KiB packet, the
+// most GRO merges on the receive path: a smaller bucket would drop every
+// merged packet at low rates.
+const minBurst = 65536
 
 // limitBurst is the burst above the rate a meter allows. The kernel's bucket
 // holds rate+burst bytes, so a burst equal to the rate let a fresh flow send
@@ -306,7 +308,10 @@ func writeLimits(b *builder, rs Ruleset) {
 				l.Name, l.DownBytes, limitBurst(l.DownBytes), "limit:"+l.ID+":down"))
 		}
 		if l.MaxConns > 0 {
-			b.line(2, fmt.Sprintf("ct state new ip saddr @%[1]s add @%[1]s_ct { ip saddr ct count over %[2]d } counter drop comment %[3]q",
+			// The count is taken on every packet and only new connections are
+			// dropped: each apply replaces the table and empties the set, and
+			// the open connections must count again with their next packet.
+			b.line(2, fmt.Sprintf("ip saddr @%[1]s add @%[1]s_ct { ip saddr ct count over %[2]d } ct state new counter drop comment %[3]q",
 				l.Name, l.MaxConns, "limit:"+l.ID+":conn"))
 		}
 	}

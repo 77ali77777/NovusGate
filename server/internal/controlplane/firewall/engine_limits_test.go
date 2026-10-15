@@ -40,7 +40,7 @@ func TestEngineAppliesLimitsAndReloadsAtOffsetChange(t *testing.T) {
 	applied := h.r.applied[len(h.r.applied)-1]
 	for _, s := range []string{
 		"jump limits",
-		`update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 62500 bytes }`,
+		`update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 65536 bytes }`,
 		// 09:00 EDT is 13:00 UTC until November 1st.
 		`meta day "Tuesday" meta hour "13:00:00"-"20:59:59" return`,
 	} {
@@ -66,5 +66,38 @@ func TestEngineWithoutLimitsSchedulesNothing(t *testing.T) {
 	}
 	if strings.Contains(h.r.applied[len(h.r.applied)-1], "limits") {
 		t.Fatal("no limits expected")
+	}
+}
+
+// blockingLimits never answers the limit queries until ctx ends.
+type blockingLimits struct{ *memStore }
+
+func (b *blockingLimits) ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+func (b *blockingLimits) ListNodeLimits(ctx context.Context) ([]models.NodeLimit, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+// Planning the time-zone reload runs under the engine lock; a database that
+// does not answer must not hold the firewall forever.
+func TestReloadPlanningHasATimeout(t *testing.T) {
+	h := newHarness(ModeNft)
+	h.e.Store = &blockingLimits{memStore: h.st}
+	saved := limitReloadTimeout
+	limitReloadTimeout = 100 * time.Millisecond
+	defer func() { limitReloadTimeout = saved }()
+	st := State{}
+	done := make(chan struct{})
+	go func() {
+		h.e.scheduleExpiry(st)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("scheduleExpiry waited for the database without a timeout")
 	}
 }

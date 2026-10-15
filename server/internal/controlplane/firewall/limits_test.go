@@ -162,3 +162,20 @@ func TestLimitsFromModels(t *testing.T) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
 	}
 }
+
+// A window that started yesterday and runs past midnight uses yesterday's
+// offset. Berlin leaves summer time on Sunday 2026-10-25; on Monday the 19th
+// at 03:00 CEST the Sunday 22:00-06:00 window that is running must end at
+// 04:00 UTC (06:00 CEST), not at 05:00 (06:00 CET of the 25th).
+func TestUTCWindowsRunningOvernightUsesYesterday(t *testing.T) {
+	berlin := mustLoc(t, "Europe/Berlin")
+	now := time.Date(2026, 10, 19, 1, 0, 0, 0, time.UTC)
+	got := UTCWindows([]models.ScheduleWindow{{Days: []int{0}, From: "22:00", To: "06:00"}}, berlin, now)
+	want := []nft.TimeWindow{
+		w(time.Sunday, "20:00", "24:00"),
+		w(time.Monday, "00:00", "04:00"),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v\nwant %v", got, want)
+	}
+}

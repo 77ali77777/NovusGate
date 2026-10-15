@@ -18,6 +18,8 @@ var (
 	ErrLimitNameTaken = errors.New("a limit profile with this name exists")
 	// ErrLimitInUse: a node or group is bound to the profile.
 	ErrLimitInUse = errors.New("the limit profile is bound to a node or group")
+	// ErrLimitMemberNotFound: a node or group to bind does not exist.
+	ErrLimitMemberNotFound = errors.New("node or group not found")
 )
 
 func limitError(err error) error {
@@ -97,12 +99,11 @@ func (s *Store) SetLimitProfileBindings(ctx context.Context, profileID string, n
 		return err
 	}
 	defer tx.Rollback()
-	var exists bool
-	if err := tx.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM limit_profiles WHERE id = $1)`, profileID).Scan(&exists); err != nil {
-		return err
-	}
-	if !exists {
-		return sql.ErrNoRows
+	// Locking the profile row serialises concurrent bindings of it, so the
+	// last one replaces the others instead of merging with them.
+	var locked string
+	if err := tx.QueryRowContext(ctx, `SELECT id FROM limit_profiles WHERE id = $1 FOR UPDATE`, profileID).Scan(&locked); err != nil {
+		return err // sql.ErrNoRows for an unknown profile
 	}
 	for _, t := range []struct {
 		table string
@@ -118,7 +119,7 @@ func (s *Store) SetLimitProfileBindings(ctx context.Context, profileID string, n
 				return err
 			}
 			if n, _ := res.RowsAffected(); n == 0 {
-				return fmt.Errorf("%s %s: %w", t.table, id, sql.ErrNoRows)
+				return fmt.Errorf("%s %s: %w", t.table, id, ErrLimitMemberNotFound)
 			}
 		}
 	}

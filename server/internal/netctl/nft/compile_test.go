@@ -408,14 +408,14 @@ func TestLimitsCompile(t *testing.T) {
 		"\t\tjump limits\n\t\tct state established,related accept",
 		`ip saddr @lim_0 jump lim_0_time`,
 		`ip daddr @lim_0 jump lim_0_time`,
-		`ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 31250 bytes } counter drop comment "limit:office:up"`,
-		`ip daddr @lim_0 update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 62500 bytes } counter drop comment "limit:office:down"`,
-		`ct state new ip saddr @lim_0 add @lim_0_ct { ip saddr ct count over 50 } counter drop comment "limit:office:conn"`,
+		`ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 65536 bytes } counter drop comment "limit:office:up"`,
+		`ip daddr @lim_0 update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 65536 bytes } counter drop comment "limit:office:down"`,
+		`ip saddr @lim_0 add @lim_0_ct { ip saddr ct count over 50 } ct state new counter drop comment "limit:office:conn"`,
 		"chain lim_0_time {\n" +
 			"\t\tmeta day \"Sunday\" meta hour \"22:00:00\"-\"23:59:59\" return\n" +
 			"\t\tmeta day \"Monday\" meta hour \"04:00:00\"-\"13:59:59\" return\n" +
 			"\t\tcounter drop comment \"limit:office:schedule\"\n\t}",
-		`ip daddr @lim_1 update @lim_1_down { ip daddr limit rate over 62500 bytes/second burst 16384 bytes } counter drop comment "limit:guests:down"`,
+		`ip daddr @lim_1 update @lim_1_down { ip daddr limit rate over 62500 bytes/second burst 65536 bytes } counter drop comment "limit:guests:down"`,
 	} {
 		if !strings.Contains(got, s) {
 			t.Errorf("missing:\n%s\n--- got ---\n%s", s, got)
