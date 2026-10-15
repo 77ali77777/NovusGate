@@ -43,7 +43,8 @@ export const AuditPage = () => {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {entries.map((e) => {
                   const { method, target } = parseAction(e.action)
-                  const status = typeof e.details.status === 'number' ? e.details.status : undefined
+                  const status =
+                    typeof e.details?.status === 'number' ? e.details.status : undefined
                   return (
                     <tr key={e.id}>
                       <td className="whitespace-nowrap px-4 py-2 text-gray-500">

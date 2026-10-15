@@ -13,8 +13,8 @@ export const LiveTab = () => {
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
   if (!live) return <p className="text-sm text-gray-500">{t('live.unavailable')}</p>
 
-  const counters = live.counters.map((c, i) => ({ ...c, id: String(i) }))
-  const dropped = live.dropped.map((d) => ({ ...d, id: d.address }))
+  const counters = (live.counters ?? []).map((c, i) => ({ ...c, id: String(i) }))
+  const dropped = (live.dropped ?? []).map((d) => ({ ...d, id: d.address }))
   const ct = live.conntrack
   const pct = usagePercent(ct.count, ct.max)
 

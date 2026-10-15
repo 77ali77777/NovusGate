@@ -182,8 +182,9 @@ export const Fail2BanPage = () => {
 
   // Set default jail when status loads
   React.useEffect(() => {
-    if (status?.jails?.length > 0 && !status.jails.find((j: JailData) => j.name === selectedJail)) {
-      setSelectedJail(status.jails[0].name)
+    const jails = status?.jails ?? []
+    if (jails.length > 0 && !jails.find((j: JailData) => j.name === selectedJail)) {
+      setSelectedJail(jails[0].name)
     }
   }, [status, selectedJail])
 

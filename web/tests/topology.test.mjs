@@ -50,3 +50,13 @@ test('partial policy edges are kept and marked; no matrix means no policy edges'
   assert.equal(t.edges.find((e) => e.id === 'policy:a->b').verdict, 'partial')
   assert.equal(buildTopology(networks, peers, undefined).edges.filter((e) => e.kind === 'policy').length, 0)
 })
+
+test('a null matrix row (Go nil map) gives no policy edge', async () => {
+  const { buildTopology } = await import('../src/lib/topology.ts')
+  const nets = [
+    { id: 'a', name: 'A' },
+    { id: 'b', name: 'B' },
+  ]
+  const topo = buildTopology(nets, {}, { a: null, b: { a: { verdict: 'allow' } } })
+  assert.ok(topo.edges.every((e) => e.kind !== 'policy' || e.source !== 'net:a'))
+})

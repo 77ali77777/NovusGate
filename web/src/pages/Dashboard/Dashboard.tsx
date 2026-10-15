@@ -116,14 +116,14 @@ export const DashboardPage: React.FC = () => {
                 <HardDrive className="w-4 h-4" />
                 <span className="text-sm opacity-80">{t('server.disk')}</span>
               </div>
-              <p className="text-xl font-bold">{formatBytes(systemInfo.disk_used)}</p>
+              <p className="text-xl font-bold">{formatBytes(systemInfo.disk_used ?? 0)}</p>
               <p className="text-xs opacity-70">
-                {t('server.ofTotal', { total: formatBytes(systemInfo.disk_total) })}
+                {t('server.ofTotal', { total: formatBytes(systemInfo.disk_total ?? 0) })}
               </p>
               <div className="mt-2">
                 <ProgressBar
-                  value={systemInfo.disk_used}
-                  max={systemInfo.disk_total}
+                  value={systemInfo.disk_used ?? 0}
+                  max={systemInfo.disk_total ?? 0}
                   color="bg-white/50"
                 />
               </div>
@@ -135,7 +135,7 @@ export const DashboardPage: React.FC = () => {
                 <Clock className="w-4 h-4" />
                 <span className="text-sm opacity-80">{t('server.uptime')}</span>
               </div>
-              <p className="text-xl font-bold">{formatUptime(systemInfo.uptime_seconds, t)}</p>
+              <p className="text-xl font-bold">{formatUptime(systemInfo.uptime_seconds ?? 0, t)}</p>
               <p className="text-xs opacity-70">{systemInfo.hostname}</p>
             </div>
           </div>

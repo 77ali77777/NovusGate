@@ -56,7 +56,7 @@ export const TopologyPage = () => {
         status: p.status,
       }))
     })
-    const topo = buildTopology(networks, peersByNetwork, matrix?.cells)
+    const topo = buildTopology(networks, peersByNetwork, matrix?.cells ?? undefined)
     const flowNodes: Node[] = topo.nodes.map((n) => ({
       id: n.id,
       position: n.position,

@@ -19,6 +19,7 @@ import {
 import { Badge, Button, Card, Input, Select, Table } from '@/components/ui'
 import { formatDateTime } from '@/i18n'
 import { formatPorts, parseList, secondsLeft, toRFC3339 } from '@/lib/firewallV2'
+import { present } from '@/lib/present'
 import { useCurrentNetworkId } from '@/store'
 import type {
   FirewallV2Forward,
@@ -606,9 +607,9 @@ export const AdvancedTab = () => {
         )}
       </Card>
       {state.pending && <PendingBanner pending={state.pending} />}
-      <ServicesSection services={state.services ?? []} disabled={locked} />
-      <IPRulesSection rules={state.ip_rules ?? []} disabled={locked} />
-      <ForwardsSection forwards={state.forwards ?? []} disabled={locked} />
+      <ServicesSection services={present(state.services)} disabled={locked} />
+      <IPRulesSection rules={present(state.ip_rules)} disabled={locked} />
+      <ForwardsSection forwards={present(state.forwards)} disabled={locked} />
       <EgressSection egressIds={state.egress_node_ids ?? []} disabled={locked} />
       <PreviewSection />
     </div>

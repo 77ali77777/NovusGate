@@ -90,7 +90,7 @@ export const EditNodeModal = ({
       now: new Date(),
     })
     if (!result.ok) {
-      setFormError(result.error)
+      setFormError(result.error ?? '')
       return
     }
     setFormError('')

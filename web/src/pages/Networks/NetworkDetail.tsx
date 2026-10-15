@@ -106,8 +106,8 @@ export const NetworkDetailPage = () => {
           <h3 className="mb-3 text-lg font-semibold">{t('detail.policies')}</h3>
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {others.map((o) => {
-              const out = matrix.cells[id]?.[o.id]
-              const into = matrix.cells[o.id]?.[id]
+              const out = matrix.cells?.[id]?.[o.id]
+              const into = matrix.cells?.[o.id]?.[id]
               return (
                 <div
                   key={o.id}

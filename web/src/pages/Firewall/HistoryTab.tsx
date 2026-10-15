@@ -63,16 +63,16 @@ export const HistoryTab = () => {
                     </Button>
                   )}
                 </div>
-                {e.added.length === 0 && e.removed.length === 0 ? (
+                {(e.added ?? []).length === 0 && (e.removed ?? []).length === 0 ? (
                   <p className="mt-1 text-xs text-gray-500">{t('history.noRuleChanges')}</p>
                 ) : (
                   <ul className="mt-1 space-y-0.5 font-mono text-xs">
-                    {e.added.map((l) => (
+                    {(e.added ?? []).map((l) => (
                       <li key={`+${l}`} className="text-green-700 dark:text-green-400">
                         + {l}
                       </li>
                     ))}
-                    {e.removed.map((l) => (
+                    {(e.removed ?? []).map((l) => (
                       <li key={`-${l}`} className="text-red-700 dark:text-red-400">
                         − {l}
                       </li>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useFirewallPolicyMatrix } from '@/api/client'
 import { Card } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
+import { present } from '@/lib/present'
 
 type Verdict = 'allow' | 'deny' | 'partial'
 
@@ -35,7 +36,9 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
   if (isLoading) return <Card className="mb-4 text-sm text-gray-500">{t('matrix.loading')}</Card>
   if (isError || !m)
     return <Card className="mb-4 text-sm text-red-600">{t('matrix.loadError')}</Card>
-  if (m.networks.length === 0) return null
+  const networks = present(m.networks)
+  const cells = m.cells ?? {}
+  if (networks.length === 0) return null
   return (
     <Card className="mb-4">
       <div className="mb-3 flex items-center gap-2">
@@ -52,7 +55,7 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
           <thead>
             <tr>
               <th className="p-2 text-left text-xs text-gray-500">{t('matrix.fromTo')}</th>
-              {m.networks.map((to) => (
+              {networks.map((to) => (
                 <th key={to.id} className="p-2 text-left font-medium">
                   {to.name}
                 </th>
@@ -60,13 +63,13 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
             </tr>
           </thead>
           <tbody>
-            {m.networks.map((from) => (
+            {networks.map((from) => (
               <tr key={from.id}>
                 <th className="p-2 text-left font-medium">{from.name}</th>
-                {m.networks.map((to) => {
-                  const c = m.cells[from.id]?.[to.id]
+                {networks.map((to) => {
+                  const c = cells[from.id]?.[to.id]
                   if (!c) return <td key={to.id} />
-                  const title = `${t('matrix.cellTitle', { from: from.name, to: to.name, reason: matrixReason(t, c) })}${c.rules.length ? `\n${t('matrix.cellRules', { rules: c.rules.join(', ') })}` : ''}${c.limited ? `\n${t('matrix.cellLimited')}` : ''}`
+                  const title = `${t('matrix.cellTitle', { from: from.name, to: to.name, reason: matrixReason(t, c) })}${(c.rules ?? []).length ? `\n${t('matrix.cellRules', { rules: (c.rules ?? []).join(', ') })}` : ''}${c.limited ? `\n${t('matrix.cellLimited')}` : ''}`
                   return (
                     <td key={to.id} className="p-1">
                       <button

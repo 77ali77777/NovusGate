@@ -14,7 +14,8 @@ export interface TopoPeer {
   status: string
 }
 
-export type TopoCells = Record<string, Record<string, { verdict: string }>>
+// A row is null when the backend has none (Go nil map).
+export type TopoCells = Record<string, Record<string, { verdict: string }> | null>
 
 export interface TopoNode {
   id: string

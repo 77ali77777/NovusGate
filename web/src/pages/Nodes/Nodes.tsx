@@ -209,7 +209,7 @@ export const NodesPage: React.FC = () => {
               </Badge>
             ))}
           {Object.keys(node.labels || {}).length > 2 && (
-            <Badge size="sm">+{Object.keys(node.labels).length - 2}</Badge>
+            <Badge size="sm">+{Object.keys(node.labels || {}).length - 2}</Badge>
           )}
         </div>
       ),
