@@ -75,7 +75,14 @@ if [ -f /etc/fail2ban/jail.d/novusgate.local ]; then
   rm -f /etc/fail2ban/jail.d/novusgate.local
   systemctl reload fail2ban 2>/dev/null || true
 fi
-# setup-firewall.sh added a marker line and copytruncate to fail2ban's logrotate
+# setup-firewall.sh moved fail2ban's log to /var/log/novusgate; put it back
+rm -f /etc/fail2ban/fail2ban.d/novusgate.local
+rm -f /etc/logrotate.d/novusgate-fail2ban
+if systemctl is-active --quiet fail2ban 2>/dev/null; then
+  fail2ban-client set logtarget /var/log/fail2ban.log > /dev/null 2>&1 || true
+fi
+rm -rf /var/log/novusgate
+# an earlier setup-firewall.sh added a marker line and copytruncate to fail2ban's logrotate
 [ -f /etc/logrotate.d/fail2ban ] && sed -i '/# NovusGate: keep the inode/{N;d}' /etc/logrotate.d/fail2ban || true
 if command -v netfilter-persistent &> /dev/null; then
     netfilter-persistent save

@@ -35,7 +35,7 @@ func TestContractHost(t *testing.T) {
 		"fail2ban-client reload":                            "OK",
 		"fail2ban-client ping":                              "Server replied: pong",
 		"iptables -L INPUT -n --line-numbers":               iptablesInput,
-		"tail -n 100 /var/log/fail2ban.log":                 "2026-10-13 10:00:05,200 fail2ban.actions [812]: NOTICE  [sshd] Ban 203.0.113.9\n2026-10-13 11:00:05,300 fail2ban.actions [812]: NOTICE  [sshd] Unban 203.0.113.9\n",
+		"tail -n 100 /var/log/novusgate/fail2ban.log":                 "2026-10-13 10:00:05,200 fail2ban.actions [812]: NOTICE  [sshd] Ban 203.0.113.9\n2026-10-13 11:00:05,300 fail2ban.actions [812]: NOTICE  [sshd] Unban 203.0.113.9\n",
 	} {
 		stub.out[cmd] = out
 	}

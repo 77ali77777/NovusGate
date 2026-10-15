@@ -167,7 +167,7 @@ run_main() {
   if [ "$ruleset" = "yes" ]; then echo "table inet novusgate {}" > "$stub/firewall.nft"; fi
   (
     export PATH="$stub:/usr/bin:/bin"
-    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
+    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d" F2B_CONF_DIR="$stub/no-fail2ban.d"
     unset SSH_PORT SSH_CONNECTION
     export SSHD_SBIN="${SSHD_SBIN:-/nonexistent/sshd}" # never the host's real sshd
     # shellcheck source=../setup-firewall.sh
@@ -247,7 +247,7 @@ run_offline() {
   printf 'FIREWALL_ENGINE=%s\n' "$engine" > "$stub/.env"
   (
     export PATH="$stub:/usr/bin:/bin"
-    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d"
+    export ENV_FILE="$stub/.env" NFT_RULESET="$stub/firewall.nft" UNIT_DIR="$stub/units" F2B_JAIL_DIR="$stub/jail.d" F2B_CONF_DIR="$stub/no-fail2ban.d"
     unset SSH_PORT SSH_CONNECTION
     export SSHD_SBIN="${SSHD_SBIN:-/nonexistent/sshd}" # never the host's real sshd
     # shellcheck source=../setup-firewall.sh
@@ -316,29 +316,44 @@ chmod +x "$d/iptables"
 ) || fail "no ip6tables: apply_rules must not fail"
 assert_drop_last "$d/iptables.log" "no ip6tables"
 
-# Case 16: fail2ban's logrotate gets copytruncate, so the log keeps the inode
-# the control plane's single-file bind mount follows. Running twice adds it once.
+# Case 16: fail2ban logs to /var/log/novusgate (a directory the control plane
+# mounts, so rotation cannot hide the file) through drop-ins NovusGate owns;
+# the package's /etc/logrotate.d/fail2ban is not edited, and the marker an
+# earlier version added there is taken out. Running twice changes nothing.
 d="$(mktemp -d)"
-cat > "$d/fail2ban" << 'ROT'
-/var/log/fail2ban.log {
-
-    weekly
-    rotate 4
-    compress
-    create 640 root adm
-}
-ROT
+mkdir -p "$d/fail2ban.d" "$d/jail.d" "$d/logrotate.d"
+printf '/var/log/fail2ban.log {\n    # NovusGate: keep the inode (the control plane bind-mounts this file)\n    copytruncate\n    weekly\n}\n' > "$d/logrotate.d/fail2ban"
+printf '#!/bin/bash\necho "fail2ban-client $*" >> "%s/calls.log"\n' "$d" > "$d/fail2ban-client"
+printf '#!/bin/bash\n[ "$1 $2" = "is-active --quiet" ] && exit 0\necho "systemctl $*" >> "%s/calls.log"\n' "$d" > "$d/systemctl"
+chmod +x "$d/fail2ban-client" "$d/systemctl"
 (
-  export F2B_LOGROTATE="$d/fail2ban"
+  export PATH="$d:/usr/bin:/bin"
+  export F2B_CONF_DIR="$d/fail2ban.d" F2B_LOG_DIR="$d/log" LOGROTATE_DIR="$d/logrotate.d"
   # shellcheck source=../setup-firewall.sh
   source "$SCRIPT"
-  configure_fail2ban_logrotate > /dev/null
-  configure_fail2ban_logrotate > /dev/null
-  F2B_LOGROTATE="$d/missing" configure_fail2ban_logrotate > /dev/null
-) || fail "logrotate: configure_fail2ban_logrotate failed"
-[ "$(grep -c '^ *copytruncate$' "$d/fail2ban")" = "1" ] || fail "logrotate: want exactly one copytruncate, got: $(cat "$d/fail2ban")"
-[ "$(sed -n 2p "$d/fail2ban")" = "    # NovusGate: keep the inode (the control plane bind-mounts this file)" ] || fail "logrotate: marker must follow the opening line"
-[ ! -e "$d/missing" ] || fail "logrotate: a missing file must not be created"
+  configure_fail2ban_log > /dev/null
+  configure_fail2ban_log > /dev/null
+) || fail "f2b log: configure_fail2ban_log failed"
+assert_has "$d/fail2ban.d/novusgate.local" "logtarget = $d/log/fail2ban.log" "f2b log: logtarget drop-in"
+[ -d "$d/log" ] || fail "f2b log: log directory not created"
+assert_has "$d/logrotate.d/novusgate-fail2ban" "$d/log/fail2ban.log {" "f2b log: own logrotate file"
+assert_has "$d/logrotate.d/novusgate-fail2ban" "fail2ban-client flushlogs" "f2b log: reopen after rotation"
+assert_not "$d/logrotate.d/fail2ban" "NovusGate" "f2b log: old marker removed"
+assert_not "$d/logrotate.d/fail2ban" "copytruncate" "f2b log: old copytruncate removed"
+assert_has "$d/logrotate.d/fail2ban" "weekly" "f2b log: package file otherwise intact"
+assert_has "$d/calls.log" "fail2ban-client set logtarget $d/log/fail2ban.log" "f2b log: running fail2ban switched"
+# recidive reads fail2ban's own log; the jail drop-in points it at the new file.
+d2="$(mktemp -d)"
+mkdir -p "$d2/jail.d"
+(
+  export PATH="/usr/bin:/bin" F2B_JAIL_DIR="$d2/jail.d" F2B_LOG_DIR="/var/log/novusgate" SSHD_SBIN=/nonexistent/sshd
+  unset SSH_PORT SSH_CONNECTION
+  # shellcheck source=../setup-firewall.sh
+  source "$SCRIPT"
+  configure_fail2ban iptables > /dev/null
+) || fail "f2b log: configure_fail2ban failed"
+assert_has "$d2/jail.d/novusgate.local" "[recidive]" "f2b log: recidive section"
+assert_has "$d2/jail.d/novusgate.local" "logpath = /var/log/novusgate/fail2ban.log" "f2b log: recidive logpath"
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"

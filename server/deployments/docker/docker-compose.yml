@@ -66,8 +66,9 @@ services:
       # CRITICAL: Mount host's actual /etc/wireguard directory
       # This allows container to read keys created by installer
       - /etc/wireguard:/etc/wireguard:rw
-      # Mount fail2ban log for reading
-      - /var/log/fail2ban.log:/var/log/fail2ban.log:ro
+      # fail2ban logs here (setup-firewall.sh); a directory mount keeps the
+      # current file visible after log rotation
+      - /var/log/novusgate:/var/log/novusgate:ro
       # Panel backups (P8) and Center update backups; uninstall keeps them
       - /var/backups/novusgate:/var/backups/novusgate
     # Note: With host network, ports are automatically exposed on host

@@ -142,6 +142,10 @@ test('uninstall removes every NovusGate host artifact', () => {
     'novusgate-fw-rollback.timer',
     'rm -rf /etc/novusgate /var/lib/novusgate',
     'rm -f /etc/fail2ban/jail.d/novusgate.local',
+    'rm -f /etc/fail2ban/fail2ban.d/novusgate.local',
+    'rm -f /etc/logrotate.d/novusgate-fail2ban',
+    'fail2ban-client set logtarget /var/log/fail2ban.log',
+    'rm -rf /var/log/novusgate',
     'iptables -t mangle -X NOVUSGATE-ADMIN',
     'ip6tables -t mangle -X NOVUSGATE-ADMIN',
   ]) {

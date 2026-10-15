@@ -75,7 +75,7 @@
 - **`api/rest`-də dəyişdirilə bilən funksiyalar:**
   - `execHostCommand`, `execCommand`: host və konteyner əmrləri;
   - `generateKeys`: WireGuard açarları;
-  - `openFail2BanLog`: `/var/log/fail2ban.log` (sətir-sətir oxunur);
+  - `openFail2BanLog`: `/var/log/novusgate/fail2ban.log` (`Fail2BanLogPath`) (sətir-sətir oxunur);
   - `fail2banLogExists`: log faylının mövcudluğu (`GET /system/fail2ban/logs`);
   - `wgInit`, `wgTeardown`: WireGuard interfeysinə toxunan yerlər;
   - `legacySSHPorts`, `adminPeers`, `clearLegacyVPNRules`, `checkFirewallHost`, `cutoverIptables`.

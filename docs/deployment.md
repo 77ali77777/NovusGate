@@ -84,4 +84,9 @@ Uyğun gəlməsə exit 5 ilə dayanır və heç nə dəyişmir. Reinstall və Up
 ## Telegram bildirişləri (P8)
 - Panel → Settings → **Telegram notifications** bölməsində qurulur, env dəyişəni lazım deyil. Control-plane serverdən `https://api.telegram.org`-a çıxış imkanı olmalıdır.
 - Miqrasiya `011_notification_settings.sql` yeniləmədə avtomatik tətbiq olunur.
-- **Fail2Ban log rotasiyası:** compose `/var/log/fail2ban.log`-u konteynerə tək fayl kimi bağlayır. Fayl rename ilə dəyişdirilsəydi, konteyner köhnə faylı oxumağa davam edərdi və ban bildirişləri dayanardı. Ona görə `setup-firewall.sh` `/etc/logrotate.d/fail2ban` blokuna `copytruncate` əlavə edir (bir marker sətri ilə, təkrar işə salınanda yenidən əlavə etmir). Fayl eyni qalır, watcher faylın kiçildiyini görür və əvvəldən oxuyur. Rotasiya anında bir neçə sətir itə bilər. Install, reinstall və `server/` dəyişən Update bunu tətbiq edir, Center uninstall geri qaytarır.
+- **Fail2Ban log-u (2026-10-15):** `setup-firewall.sh` fail2ban-ı `/var/log/novusgate/fail2ban.log`-a yazmağa yönləndirir. Yalnız NovusGate-in öz faylları yazılır:
+  - `/etc/fail2ban/fail2ban.d/novusgate.local` (`logtarget`), recidive jail-i üçün isə `jail.d/novusgate.local`-da `logpath`;
+  - öz logrotate faylı `/etc/logrotate.d/novusgate-fail2ban` (həftəlik, `fail2ban-client flushlogs`);
+  - işləyən fail2ban-a `fail2ban-client set logtarget`.
+
+  Compose bu qovluğu konteynerə mount edir. Qovluq mount edildiyi üçün rotasiyadan sonra yeni fayl görünür. Paketin `/etc/logrotate.d/fail2ban` faylına (dpkg conffile) toxunulmur; əvvəlki versiyanın əlavə etdiyi `copytruncate` oradan silinir. `/var/log/fail2ban.log` artıq yenilənmir. Center uninstall bu faylları silir və log-u köhnə yola qaytarır.

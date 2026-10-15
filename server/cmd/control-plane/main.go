@@ -213,7 +213,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		Now:      time.Now,
 	}
 	go peerWatcher.Run(recCtx)
-	go (&notify.Fail2BanWatcher{Notifier: notifier, Path: "/var/log/fail2ban.log"}).Run(recCtx)
+	go (&notify.Fail2BanWatcher{Notifier: notifier, Path: rest.Fail2BanLogPath}).Run(recCtx)
 
 	var rec *reconciler.Reconciler
 	if wgMode != reconciler.ModeOff {

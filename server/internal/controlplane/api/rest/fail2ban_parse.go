@@ -9,11 +9,14 @@ import (
 	"strings"
 )
 
-const fail2banLogPath = "/var/log/fail2ban.log"
+// Fail2BanLogPath is fail2ban's log as the control plane sees it: setup-firewall.sh
+// points fail2ban at /var/log/novusgate, which compose mounts (a directory, so
+// log rotation does not hide the new file).
+const Fail2BanLogPath = "/var/log/novusgate/fail2ban.log"
 
 // openFail2BanLog opens the fail2ban log the compose file mounts into the
 // container (replaced in tests).
-var openFail2BanLog = func() (io.ReadCloser, error) { return os.Open(fail2banLogPath) }
+var openFail2BanLog = func() (io.ReadCloser, error) { return os.Open(Fail2BanLogPath) }
 
 // fail2banLogExists reports whether the fail2ban log is there (replaced in tests).
 var fail2banLogExists = func(path string) bool {

@@ -1502,7 +1502,7 @@ func (s *Server) handleFail2BanLogs(w http.ResponseWriter, r *http.Request) {
 		lines = "100"
 	}
 	
-	logPath := "/var/log/fail2ban.log"
+	logPath := Fail2BanLogPath
 	
 	// Check if log exists
 	if !fail2banLogExists(logPath) {

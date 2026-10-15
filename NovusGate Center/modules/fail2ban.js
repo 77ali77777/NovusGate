@@ -94,7 +94,8 @@ async function getFail2banStatus(conn) {
     }
 
     // Get fail2ban log (last 10 ban events)
-    const logResult = await execSSH(conn, 'grep "Ban " /var/log/fail2ban.log 2>/dev/null | tail -10');
+    // NovusGate moves fail2ban's log to /var/log/novusgate (setup-firewall.sh).
+    const logResult = await execSSH(conn, 'f=/var/log/novusgate/fail2ban.log; [ -f "$f" ] || f=/var/log/fail2ban.log; grep "Ban " "$f" 2>/dev/null | tail -10');
     const recentBans = logResult.stdout.trim().split('\n').filter(l => l).map(line => {
       // Parse: 2026-01-12 10:30:45,123 fail2ban.actions [12345]: NOTICE [sshd] Ban 192.168.1.1
       const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}).*\[(\w+)\] Ban (\S+)/);

@@ -243,6 +243,6 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - Hadisələr:
   - `node_offline`: 5 dəqiqə handshake olmayanda göndərilir, node qayıdanda da bildiriş gəlir.
   - `node_expired`: reconciler node-u expired edəndə göndərilir. `WG_RECONCILER=off` olarsa bu hadisə göndərilmir.
-  - `fail2ban_ban`: `/var/log/fail2ban.log`-da yeni `Ban` sətri görünəndə göndərilir.
+  - `fail2ban_ban`: `/var/log/novusgate/fail2ban.log`-da yeni `Ban` sətri görünəndə göndərilir.
   - `firewall_change`: `/api/v1/firewall/*` altında GET olmayan uğurlu (2xx) sorğudan sonra göndərilir.
 - Eyni hadisə (eyni node, jail+IP) 30 dəqiqə ərzində bir dəfə göndərilir. Firewall dəyişikliklərinin hər biri ayrıca göndərilir.
