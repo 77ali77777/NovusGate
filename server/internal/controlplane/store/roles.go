@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 // ErrLastAdmin: the change would leave the panel without an admin.
@@ -12,6 +14,17 @@ var ErrLastAdmin = errors.New("at least one admin must remain")
 // ValidRole reports whether role is a panel role.
 func ValidRole(role string) bool {
 	return role == "admin" || role == "operator" || role == "viewer"
+}
+
+// canonicalID returns id in the form Postgres stores it. Postgres also
+// accepts upper case and braces, which would defeat the string comparison in
+// otherAdmins; an id that is not a UUID is an unknown user.
+func canonicalID(id string) (string, error) {
+	u, err := uuid.Parse(id)
+	if err != nil {
+		return "", sql.ErrNoRows
+	}
+	return u.String(), nil
 }
 
 // otherAdmins locks the admin rows and counts the admins other than id, so
@@ -37,6 +50,10 @@ func otherAdmins(ctx context.Context, tx *sql.Tx, id string) (int, error) {
 
 // SetUserRole changes a user's role; demoting the last admin is ErrLastAdmin.
 func (s *Store) SetUserRole(ctx context.Context, id, role string) error {
+	id, err := canonicalID(id)
+	if err != nil {
+		return err
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -67,6 +84,10 @@ func (s *Store) SetUserRole(ctx context.Context, id, role string) error {
 
 // DeleteUserKeepingAdmin deletes a user unless it is the last admin.
 func (s *Store) DeleteUserKeepingAdmin(ctx context.Context, id string) error {
+	id, err := canonicalID(id)
+	if err != nil {
+		return err
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

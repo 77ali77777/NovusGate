@@ -63,6 +63,7 @@ func TestRolesLimitWhatUsersCanDo(t *testing.T) {
 		{viewer, "POST", "/api/v1/networks", `{"name":"v-net","cidr":"10.95.0.0/24"}`, 403},
 		{viewer, "GET", "/api/v1/nodes/" + seed.node.ID + "/config", "", 403},     // private key
 		{viewer, "GET", "/api/v1/nodes/" + seed.node.ID + "/install.sh", "", 403}, // creates an enrollment token
+		{viewer, "GET", "/api/v1/firewall/vpn/rules", "", 200},
 		{viewer, "POST", "/api/v1/auth/logout", "", 204},                          // own session
 		{operator, "POST", "/api/v1/networks", `{"name":"o-net","cidr":"10.96.0.0/24"}`, 201},
 		{operator, "GET", "/api/v1/nodes/" + seed.node.ID + "/config", "", 200},
@@ -70,6 +71,7 @@ func TestRolesLimitWhatUsersCanDo(t *testing.T) {
 		{operator, "POST", "/api/v1/users", `{"username":"x","password":"y1y2y3"}`, 403},
 		{operator, "GET", "/api/v1/backups/novusgate-backup-20261015-000000.tar.gz", "", 403},
 		{operator, "GET", "/api/v1/audit", "", 200},
+		{operator, "GET", "/api/v1/firewall/host/export", "", 403}, // whole host ruleset
 	} {
 		rec := callWith(t, s, c.token, c.method, c.path, c.body)
 		if rec.Code != c.want {
@@ -114,6 +116,17 @@ func TestUserRolesAndLastAdmin(t *testing.T) {
 		t.Fatalf("set role = %d %s", rec.Code, rec.Body)
 	}
 	assertMatchesSpec(t, s, "PUT", "/api/v1/users/{id}/role", rec)
+	// Any UUID spelling names the same user; a non-UUID is an unknown one.
+	rec = callAs(t, s, "PUT", "/api/v1/users/"+strings.ToUpper(created.ID)+"/role", `{"role":"viewer"}`, true)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"role":"viewer"`) {
+		t.Fatalf("set role, upper-case id = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callAs(t, s, "PUT", "/api/v1/users/not-a-uuid/role", `{"role":"viewer"}`, true); rec.Code != 404 {
+		t.Fatalf("set role, bad id = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callAs(t, s, "DELETE", "/api/v1/users/not-a-uuid", "", true); rec.Code != 404 {
+		t.Fatalf("delete, bad id = %d %s", rec.Code, rec.Body)
+	}
 
 	admin, _ := st.GetUserByUsername(ctx, "contract-user")
 	if rec := callAs(t, s, "PUT", "/api/v1/users/"+admin.ID+"/role", `{"role":"viewer"}`, true); rec.Code != 409 {
@@ -129,7 +142,7 @@ func TestUserRolesAndLastAdmin(t *testing.T) {
 	}
 	assertMatchesSpec(t, s, "GET", "/api/v1/auth/me", me)
 	list := callAs(t, s, "GET", "/api/v1/users", "", true)
-	if !strings.Contains(list.Body.String(), `"role":"operator"`) {
+	if !strings.Contains(list.Body.String(), `"username":"new-viewer","role":"viewer"`) {
 		t.Fatalf("list = %s", list.Body)
 	}
 }
@@ -158,6 +171,17 @@ func TestOperatorRoutesExist(t *testing.T) {
 	for key := range sensitiveReads {
 		if !routes[key] {
 			t.Errorf("sensitiveReads names %q, which is not a route", key)
+		}
+	}
+	for key := range viewerReads {
+		if !routes[key] {
+			t.Errorf("viewerReads names %q, which is not a route", key)
+		}
+	}
+	// Every read is classified, so a new GET cannot reach viewers by default.
+	for key := range routes {
+		if strings.HasPrefix(key, "GET /api/v1/") && !viewerReads[key] && sensitiveReads[key] == "" {
+			t.Errorf("%s is in neither viewerReads nor sensitiveReads", key)
 		}
 	}
 	_ = http.MethodGet

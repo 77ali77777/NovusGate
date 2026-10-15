@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
@@ -41,8 +42,8 @@ var anyRoleRoutes = map[string]bool{
 	"POST /api/v1/auth/logout":  true,
 }
 
-// sensitiveReads are GETs that hand out secrets or create tokens, with the
-// role they need; other GETs are open to every role.
+// sensitiveReads are GETs that hand out secrets, create tokens or dump the
+// host firewall, with the role they need.
 var sensitiveReads = map[string]string{
 	"GET /api/v1/nodes/{id}/config":           "operator", // private key
 	"GET /api/v1/nodes/{id}/qrcode":           "operator", // private key
@@ -51,6 +52,39 @@ var sensitiveReads = map[string]string{
 	"GET /api/v1/debug/wireguard/{networkId}": "admin",
 	"GET /api/v1/users":                       "admin",
 	"GET /api/v1/auth/sessions":               "admin",
+	"GET /api/v1/firewall/host/export":        "admin", // the whole host ruleset
+	"GET /api/v1/notifications/settings":      "admin", // Telegram chat id
+}
+
+// viewerReads are the GETs every role may make. A GET in neither list needs
+// an admin, and TestOperatorRoutesExist fails until it is classified.
+var viewerReads = map[string]bool{
+	"GET /api/v1/audit":                            true,
+	"GET /api/v1/auth/me":                          true,
+	"GET /api/v1/backups":                          true,
+	"GET /api/v1/firewall/host/rules":              true,
+	"GET /api/v1/firewall/policy-matrix":           true,
+	"GET /api/v1/firewall/v2/history":              true,
+	"GET /api/v1/firewall/v2/live":                 true,
+	"GET /api/v1/firewall/v2/preview":              true,
+	"GET /api/v1/firewall/v2/state":                true,
+	"GET /api/v1/firewall/vpn/rules":               true,
+	"GET /api/v1/groups":                           true,
+	"GET /api/v1/networks":                         true,
+	"GET /api/v1/networks/{id}":                    true,
+	"GET /api/v1/networks/{networkId}/nodes":       true,
+	"GET /api/v1/nodes/{id}":                       true,
+	"GET /api/v1/nodes/{id}/traffic":               true,
+	"GET /api/v1/openapi.json":                     true,
+	"GET /api/v1/stats/overview":                   true,
+	"GET /api/v1/system/fail2ban/ban-history":      true,
+	"GET /api/v1/system/fail2ban/jail/settings":    true,
+	"GET /api/v1/system/fail2ban/logs":             true,
+	"GET /api/v1/system/fail2ban/permanent-bans":   true,
+	"GET /api/v1/system/fail2ban/ping":             true,
+	"GET /api/v1/system/fail2ban/status":           true,
+	"GET /api/v1/system/fail2ban/whitelist":        true,
+	"GET /api/v1/system/info":                      true,
 }
 
 // requiredRole is the role a request needs.
@@ -61,7 +95,10 @@ func requiredRole(method, route string) string {
 		if role, ok := sensitiveReads["GET "+route]; ok {
 			return role
 		}
-		return "viewer"
+		if viewerReads["GET "+route] {
+			return "viewer"
+		}
+		return "admin"
 	case anyRoleRoutes[key]:
 		return "viewer"
 	case operatorRoutes[key]:
@@ -141,8 +178,10 @@ func (s *Server) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
 		userRoleError(w, err)
 		return
 	}
+	// SetUserRole accepted id, so it is a UUID; compare the stored spelling.
+	canonical := uuid.MustParse(id).String()
 	for _, u := range users {
-		if u.ID == id {
+		if u.ID == canonical {
 			jsonResponse(w, http.StatusOK, u)
 			return
 		}
