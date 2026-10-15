@@ -138,9 +138,9 @@ func TestValidateLimitProfile(t *testing.T) {
 func TestLimitsFromModels(t *testing.T) {
 	now := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
 	profiles := []models.LimitProfile{
-		{ID: "b-profile", Name: "guests", DownKbps: intp(8000), MaxConnections: intp(20), Timezone: "UTC",
+		{ID: "b-profile", SetNo: 2, Name: "guests", DownKbps: intp(8000), MaxConnections: intp(20), Timezone: "UTC",
 			Schedule: []models.ScheduleWindow{{Days: []int{1}, From: "08:00", To: "18:00"}}},
-		{ID: "a-profile", Name: "office", UpKbps: intp(1000), Timezone: "UTC"},
+		{ID: "a-profile", SetNo: 1, Name: "office", UpKbps: intp(1000), Timezone: "UTC"},
 		{ID: "c-unused", Name: "unused", UpKbps: intp(1), Timezone: "UTC"},
 	}
 	nodes := []models.NodeLimit{
@@ -154,8 +154,8 @@ func TestLimitsFromModels(t *testing.T) {
 		t.Errorf("warnings = %v, want one for the bad address", warnings)
 	}
 	want := []nft.Limit{
-		{Name: "lim_0", ID: "a-profile", Members: []netip.Addr{netip.MustParseAddr("10.30.0.2")}, UpBytes: 125000},
-		{Name: "lim_1", ID: "b-profile", Members: []netip.Addr{netip.MustParseAddr("10.20.0.5"), netip.MustParseAddr("10.20.0.6")},
+		{Name: "lim_1", ID: "a-profile", Members: []netip.Addr{netip.MustParseAddr("10.30.0.2")}, UpBytes: 125000},
+		{Name: "lim_2", ID: "b-profile", Members: []netip.Addr{netip.MustParseAddr("10.20.0.5"), netip.MustParseAddr("10.20.0.6")},
 			DownBytes: 1000000, MaxConns: 20, Windows: []nft.TimeWindow{w(time.Monday, "08:00", "18:00")}},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -186,8 +186,8 @@ func TestApplyQuotas(t *testing.T) {
 	now := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
 	q, throttle := 1000, 256
 	profiles := []models.LimitProfile{
-		{ID: "block-p", Name: "b", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"},
-		{ID: "slow-p", Name: "s", QuotaMB: &q, QuotaAction: "throttle", ThrottleKbps: &throttle, QuotaResetDay: 1,
+		{ID: "block-p", SetNo: 1, Name: "b", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"},
+		{ID: "slow-p", SetNo: 2, Name: "s", QuotaMB: &q, QuotaAction: "throttle", ThrottleKbps: &throttle, QuotaResetDay: 1,
 			MaxConnections: intp(9), DownKbps: intp(128), Timezone: "UTC"},
 	}
 	nodes := []models.NodeLimit{
@@ -230,7 +230,7 @@ func TestApplyQuotas(t *testing.T) {
 		t.Errorf("slow members = %v, want only n3", slow.Members)
 	}
 	if len(throttled.Members) != 1 || throttled.Members[0].String() != "10.1.0.2" ||
-		throttled.UpBytes != 32000 || throttled.DownBytes != 16000 || throttled.MaxConns != 9 || throttled.Name != "lim_2" {
+		throttled.UpBytes != 32000 || throttled.DownBytes != 16000 || throttled.MaxConns != 9 || throttled.Name != "lim_2q" {
 		t.Errorf("throttled = %+v", throttled)
 	}
 }
@@ -255,5 +255,45 @@ func TestValidateQuota(t *testing.T) {
 		if err := ValidateLimitProfile(p); err == nil {
 			t.Errorf("%s: want an error", name)
 		}
+	}
+}
+
+// Set names follow the stored set numbers (P9 follow-up): a new group or
+// profile never renames the sets of existing ones, so History diffs stay
+// quiet.
+func TestSetNamesAreStable(t *testing.T) {
+	now := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
+	q, throttle := 1000, 256
+	profiles := []models.LimitProfile{
+		{ID: "b", SetNo: 7, UpKbps: intp(1000), Timezone: "UTC", QuotaMB: &q, QuotaAction: "throttle", ThrottleKbps: &throttle},
+		{ID: "a", SetNo: 3, UpKbps: intp(1000), Timezone: "UTC"},
+	}
+	nodes := []models.NodeLimit{
+		{NodeID: "n1", VirtualIP: "10.1.0.1", ProfileID: "b"},
+		{NodeID: "n2", VirtualIP: "10.1.0.2", ProfileID: "a"},
+		{NodeID: "n3", VirtualIP: "10.1.0.3", ProfileID: "b"},
+	}
+	limits, _ := LimitsFromModels(profiles, nodes, now)
+	end := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	limits, _ = ApplyQuotas(limits, profiles, nodes,
+		[]models.NodeQuotaState{{NodeID: "n1", PeriodEnd: end, UsedBytes: 2e9}}, now)
+	names := map[string]string{}
+	for _, l := range limits {
+		names[l.ID] = l.Name
+	}
+	if names["a"] != "lim_3" || names["b"] != "lim_7" || names["b:quota"] != "lim_7q" {
+		t.Fatalf("names = %v", names)
+	}
+	rs := nft.Ruleset{SSHPorts: []uint16{22}, EgressInterface: "eth0", Limits: limits}
+	if err := nft.Validate(rs); err != nil {
+		t.Fatalf("the names must be valid: %v", err)
+	}
+
+	groups := []*models.NodeGroup{{ID: "g-b", SetNo: 12}, {ID: "g-a", SetNo: 5}}
+	rules := []*models.VPNFirewallRule{{ID: "r", Enabled: true, SourceType: "group", SourceGroupID: ptr("g-b"),
+		DestType: "any", Protocol: "all", Action: "accept"}}
+	got, sets, errs := vpnRulesWithGroups(rules, nil, nil, groups)
+	if len(errs) != 0 || len(got) != 1 || got[0].SrcSet != "grp_12" || len(sets) != 1 || sets[0].Name != "grp_12" {
+		t.Fatalf("rules %+v sets %+v errs %v", got, sets, errs)
 	}
 }

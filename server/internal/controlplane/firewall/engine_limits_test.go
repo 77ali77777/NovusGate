@@ -30,7 +30,7 @@ func TestEngineAppliesLimitsAndReloadsAtOffsetChange(t *testing.T) {
 	h := newHarness(ModeNft)
 	down := 2000
 	h.e.Store = &limitStore{memStore: h.st,
-		profiles: []models.LimitProfile{{ID: "p1", Name: "office", DownKbps: &down, Timezone: "America/New_York",
+		profiles: []models.LimitProfile{{ID: "p1", SetNo: 1, Name: "office", DownKbps: &down, Timezone: "America/New_York",
 			Schedule: []models.ScheduleWindow{{Days: []int{1, 2, 3, 4, 5}, From: "09:00", To: "17:00"}}}},
 		limits: []models.NodeLimit{{NodeID: "node-7", VirtualIP: "10.20.0.7", ProfileID: "p1"}},
 	}
@@ -40,7 +40,7 @@ func TestEngineAppliesLimitsAndReloadsAtOffsetChange(t *testing.T) {
 	applied := h.r.applied[len(h.r.applied)-1]
 	for _, s := range []string{
 		"jump limits",
-		`update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 65536 bytes }`,
+		`update @lim_1_down { ip daddr limit rate over 250000 bytes/second burst 65536 bytes }`,
 		// 09:00 EDT is 13:00 UTC until November 1st.
 		`meta day "Tuesday" meta hour "13:00:00"-"20:59:59" return`,
 	} {

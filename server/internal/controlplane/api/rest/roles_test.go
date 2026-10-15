@@ -71,7 +71,8 @@ func TestRolesLimitWhatUsersCanDo(t *testing.T) {
 		{operator, "POST", "/api/v1/users", `{"username":"x","password":"y1y2y3"}`, 403},
 		{operator, "GET", "/api/v1/backups/novusgate-backup-20261015-000000.tar.gz", "", 403},
 		{operator, "GET", "/api/v1/audit", "", 200},
-		{operator, "GET", "/api/v1/firewall/host/export", "", 403}, // whole host ruleset
+		{operator, "GET", "/api/v1/firewall/host/export", "", 403},                 // whole host ruleset
+		{operator, "POST", "/api/v1/nodes/" + seed.node.ID + "/checkin", `{`, 400}, // operators manage nodes
 	} {
 		rec := callWith(t, s, c.token, c.method, c.path, c.body)
 		if rec.Code != c.want {

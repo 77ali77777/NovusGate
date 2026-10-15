@@ -235,6 +235,8 @@ type NodeGroup struct {
 	Description string            `json:"description"`
 	Members     []NodeGroupMember `json:"members"`
 	CreatedAt   time.Time         `json:"created_at"`
+	// SetNo names the group's nft set (grp_<n>); it never changes.
+	SetNo int `json:"-"`
 }
 
 // NodeGroupMember is a node in a group, with what rules need of it.
@@ -266,6 +268,8 @@ type LimitProfile struct {
 	ThrottleKbps  *int      `json:"throttle_kbps"`
 	QuotaResetDay int       `json:"quota_reset_day"`
 	CreatedAt     time.Time `json:"created_at"`
+	// SetNo names the profile's nft sets (lim_<n>); it never changes.
+	SetNo int `json:"-"`
 }
 
 // NodeQuotaState is one node's traffic in the current quota period (P9c).

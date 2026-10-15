@@ -135,7 +135,7 @@ func (s *Store) SetLimitProfileBindings(ctx context.Context, profileID string, n
 // ListLimitProfiles returns every profile with its bindings, by name.
 func (s *Store) ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT p.id, p.name, p.down_kbps, p.up_kbps, p.max_connections,
-		p.schedule, p.timezone, p.created_at, p.quota_mb, p.quota_action, p.throttle_kbps, p.quota_reset_day,
+		p.schedule, p.timezone, p.created_at, p.quota_mb, p.quota_action, p.throttle_kbps, p.quota_reset_day, p.set_no,
 		COALESCE((SELECT array_agg(n.id::text ORDER BY n.id) FROM nodes n WHERE n.limit_profile_id = p.id), '{}'),
 		COALESCE((SELECT array_agg(g.id::text ORDER BY g.id) FROM node_groups g WHERE g.limit_profile_id = p.id), '{}')
 		FROM limit_profiles p ORDER BY p.name`)
@@ -151,7 +151,7 @@ func (s *Store) ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, e
 		var nodeIDs, groupIDs pq.StringArray
 		var quotaMB, throttle sql.NullInt64
 		if err := rows.Scan(&p.ID, &p.Name, &down, &up, &conns, &sched, &p.Timezone, &p.CreatedAt,
-			&quotaMB, &p.QuotaAction, &throttle, &p.QuotaResetDay, &nodeIDs, &groupIDs); err != nil {
+			&quotaMB, &p.QuotaAction, &throttle, &p.QuotaResetDay, &p.SetNo, &nodeIDs, &groupIDs); err != nil {
 			return nil, err
 		}
 		p.DownKbps, p.UpKbps, p.MaxConnections = intPtr(down), intPtr(up), intPtr(conns)

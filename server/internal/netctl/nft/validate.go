@@ -12,8 +12,9 @@ var (
 	idRe    = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,64}$`)
 	// groupNameRe: short set names, well under old kernels' 32-byte limit.
 	groupNameRe = regexp.MustCompile(`^grp_[0-9]{1,6}$`)
-	// limitNameRe leaves room for the _up, _down, _ct and _time suffixes.
-	limitNameRe = regexp.MustCompile(`^lim_[0-9]{1,6}$`)
+	// limitNameRe leaves room for the _up, _down, _ct and _time suffixes;
+	// "q" marks the throttled copy of an over-quota profile (P9c).
+	limitNameRe = regexp.MustCompile(`^lim_[0-9]{1,6}q?$`)
 )
 
 // reservedPorts can never be opened as public services or used for forwards.

@@ -243,3 +243,34 @@ func TestQuotaStateConditionalSaveAndDelete(t *testing.T) {
 		t.Fatalf("after delete = %v", states)
 	}
 }
+
+// Groups and profiles get distinct, positive set numbers that never change
+// (stable nft set names, 018).
+func TestSetNumbers(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	groupFixture(t, s)
+	s.db.ExecContext(ctx, "UPDATE nodes SET limit_profile_id = NULL")
+	s.db.ExecContext(ctx, "DELETE FROM limit_profiles")
+	g1, g2 := &models.NodeGroup{Name: "set-a"}, &models.NodeGroup{Name: "set-b"}
+	p1, p2 := &models.LimitProfile{Name: "set-a", Timezone: "UTC"}, &models.LimitProfile{Name: "set-b", Timezone: "UTC"}
+	for _, g := range []*models.NodeGroup{g1, g2} {
+		if err := s.CreateNodeGroup(ctx, g); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, p := range []*models.LimitProfile{p1, p2} {
+		if err := s.CreateLimitProfile(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, _ := s.GetNodeGroup(ctx, g1.ID)
+	b, _ := s.GetNodeGroup(ctx, g2.ID)
+	if a.SetNo <= 0 || b.SetNo <= 0 || a.SetNo == b.SetNo {
+		t.Fatalf("group set numbers %d %d", a.SetNo, b.SetNo)
+	}
+	list, _ := s.ListLimitProfiles(ctx)
+	if len(list) != 2 || list[0].SetNo <= 0 || list[0].SetNo == list[1].SetNo {
+		t.Fatalf("profile set numbers %+v", list)
+	}
+}

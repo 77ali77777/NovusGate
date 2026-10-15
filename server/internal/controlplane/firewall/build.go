@@ -66,7 +66,7 @@ func vpnRulesWithGroups(rules []*models.VPNFirewallRule, networks map[string]*mo
 	sort.Strings(ids)
 	setName := map[string]string{}
 	for i, id := range ids {
-		setName[id] = fmt.Sprintf("grp_%d", i)
+		setName[id] = setName2("grp", byID[id].SetNo, i)
 	}
 	used := map[string]nft.Group{}
 	// end resolves one side of a rule to a set name or a prefix.
@@ -199,4 +199,14 @@ func ParsePorts(s string) ([]nft.PortRange, error) {
 		out = append(out, nft.PortRange{From: uint16(from), To: uint16(to)})
 	}
 	return out, nil
+}
+
+// setName2 names a group or limit set by its stored number, which never
+// changes, so adding a group or profile does not rename the others' sets.
+// Sources without numbers (tests, old rows) fall back to 900000+index.
+func setName2(prefix string, setNo, index int) string {
+	if setNo > 0 && setNo < 900000 {
+		return fmt.Sprintf("%s_%d", prefix, setNo)
+	}
+	return fmt.Sprintf("%s_%d", prefix, 900000+index)
 }

@@ -184,7 +184,7 @@ func LimitsFromModels(profiles []models.LimitProfile, nodes []models.NodeLimit, 
 			warnings = append(warnings, fmt.Errorf("limit profile %s: unknown timezone %q, not applied", p.Name, p.Timezone))
 			continue
 		}
-		l := nft.Limit{Name: fmt.Sprintf("lim_%d", len(out)), ID: p.ID, Members: members[id]}
+		l := nft.Limit{Name: setName2("lim", p.SetNo, len(out)), ID: p.ID, Members: members[id]}
 		if p.UpKbps != nil {
 			l.UpBytes = uint64(*p.UpKbps) * 125
 		}
@@ -286,7 +286,7 @@ func ApplyQuotas(limits []nft.Limit, profiles []models.LimitProfile, nodes []mod
 			}
 		}
 		rate := uint64(*byID[id].ThrottleKbps) * 125
-		l := nft.Limit{Name: fmt.Sprintf("lim_%d", len(limits)), ID: id + ":quota", Members: throttled[id],
+		l := nft.Limit{Name: setName2("lim", byID[id].SetNo, len(limits)) + "q", ID: id + ":quota", Members: throttled[id],
 			UpBytes: rate, DownBytes: rate}
 		if base != nil {
 			// Slowing down never makes a node faster than its profile.

@@ -102,7 +102,7 @@ func (s *Store) GetNodeGroup(ctx context.Context, id string) (*models.NodeGroup,
 
 func (s *Store) queryGroups(ctx context.Context, where string, args ...any) ([]*models.NodeGroup, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT g.id, g.name, g.description, g.created_at,
+		SELECT g.id, g.name, g.description, g.created_at, g.set_no,
 			COALESCE(n.id::text, ''), COALESCE(n.name, ''), COALESCE(host(n.virtual_ip), ''), COALESCE(n.network_id::text, '')
 		FROM node_groups g
 		LEFT JOIN node_group_members m ON m.group_id = g.id
@@ -118,7 +118,7 @@ func (s *Store) queryGroups(ctx context.Context, where string, args ...any) ([]*
 	for rows.Next() {
 		var g models.NodeGroup
 		var m models.NodeGroupMember
-		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.CreatedAt, &m.NodeID, &m.Name, &m.VirtualIP, &m.NetworkID); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.CreatedAt, &g.SetNo, &m.NodeID, &m.Name, &m.VirtualIP, &m.NetworkID); err != nil {
 			return nil, err
 		}
 		cur := byID[g.ID]
