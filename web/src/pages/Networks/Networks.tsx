@@ -36,7 +36,7 @@ export const Networks = () => {
       await createMutation.mutateAsync(formData)
       setIsCreateModalOpen(false)
       setFormData({ name: '', cidr: '10.10.0.0/24' })
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create network:', error)
       // Extract error message from response
       const message = apiErrorMessage(error, t('createFailed'))
@@ -139,34 +139,34 @@ export const Networks = () => {
                 {/* Network Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       {t('card.cidrRange')}
-                    </label>
+                    </span>
                     <span className="font-medium text-gray-900 dark:text-gray-200">
                       {network.cidr}
                     </span>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       {t('common:fields.interface')}
-                    </label>
+                    </span>
                     <div className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-gray-200">
                       <Shield className="w-3.5 h-3.5 text-green-500" />
                       {network.interface_name || 'wg0'}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       {t('card.listenPort')}
-                    </label>
+                    </span>
                     <span className="font-mono text-gray-900 dark:text-gray-200">
                       {network.listen_port || 51820}
                     </span>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                       {t('card.serverEndpoint')}
-                    </label>
+                    </span>
                     <span
                       className="font-mono text-xs text-gray-900 dark:text-gray-200 truncate block"
                       title={network.server_endpoint}
@@ -221,10 +221,14 @@ export const Networks = () => {
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="net-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     {t('form.name')}
                   </label>
                   <input
+                    id="net-1"
                     type="text"
                     required
                     value={formData.name}
@@ -234,10 +238,14 @@ export const Networks = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="net-2"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     {t('card.cidrRange')}
                   </label>
                   <input
+                    id="net-2"
                     type="text"
                     required
                     value={formData.cidr}

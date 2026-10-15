@@ -50,7 +50,12 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {loading && (
-        <svg className="animate-spin -ml-1 mr-2 h-4 w-4\" fill="none" viewBox="0 0 24 24">
+        <svg
+          aria-hidden="true"
+          className="animate-spin -ml-1 mr-2 h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
           <circle
             className="opacity-25"
             cx="12"
@@ -87,19 +92,23 @@ export const Card: React.FC<CardProps> = ({ children, className, padding = 'md',
     lg: 'p-6',
   }
 
-  return (
-    <div
-      className={clsx(
-        'bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700',
-        paddings[padding],
-        onClick && 'cursor-pointer',
-        className
-      )}
-      onClick={onClick}
-    >
-      {children}
-    </div>
+  const classes = clsx(
+    'bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700',
+    paddings[padding],
+    onClick && 'cursor-pointer',
+    className
   )
+
+  // A clickable card is a real button so it is keyboard reachable.
+  if (onClick) {
+    return (
+      <button type="button" className={clsx('block w-full text-left', classes)} onClick={onClick}>
+        {children}
+      </button>
+    )
+  }
+
+  return <div className={classes}>{children}</div>
 }
 
 // Badge component
@@ -181,15 +190,28 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helperText?: string
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, helperText, className, ...props }) => {
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  helperText,
+  className,
+  id,
+  ...props
+}) => {
+  const autoId = useId()
+  const inputId = id ?? autoId
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           {label}
         </label>
       )}
       <input
+        id={inputId}
         className={clsx(
           'block w-full rounded-lg border px-3 py-2 text-sm',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -212,15 +234,28 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: { value: string; label: string }[]
 }
 
-export const Select: React.FC<SelectProps> = ({ label, error, options, className, ...props }) => {
+export const Select: React.FC<SelectProps> = ({
+  label,
+  error,
+  options,
+  className,
+  id,
+  ...props
+}) => {
+  const autoId = useId()
+  const selectId = id ?? autoId
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          htmlFor={selectId}
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           {label}
         </label>
       )}
       <select
+        id={selectId}
         className={clsx(
           'block w-full rounded-lg border px-3 py-2 text-sm',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -274,7 +309,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/50\" onClick={onClose} />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="fixed inset-0 bg-black/50"
+          onClick={onClose}
+        />
         <div
           role="dialog"
           aria-modal="true"
@@ -294,7 +335,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
               aria-label={t('actions.close')}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -338,7 +385,12 @@ export function Table<T extends { id: string }>({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <svg
+          aria-hidden="true"
+          className="animate-spin h-8 w-8 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
           <circle
             className="opacity-25"
             cx="12"
@@ -400,7 +452,9 @@ export function Table<T extends { id: string }>({
                     column.className
                   )}
                 >
-                  {column.render ? column.render(item) : String((item as any)[column.key] ?? '')}
+                  {column.render
+                    ? column.render(item)
+                    : String(Reflect.get(item, column.key) ?? '')}
                 </td>
               ))}
             </tr>

@@ -5,7 +5,8 @@ import { Card } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
 import { present } from '@/lib/present'
 
-type Verdict = 'allow' | 'deny' | 'partial'
+// The API sends the verdict as a plain string; unknown values render unstyled.
+type Verdict = string
 
 const cellStyle: Record<Verdict, string> = {
   allow: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',

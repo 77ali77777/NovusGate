@@ -31,7 +31,7 @@ export const ChangePasswordCard: React.FC = () => {
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err: any) {
+    } catch (err) {
       setError(apiErrorMessage(err, t('password.failed')))
     }
   }
@@ -61,10 +61,14 @@ export const ChangePasswordCard: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="pw-1"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('password.username')}
             </label>
             <input
+              id="pw-1"
               type="text"
               disabled
               value={localStorage.getItem('auth_username') || ''}
@@ -73,10 +77,14 @@ export const ChangePasswordCard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="pw-2"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('password.current')}
             </label>
             <input
+              id="pw-2"
               type="password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
@@ -86,10 +94,14 @@ export const ChangePasswordCard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="pw-3"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('password.new')}
             </label>
             <input
+              id="pw-3"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -99,10 +111,14 @@ export const ChangePasswordCard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="pw-4"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('password.confirm')}
             </label>
             <input
+              id="pw-4"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

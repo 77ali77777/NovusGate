@@ -115,25 +115,16 @@ const useFail2BanPing = () =>
 const useBanHistory = () =>
   useQuery({ queryKey: ['ban-history'], queryFn: () => api.getBanHistory(undefined, 100) })
 
-interface JailData {
-  name: string
-  banned_count?: number
-  total_banned?: number
-  failed_count?: number
-  total_failed?: number
-  banned_ips?: string[]
-}
-interface LogEntry {
-  timestamp?: string
-  action?: string
-  raw: string
-}
-interface HistoryEntry {
-  timestamp?: string
-  action?: string
-  jail?: string
-  ip?: string
-  raw: string
+// Pairs every item with a key built from its own data. Identical items get
+// an occurrence suffix, so the key stays stable when the list refreshes.
+function withKeys<T>(items: T[], id: (item: T) => string): { key: string; item: T }[] {
+  const seen = new Map<string, number>()
+  return items.map((item) => {
+    const base = id(item)
+    const n = seen.get(base) ?? 0
+    seen.set(base, n + 1)
+    return { key: n === 0 ? base : `${base}#${n}`, item }
+  })
 }
 
 type ActiveTabProps =
@@ -183,7 +174,7 @@ export const Fail2BanPage = () => {
   // Set default jail when status loads
   React.useEffect(() => {
     const jails = status?.jails ?? []
-    if (jails.length > 0 && !jails.find((j: JailData) => j.name === selectedJail)) {
+    if (jails.length > 0 && !jails.find((j) => j.name === selectedJail)) {
       setSelectedJail(jails[0].name)
     }
   }, [status, selectedJail])
@@ -199,7 +190,7 @@ export const Fail2BanPage = () => {
     }
   }, [jailSettings])
 
-  const currentJail = status?.jails?.find((j: JailData) => j.name === selectedJail)
+  const currentJail = status?.jails?.find((j) => j.name === selectedJail)
 
   // Duration in the panel's language, e.g. "10 min" or "Permanent".
   const duration = (s: string) => {
@@ -269,7 +260,7 @@ export const Fail2BanPage = () => {
                 onChange={(e) => setSelectedJail(e.target.value)}
                 className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-medium"
               >
-                {status.jails?.map((jail: JailData) => (
+                {status.jails?.map((jail) => (
                   <option key={jail.name} value={jail.name}>
                     {jail.name}
                   </option>
@@ -316,7 +307,7 @@ export const Fail2BanPage = () => {
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
+            {(tab.count ?? 0) > 0 && (
               <span className="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full">
                 {tab.count}
               </span>
@@ -399,7 +390,7 @@ export const Fail2BanPage = () => {
           <Card className="p-4 md:col-span-2">
             <h3 className="font-semibold mb-3">{t('overview.allJails')}</h3>
             <div className="space-y-2">
-              {status.jails?.map((jail: JailData) => (
+              {status.jails?.map((jail) => (
                 <div
                   key={jail.name}
                   className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
@@ -411,7 +402,7 @@ export const Fail2BanPage = () => {
                   <div className="flex items-center gap-2">
                     {(jail.banned_count || 0) > 0 && (
                       <Badge variant="danger">
-                        {t('overview.bannedCount', { count: jail.banned_count })}
+                        {t('overview.bannedCount', { count: jail.banned_count ?? 0 })}
                       </Badge>
                     )}
                     <Badge variant="default">
@@ -556,8 +547,11 @@ export const Fail2BanPage = () => {
           <div className="p-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">{t('settings.bantime')}</label>
+                <label htmlFor="f2b-bantime" className="block text-sm font-medium mb-2">
+                  {t('settings.bantime')}
+                </label>
                 <input
+                  id="f2b-bantime"
                   type="text"
                   placeholder="3600"
                   value={settingsForm.bantime}
@@ -567,8 +561,11 @@ export const Fail2BanPage = () => {
                 <p className="text-xs text-gray-500 mt-1">{t('settings.bantimeHint')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">{t('settings.maxretry')}</label>
+                <label htmlFor="f2b-maxretry" className="block text-sm font-medium mb-2">
+                  {t('settings.maxretry')}
+                </label>
                 <input
+                  id="f2b-maxretry"
                   type="text"
                   placeholder="3"
                   value={settingsForm.maxretry}
@@ -578,8 +575,11 @@ export const Fail2BanPage = () => {
                 <p className="text-xs text-gray-500 mt-1">{t('settings.maxretryHint')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">{t('settings.findtime')}</label>
+                <label htmlFor="f2b-findtime" className="block text-sm font-medium mb-2">
+                  {t('settings.findtime')}
+                </label>
                 <input
+                  id="f2b-findtime"
                   type="text"
                   placeholder="600"
                   value={settingsForm.findtime}
@@ -616,42 +616,40 @@ export const Fail2BanPage = () => {
           <div className="p-4">
             {permanentBans?.permanent_bans && permanentBans.permanent_bans.length > 0 ? (
               <div className="space-y-2">
-                {permanentBans.permanent_bans.map(
-                  (ban: { ip: string; line_number: string; protocol: string }) => (
-                    <div
-                      key={ban.ip}
-                      className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
-                          <Ban className="w-5 h-5 text-red-600" />
-                        </div>
-                        <div>
-                          <span className="font-mono font-medium">{ban.ip}</span>
-                          <p className="text-xs text-gray-500">
-                            {t('permanent.ruleInfo', {
-                              line: ban.line_number,
-                              protocol: ban.protocol,
-                            })}
-                          </p>
-                        </div>
+                {permanentBans.permanent_bans.map((ban) => (
+                  <div
+                    key={ban.ip}
+                    className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                        <Ban className="w-5 h-5 text-red-600" />
                       </div>
-                      {isAdmin && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(t('permanent.confirmRemove', { ip: ban.ip })))
-                              removePermanentBanMutation.mutate(ban.ip)
-                          }}
-                          loading={removePermanentBanMutation.isPending}
-                        >
-                          <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
-                        </Button>
-                      )}
+                      <div>
+                        <span className="font-mono font-medium">{ban.ip}</span>
+                        <p className="text-xs text-gray-500">
+                          {t('permanent.ruleInfo', {
+                            line: ban.line_number,
+                            protocol: ban.protocol,
+                          })}
+                        </p>
+                      </div>
                     </div>
-                  )
-                )}
+                    {isAdmin && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm(t('permanent.confirmRemove', { ip: ban.ip })))
+                            removePermanentBanMutation.mutate(ban.ip)
+                        }}
+                        loading={removePermanentBanMutation.isPending}
+                      >
+                        <Unlock className="w-4 h-4 mr-1" /> {t('actions.unblock')}
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -679,9 +677,12 @@ export const Fail2BanPage = () => {
           <div className="p-4">
             {banHistory?.history && banHistory.history.length > 0 ? (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {banHistory.history.map((entry: HistoryEntry, i: number) => (
+                {withKeys(
+                  banHistory.history,
+                  (e) => `${e.timestamp}|${e.jail}|${e.ip}|${e.action}|${e.raw}`
+                ).map(({ key, item: entry }) => (
                   <div
-                    key={i}
+                    key={key}
                     className={`flex items-center justify-between p-3 rounded-lg ${entry.action === 'ban' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}
                   >
                     <div className="flex items-center gap-3">
@@ -725,20 +726,22 @@ export const Fail2BanPage = () => {
           <div className="p-4">
             {logs?.logs && logs.logs.length > 0 ? (
               <div className="space-y-1 max-h-96 overflow-y-auto font-mono text-xs">
-                {logs.logs.map((log: LogEntry, i: number) => (
-                  <div
-                    key={i}
-                    className={`p-2 rounded ${log.action === 'ban' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : log.action === 'unban' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400'}`}
-                  >
-                    {log.timestamp && <span className="text-gray-500 mr-2">{log.timestamp}</span>}
-                    {log.action && (
-                      <Badge variant={log.action === 'ban' ? 'danger' : 'success'} size="sm">
-                        {log.action.toUpperCase()}
-                      </Badge>
-                    )}
-                    <span className="ml-2 break-all">{log.raw}</span>
-                  </div>
-                ))}
+                {withKeys(logs.logs, (l) => `${l.timestamp}|${l.action}|${l.raw}`).map(
+                  ({ key, item: log }) => (
+                    <div
+                      key={key}
+                      className={`p-2 rounded ${log.action === 'ban' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : log.action === 'unban' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400'}`}
+                    >
+                      {log.timestamp && <span className="text-gray-500 mr-2">{log.timestamp}</span>}
+                      {log.action && (
+                        <Badge variant={log.action === 'ban' ? 'danger' : 'success'} size="sm">
+                          {log.action.toUpperCase()}
+                        </Badge>
+                      )}
+                      <span className="ml-2 break-all">{log.raw}</span>
+                    </div>
+                  )
+                )}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -759,10 +762,11 @@ export const Fail2BanPage = () => {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label htmlFor="f2b-ban-ip" className="block text-sm font-medium mb-2">
                   {t('common:fields.ipAddress')}
                 </label>
                 <input
+                  id="f2b-ban-ip"
                   type="text"
                   placeholder={t('banModal.ipPlaceholder')}
                   value={banForm.ip}
@@ -771,13 +775,16 @@ export const Fail2BanPage = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">{t('banModal.jail')}</label>
+                <label htmlFor="f2b-ban-jail" className="block text-sm font-medium mb-2">
+                  {t('banModal.jail')}
+                </label>
                 <select
+                  id="f2b-ban-jail"
                   value={selectedJail}
                   onChange={(e) => setSelectedJail(e.target.value)}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                 >
-                  {status.jails?.map((jail: JailData) => (
+                  {status.jails?.map((jail) => (
                     <option key={jail.name} value={jail.name}>
                       {jail.name}
                     </option>

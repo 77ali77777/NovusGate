@@ -99,7 +99,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
       }
       reader.readAsDataURL(blob)
     } catch (err) {
-      setError(err.message || t('connect.loadError'))
+      setError((err instanceof Error && err.message) || t('connect.loadError'))
     } finally {
       setLoading(false)
     }
@@ -161,7 +161,10 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="server-config-text"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   {t('connect.general.wgConfig')}
                 </label>
                 <button
@@ -174,6 +177,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 </button>
               </div>
               <textarea
+                id="server-config-text"
                 className="w-full h-64 p-3 text-xs font-mono bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 outline-none"
                 readOnly
                 value={config}

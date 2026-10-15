@@ -61,7 +61,7 @@ export type EventType = 'node_status' | 'peer_added' | 'peer_removed'
 
 export interface WebSocketEvent {
   type: EventType
-  payload: any
+  payload: Record<string, unknown>
   timestamp: string
 }
 
@@ -95,6 +95,27 @@ export type Fail2BanLogEntry = S['Fail2BanLogEntry']
 
 export type Fail2BanLogs = S['Fail2BanLogsResponse']
 
+export type Fail2BanBanResponse = S['Fail2BanBanResponse']
+
+export type Fail2BanHistoryEntry = S['Fail2BanHistoryEntry']
+
+export type Fail2BanHistory = S['Fail2BanHistoryResponse']
+
+export type Fail2BanJailSettings = S['Fail2BanJailSettingsResponse']
+
+export type Fail2BanUpdateSettings = S['Fail2BanUpdateSettingsResponse']
+
+export type Fail2BanWhitelist = S['Fail2BanWhitelistResponse']
+
+export type PermanentBans = S['PermanentBansResponse']
+
+export type Fail2BanPing = S['Fail2BanPingResponse']
+
+export type Fail2BanReload = S['Fail2BanReloadResponse']
+
+// Generic { status, message } answer of several write endpoints.
+export type StatusMessage = S['StatusMessageResponse']
+
 export type StatsOverview = S['StatsOverviewResponse']
 
 // Firewall types
@@ -115,6 +136,18 @@ export type AllowIPRequest = S['AllowIPRequest']
 export type DeleteRuleRequest = S['DeleteRuleRequest']
 
 export type ImportRulesRequest = S['ImportRulesRequest']
+
+export type OpenPortResponse = S['OpenPortResponse']
+
+export type ClosePortResponse = S['ClosePortResponse']
+
+export type IPRuleResponse = S['IPRuleResponse']
+
+export type DeleteRuleResponse = S['DeleteRuleResponse']
+
+export type CreateServerRequest = S['CreateServerRequest']
+
+export type CreateServerResponse = S['CreateServerResponse']
 
 // VPN Firewall types
 export type VPNEndpointType = 'any' | 'network' | 'node' | 'group' | 'custom'

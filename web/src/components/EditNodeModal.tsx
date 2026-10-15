@@ -1,6 +1,6 @@
 import { Clock, Power, PowerOff } from 'lucide-react'
 import type React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Select } from '@/components/ui'
 import { computeExpiry, type ExpiryChoice, initialExpiryChoice } from '@/lib/nodeExpiry'
@@ -34,6 +34,7 @@ export const EditNodeModal = ({
   isLoading,
 }: EditNodeModalProps) => {
   const { t } = useTranslation('nodes')
+  const expiryId = useId()
   const [name, setName] = useState('')
   const [expiryType, setExpiryType] = useState<ExpiryChoice>('keep')
   const [customDate, setCustomDate] = useState('')
@@ -45,7 +46,8 @@ export const EditNodeModal = ({
   const [hostname, setHostname] = useState('')
 
   useEffect(() => {
-    if (node) {
+    // Reset the form from the node each time the dialog opens.
+    if (node && isOpen) {
       setName(node.name)
       setStatus(node.status)
       setOs(node.node_info?.os || '')
@@ -128,10 +130,10 @@ export const EditNodeModal = ({
         />
 
         {/* Status Control */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <fieldset className="space-y-2">
+          <legend className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {t('common:fields.status')}
-          </label>
+          </legend>
           <div className="flex gap-2">
             <button
               type="button"
@@ -158,14 +160,18 @@ export const EditNodeModal = ({
               {t('common:status.disabled')}
             </button>
           </div>
-        </div>
+        </fieldset>
 
         {/* Expiration Control */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor={expiryId}
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             {t('fields.expiration')}
           </label>
           <Select
+            id={expiryId}
             options={expiryOptions}
             value={expiryType}
             onChange={(e) => setExpiryType(e.target.value as ExpiryChoice)}

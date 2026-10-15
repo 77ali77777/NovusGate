@@ -63,7 +63,13 @@ export const Layout = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={toggleSidebar} />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={toggleSidebar}
+        />
       )}
 
       {/* Sidebar */}
@@ -81,18 +87,22 @@ export const Layout = () => {
             </div>
             <span className="text-lg font-semibold text-gray-900 dark:text-white">NovusGate</span>
           </Link>
-          <button onClick={toggleSidebar} className="lg:hidden text-gray-500">
+          <button type="button" onClick={toggleSidebar} className="lg:hidden text-gray-500">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Network selector */}
         <div className="p-4 border-b dark:border-gray-700">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <label
+            htmlFor="layout-network-select"
+            className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+          >
             {t('network')}
           </label>
           <div className="relative">
             <select
+              id="layout-network-select"
               value={currentNetworkId || ''}
               onChange={(e) => setCurrentNetworkId(e.target.value || null)}
               className="w-full appearance-none bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"

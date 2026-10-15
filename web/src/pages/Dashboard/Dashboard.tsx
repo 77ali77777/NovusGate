@@ -45,7 +45,7 @@ export const DashboardPage: React.FC = () => {
   const { t } = useTranslation('dashboard')
   const navigate = useNavigate()
   const { data: stats, isLoading: statsLoading } = useStatsOverview()
-  const { data: systemInfo, isLoading: sysLoading } = useSystemInfo()
+  const { data: systemInfo } = useSystemInfo()
 
   if (statsLoading) {
     return (
@@ -270,9 +270,10 @@ export const DashboardPage: React.FC = () => {
         {stats?.networks && stats.networks.length > 0 ? (
           <div className="space-y-3">
             {stats.networks.map((network) => (
-              <div
+              <button
                 key={network.id}
-                className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                type="button"
+                className="block w-full text-left p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                 onClick={() => navigate('/nodes')}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -344,7 +345,7 @@ export const DashboardPage: React.FC = () => {
                     <span>{formatBytes(network.transfer_tx)}</span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         ) : (

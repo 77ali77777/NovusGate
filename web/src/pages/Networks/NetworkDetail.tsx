@@ -12,7 +12,11 @@ import { PageHeader } from '@/components/Layout'
 import { Badge, Card } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
 
-const verdictVariant = { allow: 'success', deny: 'danger', partial: 'warning' } as const
+const verdictVariant: Record<string, 'success' | 'danger' | 'warning'> = {
+  allow: 'success',
+  deny: 'danger',
+  partial: 'warning',
+}
 
 const Field = ({ label, value }: { label: string; value?: string | number }) => (
   <div>

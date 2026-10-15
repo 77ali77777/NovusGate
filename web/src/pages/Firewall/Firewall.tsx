@@ -167,7 +167,7 @@ export const Firewall: React.FC = () => {
     if (!confirm(t('confirm.closePort', { port, protocol }))) return
     try {
       await closePortMutation.mutateAsync({ port, protocol })
-    } catch (error: any) {
+    } catch (error) {
       // The mutation cache shows the server's message as a toast.
       console.error('Failed to close port:', error)
     }
@@ -561,8 +561,11 @@ export const Firewall: React.FC = () => {
       >
         <form onSubmit={handleOpenPort} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.portNumber')}</label>
+            <label htmlFor="fw-1" className="block text-sm font-medium mb-1">
+              {t('forms.portNumber')}
+            </label>
             <input
+              id="fw-1"
               type="number"
               required
               min="1"
@@ -574,8 +577,11 @@ export const Firewall: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('common:fields.protocol')}</label>
+            <label htmlFor="fw-2" className="block text-sm font-medium mb-1">
+              {t('common:fields.protocol')}
+            </label>
             <select
+              id="fw-2"
               value={openPortForm.protocol}
               onChange={(e) => setOpenPortForm({ ...openPortForm, protocol: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
@@ -586,8 +592,11 @@ export const Firewall: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.sourceIpOptional')}</label>
+            <label htmlFor="fw-3" className="block text-sm font-medium mb-1">
+              {t('forms.sourceIpOptional')}
+            </label>
             <input
+              id="fw-3"
               type="text"
               value={openPortForm.source}
               onChange={(e) => setOpenPortForm({ ...openPortForm, source: e.target.value })}
@@ -615,8 +624,11 @@ export const Firewall: React.FC = () => {
       >
         <form onSubmit={handleBlockIP} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.ipOrCidr')}</label>
+            <label htmlFor="fw-4" className="block text-sm font-medium mb-1">
+              {t('forms.ipOrCidr')}
+            </label>
             <input
+              id="fw-4"
               type="text"
               required
               value={blockIPForm.ip}
@@ -626,8 +638,11 @@ export const Firewall: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.portsOptional')}</label>
+            <label htmlFor="fw-5" className="block text-sm font-medium mb-1">
+              {t('forms.portsOptional')}
+            </label>
             <input
+              id="fw-5"
               type="text"
               value={blockIPForm.ports}
               onChange={(e) => setBlockIPForm({ ...blockIPForm, ports: e.target.value })}
@@ -655,8 +670,11 @@ export const Firewall: React.FC = () => {
       >
         <form onSubmit={handleAllowIP} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.ipOrCidr')}</label>
+            <label htmlFor="fw-6" className="block text-sm font-medium mb-1">
+              {t('forms.ipOrCidr')}
+            </label>
             <input
+              id="fw-6"
               type="text"
               required
               value={allowIPForm.ip}
@@ -666,8 +684,11 @@ export const Firewall: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">{t('forms.portsOptional')}</label>
+            <label htmlFor="fw-7" className="block text-sm font-medium mb-1">
+              {t('forms.portsOptional')}
+            </label>
             <input
+              id="fw-7"
               type="text"
               value={allowIPForm.ports}
               onChange={(e) => setAllowIPForm({ ...allowIPForm, ports: e.target.value })}

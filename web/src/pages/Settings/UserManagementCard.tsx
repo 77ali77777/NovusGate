@@ -30,7 +30,7 @@ export const UserManagementCard: React.FC = () => {
       setNewPassword('')
       setNewRole('viewer')
       setIsAdding(false)
-    } catch (err: any) {
+    } catch (err) {
       setError(apiErrorMessage(err, t('users.failed')))
     }
   }

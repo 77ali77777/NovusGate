@@ -4,10 +4,21 @@ import type {
   AuditEntry,
   BlockIPRequest,
   ClosePortRequest,
+  ClosePortResponse,
   CreateNetworkForm,
+  CreateServerRequest,
+  CreateServerResponse,
   DeleteRuleRequest,
+  DeleteRuleResponse,
+  Fail2BanBanResponse,
+  Fail2BanHistory,
+  Fail2BanJailSettings,
   Fail2BanLogs,
+  Fail2BanPing,
+  Fail2BanReload,
   Fail2BanStatus,
+  Fail2BanUpdateSettings,
+  Fail2BanWhitelist,
   FirewallPolicyMatrix,
   FirewallStatus,
   FirewallV2Change,
@@ -19,6 +30,7 @@ import type {
   FirewallV2ServiceRequest,
   FirewallV2State,
   ImportRulesRequest,
+  IPRuleResponse,
   LimitProfile,
   LimitProfileRequest,
   LimitProfilesResponse,
@@ -28,9 +40,12 @@ import type {
   NodeGroup,
   NodeGroupsResponse,
   OpenPortRequest,
+  OpenPortResponse,
   PanelUser,
+  PermanentBans,
   SessionInfo,
   StatsOverview,
+  StatusMessage,
   SystemInfo,
   UserRole,
   VPNFirewallRule,
@@ -123,8 +138,14 @@ class ApiClient {
     return res
   }
 
-  async createServerWithConfig(networkId: string, data: any): Promise<any> {
-    const { data: res } = await this.client.post(`/networks/${networkId}/servers`, data)
+  async createServerWithConfig(
+    networkId: string,
+    data: CreateServerRequest
+  ): Promise<CreateServerResponse> {
+    const { data: res } = await this.client.post<CreateServerResponse>(
+      `/networks/${networkId}/servers`,
+      data
+    )
     return res
   }
 
@@ -168,8 +189,8 @@ class ApiClient {
     return data
   }
 
-  async createUser(username: string, password: string, role?: UserRole): Promise<any> {
-    const { data } = await this.client.post('/users', { username, password, role })
+  async createUser(username: string, password: string, role?: UserRole): Promise<PanelUser> {
+    const { data } = await this.client.post<PanelUser>('/users', { username, password, role })
     return data
   }
 
@@ -275,71 +296,95 @@ class ApiClient {
   }
 
   // Fail2Ban - Manual Ban
-  async banIP(jail: string, ip: string, permanent: boolean = false): Promise<any> {
-    const { data } = await this.client.post('/system/fail2ban/ban', { jail, ip, permanent })
+  async banIP(jail: string, ip: string, permanent: boolean = false): Promise<Fail2BanBanResponse> {
+    const { data } = await this.client.post<Fail2BanBanResponse>('/system/fail2ban/ban', {
+      jail,
+      ip,
+      permanent,
+    })
     return data
   }
 
   // Fail2Ban - Jail Settings
-  async getJailSettings(jail: string = 'sshd'): Promise<any> {
-    const { data } = await this.client.get(`/system/fail2ban/jail/settings?jail=${jail}`)
+  async getJailSettings(jail: string = 'sshd'): Promise<Fail2BanJailSettings> {
+    const { data } = await this.client.get<Fail2BanJailSettings>(
+      `/system/fail2ban/jail/settings?jail=${jail}`
+    )
     return data
   }
 
   async updateJailSettings(
     jail: string,
     settings: { bantime?: string; maxretry?: string; findtime?: string }
-  ): Promise<any> {
-    const { data } = await this.client.put('/system/fail2ban/jail/settings', { jail, ...settings })
+  ): Promise<Fail2BanUpdateSettings> {
+    const { data } = await this.client.put<Fail2BanUpdateSettings>(
+      '/system/fail2ban/jail/settings',
+      { jail, ...settings }
+    )
     return data
   }
 
   // Fail2Ban - Whitelist
-  async getWhitelist(jail: string = 'sshd'): Promise<any> {
-    const { data } = await this.client.get(`/system/fail2ban/whitelist?jail=${jail}`)
+  async getWhitelist(jail: string = 'sshd'): Promise<Fail2BanWhitelist> {
+    const { data } = await this.client.get<Fail2BanWhitelist>(
+      `/system/fail2ban/whitelist?jail=${jail}`
+    )
     return data
   }
 
-  async updateWhitelist(jail: string, action: 'add' | 'remove', ip: string): Promise<any> {
-    const { data } = await this.client.put('/system/fail2ban/whitelist', { jail, action, ip })
+  async updateWhitelist(
+    jail: string,
+    action: 'add' | 'remove',
+    ip: string
+  ): Promise<StatusMessage> {
+    const { data } = await this.client.put<StatusMessage>('/system/fail2ban/whitelist', {
+      jail,
+      action,
+      ip,
+    })
     return data
   }
 
   // Fail2Ban - Permanent Bans (iptables)
-  async getPermanentBans(): Promise<any> {
-    const { data } = await this.client.get('/system/fail2ban/permanent-bans')
+  async getPermanentBans(): Promise<PermanentBans> {
+    const { data } = await this.client.get<PermanentBans>('/system/fail2ban/permanent-bans')
     return data
   }
 
-  async removePermanentBan(ip: string): Promise<any> {
-    const { data } = await this.client.delete('/system/fail2ban/permanent-bans', { data: { ip } })
+  async removePermanentBan(ip: string): Promise<StatusMessage> {
+    const { data } = await this.client.delete<StatusMessage>('/system/fail2ban/permanent-bans', {
+      data: { ip },
+    })
     return data
   }
 
   // Fail2Ban - Jail Control
-  async controlJail(jail: string, action: 'start' | 'stop'): Promise<any> {
-    const { data } = await this.client.post('/system/fail2ban/jail/control', { jail, action })
+  async controlJail(jail: string, action: 'start' | 'stop'): Promise<StatusMessage> {
+    const { data } = await this.client.post<StatusMessage>('/system/fail2ban/jail/control', {
+      jail,
+      action,
+    })
     return data
   }
 
   // Fail2Ban - Reload
-  async reloadFail2Ban(jail?: string): Promise<any> {
+  async reloadFail2Ban(jail?: string): Promise<Fail2BanReload> {
     const url = jail ? `/system/fail2ban/reload?jail=${jail}` : '/system/fail2ban/reload'
-    const { data } = await this.client.post(url)
+    const { data } = await this.client.post<Fail2BanReload>(url)
     return data
   }
 
   // Fail2Ban - Ping (health check)
-  async pingFail2Ban(): Promise<any> {
-    const { data } = await this.client.get('/system/fail2ban/ping')
+  async pingFail2Ban(): Promise<Fail2BanPing> {
+    const { data } = await this.client.get<Fail2BanPing>('/system/fail2ban/ping')
     return data
   }
 
   // Fail2Ban - Ban History
-  async getBanHistory(jail?: string, limit: number = 100): Promise<any> {
+  async getBanHistory(jail?: string, limit: number = 100): Promise<Fail2BanHistory> {
     let url = `/system/fail2ban/ban-history?limit=${limit}`
     if (jail) url += `&jail=${jail}`
-    const { data } = await this.client.get(url)
+    const { data } = await this.client.get<Fail2BanHistory>(url)
     return data
   }
 
@@ -361,32 +406,35 @@ class ApiClient {
   }
 
   // Open a port in the firewall
-  async openPort(request: OpenPortRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/port/open', request)
+  async openPort(request: OpenPortRequest): Promise<OpenPortResponse> {
+    const { data } = await this.client.post<OpenPortResponse>('/firewall/host/port/open', request)
     return data
   }
 
   // Close a port in the firewall
-  async closePort(request: ClosePortRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/port/close', request)
+  async closePort(request: ClosePortRequest): Promise<ClosePortResponse> {
+    const { data } = await this.client.post<ClosePortResponse>('/firewall/host/port/close', request)
     return data
   }
 
   // Block an IP address
-  async blockIP(request: BlockIPRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/ip/block', request)
+  async blockIP(request: BlockIPRequest): Promise<IPRuleResponse> {
+    const { data } = await this.client.post<IPRuleResponse>('/firewall/host/ip/block', request)
     return data
   }
 
   // Allow an IP address
-  async allowIP(request: AllowIPRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/ip/allow', request)
+  async allowIP(request: AllowIPRequest): Promise<IPRuleResponse> {
+    const { data } = await this.client.post<IPRuleResponse>('/firewall/host/ip/allow', request)
     return data
   }
 
   // Delete a firewall rule
-  async deleteFirewallRule(request: DeleteRuleRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/rules/delete', request)
+  async deleteFirewallRule(request: DeleteRuleRequest): Promise<DeleteRuleResponse> {
+    const { data } = await this.client.post<DeleteRuleResponse>(
+      '/firewall/host/rules/delete',
+      request
+    )
     return data
   }
 
@@ -399,14 +447,14 @@ class ApiClient {
   }
 
   // Import firewall rules (iptables-restore format)
-  async importFirewallRules(request: ImportRulesRequest): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/import', request)
+  async importFirewallRules(request: ImportRulesRequest): Promise<StatusMessage> {
+    const { data } = await this.client.post<StatusMessage>('/firewall/host/import', request)
     return data
   }
 
   // Reset firewall to default NovusGate configuration
-  async resetFirewall(): Promise<any> {
-    const { data } = await this.client.post('/firewall/host/reset')
+  async resetFirewall(): Promise<StatusMessage> {
+    const { data } = await this.client.post<StatusMessage>('/firewall/host/reset')
     return data
   }
 
@@ -462,8 +510,8 @@ class ApiClient {
   }
 
   // Apply all VPN firewall rules to iptables
-  async applyVPNFirewallRules(): Promise<any> {
-    const { data } = await this.client.post('/firewall/vpn/apply')
+  async applyVPNFirewallRules(): Promise<StatusMessage> {
+    const { data } = await this.client.post<StatusMessage>('/firewall/vpn/apply')
     return data
   }
 
@@ -730,7 +778,7 @@ export function useCreateServerWithConfig() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { errorTitle: 'toasts:failedToCreatePeer' },
-    mutationFn: (vars: { networkId: string; data: any }) =>
+    mutationFn: (vars: { networkId: string; data: CreateServerRequest }) =>
       api.createServerWithConfig(vars.networkId, vars.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['nodes'] })

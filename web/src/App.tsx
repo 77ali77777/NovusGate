@@ -85,6 +85,7 @@ const LoginPage = () => {
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg
+              aria-hidden="true"
               className="w-10 h-10 text-white"
               fill="none"
               stroke="currentColor"
@@ -108,10 +109,14 @@ const LoginPage = () => {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="login-username"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('login.username')}
             </label>
             <input
+              id="login-username"
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -120,10 +125,14 @@ const LoginPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="login-password"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('login.password')}
             </label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
