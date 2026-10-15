@@ -10,10 +10,10 @@ import type {
   FirewallStatus,
   FirewallV2Change,
   FirewallV2ForwardRequest,
-  FirewallV2IPRuleRequest,
-  FirewallV2Preview,
-  FirewallV2Live,
   FirewallV2HistoryEntry,
+  FirewallV2IPRuleRequest,
+  FirewallV2Live,
+  FirewallV2Preview,
   FirewallV2ServiceRequest,
   FirewallV2State,
   ImportRulesRequest,
@@ -378,7 +378,9 @@ class ApiClient {
   }
 
   async downloadBackup(name: string): Promise<Blob> {
-    const { data } = await this.client.get(`/backups/${encodeURIComponent(name)}`, { responseType: 'blob' })
+    const { data } = await this.client.get(`/backups/${encodeURIComponent(name)}`, {
+      responseType: 'blob',
+    })
     return data
   }
 
@@ -388,7 +390,9 @@ class ApiClient {
     return data
   }
 
-  async updateNotificationSettings(req: NotificationSettingsRequest): Promise<NotificationSettings> {
+  async updateNotificationSettings(
+    req: NotificationSettingsRequest
+  ): Promise<NotificationSettings> {
     const { data } = await this.client.put<NotificationSettings>('/notifications/settings', req)
     return data
   }
@@ -401,7 +405,12 @@ class ApiClient {
   async getNodeTraffic(
     id: string,
     range: TrafficRange
-  ): Promise<{ node_id: string; range: TrafficRange; bucket_seconds: number; points: TrafficPoint[] }> {
+  ): Promise<{
+    node_id: string
+    range: TrafficRange
+    bucket_seconds: number
+    points: TrafficPoint[]
+  }> {
     const { data } = await this.client.get(`/nodes/${id}/traffic`, { params: { range } })
     return data
   }
@@ -424,7 +433,9 @@ class ApiClient {
   }
 
   async getFirewallV2History(): Promise<{ entries: FirewallV2HistoryEntry[] }> {
-    const { data } = await this.client.get<{ entries: FirewallV2HistoryEntry[] }>('/firewall/v2/history')
+    const { data } = await this.client.get<{ entries: FirewallV2HistoryEntry[] }>(
+      '/firewall/v2/history'
+    )
     return data
   }
 
@@ -481,9 +492,9 @@ export const api = new ApiClient()
 
 // React Query hooks
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { NotificationSettingsRequest } from '@/lib/notifications'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 import type { BackupInfo, NotificationSettings } from '@/types'
-import type { NotificationSettingsRequest } from '@/lib/notifications'
 
 // Export hooks
 
@@ -572,7 +583,10 @@ export function useNotificationSettings() {
 export function useUpdateNotificationSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { errorTitle: 'Failed to save the notification settings', successTitle: 'Notification settings saved' },
+    meta: {
+      errorTitle: 'Failed to save the notification settings',
+      successTitle: 'Notification settings saved',
+    },
     mutationFn: (req: NotificationSettingsRequest) => api.updateNotificationSettings(req),
     onSuccess: (data) => queryClient.setQueryData(['notifications'], data),
   })
@@ -868,10 +882,11 @@ export function useApplyVPNFirewallRules() {
 
 // Firewall v2 (nftables). The state refreshes every 5 s while a change waits
 // for confirmation, so the countdown and the rollback show without a reload.
-export function useFirewallV2State() {
+export function useFirewallV2State(enabled = true) {
   return useQuery({
     queryKey: ['firewall', 'v2', 'state'],
     queryFn: () => api.getFirewallV2State(),
+    enabled,
     refetchInterval: (query) => (query.state.data?.pending ? 5000 : 30000),
   })
 }
@@ -912,17 +927,29 @@ function useFirewallV2Mutation<T>(fn: (vars: T) => Promise<unknown>, errorTitle:
 }
 
 export const useCreateFirewallV2Service = () =>
-  useFirewallV2Mutation((req: FirewallV2ServiceRequest) => api.createFirewallV2Service(req), 'Failed to open service')
+  useFirewallV2Mutation(
+    (req: FirewallV2ServiceRequest) => api.createFirewallV2Service(req),
+    'Failed to open service'
+  )
 export const useDeleteFirewallV2Service = () =>
   useFirewallV2Mutation((id: string) => api.deleteFirewallV2Service(id), 'Failed to remove service')
 export const useCreateFirewallV2IPRule = () =>
-  useFirewallV2Mutation((req: FirewallV2IPRuleRequest) => api.createFirewallV2IPRule(req), 'Failed to add IP rule')
+  useFirewallV2Mutation(
+    (req: FirewallV2IPRuleRequest) => api.createFirewallV2IPRule(req),
+    'Failed to add IP rule'
+  )
 export const useDeleteFirewallV2IPRule = () =>
   useFirewallV2Mutation((id: string) => api.deleteFirewallV2IPRule(id), 'Failed to remove IP rule')
 export const useCreateFirewallV2Forward = () =>
-  useFirewallV2Mutation((req: FirewallV2ForwardRequest) => api.createFirewallV2Forward(req), 'Failed to add port forward')
+  useFirewallV2Mutation(
+    (req: FirewallV2ForwardRequest) => api.createFirewallV2Forward(req),
+    'Failed to add port forward'
+  )
 export const useDeleteFirewallV2Forward = () =>
-  useFirewallV2Mutation((id: string) => api.deleteFirewallV2Forward(id), 'Failed to remove port forward')
+  useFirewallV2Mutation(
+    (id: string) => api.deleteFirewallV2Forward(id),
+    'Failed to remove port forward'
+  )
 export const useSetFirewallV2Egress = () =>
   useFirewallV2Mutation(
     (v: { nodeId: string; enabled: boolean }) => api.setFirewallV2Egress(v.nodeId, v.enabled),
@@ -931,4 +958,7 @@ export const useSetFirewallV2Egress = () =>
 export const useConfirmFirewallV2 = () =>
   useFirewallV2Mutation((id: string) => api.confirmFirewallV2(id), 'Failed to confirm the change')
 export const useRestoreFirewallV2History = () =>
-  useFirewallV2Mutation((id: string) => api.restoreFirewallV2History(id), 'Failed to restore the firewall state')
+  useFirewallV2Mutation(
+    (id: string) => api.restoreFirewallV2History(id),
+    'Failed to restore the firewall state'
+  )

@@ -11,6 +11,7 @@ import {
   RefreshCw,
   RotateCcw,
   Shield,
+  ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -24,6 +25,7 @@ import {
   useDeleteFirewallRule,
   useDeleteVPNFirewallRule,
   useFirewallRules,
+  useFirewallV2State,
   useNetworks,
   useOpenPort,
   useResetFirewall,
@@ -40,6 +42,8 @@ import { HostRulesTab } from './HostRulesTab'
 import { LiveTab } from './LiveTab'
 import { OpenPortsTab } from './OpenPortsTab'
 import { OverviewTab } from './OverviewTab'
+import { PolicyMatrix } from './PolicyMatrix'
+import { SystemRulesTab } from './SystemRulesTab'
 import { VPNRuleModal } from './VPNRuleModal'
 import { VPNRulesTab } from './VPNRulesTab'
 
@@ -52,6 +56,7 @@ type TabId =
   | 'advanced'
   | 'live'
   | 'history'
+  | 'system-rules'
 
 export const Firewall: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -88,6 +93,9 @@ export const Firewall: React.FC = () => {
   } = useFirewallRules()
   const { data: vpnRules, isLoading: vpnLoading, refetch: refetchVPN } = useVPNFirewallRules()
   const { data: networks } = useNetworks()
+  // Without the nft engine the v2 state answers 409: iptables (or shadow) enforces.
+  // Only the VPN Rules tab (policy matrix) needs it here.
+  const { data: v2State } = useFirewallV2State(activeTab === 'vpn-rules')
 
   // Mutations
   const openPortMutation = useOpenPort()
@@ -302,6 +310,28 @@ export const Firewall: React.FC = () => {
     }
   }
 
+  // A click on the policy matrix opens a new rule for that network pair.
+  const handleCreateRuleForPair = (
+    from: { id: string; name: string },
+    to: { id: string; name: string }
+  ) => {
+    setEditingVPNRule(null)
+    setVPNRuleForm({
+      name: `${from.name} → ${to.name}`,
+      description: '',
+      source_type: 'network',
+      source_network_id: from.id,
+      dest_type: 'network',
+      dest_network_id: to.id,
+      protocol: 'all',
+      port: '',
+      action: 'accept',
+      priority: 100,
+      enabled: true,
+    })
+    setShowVPNRuleModal(true)
+  }
+
   const resetVPNRuleForm = () => {
     setVPNRuleForm({
       name: '',
@@ -325,6 +355,7 @@ export const Firewall: React.FC = () => {
     { id: 'advanced' as TabId, label: 'Advanced (nftables)', icon: SlidersHorizontal },
     { id: 'live' as TabId, label: 'Live', icon: Activity },
     { id: 'history' as TabId, label: 'History', icon: History },
+    { id: 'system-rules' as TabId, label: 'System Rules', icon: ShieldCheck },
   ]
 
   // Quick Actions Component - shown in all tabs
@@ -425,7 +456,9 @@ export const Firewall: React.FC = () => {
       </div>
 
       {/* Quick Actions Bar - shown in the iptables-era tabs only */}
-      {!['overview', 'advanced', 'live', 'history'].includes(activeTab) && <QuickActionsBar />}
+      {!['overview', 'advanced', 'live', 'history', 'system-rules'].includes(activeTab) && (
+        <QuickActionsBar />
+      )}
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
@@ -464,6 +497,14 @@ export const Firewall: React.FC = () => {
 
       {/* VPN Rules Tab */}
       {activeTab === 'vpn-rules' && (
+        <PolicyMatrix
+          networks={(networks || []).map((n) => ({ id: n.id, name: n.name }))}
+          rules={vpnRules || []}
+          nftEnforcing={v2State?.mode === 'nft'}
+          onCreateRule={handleCreateRuleForPair}
+        />
+      )}
+      {activeTab === 'vpn-rules' && (
         <VPNRulesTab
           rules={vpnRules || []}
           loading={vpnLoading}
@@ -490,6 +531,7 @@ export const Firewall: React.FC = () => {
       {/* Live counters, dropped sources, conntrack; change history with restore */}
       {activeTab === 'live' && <LiveTab />}
       {activeTab === 'history' && <HistoryTab />}
+      {activeTab === 'system-rules' && <SystemRulesTab />}
 
       {/* Open Port Modal */}
       <Modal
