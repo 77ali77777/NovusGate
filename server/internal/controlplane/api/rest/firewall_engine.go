@@ -21,8 +21,8 @@ var errNotFound = errors.New("not found")
 // errConflict is returned by engine mutations that collide with a stored record.
 var errConflict = errors.New("conflict")
 
-// clearLegacyVPNRules removes the iptables novusgate-vpn-* FORWARD rules
-// (replaced in tests).
+// clearLegacyVPNRules removes the iptables VPN rules (legacy FORWARD rules
+// and chain NOVUSGATE-VPN) when nftables takes over (replaced in tests).
 var clearLegacyVPNRules = (*Server).clearNovusGateVPNRules
 
 // checkFirewallHost and cutoverIptables run on the host (replaced in tests).

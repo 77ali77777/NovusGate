@@ -147,6 +147,8 @@ test('uninstall removes every NovusGate host artifact', () => {
     'fail2ban-client set logtarget /var/log/fail2ban.log',
     'rm -rf /var/log/novusgate',
     'iptables -t mangle -X NOVUSGATE-ADMIN',
+    'iptables -D FORWARD -i wg+ -j NOVUSGATE-VPN',
+    'iptables -X NOVUSGATE-VPN',
     'ip6tables -t mangle -X NOVUSGATE-ADMIN',
   ]) {
     assert.ok(s.includes(piece), `missing: ${piece}`);

@@ -1061,12 +1061,11 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	
-	// Apply to iptables if enabled
-	if rule.Enabled {
-		if err := s.applyVPNFirewallRule(r.Context(), rule); err != nil {
-			// Log error but don't fail - rule is saved in DB
-			slog.Error(fmt.Sprintf("Warning: failed to apply VPN firewall rule to iptables: %v", err))
-		}
+	// Re-apply all VPN rules (nft engine or iptables chain), like update and
+	// delete: rules are evaluated in priority order, so one rule alone cannot
+	// be appended. A failure is logged; the rule is saved.
+	if err := s.syncVPNFirewallRules(r.Context()); err != nil {
+		slog.Error(fmt.Sprintf("Warning: failed to sync VPN firewall rules: %v", err))
 	}
 	
 	// Create audit log
@@ -1210,7 +1209,8 @@ func (s *Server) handleVPNFirewallApply(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-// applyVPNFirewallRule applies a single VPN firewall rule to iptables
+// applyVPNFirewallRule appends one VPN rule to chain NOVUSGATE-VPN (iptables
+// mode); syncVPNFirewallRules calls it for every enabled rule in order.
 func (s *Server) applyVPNFirewallRule(ctx context.Context, rule *models.VPNFirewallRule) error {
 	// Build source IP/CIDR
 	sourceIP, err := s.resolveVPNRuleEndpoint(ctx, rule.SourceType, rule.SourceNetworkID, rule.SourceNodeID, rule.SourceIP)
@@ -1225,7 +1225,7 @@ func (s *Server) applyVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 	}
 	
 	// Build iptables command
-	args := []string{"-A", "FORWARD"}
+	args := []string{"-A", vpnChain}
 	
 	// Add source
 	if sourceIP != "" && sourceIP != "0.0.0.0/0" {
@@ -1320,10 +1320,13 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		_, err := s.firewall.ReconcileOrRetry(ctx)
 		return err
 	}
-	// First, remove all existing NovusGate VPN rules from FORWARD chain
-	// We identify them by the comment "novusgate-vpn-*"
-	if err := s.clearNovusGateVPNRules(); err != nil {
+	// Rules appended to FORWARD by earlier versions sat below the wg ACCEPTs
+	// and never matched; they are removed, then the chain is rebuilt.
+	if err := s.removeLegacyForwardVPNRules(); err != nil {
 		return fmt.Errorf("failed to clear existing VPN rules: %w", err)
+	}
+	if err := ensureVPNChain(); err != nil {
+		return err
 	}
 	
 	// Get all enabled rules from database
@@ -1502,8 +1505,9 @@ func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFire
 	return nil
 }
 
-// clearNovusGateVPNRules removes all NovusGate VPN rules from FORWARD chain
-func (s *Server) clearNovusGateVPNRules() error {
+// removeLegacyForwardVPNRules deletes VPN rules earlier versions appended to
+// FORWARD (comment "novusgate-vpn-*").
+func (s *Server) removeLegacyForwardVPNRules() error {
 	// Get current FORWARD chain rules
 	output, err := execHostCommand("iptables", "-L", "FORWARD", "-n", "-v", "--line-numbers")
 	if err != nil {
@@ -1547,3 +1551,44 @@ func isIPv4OrCIDR(s string) bool {
 
 // ruleCommentRe matches an iptables "/* comment */" in `iptables -L` output.
 var ruleCommentRe = regexp.MustCompile(`/\*.*?\*/`)
+
+// vpnChain holds the VPN rules in iptables mode. FORWARD jumps to it first
+// for traffic from VPN interfaces, before the ACCEPTs WireGuard's PostUp
+// appends, so drop and reject rules take effect.
+const vpnChain = "NOVUSGATE-VPN"
+
+// ensureVPNChain creates and empties NOVUSGATE-VPN, puts the jump at the top
+// of FORWARD and lets replies of allowed connections return first (like the
+// nftables engine, which checks VPN rules after established traffic).
+func ensureVPNChain() error {
+	execHostCommand("iptables", "-N", vpnChain) // fails when it exists
+	if _, err := execHostCommand("iptables", "-F", vpnChain); err != nil {
+		return fmt.Errorf("flush %s: %w", vpnChain, err)
+	}
+	if _, err := execHostCommand("iptables", "-C", "FORWARD", "-i", "wg+", "-j", vpnChain); err != nil {
+		if _, err := execHostCommand("iptables", "-I", "FORWARD", "1", "-i", "wg+", "-j", vpnChain); err != nil {
+			return fmt.Errorf("jump to %s: %w", vpnChain, err)
+		}
+	}
+	if _, err := execHostCommand("iptables", "-A", vpnChain, "-m", "conntrack", "--ctstate", "ESTABLISHED,RELATED", "-j", "RETURN"); err != nil {
+		return fmt.Errorf("%s established rule: %w", vpnChain, err)
+	}
+	return nil
+}
+
+// clearNovusGateVPNRules removes every iptables VPN rule NovusGate made: the
+// legacy FORWARD rules, the jump and NOVUSGATE-VPN (the nftables engine takes
+// over VPN rules).
+func (s *Server) clearNovusGateVPNRules() error {
+	if err := s.removeLegacyForwardVPNRules(); err != nil {
+		return err
+	}
+	for {
+		if _, err := execHostCommand("iptables", "-D", "FORWARD", "-i", "wg+", "-j", vpnChain); err != nil {
+			break // no (more) jumps
+		}
+	}
+	execHostCommand("iptables", "-F", vpnChain)
+	execHostCommand("iptables", "-X", vpnChain)
+	return nil
+}

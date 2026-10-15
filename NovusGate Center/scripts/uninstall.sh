@@ -66,6 +66,10 @@ iptables -F INPUT
 iptables -t mangle -D PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN 2>/dev/null || true
 iptables -t mangle -F NOVUSGATE-ADMIN 2>/dev/null || true
 iptables -t mangle -X NOVUSGATE-ADMIN 2>/dev/null || true
+# VPN rules (iptables mode): the jump from FORWARD and their chain
+while iptables -D FORWARD -i wg+ -j NOVUSGATE-VPN 2>/dev/null; do :; done
+iptables -F NOVUSGATE-VPN 2>/dev/null || true
+iptables -X NOVUSGATE-VPN 2>/dev/null || true
 if command -v ip6tables &> /dev/null; then
     ip6tables -t mangle -D PREROUTING -p tcp -m multiport --dports 3007,5432,8080,8443 -j NOVUSGATE-ADMIN 2>/dev/null || true
     ip6tables -t mangle -F NOVUSGATE-ADMIN 2>/dev/null || true
