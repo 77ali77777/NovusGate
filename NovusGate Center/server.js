@@ -1,6 +1,6 @@
 const express = require('express');
 const { Client } = require('ssh2');
-const cors = require('cors');
+const { sameOrigin } = require('./lib/origin');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -25,7 +25,12 @@ const { connect: connectSSH, sshConfig, ptyWindow, uploadText } = require('./lib
 const { validateJoinScript, normalizeScript, joinCommand } = require('./lib/join');
 
 const app = express();
-app.use(cors());
+// Only the Center's own page may call the API: another site open in the
+// same browser must not drive installs or read job logs (no login here).
+app.use('/api', (req, res, next) => {
+  if (!sameOrigin(req)) return res.status(403).json({ error: 'Cross-origin requests are not allowed' });
+  next();
+});
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -841,11 +846,10 @@ const http = require('http');
 const { Server } = require("socket.io");
 
 const server = http.createServer(app);
+// The SSH terminal is for the Center's own page only: a WebSocket is not
+// bound by CORS, so the origin is checked on every handshake.
 const io = new Server(server, {
-  cors: {
-    origin: "*", // allow all for now
-    methods: ["GET", "POST"]
-  }
+  allowRequest: (req, callback) => callback(null, sameOrigin(req)),
 });
 
 // Socket.IO SSH Terminal Logic

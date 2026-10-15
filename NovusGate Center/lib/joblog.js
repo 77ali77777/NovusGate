@@ -15,6 +15,22 @@ const stamp = (d) =>
   `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-` +
   `${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
 
+// headAndTail reads the first headBytes and the last tailBytes of a file.
+function headAndTail(file, headBytes, tailBytes) {
+  const fd = fs.openSync(file, 'r');
+  try {
+    const { size } = fs.fstatSync(fd);
+    const head = Buffer.alloc(Math.min(headBytes, size));
+    fs.readSync(fd, head, 0, head.length, 0);
+    const tailLen = Math.min(tailBytes, size);
+    const tail = Buffer.alloc(tailLen);
+    fs.readSync(fd, tail, 0, tailLen, size - tailLen);
+    return { head: head.toString('utf8'), tail: tail.toString('utf8'), size };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 function createJobLogs(dir, now = () => new Date()) {
   const serverDir = (id) => (ID_RE.test(String(id)) ? path.join(dir, String(id)) : null);
 
@@ -78,15 +94,17 @@ function createJobLogs(dir, now = () => new Date()) {
       .filter((n) => NAME_RE.test(n))
       .map((name) => {
         const file = path.join(sdir, name);
-        const text = fs.readFileSync(file, 'utf8');
-        const started = /started (\S+)/.exec(text.split('\n', 1)[0]);
-        const end = /# finished: (success|failed)/.exec(text.slice(-300));
+        // Only the header line and the tail are needed: a whole multi-MB
+        // log read per entry blocked the event loop (200 x 2 MB: 760 ms).
+        const { head, tail, size } = headAndTail(file, 512, 300);
+        const started = /started (\S+)/.exec(head.split('\n', 1)[0]);
+        const end = /# finished: (success|failed)/.exec(tail);
         return {
           name,
           action: NAME_RE.exec(name)[2],
           startedAt: started ? started[1] : null,
           status: end ? end[1] : 'running',
-          size: fs.statSync(file).size,
+          size,
         };
       })
       .sort((a, b) => (a.name < b.name ? 1 : -1));
