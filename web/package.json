@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "biome check .",
     "test": "node --experimental-strip-types --no-warnings --test tests/*.test.mjs",
+    "gen:api": "openapi-typescript ../server/internal/controlplane/api/rest/testdata/openapi.json -o src/api/openapi.d.ts",
     "fix": "biome lint --write .",
     "format": "biome check --write ."
   },
@@ -31,6 +32,7 @@
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",

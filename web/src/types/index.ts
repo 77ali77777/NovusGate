@@ -1,45 +1,19 @@
+// API types are generated from the backend's OpenAPI document
+// (npm run gen:api -> src/api/openapi.d.ts); only frontend-only types are
+// written here.
+import type { components } from '@/api/openapi'
+
+type S = components['schemas']
+
 // Network types (Hub-and-Spoke VPN)
-export interface Network {
-  id: string
-  name: string
-  cidr: string
-  server_public_key?: string // Hub's public key
-  server_endpoint?: string // Hub's endpoint (IP:Port)
-  listen_port?: number // UDP Port
-  interface_name?: string // WireGuard Interface (wg0, etc)
-  created_at: string
-  updated_at: string
-  node_count?: number
-  online_nodes?: number
-}
+export type Network = S['Network']
 
 // Node types (Peers/Spokes)
-export type NodeStatus = 'pending' | 'online' | 'offline' | 'expired'
+export type NodeStatus = S['Node']['status']
 
-export interface NodeInfo {
-  os: string
-  arch: string
-  hostname: string
-}
+export type NodeInfo = S['NodeInfo']
 
-export interface Node {
-  id: string
-  network_id: string
-  name: string
-  virtual_ip: string
-  public_key: string
-  labels: Record<string, string>
-  status: NodeStatus
-  last_seen: string
-  public_ip?: string
-  transfer_rx?: number
-  transfer_tx?: number
-  expires_at?: string
-  node_info?: NodeInfo
-  endpoints?: string[]
-  has_config: boolean // the server holds the private key: config, QR and install script work
-  created_at: string
-}
+export type Node = S['Node']
 
 // API response types
 export interface ApiError {
@@ -54,10 +28,7 @@ export interface PaginatedResponse<T> {
 }
 
 // Dashboard specific types
-export interface NetworkStats {
-  total_nodes: number
-  online_nodes: number
-}
+export type NetworkStats = S['NetworkStats']
 
 export interface NetworkTopology {
   nodes: TopologyNode[]
@@ -113,361 +84,92 @@ export interface CreateNodeForm {
 }
 
 // System Info types
-export interface SystemInfo {
-  cpu_cores: number
-  cpu_model?: string
-  load_1m?: string
-  load_5m?: string
-  load_15m?: string
-  memory_total: number
-  memory_free: number
-  memory_available: number
-  memory_used: number
-  memory_buffers?: number
-  memory_cached?: number
-  disk_total: number
-  disk_used: number
-  disk_free: number
-  uptime_seconds: number
-  hostname: string
-}
+export type SystemInfo = S['SystemInfoResponse']
 
 // Fail2Ban types
-export interface Fail2BanJail {
-  name: string
-  banned_count?: number
-  total_banned?: number
-  banned_ips?: string[]
-  failed_count?: number
-  total_failed?: number
-}
+export type Fail2BanJail = S['Fail2BanJail']
 
-export interface Fail2BanStatus {
-  installed: boolean
-  running: boolean
-  jails: Fail2BanJail[]
-}
+export type Fail2BanStatus = S['Fail2BanStatusResponse']
 
-export interface Fail2BanLogEntry {
-  raw: string
-  timestamp?: string
-  action?: 'ban' | 'unban' | 'found'
-}
+export type Fail2BanLogEntry = S['Fail2BanLogEntry']
 
-export interface Fail2BanLogs {
-  logs: Fail2BanLogEntry[]
-  count: number
-  error?: string
-}
+export type Fail2BanLogs = S['Fail2BanLogsResponse']
 
-// Stats Overview types
-export interface NetworkStats {
-  id: string
-  name: string
-  cidr: string
-  interface: string
-  total_nodes: number
-  online_nodes: number
-  offline_nodes: number
-  pending_nodes: number
-  expired_nodes: number
-  transfer_rx: number
-  transfer_tx: number
-}
-
-export interface StatsOverview {
-  total_networks: number
-  total_nodes: number
-  online_nodes: number
-  offline_nodes: number
-  pending_nodes: number
-  expired_nodes: number
-  total_rx: number
-  total_tx: number
-  networks: NetworkStats[]
-}
+export type StatsOverview = S['StatsOverviewResponse']
 
 // Firewall types
-export interface FirewallRule {
-  number: number
-  chain: string
-  target: string
-  protocol: string
-  source: string
-  destination: string
-  port: string
-  interface: string
-  in_interface?: string
-  out_interface?: string
-  options?: string
-  protected: boolean
-}
+export type FirewallRule = S['FirewallRule']
 
-export interface ChainInfo {
-  name: string
-  policy: string
-  rules: FirewallRule[]
-}
+export type ChainInfo = S['ChainInfo']
 
-export interface FirewallStatus {
-  chains: ChainInfo[]
-  total_rules: number
-  blocked_ips: number
-  open_ports: number
-}
+export type FirewallStatus = S['FirewallStatus']
 
-export interface OpenPortRequest {
-  port: number
-  protocol: string
-  source?: string
-}
+export type OpenPortRequest = S['OpenPortRequest']
 
-export interface ClosePortRequest {
-  port: number
-  protocol: string
-  force?: boolean
-}
+export type ClosePortRequest = S['ClosePortRequest']
 
-export interface BlockIPRequest {
-  ip: string
-  ports?: string
-}
+export type BlockIPRequest = S['BlockIPRequest']
 
-export interface AllowIPRequest {
-  ip: string
-  ports?: string
-}
+export type AllowIPRequest = S['AllowIPRequest']
 
-export interface DeleteRuleRequest {
-  chain: string
-  line_number: number
-  force?: boolean
-}
+export type DeleteRuleRequest = S['DeleteRuleRequest']
 
-export interface ImportRulesRequest {
-  rules: string
-}
+export type ImportRulesRequest = S['ImportRulesRequest']
 
 // VPN Firewall types
 export type VPNEndpointType = 'any' | 'network' | 'node' | 'custom'
 export type VPNFirewallAction = 'accept' | 'drop' | 'reject'
 export type VPNFirewallProtocol = 'tcp' | 'udp' | 'icmp' | 'all'
 
-export interface VPNFirewallRule {
-  id: string
-  name: string
-  description?: string
-  source_type: VPNEndpointType
-  source_network_id?: string
-  source_node_id?: string
-  source_ip?: string
-  source_network_name?: string
-  source_node_name?: string
-  dest_type: VPNEndpointType
-  dest_network_id?: string
-  dest_node_id?: string
-  dest_ip?: string
-  dest_network_name?: string
-  dest_node_name?: string
-  protocol: VPNFirewallProtocol
-  port?: string
-  action: VPNFirewallAction
-  priority: number
-  enabled: boolean
-  created_at?: string
-  updated_at?: string
-}
+export type VPNFirewallRule = S['VPNFirewallRule']
 
-export interface VPNFirewallRuleRequest {
-  name: string
-  description?: string
-  source_type: VPNEndpointType
-  source_network_id?: string
-  source_node_id?: string
-  source_ip?: string
-  dest_type: VPNEndpointType
-  dest_network_id?: string
-  dest_node_id?: string
-  dest_ip?: string
-  protocol: VPNFirewallProtocol
-  port?: string
-  action: VPNFirewallAction
-  priority: number
-  enabled: boolean
-}
+export type VPNFirewallRuleRequest = S['VPNFirewallRuleRequest']
 
 // Manual backup (P8): /api/v1/backups
-export interface BackupInfo {
-  name: string
-  size: number
-  created_at: string
-}
+export type BackupInfo = S['Info']
 
 // Telegram notifications (P8). The bot token is never returned; token_set
 // says whether one is stored.
-export interface NotificationSettings {
-  enabled: boolean
-  chat_id: string
-  token_set: boolean
-  node_offline: boolean
-  node_expired: boolean
-  fail2ban_ban: boolean
-  firewall_change: boolean
-}
+export type NotificationSettings = S['NotificationSettings']
 
 // Firewall v2 (nftables engine, /api/v1/firewall/v2/*)
-export type FirewallEngineMode = 'iptables' | 'shadow' | 'nft'
+export type FirewallEngineMode = S['V2StateResponse']['mode']
 
-export interface FirewallV2Service {
-  id: string
-  protocol: 'tcp' | 'udp'
-  port_from: number
-  port_to: number
-  sources: string[] // empty: any source
-  interface?: string
-  comment?: string
-  created_at: string
-}
+export type FirewallV2Service = S['FirewallService']
 
-export interface FirewallV2IPRule {
-  id: string
-  action: 'block' | 'allow'
-  prefix: string
-  protocol?: string
-  ports?: string
-  expires_at?: string
-  origin: string // panel, fail2ban or import
-  comment?: string
-  created_at: string
-}
+export type FirewallV2IPRule = S['FirewallIPRule']
 
-export interface FirewallV2Forward {
-  id: string
-  protocol: 'tcp' | 'udp'
-  public_port: number
-  target_ip: string
-  target_port: number
-  comment?: string
-  created_at: string
-}
+export type FirewallV2Forward = S['FirewallForward']
 
-export interface FirewallV2Pending {
-  id: string
-  deadline: string
-}
+export type FirewallV2Pending = S['PendingChange']
 
-export interface FirewallV2State {
-  mode: FirewallEngineMode
-  services: FirewallV2Service[]
-  ip_rules: FirewallV2IPRule[]
-  forwards: FirewallV2Forward[]
-  egress_node_ids: string[]
-  pending?: FirewallV2Pending | null
-  ssh_ports?: number[]
-  egress_interface?: string
-  host_error?: string
-}
+export type FirewallV2State = S['V2StateResponse']
 
-export interface FirewallV2Change {
-  item?: unknown
-  pending?: FirewallV2Pending | null
-  warnings: string[]
-}
+export type FirewallV2Change = S['V2ChangeResponse']
 
-export interface FirewallV2Preview {
-  script: string
-  warnings: string[]
-}
+export type FirewallV2Preview = S['V2PreviewResponse']
 
 // GET /firewall/v2/live: counters and dropped come from the nftables table
 // (empty when it is not loaded, e.g. in iptables mode); conntrack always.
-export interface FirewallV2RuleCounter {
-  chain: string
-  rule: string
-  comment?: string
-  packets: number
-  bytes: number
-}
+export type FirewallV2RuleCounter = S['RuleCounter']
 
-export interface FirewallV2Live {
-  mode: string
-  table_loaded: boolean
-  counters: FirewallV2RuleCounter[]
-  dropped: { address: string; seconds_ago: number }[]
-  conntrack: {
-    available: boolean
-    count: number
-    max: number
-    by_protocol: Record<string, number> | null
-    tcp_states: Record<string, number> | null
-    truncated?: boolean
-  }
-  error?: string
-}
+export type FirewallV2Live = S['V2LiveResponse']
 
 // GET /audit: changes made through the API and login attempts.
-export interface AuditEntry {
-  id: string
-  created_at: string
-  action: string
-  details: Record<string, unknown>
-  user_ip?: string
-  username?: string
-}
+export type AuditEntry = S['AuditEntry']
 
 // GET /auth/sessions: unexpired login sessions; current is the caller's.
-export interface SessionInfo {
-  id: string
-  username: string
-  created_at: string
-  last_used_at: string
-  expires_at: string
-  current: boolean
-}
+export type SessionInfo = S['SessionInfo']
 
 // GET /firewall/policy-matrix: cells[from][to] for every pair of VPN networks,
 // computed by the backend from the VPN rules and the firewall mode.
-export interface FirewallPolicyMatrix {
-  nft_enforcing: boolean
-  networks: { id: string; name: string }[]
-  cells: Record<
-    string,
-    Record<string, { verdict: 'allow' | 'deny' | 'partial'; reason: string; rules: string[] }>
-  >
-}
+export type FirewallPolicyMatrix = S['Matrix']
 
 // GET /firewall/v2/history: newest first; added/removed are readable lines.
-export interface FirewallV2HistoryEntry {
-  id: string
-  created_at: string
-  username?: string
-  action: string
-  added: string[]
-  removed: string[]
-}
+export type FirewallV2HistoryEntry = S['V2HistoryEntry']
 
-export interface FirewallV2ServiceRequest {
-  protocol: 'tcp' | 'udp'
-  port_from: number
-  port_to?: number
-  sources?: string[]
-  interface?: string
-  comment?: string
-}
+export type FirewallV2ServiceRequest = S['v2ServiceRequest']
 
-export interface FirewallV2IPRuleRequest {
-  action: 'block' | 'allow'
-  prefix: string
-  protocol?: string
-  ports?: string
-  expires_at?: string
-  comment?: string
-}
+export type FirewallV2IPRuleRequest = S['v2IPRuleRequest']
 
-export interface FirewallV2ForwardRequest {
-  protocol: 'tcp' | 'udp'
-  public_port: number
-  target_ip: string
-  target_port: number
-  comment?: string
-}
+export type FirewallV2ForwardRequest = S['v2ForwardRequest']
