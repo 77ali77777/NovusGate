@@ -30,6 +30,38 @@ export async function withStepUp<T>(
   }
 }
 
+// PasswordGate holds the changes waiting for the step-up password: one
+// prompt for all of them, and every one settles when it closes (two saves
+// started together must not leave the first one waiting forever).
+export interface PasswordGate {
+  ask: () => Promise<void>
+  resolveAll: () => void
+  rejectAll: (err: Error) => void
+  isOpen: () => boolean
+  onChange?: (open: boolean) => void
+}
+
+export function createPasswordGate(): PasswordGate {
+  let waiting: { resolve: () => void; reject: (e: Error) => void }[] = []
+  const settle = (fn: (w: (typeof waiting)[number]) => void) => {
+    const all = waiting
+    waiting = []
+    for (const w of all) fn(w)
+    gate.onChange?.(false)
+  }
+  const gate: PasswordGate = {
+    ask: () =>
+      new Promise((resolve, reject) => {
+        waiting.push({ resolve, reject })
+        if (waiting.length === 1) gate.onChange?.(true)
+      }),
+    resolveAll: () => settle((w) => w.resolve()),
+    rejectAll: (err) => settle((w) => w.reject(err)),
+    isOpen: () => waiting.length > 0,
+  }
+  return gate
+}
+
 export interface AddressRow {
   name: string
   state: string

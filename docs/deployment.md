@@ -106,3 +106,4 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
 - Panelin "Server" səhifəsi host komandalarını control-plane konteynerindən `nsenter -t 1` ilə icra edir; bu, konteynerin host PID namespace-i ilə işləməsini tələb edir (`docker-compose.yml`-də `pid: host`). İzolə test konteynerində (host PID-siz) host oxumaları 500 verir; bu gözlənilir.
 - sysctl idarə faylı: `/etc/sysctl.d/90-novusgate.conf`; geri qaytarma skripti: `/var/lib/novusgate/sysctl-rollback.sh`; timer: `novusgate-sysctl-rollback`.
 - Migration 019 control-plane başlayanda avtomatik tətbiq olunur.
+- Node installer-i: konfiqdə `DNS =` varsa və `resolvconf` yoxdursa `resolvectl`-ə link yaradır (yoxdursa `openresolv` quraşdırır); wg-quick DNS-i bununla tətbiq edir.

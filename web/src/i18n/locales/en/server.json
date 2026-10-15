@@ -40,7 +40,8 @@
     "reset": "Undo edits",
     "keep": "Keep the change",
     "pending": "The change is live. Keep it within {{seconds}} s or the server restores the old values.",
-    "hint": "A change that cuts you off is undone by itself: keep it only once the panel still works."
+    "hint": "A change that cuts you off is undone by itself: keep it only once the panel still works.",
+    "pendingUnknown": "A change waits for confirmation. Keep it now, or the server restores the old values."
   },
   "system": {
     "os": "Operating system",

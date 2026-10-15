@@ -46,7 +46,7 @@
     "noRules": "Yoxdur.",
     "clientDns": "Klient DNS serverləri",
     "clientDnsDefault": "Default: tam tunel üçün 1.1.1.1, split üçün yoxdur",
-    "clientDnsHint": "Vergüllə ayrılmış ən çox 3 IP ünvanı. Yeni və yenidən endirilən konfiqlər bunları işlədir."
+    "clientDnsHint": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı. Yeni və yenidən endirilən konfiqlər bunları işlədir."
   },
   "verdict": {
     "allow": "icazə",

@@ -142,9 +142,12 @@ export const KernelTab = ({ step }: { step: Step }) => {
   const { t } = useTranslation('server')
   const { data, isLoading, isError, refetch } = useSysctl()
   const [draft, setDraft] = useState<Record<string, string>>({})
-  const [deadline, setDeadline] = useState<number | null>(null)
   const [left, setLeft] = useState(0)
-  const apply = useServerChange<{ confirm_within: number }>('toasts:failedToApplySysctl')
+  // The server knows whether a change waits (its rollback timer), so the
+  // countdown survives a tab switch or a reload.
+  const pending = !!data?.pending
+  const deadline = data?.pending_until ? Date.parse(data.pending_until) : null
+  const apply = useServerChange<unknown>('toasts:failedToApplySysctl')
   const keep = useServerChange<void>('toasts:failedToKeepSysctl', 'toasts:sysctlKept')
 
   useEffect(() => {
@@ -152,15 +155,15 @@ export const KernelTab = ({ step }: { step: Step }) => {
     const tick = () => {
       const s = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
       setLeft(s)
-      if (s === 0) {
-        setDeadline(null)
-        // The host has restored the old values by now.
-        setTimeout(() => refetch(), 2000)
-      }
     }
     tick()
     const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
+    // The host restores the old values at the deadline: read them again.
+    const done = setTimeout(() => refetch(), Math.max(0, deadline - Date.now()) + 2000)
+    return () => {
+      clearInterval(id)
+      clearTimeout(done)
+    }
   }, [deadline, refetch])
 
   const values = data?.values ?? {}
@@ -173,17 +176,17 @@ export const KernelTab = ({ step }: { step: Step }) => {
       <Loading isLoading={isLoading} isError={isError} />
       {data && (
         <div className="space-y-4">
-          {deadline !== null && (
+          {pending && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200">
-              <span>{t('kernel.pending', { seconds: left })}</span>
+              <span>
+                {deadline !== null
+                  ? t('kernel.pending', { seconds: left })
+                  : t('kernel.pendingUnknown')}
+              </span>
               <Button
                 size="sm"
                 loading={keep.isPending}
-                onClick={() =>
-                  keep.mutate(() => step(() => api.confirmSysctl()), {
-                    onSuccess: () => setDeadline(null),
-                  })
-                }
+                onClick={() => keep.mutate(() => step(() => api.confirmSysctl()))}
               >
                 {t('kernel.keep')}
               </Button>
@@ -227,13 +230,10 @@ export const KernelTab = ({ step }: { step: Step }) => {
             </Button>
             <Button
               loading={apply.isPending}
-              disabled={!Object.keys(changed).length || deadline !== null}
+              disabled={!Object.keys(changed).length || pending}
               onClick={() =>
                 apply.mutate(() => step(() => api.setSysctl(changed)), {
-                  onSuccess: (res) => {
-                    setDraft({})
-                    setDeadline(Date.now() + res.confirm_within * 1000)
-                  },
+                  onSuccess: () => setDraft({}),
                 })
               }
             >

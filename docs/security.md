@@ -126,4 +126,5 @@
 - Komandalar allow-list ilə: yalnız docker, fail2ban, `wg-quick@wgN` restart; yalnız 5 sysctl açarı dəyər yoxlaması ilə; host adı RFC 1123; saat qurşağı zoneinfo-dan. Arqumentlər shell-dən keçmir.
 - sysctl dəyişikliyi 90 s ərzində təsdiqlənməsə systemd timer köhnə dəyərləri və köhnə faylı bərpa edir (bağlantını kəsən dəyişiklik özü geri qayıdır). Reboot və upgrade üçün sözün yazılması lazımdır.
 - 500 cavabları host alətinin çıxışını göstərmir (yalnız log).
-- Klient DNS yalnız IP ünvanları qəbul edir, ona görə konfiqə və install skriptinə təhlükəsiz yazılır.
+- Yanlış formatlı step-up body-si təxmin sayılmır.
+- Klient DNS yalnız IPv4 ünvanları qəbul edir, ona görə konfiqə və install skriptinə təhlükəsiz yazılır.

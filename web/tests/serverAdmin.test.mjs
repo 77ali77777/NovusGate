@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { errorBodyCode } from '../src/api/errors.ts'
 import {
   addressRows,
+  createPasswordGate,
   routeRows,
   StepUpCancelled,
   sysctlField,
@@ -115,4 +116,20 @@ test('sysctlField mirrors the server allow-list', () => {
     max: 16777216,
   })
   assert.equal(sysctlField('kernel.panic'), undefined)
+})
+
+test('passwordGate settles every waiting change, not only the last', async () => {
+  const gate = createPasswordGate()
+  const changes = []
+  gate.onChange = (open) => changes.push(open)
+  const a = gate.ask()
+  const b = gate.ask()
+  assert.equal(gate.isOpen(), true)
+  gate.resolveAll()
+  await Promise.all([a, b])
+  assert.equal(gate.isOpen(), false)
+  const c = gate.ask()
+  gate.rejectAll(new StepUpCancelled())
+  await assert.rejects(c, StepUpCancelled)
+  assert.deepEqual(changes, [true, false, true, false])
 })

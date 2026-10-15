@@ -40,7 +40,8 @@
     "reset": "Redaktələri geri al",
     "keep": "Dəyişikliyi saxla",
     "pending": "Dəyişiklik qüvvədədir. {{seconds}} s ərzində saxlayın, yoxsa server köhnə dəyərləri bərpa edəcək.",
-    "hint": "Bağlantınızı kəsən dəyişiklik özü geri qayıdır: yalnız panel hələ işləyirsə saxlayın."
+    "hint": "Bağlantınızı kəsən dəyişiklik özü geri qayıdır: yalnız panel hələ işləyirsə saxlayın.",
+    "pendingUnknown": "Dəyişiklik təsdiq gözləyir. İndi saxlayın, yoxsa server köhnə dəyərləri bərpa edəcək."
   },
   "system": {
     "os": "Əməliyyat sistemi",

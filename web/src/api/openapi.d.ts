@@ -2182,6 +2182,9 @@ export interface components {
         };
         SysctlResponse: {
             keys: string[] | null;
+            pending: boolean;
+            /** Format: date-time */
+            pending_until: string | null;
             values: {
                 [key: string]: string;
             } | null;

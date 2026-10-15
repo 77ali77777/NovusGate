@@ -304,7 +304,8 @@
 - **P10a UI:** Server səhifəsi (Servislər, Şəbəkə, Kernel, Sistem), step-up pəncərəsi, sysctl geri sayım, upgrade log-u, reboot/upgrade söz təsdiqi, şəbəkədə klient DNS sahəsi (`3be393f`).
 - **Yoxlamalar:** Go 16/16 paket `ok`; web tsc strict, 64/64, vite, biome təmiz, i18nScan 0; izolə real-backend brauzer testi: 403 → parol pəncərəsi, yanlış parolda çıxış olmur, düzgün parolda təkrar, ləğvdə toast yoxdur, DNS formu.
 - **İcra olunmayıb:** host komandaları real serverdə (test konteynerində `nsenter` hosta çıxmır); brauzer testində kənar klik müdaxiləsi (`isTrusted` kliklər, başqa sessiya ehtimalı) — əvvəlki "/firewall-a keçid" də bundan idi, tətbiq kodu deyil.
-- **Davam:** müstəqil review, lokal merge.
+- **Review (opus) və düzəlişlər** (`1d68402` + UI): Important: ikinci sysctl dəyişikliyi rollback-i köhnə dəyərlərlə əvəz edirdi (409 `sysctl_pending`); gec confirm uğur deyirdi (409 `sysctl_not_pending`); tab dəyişəndə geri sayım itirdi (`pending_until` serverdən); apt docker restart-ı ilə kəsilə bilərdi (`systemd-run` host unit-i, `RuntimeMaxSec`); split konfiqdə DNS Ubuntu-da `resolvconf` olmadan installer-i sındırırdı. Minor: iki parol pəncərəsi, səhv body limitə sayılırdı, IPv6 DNS sızması, upgrade zamanı reboot, sysctl faylının yarımçıq yazılması. PLAUSIBLE hissə (bitmiş timer-in eyni adı bloklaması) systemd 255-də təkrarlanmadı.
+- **Davam:** lokal merge.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

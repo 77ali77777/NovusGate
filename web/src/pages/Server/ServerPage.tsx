@@ -1,11 +1,11 @@
 import { Cpu, HardDrive, Network, Wrench } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, useCan } from '@/api/client'
 import { errorBodyCode } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
 import { Button, Input, Modal } from '@/components/ui'
-import { type Step, StepUpCancelled, withStepUp } from '@/lib/serverAdmin'
+import { createPasswordGate, type Step, StepUpCancelled, withStepUp } from '@/lib/serverAdmin'
 import { KernelTab, NetworkTab, ServicesTab, SystemTab } from './ServerTabs'
 
 type TabId = 'services' | 'network' | 'kernel' | 'system'
@@ -70,40 +70,39 @@ export const ServerPage = () => {
 }
 
 // useStepUpPrompt: ask() opens the password prompt and settles when the
-// server has accepted the password (or rejects with StepUpCancelled).
+// server has accepted the password (or rejects with StepUpCancelled). Changes
+// that ask while it is open wait for the same prompt.
 function useStepUpPrompt() {
   const { t } = useTranslation('server')
-  const [pending, setPending] = useState<{
-    resolve: () => void
-    reject: (e: Error) => void
-  } | null>(null)
+  const [gate] = useState(createPasswordGate)
+  const [open, setOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const ask = useCallback(
-    (): Promise<void> =>
-      new Promise((resolve, reject) => {
+  useEffect(() => {
+    gate.onChange = (isOpen) => {
+      if (isOpen) {
         setPassword('')
         setError('')
-        setPending({ resolve, reject })
-      }),
-    []
-  )
+      }
+      setOpen(isOpen)
+    }
+    // Leaving the page cancels the changes still waiting for the password.
+    return () => gate.rejectAll(new StepUpCancelled())
+  }, [gate])
 
-  const cancel = () => {
-    pending?.reject(new StepUpCancelled())
-    setPending(null)
-  }
+  const ask = gate.ask
+
+  const cancel = () => gate.rejectAll(new StepUpCancelled())
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!pending || !password) return
+    if (!gate.isOpen() || !password) return
     setBusy(true)
     try {
       await api.stepUp(password)
-      pending.resolve()
-      setPending(null)
+      gate.resolveAll()
     } catch (err) {
       const code = errorBodyCode(err)
       setError(
@@ -120,7 +119,7 @@ function useStepUpPrompt() {
   }
 
   const prompt = (
-    <Modal isOpen={pending !== null} onClose={cancel} title={t('stepUp.title')} size="sm">
+    <Modal isOpen={open} onClose={cancel} title={t('stepUp.title')} size="sm">
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">{t('stepUp.hint')}</p>
         <Input
