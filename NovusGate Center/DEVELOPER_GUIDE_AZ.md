@@ -18,7 +18,11 @@
 ### Fayl Strukturu
 ```
 NovusGate Center/
-├── server.js              # Əsas backend - API endpointləri və install skriptləri
+├── server.js              # Əsas backend - API endpointləri
+├── lib/                   # scripts.js scripts/*.sh-i doldurur; ssh, jobs, store, run, join, archive
+├── scripts/               # Serverdə işləyən bash (install, reinstall, update, uninstall, migrate,
+│                          #   preflight, helpers); @@NAME@@ yerlərini lib/scripts.js doldurur
+├── test/                  # node --test test/
 ├── log_service.js         # Docker log streaming xidməti
 ├── public/
 │   └── index.html         # Tək səhifəli frontend tətbiqi

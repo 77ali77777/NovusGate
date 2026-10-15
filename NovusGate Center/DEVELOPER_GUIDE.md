@@ -18,7 +18,11 @@ The **NovusGate Center** is a web-based management tool for deploying, updating,
 ### File Structure
 ```
 NovusGate Center/
-├── server.js              # Main backend - API endpoints & install scripts
+├── server.js              # Main backend - API endpoints
+├── lib/                   # scripts.js renders scripts/*.sh; ssh, jobs, store, run, join, archive
+├── scripts/               # Bash run on the server (install, reinstall, update, uninstall, migrate,
+│                          #   preflight, helpers); @@NAME@@ placeholders are filled by lib/scripts.js
+├── test/                  # node --test test/
 ├── log_service.js         # Docker log streaming service
 ├── public/
 │   └── index.html         # Single-page frontend application

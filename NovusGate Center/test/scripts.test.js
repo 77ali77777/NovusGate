@@ -257,3 +257,22 @@ test('uninstall reverts the fail2ban logrotate change', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// The bash lives in scripts/*.sh; a placeholder without a value, or a value
+// no placeholder uses, fails loudly instead of reaching a server.
+test('render refuses missing and unused placeholders', () => {
+  assert.strictEqual(scripts.render('x.sh', 'a=@@A@@ b=@@B@@', { A: 1, B: "'q'" }), "a=1 b='q'");
+  assert.throws(() => scripts.render('x.sh', 'a=@@A@@', {}), /x\.sh: no value for @@A@@/);
+  assert.throws(() => scripts.render('x.sh', 'a=1', { A: 1 }), /x\.sh: @@A@@ is not used/);
+});
+
+test('every script file is used and fully rendered', () => {
+  const files = fs.readdirSync(path.join(__dirname, '..', 'scripts')).sort();
+  assert.deepStrictEqual(files, [
+    'already-installed-guard.sh', 'clean-install-dir.sh', 'ensure-master-key.sh', 'helpers.sh', 'install.sh',
+    'migrate.sh', 'preflight.sh', 'reinstall-db-guard.sh', 'reinstall.sh', 'uninstall.sh', 'update.sh',
+  ]);
+  for (const s of Object.values(generateAll(sampleConfig))) {
+    assert.doesNotMatch(s, /@@[A-Z_]+@@/);
+  }
+});
