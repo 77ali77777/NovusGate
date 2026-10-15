@@ -309,11 +309,12 @@
 
 ### 2026-10-15: Center auditi və "?" kömək tələbi
 - **Center auditi** (agent + mənim yoxlamam): əsas axın düzgündür (env, compose `pid: host`, migration-lar, update geri qaytarma). Düzəldildi: Join VPN hub-da işləmir; konteyner adı yoxlanılır; uninstall P10a sysctl izlərini silir; install `curl`, Debian 12 fail2ban journal, `https` ünvan, `.env`-də `VPN_IP`; update `rsync`, degraded/web xəbərdarlığı. Center 101/101, 4 skript `bash -n` ok. Real hostda sınanmayıb.
-- **İstifadəçi tələbi:** hər input-a "?" kömək (nədir · kimə lazımdır · nə olur), az+en, panel və Center. Davam: bu iş.
+- **İstifadəçi tələbi:** hər input-a "?" kömək (nədir · kimə lazımdır · nə olur), az+en, panel və Center. Edildi (`ee34f57`, `ca5796c`, `d988976`): `HelpTip` komponenti, panelin hər input-u (105 açar, 9 `help*` namespace) və Center-in 15 sahəsi; `helpTips.test.mjs` köməksiz input-u build-də saxlayır. Mətnlər müstəqil yoxlamadan keçdi, 37 ifadə düzəldildi. Yoxlamanın tapdığı bug-lar: iptables rejimində `8000-9000` port aralığı tətbiq olunmurdu, ad limiti bayt sayırdı (`613bb8c`), Fail2Ban 206 "saxlandı" göstərirdi, protokol dəyişəndə port qalırdı, reinstall `.env`-i 600 deyildi, telefonda tip ekrandan çıxırdı. Bütün tip-lər əl ilə açılmayıb.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | "?" kömək hər input-da (panel + Center), Center auditi düzəlişləri, iptables port aralığı, simvol sayan ad limiti | web/src/components/HelpTip.tsx, web/src/i18n/locales/*/help*.json, web/tests/help*.mjs, NovusGate Center/public/index.html + scripts, rest/firewall_handlers.go, firewall/limits.go | İstifadəçi tələbi; Center auditi; mətn yoxlaması · `656e141`..`ca5796c` |
 | 2026-10-15 | P10a: server idarəsi (step-up, allow-list komandalar, sysctl geri qaytarma, upgrade/reboot), klient DNS, Server səhifəsi; minor-lar; web strict + biome 0 | hostadmin/, api/rest/{server_admin_handlers,network_dns,openapi}.go, migrations 019, web/src/pages/Server/, lib/serverAdmin.ts | P10a planı; review minor-ları · `1b88d5d`..`3be393f` |
 | 2026-10-15 | Qalan işlər + köhnə paket review + brauzer testi: set_no, audit 429/retention, Center log, strictNullChecks, tzdata | migrations 018, store, firewall, rest, Center joblog, web, main.go | review və brauzer testi · `e8fb974`..`f65bce3` |
 | 2026-10-15 | P9c: aylıq trafik kvotası (blok/yavaşlatma, 80% xəbərdarlıq, sıfırlama) | quota/, migrations 016, store/limits.go, firewall/limits.go, netctl/nft, traffic.go, main.go, web Limits/Nodes/Settings | P9 spec · `08f8ec5`, `a434f65` |

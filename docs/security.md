@@ -128,3 +128,7 @@
 - 500 cavabları host alətinin çıxışını göstərmir (yalnız log).
 - Yanlış formatlı step-up body-si təxmin sayılmır.
 - Klient DNS yalnız IPv4 ünvanları qəbul edir, ona görə konfiqə və install skriptinə təhlükəsiz yazılır.
+
+## Kömək mətnləri yoxlamasında tapılanlar (2026-10-15)
+- Center reinstall yeni `.env`-i default icazə ilə yazırdı, köhnəsini isə `/tmp`-ə icazəsiz kopyalayırdı: indi `chmod 600` və `cp -p`.
+- iptables rejimində `8000-9000` port aralığı olan VPN qaydası saxlanılırdı, amma tətbiq olunmurdu (iptables `a:b` istəyir): indi iptables-ə `8000:9000` gedir.

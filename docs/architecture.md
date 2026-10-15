@@ -146,3 +146,9 @@
   - Default: nft-də eyni şəbəkə daxilində allow, şəbəkələr arasında deny; iptables və shadow rejimində allow (`NOVUSGATE-VPN` zəncirindən sonra wg ACCEPT-ləri gəlir).
   - Port, protokol, node və ya custom ünvanla məhdudlaşan qayda nəticədən fərqlənirsə, xana `partial` olur.
 - **System Rules** (`web/src/lib/systemRules.ts`) `/firewall/v2/preview` skriptini parse edir. `svc:`/`ip:`/`rule:`/`fwd:` comment-li sətirlər istifadəçinin qaydalarıdır və göstərilmir. İzahlar regex cədvəlindədir. Tanınmayan qayda izahsız göstərilir, siyahıdan çıxarılmır. Bu view iptables rejimində (engine yoxdur) mövcud deyil.
+
+## Kömək işarələri ("?", 2026-10-15)
+- `web/src/components/HelpTip.tsx`: sahənin yanında "?"; hover, fokus və kliklə açılır (klik sabitləyir), Escape və ya başqa yerə klik bağlayır; ekrandan çıxmasın deyə `lib/helpTip.ts` `tipShift` ilə sürüşdürülür.
+- Mətnlər `locales/{en,az}/help<Bölmə>.json`-dadır, hər açarın `what` / `who` / `effect` hissəsi var. `Input`/`Select` `help="ns:açar"` alır; xam `<input>` `data-help` daşıyır və eyni faylda `<HelpTip k=…>` olmalıdır.
+- `tests/helpScan.mjs` + `helpTips.test.mjs`: köməksiz input və ya hər iki dildə tam olmayan mətn build-i sındırır. Yeni sahə mətni ilə birlikdə gəlir.
+- Center (`public/index.html`, i18n yoxdur): eyni üç hissə ingiliscə, səhifənin öz script-i ilə.
