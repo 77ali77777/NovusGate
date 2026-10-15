@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/netip"
 	"regexp"
+	"time"
 )
 
 var (
@@ -11,6 +12,8 @@ var (
 	idRe    = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,64}$`)
 	// groupNameRe: short set names, well under old kernels' 32-byte limit.
 	groupNameRe = regexp.MustCompile(`^grp_[0-9]{1,6}$`)
+	// limitNameRe leaves room for the _up, _down, _ct and _time suffixes.
+	limitNameRe = regexp.MustCompile(`^lim_[0-9]{1,6}$`)
 )
 
 // reservedPorts can never be opened as public services or used for forwards.
@@ -177,6 +180,9 @@ func Validate(rs Ruleset) error {
 			}
 		}
 	}
+	if err := validateLimits(rs.Limits); err != nil {
+		return err
+	}
 	for _, a := range rs.Egress {
 		if !a.Is4() {
 			return fmt.Errorf("egress address %s must be IPv4", a)
@@ -207,4 +213,34 @@ func contains(ports []uint16, p uint16) bool {
 // be rendered safely into the ruleset.
 func ValidInterfaceName(name string) bool {
 	return ifaceRe.MatchString(name)
+}
+
+func validateLimits(limits []Limit) error {
+	seen := map[string]bool{}
+	for _, l := range limits {
+		if !limitNameRe.MatchString(l.Name) {
+			return fmt.Errorf("invalid limit name %q", l.Name)
+		}
+		if seen[l.Name] {
+			return fmt.Errorf("duplicate limit %s", l.Name)
+		}
+		seen[l.Name] = true
+		if !idRe.MatchString(l.ID) {
+			return fmt.Errorf("limit %s: invalid id %q", l.Name, l.ID)
+		}
+		for _, a := range l.Members {
+			if !a.Is4() {
+				return fmt.Errorf("limit %s: member %s must be IPv4", l.Name, a)
+			}
+		}
+		for _, w := range l.Windows {
+			if w.Day < time.Sunday || w.Day > time.Saturday {
+				return fmt.Errorf("limit %s: invalid day %d", l.Name, w.Day)
+			}
+			if w.From < 0 || w.To > 86400 || w.From >= w.To {
+				return fmt.Errorf("limit %s: invalid window %d-%d", l.Name, w.From, w.To)
+			}
+		}
+	}
+	return nil
 }

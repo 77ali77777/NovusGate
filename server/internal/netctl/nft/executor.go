@@ -3,6 +3,7 @@ package nft
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -42,6 +43,9 @@ func (NsenterRunner) Run(stdin string, name string, args ...string) (string, err
 
 func run(stdin string, name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
+	// nft converts meta hour between local time and the kernel's UTC; the
+	// compiler writes UTC, so nft (and anything it starts) runs in UTC.
+	cmd.Env = append(os.Environ(), "TZ=UTC")
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

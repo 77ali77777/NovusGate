@@ -246,7 +246,8 @@ func TestReservedPortsOnlyOnNetworkInterfaces(t *testing.T) {
 func edgeRulesets() map[string]Ruleset {
 	edgeHour := testNow.Add(time.Hour)
 	return map[string]Ruleset{
-		"empty": {SSHPorts: []uint16{22}, EgressInterface: "eth0"},
+		"empty":  {SSHPorts: []uint16{22}, EgressInterface: "eth0"},
+		"limits": limitRuleset(),
 		"v6only": {
 			SSHPorts: []uint16{22}, EgressInterface: "eth0",
 			Services: []Service{{ID: "v6-https", Proto: TCP, Ports: PortRange{443, 443},
@@ -371,5 +372,100 @@ func TestGroupValidation(t *testing.T) {
 		if err := Validate(rs); err == nil {
 			t.Errorf("case %d: want an error", i)
 		}
+	}
+}
+
+// limitRuleset: two limit profiles (P9b). lim_0 has every limit and a
+// schedule; lim_1 only caps the download.
+func limitRuleset() Ruleset {
+	rs := Ruleset{
+		SSHPorts: []uint16{22}, EgressInterface: "eth0",
+		Networks: []VPNNetwork{{Interface: "wg1", CIDR: netip.MustParsePrefix("10.20.0.0/24"), ListenPort: 51821}},
+		Limits: []Limit{
+			{Name: "lim_0", ID: "office", Members: []netip.Addr{netip.MustParseAddr("10.20.0.6"), netip.MustParseAddr("10.20.0.5")},
+				UpBytes: 125000, DownBytes: 250000, MaxConns: 50,
+				Windows: []TimeWindow{
+					{Day: time.Monday, From: 4 * 3600, To: 14 * 3600},
+					{Day: time.Sunday, From: 22 * 3600, To: 24 * 3600},
+				}},
+			{Name: "lim_1", ID: "guests", Members: []netip.Addr{netip.MustParseAddr("10.20.0.9")}, DownBytes: 62500},
+		},
+	}
+	return rs
+}
+
+func TestLimitsCompile(t *testing.T) {
+	got, err := Compile(limitRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{
+		"set lim_0 {\n\t\ttype ipv4_addr\n\t\telements = { 10.20.0.5, 10.20.0.6 }\n\t}",
+		"set lim_0_up {\n\t\ttype ipv4_addr\n\t\tsize 65535\n\t\tflags dynamic, timeout\n\t\ttimeout 1m\n\t}",
+		"set lim_0_ct {\n\t\ttype ipv4_addr\n\t\tsize 65535\n\t\tflags dynamic\n\t}",
+		// Limits come before established traffic is accepted, so they also
+		// cover connections that already exist.
+		"\t\tjump limits\n\t\tct state established,related accept",
+		`ip saddr @lim_0 jump lim_0_time`,
+		`ip daddr @lim_0 jump lim_0_time`,
+		`ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 125000 bytes } counter drop comment "limit:office:up"`,
+		`ip daddr @lim_0 update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 250000 bytes } counter drop comment "limit:office:down"`,
+		`ct state new ip saddr @lim_0 add @lim_0_ct { ip saddr ct count over 50 } counter drop comment "limit:office:conn"`,
+		"chain lim_0_time {\n" +
+			"\t\tmeta day \"Sunday\" meta hour \"22:00:00\"-\"23:59:59\" return\n" +
+			"\t\tmeta day \"Monday\" meta hour \"04:00:00\"-\"13:59:59\" return\n" +
+			"\t\tcounter drop comment \"limit:office:schedule\"\n\t}",
+		`ip daddr @lim_1 update @lim_1_down { ip daddr limit rate over 62500 bytes/second burst 62500 bytes } counter drop comment "limit:guests:down"`,
+	} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing:\n%s\n--- got ---\n%s", s, got)
+		}
+	}
+	// lim_1 has no upload cap, connection cap or schedule.
+	for _, s := range []string{"lim_1_up", "lim_1_ct", "lim_1_time", "set lim_1_up"} {
+		if strings.Contains(got, s) {
+			t.Errorf("lim_1 must not have %s", s)
+		}
+	}
+	if os.Getenv("NFT_CHECK") == "1" {
+		cmd := exec.Command("nft", "-c", "-f", "-")
+		cmd.Stdin = strings.NewReader(got)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("nft -c: %v\n%s", err, out)
+		}
+	}
+}
+
+// Without limits the forward chain is unchanged: no limits chain, no jump.
+func TestNoLimitsNoChain(t *testing.T) {
+	got, err := Compile(fullRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(got, "limits") {
+		t.Errorf("a ruleset without limits must not mention them:\n%s", got)
+	}
+}
+
+func TestLimitValidation(t *testing.T) {
+	member := []netip.Addr{netip.MustParseAddr("10.20.0.5")}
+	bad := []Limit{
+		{Name: "office", ID: "x", Members: member, UpBytes: 1},                                          // not lim_<n>
+		{Name: "lim_0", ID: "bad id!", Members: member, UpBytes: 1},                                     // id
+		{Name: "lim_0", ID: "x", Members: []netip.Addr{netip.MustParseAddr("2001:db8::1")}, UpBytes: 1}, // IPv6
+		{Name: "lim_0", ID: "x", Members: member, Windows: []TimeWindow{{Day: time.Monday, From: 10, To: 10}}},
+		{Name: "lim_0", ID: "x", Members: member, Windows: []TimeWindow{{Day: time.Monday, From: 0, To: 86401}}},
+		{Name: "lim_0", ID: "x", Members: member, Windows: []TimeWindow{{Day: 7, From: 0, To: 60}}},
+	}
+	for i, l := range bad {
+		rs := Ruleset{SSHPorts: []uint16{22}, EgressInterface: "eth0", Limits: []Limit{l}}
+		if err := Validate(rs); err == nil {
+			t.Errorf("case %d: want an error", i)
+		}
+	}
+	dup := Ruleset{SSHPorts: []uint16{22}, EgressInterface: "eth0",
+		Limits: []Limit{{Name: "lim_0", ID: "a", UpBytes: 1}, {Name: "lim_0", ID: "b", UpBytes: 1}}}
+	if err := Validate(dup); err == nil {
+		t.Error("duplicate limit names: want an error")
 	}
 }

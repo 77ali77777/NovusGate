@@ -67,6 +67,8 @@ ConditionPathExists=$NFT_RULESET
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+# Schedules (meta hour) in the ruleset are UTC times.
+Environment=TZ=UTC
 ExecStart=/usr/sbin/nft -f $NFT_RULESET
 
 [Install]

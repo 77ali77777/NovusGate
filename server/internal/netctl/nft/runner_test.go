@@ -19,3 +19,13 @@ func TestRunSeparatesStdoutAndStderr(t *testing.T) {
 		t.Fatalf("stdout must still be returned on failure, got %q", out)
 	}
 }
+
+// nft parses and lists meta hour in the process's time zone; the control
+// plane compiles schedules in UTC, so every nft it runs must use UTC.
+func TestRunUsesUTC(t *testing.T) {
+	t.Setenv("TZ", "Asia/Baku")
+	out, err := run("", "sh", "-c", `printf %s "$TZ"`)
+	if err != nil || out != "UTC" {
+		t.Fatalf("TZ in the child = %q, %v; want UTC", out, err)
+	}
+}

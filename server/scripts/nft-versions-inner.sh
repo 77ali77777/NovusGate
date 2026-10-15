@@ -10,6 +10,9 @@ case "$STEP" in
   snapshot)
     nft -f full.nft
     nft list table inet novusgate > /out/snapshot.nft
+    # Limit profiles (P9b): meters, ct count and schedules must round-trip.
+    nft -f limits.nft
+    nft list table inet novusgate > /out/snapshot-limits.nft
     ;;
   check)
     for f in *.nft; do
@@ -19,5 +22,8 @@ case "$STEP" in
     { echo "table inet novusgate"; echo "delete table inet novusgate"; cat /out/snapshot.nft; } > /tmp/restore.nft
     nft -c -f /tmp/restore.nft
     echo "ok snapshot from nft 1.0.9"
+    { echo "table inet novusgate"; echo "delete table inet novusgate"; cat /out/snapshot-limits.nft; } > /tmp/restore-limits.nft
+    nft -c -f /tmp/restore-limits.nft
+    echo "ok limits snapshot from nft 1.0.9"
     ;;
 esac

@@ -31,6 +31,7 @@ func Compile(rs Ruleset, now time.Time) (string, error) {
 	writeInput(b, rs)
 	writeForward(b, rs)
 	writeVPNPolicy(b, rs)
+	writeLimits(b, rs)
 	writeNAT(b, rs)
 	b.line(0, "}")
 	return b.String(), nil
@@ -68,6 +69,24 @@ func writeSets(b *builder, rs Ruleset, now time.Time) {
 	sort.Slice(groups, func(i, j int) bool { return groups[i].Name < groups[j].Name })
 	for _, g := range groups {
 		b.set(g.Name, "ipv4_addr", nil, addrElems(g.Members))
+	}
+	// Limit profiles (P9b): the members, and per-member meters.
+	for _, l := range sortedLimits(rs.Limits) {
+		b.set(l.Name, "ipv4_addr", nil, addrElems(l.Members))
+		if l.UpBytes > 0 {
+			meterSet(b, l.Name+"_up")
+		}
+		if l.DownBytes > 0 {
+			meterSet(b, l.Name+"_down")
+		}
+		if l.MaxConns > 0 {
+			// ct count needs a dynamic set without timeouts.
+			b.line(1, "set "+l.Name+"_ct {")
+			b.line(2, "type ipv4_addr")
+			b.line(2, "size "+strconv.Itoa(limitSetSize))
+			b.line(2, "flags dynamic")
+			b.line(1, "}")
+		}
 	}
 	// Sources of packets the input policy drops, kept for an hour (Live view).
 	for _, d := range [][2]string{{"dropped_v4", "ipv4_addr"}, {"dropped_v6", "ipv6_addr"}} {
@@ -173,6 +192,10 @@ func writeForward(b *builder, rs Ruleset) {
 	b.line(2, "type filter hook forward priority filter - 10; policy accept;")
 	b.line(2, "ip saddr @blocked_v4 counter drop")
 	b.line(2, "ip6 saddr @blocked_v6 counter drop")
+	// Limits also cover connections that already exist.
+	if len(rs.Limits) > 0 {
+		b.line(2, "jump limits")
+	}
 	b.line(2, "ct state established,related accept")
 	// Docker publishes postgres on all addresses and DNATs it to the
 	// container, so it passes forward, not input: the admin VPN keeps access,
@@ -225,6 +248,82 @@ func vpnRuleLine(r VPNRule) string {
 	}
 	parts = append(parts, "counter", r.Action, fmt.Sprintf("comment %q", "rule:"+r.ID))
 	return strings.Join(parts, " ")
+}
+
+// limitSetSize caps the per-member meter sets of one limit profile.
+const limitSetSize = 65535
+
+// meterSet declares a per-address rate meter; idle addresses expire.
+func meterSet(b *builder, name string) {
+	b.line(1, "set "+name+" {")
+	b.line(2, "type ipv4_addr")
+	b.line(2, "size "+strconv.Itoa(limitSetSize))
+	b.line(2, "flags dynamic, timeout")
+	b.line(2, "timeout 1m")
+	b.line(1, "}")
+}
+
+func sortedLimits(limits []Limit) []Limit {
+	out := append([]Limit(nil), limits...)
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+// writeLimits renders the limits chain (jumped to from forward) and one
+// schedule chain per profile with time windows. Rates are policed: packets
+// above the rate, after a one-second burst, are dropped.
+func writeLimits(b *builder, rs Ruleset) {
+	if len(rs.Limits) == 0 {
+		return
+	}
+	limits := sortedLimits(rs.Limits)
+	b.line(1, "chain limits {")
+	for _, l := range limits {
+		if len(l.Windows) > 0 {
+			b.line(2, fmt.Sprintf("ip saddr @%s jump %s_time", l.Name, l.Name))
+			b.line(2, fmt.Sprintf("ip daddr @%s jump %s_time", l.Name, l.Name))
+		}
+		if l.UpBytes > 0 {
+			b.line(2, fmt.Sprintf("ip saddr @%[1]s update @%[1]s_up { ip saddr limit rate over %[2]d bytes/second burst %[2]d bytes } counter drop comment %[3]q",
+				l.Name, l.UpBytes, "limit:"+l.ID+":up"))
+		}
+		if l.DownBytes > 0 {
+			b.line(2, fmt.Sprintf("ip daddr @%[1]s update @%[1]s_down { ip daddr limit rate over %[2]d bytes/second burst %[2]d bytes } counter drop comment %[3]q",
+				l.Name, l.DownBytes, "limit:"+l.ID+":down"))
+		}
+		if l.MaxConns > 0 {
+			b.line(2, fmt.Sprintf("ct state new ip saddr @%[1]s add @%[1]s_ct { ip saddr ct count over %[2]d } counter drop comment %[3]q",
+				l.Name, l.MaxConns, "limit:"+l.ID+":conn"))
+		}
+	}
+	b.line(1, "}")
+	for _, l := range limits {
+		if len(l.Windows) == 0 {
+			continue
+		}
+		b.line(1, "chain "+l.Name+"_time {")
+		for _, w := range sortedWindows(l.Windows) {
+			b.line(2, fmt.Sprintf("meta day %q meta hour %q-%q return", w.Day.String(), clock(w.From), clock(w.To-1)))
+		}
+		b.line(2, fmt.Sprintf("counter drop comment %q", "limit:"+l.ID+":schedule"))
+		b.line(1, "}")
+	}
+}
+
+func sortedWindows(in []TimeWindow) []TimeWindow {
+	out := append([]TimeWindow(nil), in...)
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Day != out[j].Day {
+			return out[i].Day < out[j].Day
+		}
+		return out[i].From < out[j].From
+	})
+	return out
+}
+
+// clock renders seconds since midnight as HH:MM:SS.
+func clock(secs int) string {
+	return fmt.Sprintf("%02d:%02d:%02d", secs/3600, secs%3600/60, secs%60)
 }
 
 func writeNAT(b *builder, rs Ruleset) {

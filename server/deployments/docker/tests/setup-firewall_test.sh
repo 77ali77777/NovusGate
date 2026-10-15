@@ -213,6 +213,8 @@ for mode in "" nft; do
   assert_has "$unit" "ConditionPathExists=$d/firewall.nft" "boot unit"
   assert_has "$unit" "Before=network-pre.target docker.service" "boot unit"
   assert_has "$unit" "ExecStart=/usr/sbin/nft -f $d/firewall.nft" "boot unit"
+  # schedules (meta hour) in the ruleset are UTC times
+  assert_has "$unit" "Environment=TZ=UTC" "boot unit"
   assert_has "$d/calls.log" "systemctl enable novusgate-firewall.service" "boot unit"
   assert_not "$d/calls.log" "enable nftables" "boot unit"
 done

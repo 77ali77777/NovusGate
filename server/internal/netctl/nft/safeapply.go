@@ -219,6 +219,9 @@ func (t SystemdTimer) Arm(rollbackScript string, after time.Duration) error {
 		"--unit="+t.Unit,
 		fmt.Sprintf("--on-active=%ds", secs),
 		"--timer-property=AccuracySec=1s",
+		// Schedules in the snapshot are UTC (see run); the unit does not
+		// inherit our environment.
+		"--setenv=TZ=UTC",
 		"nft", "-f", t.Path); err != nil {
 		return fmt.Errorf("systemd-run: %w", err)
 	}

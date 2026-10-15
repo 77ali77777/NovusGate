@@ -84,6 +84,28 @@ type Group struct {
 	Members []netip.Addr
 }
 
+// Limit is a limit profile (P9b) applied to each member separately: every
+// member gets its own rate and connection budget. Name is lim_<n>.
+type Limit struct {
+	Name      string
+	ID        string // profile id, for rule comments
+	Members   []netip.Addr
+	UpBytes   uint64 // bytes/second each member may send; 0 = unlimited
+	DownBytes uint64 // bytes/second each member may receive; 0 = unlimited
+	MaxConns  uint32 // concurrent connections each member may open; 0 = unlimited
+	// Windows are the times traffic is allowed, in UTC; empty means always.
+	Windows []TimeWindow
+}
+
+// TimeWindow is an allowed interval within one UTC day, [From, To) in
+// seconds since midnight. nft compares meta day and meta hour in UTC (nft
+// itself must run with TZ=UTC so hours are not shifted).
+type TimeWindow struct {
+	Day  time.Weekday
+	From int
+	To   int
+}
+
 type IPRule struct {
 	ID     string
 	Prefix netip.Prefix
@@ -104,6 +126,7 @@ type Ruleset struct {
 	IPRules         []IPRule
 	Egress          []netip.Addr // full-tunnel nodes allowed to reach the internet
 	Groups          []Group
+	Limits          []Limit
 }
 
 const (

@@ -275,7 +275,8 @@ func TestSystemdTimerArmWritesOnHostAndSchedules(t *testing.T) {
 	if r.stdins["tee "+rollbackPath] != "SNAP" {
 		t.Fatal("the rollback script must be written through the host runner")
 	}
-	want := "systemd-run --unit=novusgate-fw-rollback --on-active=75s --timer-property=AccuracySec=1s nft -f " + rollbackPath
+	// TZ=UTC: schedules (meta hour) in the snapshot are UTC times.
+	want := "systemd-run --unit=novusgate-fw-rollback --on-active=75s --timer-property=AccuracySec=1s --setenv=TZ=UTC nft -f " + rollbackPath
 	if r.calls[len(r.calls)-1] != want {
 		t.Fatalf("got %q\nwant %q", r.calls[len(r.calls)-1], want)
 	}
