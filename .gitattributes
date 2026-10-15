@@ -7,3 +7,5 @@
 # Contract snapshots, OpenAPI and nft goldens are compared byte for byte;
 # a CRLF checkout on Windows would make every golden test fail.
 server/**/testdata/** text eol=lf
+# Generated from the OpenAPI document; tests/openapi.test.mjs compares it byte for byte.
+web/src/api/openapi.d.ts text eol=lf
