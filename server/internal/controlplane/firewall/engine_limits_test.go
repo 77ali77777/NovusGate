@@ -40,7 +40,7 @@ func TestEngineAppliesLimitsAndReloadsAtOffsetChange(t *testing.T) {
 	applied := h.r.applied[len(h.r.applied)-1]
 	for _, s := range []string{
 		"jump limits",
-		`update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 250000 bytes }`,
+		`update @lim_0_down { ip daddr limit rate over 250000 bytes/second burst 62500 bytes }`,
 		// 09:00 EDT is 13:00 UTC until November 1st.
 		`meta day "Tuesday" meta hour "13:00:00"-"20:59:59" return`,
 	} {

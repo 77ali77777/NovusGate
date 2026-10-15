@@ -269,9 +269,23 @@ func sortedLimits(limits []Limit) []Limit {
 	return out
 }
 
+// minBurst keeps a few full-size packets in the bucket at low rates.
+const minBurst = 16384
+
+// limitBurst is the burst above the rate a meter allows. The kernel's bucket
+// holds rate+burst bytes, so a burst equal to the rate let a fresh flow send
+// twice the rate in its first second (measured: 8 Mbit/s became 10.9 over
+// 5 s, and 8.0 once the first 2 s were left out).
+func limitBurst(rate uint64) uint64 {
+	if b := rate / 4; b > minBurst {
+		return b
+	}
+	return minBurst
+}
+
 // writeLimits renders the limits chain (jumped to from forward) and one
 // schedule chain per profile with time windows. Rates are policed: packets
-// above the rate, after a one-second burst, are dropped.
+// above the rate, after a short burst, are dropped.
 func writeLimits(b *builder, rs Ruleset) {
 	if len(rs.Limits) == 0 {
 		return
@@ -284,12 +298,12 @@ func writeLimits(b *builder, rs Ruleset) {
 			b.line(2, fmt.Sprintf("ip daddr @%s jump %s_time", l.Name, l.Name))
 		}
 		if l.UpBytes > 0 {
-			b.line(2, fmt.Sprintf("ip saddr @%[1]s update @%[1]s_up { ip saddr limit rate over %[2]d bytes/second burst %[2]d bytes } counter drop comment %[3]q",
-				l.Name, l.UpBytes, "limit:"+l.ID+":up"))
+			b.line(2, fmt.Sprintf("ip saddr @%[1]s update @%[1]s_up { ip saddr limit rate over %[2]d bytes/second burst %[3]d bytes } counter drop comment %[4]q",
+				l.Name, l.UpBytes, limitBurst(l.UpBytes), "limit:"+l.ID+":up"))
 		}
 		if l.DownBytes > 0 {
-			b.line(2, fmt.Sprintf("ip daddr @%[1]s update @%[1]s_down { ip daddr limit rate over %[2]d bytes/second burst %[2]d bytes } counter drop comment %[3]q",
-				l.Name, l.DownBytes, "limit:"+l.ID+":down"))
+			b.line(2, fmt.Sprintf("ip daddr @%[1]s update @%[1]s_down { ip daddr limit rate over %[2]d bytes/second burst %[3]d bytes } counter drop comment %[4]q",
+				l.Name, l.DownBytes, limitBurst(l.DownBytes), "limit:"+l.ID+":down"))
 		}
 		if l.MaxConns > 0 {
 			b.line(2, fmt.Sprintf("ct state new ip saddr @%[1]s add @%[1]s_ct { ip saddr ct count over %[2]d } counter drop comment %[3]q",
