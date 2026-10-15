@@ -106,6 +106,9 @@ func decodeLimitRequest(w http.ResponseWriter, r *http.Request) (models.LimitPro
 	return p, true
 }
 
+// EnforcesLimits reports whether limits and quotas are applied (nft mode).
+func (s *Server) EnforcesLimits() bool { return s.engineEnforces() }
+
 // ApplyLimits re-applies the firewall for the quota tracker (P9c), when a
 // node becomes blocked or free.
 func (s *Server) ApplyLimits(ctx context.Context) { s.applyLimits(ctx) }
@@ -252,16 +255,21 @@ func (s *Server) handleSetLimitBindings(w http.ResponseWriter, r *http.Request) 
 }
 
 // handleResetQuota starts a node's quota count again and lifts a block or
-// throttle at once (P9c); 404 when the node has no count.
+// throttle at once (P9c). A node without a count has nothing to reset (204);
+// an unknown node is 404.
 func (s *Server) handleResetQuota(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if _, err := uuid.Parse(id); err != nil {
-		errorResponse(w, http.StatusNotFound, "no quota count for this node")
+		errorResponse(w, http.StatusNotFound, "node not found")
 		return
 	}
 	if err := s.store.ResetQuotaState(r.Context(), id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			errorResponse(w, http.StatusNotFound, "no quota count for this node")
+			if n, err := s.store.GetNode(r.Context(), id); err != nil || n == nil {
+				errorResponse(w, http.StatusNotFound, "node not found")
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		limitStoreError(w, err)

@@ -214,8 +214,8 @@ func quotaDefaults(p *models.LimitProfile) {
 
 // ListQuotaStates returns every node's quota count (P9c).
 func (s *Store) ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT node_id, period_start, used_bytes, last_rx, last_tx,
-		warned_at, exceeded_at FROM node_quota_state ORDER BY node_id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT node_id, period_start, period_end, used_bytes, last_rx, last_tx,
+		warned_at, exceeded_at, updated_at FROM node_quota_state ORDER BY node_id`)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,8 @@ func (s *Store) ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, e
 	for rows.Next() {
 		var st models.NodeQuotaState
 		var warned, exceeded sql.NullTime
-		if err := rows.Scan(&st.NodeID, &st.PeriodStart, &st.UsedBytes, &st.LastRx, &st.LastTx, &warned, &exceeded); err != nil {
+		if err := rows.Scan(&st.NodeID, &st.PeriodStart, &st.PeriodEnd, &st.UsedBytes, &st.LastRx, &st.LastTx,
+			&warned, &exceeded, &st.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if warned.Valid {
@@ -241,12 +242,42 @@ func (s *Store) ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, e
 // SaveQuotaState stores a node's count, replacing the previous one.
 func (s *Store) SaveQuotaState(ctx context.Context, st models.NodeQuotaState) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO node_quota_state
-		(node_id, period_start, used_bytes, last_rx, last_tx, warned_at, exceeded_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-		ON CONFLICT (node_id) DO UPDATE SET period_start = EXCLUDED.period_start,
+		(node_id, period_start, period_end, used_bytes, last_rx, last_tx, warned_at, exceeded_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
+		ON CONFLICT (node_id) DO UPDATE SET period_start = EXCLUDED.period_start, period_end = EXCLUDED.period_end,
 			used_bytes = EXCLUDED.used_bytes, last_rx = EXCLUDED.last_rx, last_tx = EXCLUDED.last_tx,
-			warned_at = EXCLUDED.warned_at, exceeded_at = EXCLUDED.exceeded_at, updated_at = NOW()`,
-		st.NodeID, st.PeriodStart, st.UsedBytes, st.LastRx, st.LastTx, st.WarnedAt, st.ExceededAt)
+			warned_at = EXCLUDED.warned_at, exceeded_at = EXCLUDED.exceeded_at, updated_at = clock_timestamp()`,
+		st.NodeID, st.PeriodStart, st.PeriodEnd, st.UsedBytes, st.LastRx, st.LastTx, st.WarnedAt, st.ExceededAt)
+	return err
+}
+
+// SaveQuotaStateIf writes st only if the stored row is still the one that
+// was read: prev is its updated_at, nil when there was no row. It returns
+// false when another writer (a reset) came first.
+func (s *Store) SaveQuotaStateIf(ctx context.Context, st models.NodeQuotaState, prev *time.Time) (bool, error) {
+	var res sql.Result
+	var err error
+	if prev == nil {
+		res, err = s.db.ExecContext(ctx, `INSERT INTO node_quota_state
+			(node_id, period_start, period_end, used_bytes, last_rx, last_tx, warned_at, exceeded_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp()) ON CONFLICT (node_id) DO NOTHING`,
+			st.NodeID, st.PeriodStart, st.PeriodEnd, st.UsedBytes, st.LastRx, st.LastTx, st.WarnedAt, st.ExceededAt)
+	} else {
+		res, err = s.db.ExecContext(ctx, `UPDATE node_quota_state SET period_start = $2, period_end = $3,
+			used_bytes = $4, last_rx = $5, last_tx = $6, warned_at = $7, exceeded_at = $8, updated_at = clock_timestamp()
+			WHERE node_id = $1 AND updated_at = $9`,
+			st.NodeID, st.PeriodStart, st.PeriodEnd, st.UsedBytes, st.LastRx, st.LastTx, st.WarnedAt, st.ExceededAt, *prev)
+	}
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n == 1, err
+}
+
+// DeleteQuotaState drops a node's count (the node no longer has a quota).
+func (s *Store) DeleteQuotaState(ctx context.Context, nodeID string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM node_quota_state WHERE node_id = $1`, nodeID)
 	return err
 }
 
@@ -254,7 +285,7 @@ func (s *Store) SaveQuotaState(ctx context.Context, st models.NodeQuotaState) er
 // lifts its quota ("reset now" in the panel); sql.ErrNoRows without a count.
 func (s *Store) ResetQuotaState(ctx context.Context, nodeID string) error {
 	res, err := s.db.ExecContext(ctx, `UPDATE node_quota_state SET used_bytes = 0, warned_at = NULL,
-		exceeded_at = NULL, updated_at = NOW() WHERE node_id = $1`, nodeID)
+		exceeded_at = NULL, updated_at = clock_timestamp() WHERE node_id = $1`, nodeID)
 	if err != nil {
 		return err
 	}

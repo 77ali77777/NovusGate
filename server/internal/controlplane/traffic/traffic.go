@@ -88,11 +88,16 @@ type Sampler struct {
 // interface that cannot be read (down) is skipped: its nodes get no sample.
 func (s *Sampler) RunOnce(ctx context.Context) error {
 	now := s.Now()
+	// After runs on every run, also a failed one (with what was read, or
+	// nothing), so quota periods roll over while sampling fails.
+	var samples []Sample
+	if s.After != nil {
+		defer func() { s.After(ctx, samples) }()
+	}
 	networks, err := s.Store.ListNetworks(ctx)
 	if err != nil {
 		return err
 	}
-	var samples []Sample
 	for _, n := range networks {
 		peers, err := s.Peers(n.InterfaceName)
 		if err != nil {
@@ -101,6 +106,7 @@ func (s *Sampler) RunOnce(ctx context.Context) error {
 		}
 		nodes, err := s.Store.ListNodes(ctx, n.ID)
 		if err != nil {
+			samples = nil // a partial run counts nothing
 			return err
 		}
 		for _, node := range nodes {
@@ -113,9 +119,6 @@ func (s *Sampler) RunOnce(ctx context.Context) error {
 		if err := s.Store.InsertTrafficSamples(ctx, samples); err != nil {
 			return err
 		}
-	}
-	if s.After != nil {
-		s.After(ctx, samples)
 	}
 	_, err = s.Store.DeleteTrafficSamplesBefore(ctx, now.Add(-s.Retention))
 	return err

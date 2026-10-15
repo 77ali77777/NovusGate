@@ -188,21 +188,26 @@ func TestApplyQuotas(t *testing.T) {
 	profiles := []models.LimitProfile{
 		{ID: "block-p", Name: "b", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"},
 		{ID: "slow-p", Name: "s", QuotaMB: &q, QuotaAction: "throttle", ThrottleKbps: &throttle, QuotaResetDay: 1,
-			MaxConnections: intp(9), Timezone: "UTC"},
+			MaxConnections: intp(9), DownKbps: intp(128), Timezone: "UTC"},
 	}
 	nodes := []models.NodeLimit{
 		{NodeID: "n1", VirtualIP: "10.1.0.1", ProfileID: "block-p"},
 		{NodeID: "n2", VirtualIP: "10.1.0.2", ProfileID: "slow-p"},
 		{NodeID: "n3", VirtualIP: "10.1.0.3", ProfileID: "slow-p"},
 		{NodeID: "n4", VirtualIP: "10.1.0.4", ProfileID: "block-p"},
+		{NodeID: "n5", VirtualIP: "10.1.0.5", ProfileID: "block-p"},
 	}
 	period := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
 	over := now.Add(-time.Hour)
 	states := []models.NodeQuotaState{
-		{NodeID: "n1", PeriodStart: period, ExceededAt: &over},
-		{NodeID: "n2", PeriodStart: period, ExceededAt: &over},
-		{NodeID: "n3", PeriodStart: period},                                                         // under quota
-		{NodeID: "n4", PeriodStart: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), ExceededAt: &over}, // last period
+		{NodeID: "n1", PeriodStart: period, PeriodEnd: end, UsedBytes: 2e9, ExceededAt: &over},
+		{NodeID: "n2", PeriodStart: period, PeriodEnd: end, UsedBytes: 2e9, ExceededAt: &over},
+		{NodeID: "n3", PeriodStart: period, PeriodEnd: end, UsedBytes: 1}, // under quota
+		// last period: ended, whatever it says
+		{NodeID: "n4", PeriodStart: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), PeriodEnd: period, UsedBytes: 2e9, ExceededAt: &over},
+		// marked, but the quota was raised above the use since
+		{NodeID: "n5", PeriodStart: period, PeriodEnd: end, UsedBytes: 5e8, ExceededAt: &over},
 	}
 	limits, _ := LimitsFromModels(profiles, nodes, now)
 	limits, blocked := ApplyQuotas(limits, profiles, nodes, states, now)
@@ -225,7 +230,7 @@ func TestApplyQuotas(t *testing.T) {
 		t.Errorf("slow members = %v, want only n3", slow.Members)
 	}
 	if len(throttled.Members) != 1 || throttled.Members[0].String() != "10.1.0.2" ||
-		throttled.UpBytes != 32000 || throttled.DownBytes != 32000 || throttled.MaxConns != 9 || throttled.Name != "lim_2" {
+		throttled.UpBytes != 32000 || throttled.DownBytes != 16000 || throttled.MaxConns != 9 || throttled.Name != "lim_2" {
 		t.Errorf("throttled = %+v", throttled)
 	}
 }

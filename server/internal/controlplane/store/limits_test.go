@@ -200,3 +200,46 @@ func TestQuotaFieldsAndState(t *testing.T) {
 		t.Errorf("reset unknown = %v", err)
 	}
 }
+
+// The tracker writes only if the row is still the one it read, so a reset
+// in between is not undone; counts can be deleted.
+func TestQuotaStateConditionalSaveAndDelete(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	_, a, _ := groupFixture(t, s)
+	s.db.ExecContext(ctx, "DELETE FROM node_quota_state")
+	start := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+
+	ok, err := s.SaveQuotaStateIf(ctx, models.NodeQuotaState{NodeID: a.ID, PeriodStart: start, PeriodEnd: end, UsedBytes: 1}, nil)
+	if err != nil || !ok {
+		t.Fatalf("first save = %v %v", ok, err)
+	}
+	if ok, _ := s.SaveQuotaStateIf(ctx, models.NodeQuotaState{NodeID: a.ID, PeriodStart: start, PeriodEnd: end}, nil); ok {
+		t.Fatal("a second insert without prev must be refused")
+	}
+	states, _ := s.ListQuotaStates(ctx)
+	read := states[0]
+	if !read.PeriodEnd.Equal(end) || read.UpdatedAt.IsZero() {
+		t.Fatalf("read = %+v", read)
+	}
+	if err := s.ResetQuotaState(ctx, a.ID); err != nil { // a concurrent reset
+		t.Fatal(err)
+	}
+	if ok, _ := s.SaveQuotaStateIf(ctx, models.NodeQuotaState{NodeID: a.ID, PeriodStart: start, PeriodEnd: end, UsedBytes: 50}, &read.UpdatedAt); ok {
+		t.Fatal("a write based on a stale read must be refused")
+	}
+	states, _ = s.ListQuotaStates(ctx)
+	if states[0].UsedBytes != 0 {
+		t.Fatalf("the reset was undone: %+v", states[0])
+	}
+	if ok, err := s.SaveQuotaStateIf(ctx, models.NodeQuotaState{NodeID: a.ID, PeriodStart: start, PeriodEnd: end, UsedBytes: 7}, &states[0].UpdatedAt); !ok || err != nil {
+		t.Fatalf("a fresh write = %v %v", ok, err)
+	}
+	if err := s.DeleteQuotaState(ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	if states, _ = s.ListQuotaStates(ctx); len(states) != 0 {
+		t.Fatalf("after delete = %v", states)
+	}
+}

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/novusgate/novusgate/internal/controlplane/quota"
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
@@ -248,18 +247,9 @@ func ApplyQuotas(limits []nft.Limit, profiles []models.LimitProfile, nodes []mod
 	for _, n := range nodes {
 		p, ok := byID[n.ProfileID]
 		st, has := stateOf[n.NodeID]
-		if !ok || p.QuotaMB == nil || !has || st.ExceededAt == nil {
-			continue
-		}
-		loc, err := time.LoadLocation(p.Timezone)
-		if err != nil {
-			continue // LimitsFromModels already reported it
-		}
-		resetDay := p.QuotaResetDay
-		if resetDay == 0 {
-			resetDay = 1
-		}
-		if !st.PeriodStart.Equal(quota.PeriodStart(now, resetDay, loc)) {
+		// Over the current quota in a period that has not ended: the use is
+		// compared with the quota now, so raising it lets the node go.
+		if !ok || p.QuotaMB == nil || !has || !now.Before(st.PeriodEnd) || st.UsedBytes < int64(*p.QuotaMB)*1_000_000 {
 			continue
 		}
 		addr, err := netip.ParseAddr(n.VirtualIP)
@@ -299,9 +289,19 @@ func ApplyQuotas(limits []nft.Limit, profiles []models.LimitProfile, nodes []mod
 		l := nft.Limit{Name: fmt.Sprintf("lim_%d", len(limits)), ID: id + ":quota", Members: throttled[id],
 			UpBytes: rate, DownBytes: rate}
 		if base != nil {
+			// Slowing down never makes a node faster than its profile.
+			l.UpBytes, l.DownBytes = slower(rate, base.UpBytes), slower(rate, base.DownBytes)
 			l.MaxConns, l.Windows = base.MaxConns, base.Windows
 		}
 		limits = append(limits, l)
 	}
 	return limits, blocked
+}
+
+// slower is the lower of two rates; 0 (no limit) never wins.
+func slower(rate, base uint64) uint64 {
+	if base > 0 && base < rate {
+		return base
+	}
+	return rate
 }

@@ -64,9 +64,12 @@ type fakeStore struct {
 	nodes    map[string][]*models.Node
 	inserted []Sample
 	cutoff   time.Time
+	listErr  error
 }
 
-func (f *fakeStore) ListNetworks(context.Context) ([]*models.Network, error) { return f.networks, nil }
+func (f *fakeStore) ListNetworks(context.Context) ([]*models.Network, error) {
+	return f.networks, f.listErr
+}
 func (f *fakeStore) ListNodes(_ context.Context, id string) ([]*models.Node, error) {
 	return f.nodes[id], nil
 }
@@ -136,5 +139,17 @@ func TestSamplerCallsAfter(t *testing.T) {
 	}
 	if len(got) != 2 || len(got[0]) != 1 || got[0][0].Rx != 7 || len(got[1]) != 0 {
 		t.Fatalf("After got %+v", got)
+	}
+}
+
+// A failed run still calls After (with no samples), so quota periods roll
+// over and blocks are lifted even while sampling fails.
+func TestSamplerCallsAfterOnError(t *testing.T) {
+	st := &fakeStore{listErr: errors.New("database down")}
+	called := false
+	s := &Sampler{Store: st, Now: func() time.Time { return t0 }, Retention: time.Hour,
+		After: func(_ context.Context, samples []Sample) { called = len(samples) == 0 }}
+	if err := s.RunOnce(context.Background()); err == nil || !called {
+		t.Fatalf("err = %v, After called with no samples = %v", err, called)
 	}
 }

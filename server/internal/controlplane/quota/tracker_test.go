@@ -15,6 +15,10 @@ type fakeStore struct {
 	limits   []models.NodeLimit
 	states   map[string]models.NodeQuotaState
 	saves    int
+	deleted  []string
+	// beforeSave runs inside SaveQuotaStateIf, as a concurrent writer would.
+	beforeSave func()
+	clock      time.Time
 }
 
 func (f *fakeStore) ListLimitProfiles(context.Context) ([]models.LimitProfile, error) {
@@ -28,9 +32,24 @@ func (f *fakeStore) ListQuotaStates(context.Context) ([]models.NodeQuotaState, e
 	}
 	return out, nil
 }
-func (f *fakeStore) SaveQuotaState(_ context.Context, st models.NodeQuotaState) error {
+func (f *fakeStore) SaveQuotaStateIf(_ context.Context, st models.NodeQuotaState, prev *time.Time) (bool, error) {
+	if f.beforeSave != nil {
+		f.beforeSave()
+		f.beforeSave = nil
+	}
+	cur, has := f.states[st.NodeID]
+	if has != (prev != nil) || (has && !cur.UpdatedAt.Equal(*prev)) {
+		return false, nil // changed since it was read
+	}
 	f.saves++
+	f.clock = f.clock.Add(time.Microsecond)
+	st.UpdatedAt = f.clock
 	f.states[st.NodeID] = st
+	return true, nil
+}
+func (f *fakeStore) DeleteQuotaState(_ context.Context, nodeID string) error {
+	f.deleted = append(f.deleted, nodeID)
+	delete(f.states, nodeID)
 	return nil
 }
 func (f *fakeStore) GetNode(_ context.Context, id string) (*models.Node, error) {
@@ -133,5 +152,50 @@ func TestTrackerSavesOnlyChanges(t *testing.T) {
 	}
 	if h.store.saves != saves {
 		t.Fatalf("saves %d -> %d without a change", saves, h.store.saves)
+	}
+}
+
+// A node without a quota keeps no count: an old baseline would count the
+// traffic it moved meanwhile once a quota comes back.
+func TestTrackerDropsCountsWithoutQuota(t *testing.T) {
+	h := newHarness(t)
+	h.store.states["n2"] = models.NodeQuotaState{NodeID: "n2", UsedBytes: 5}
+	h.sample(0, 0)
+	if _, ok := h.store.states["n2"]; ok || len(h.store.deleted) != 1 {
+		t.Fatalf("n2 count must go: %v", h.store.deleted)
+	}
+}
+
+// A reset (REST) that lands between the tracker's read and write wins: the
+// tracker's write is refused and the next run starts from the reset.
+func TestTrackerDoesNotUndoAConcurrentReset(t *testing.T) {
+	h := newHarness(t)
+	h.sample(0, 0)
+	h.sample(5*time.Minute, 10_000_000) // exceeded
+	h.store.beforeSave = func() {
+		st := h.store.states["n1"]
+		st.UsedBytes, st.ExceededAt, st.WarnedAt = 0, nil, nil
+		h.store.clock = h.store.clock.Add(time.Microsecond)
+		st.UpdatedAt = h.store.clock
+		h.store.states["n1"] = st
+	}
+	h.sample(5*time.Minute, 10_500_000)
+	if st := h.store.states["n1"]; st.UsedBytes != 0 || st.ExceededAt != nil {
+		t.Fatalf("the reset was undone: %+v", st)
+	}
+}
+
+// Raising the quota lifts the block on the next run, without traffic.
+func TestTrackerLiftsWhenTheQuotaIsRaised(t *testing.T) {
+	h := newHarness(t)
+	h.sample(0, 0)
+	h.sample(5*time.Minute, 10_000_000)
+	q := 20
+	h.store.profiles[0].QuotaMB = &q
+	if err := h.tracker.Observe(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if st := h.store.states["n1"]; st.ExceededAt != nil || h.applied != 2 {
+		t.Fatalf("raised quota: %+v applied %d", st, h.applied)
 	}
 }

@@ -179,7 +179,7 @@ func TestGroupChangesReapplyLimits(t *testing.T) {
 func TestLimitQuotaAPI(t *testing.T) {
 	s, _, _ := newContractServer(t)
 	ctx := context.Background()
-	_, a, _ := groupNodes(t, s)
+	_, a, b := groupNodes(t, s)
 	clearLimits(t)
 	clearTable(t, "node_quota_state")
 
@@ -208,6 +208,10 @@ func TestLimitQuotaAPI(t *testing.T) {
 	states, _ := s.store.ListQuotaStates(ctx)
 	if len(states) != 1 || states[0].UsedBytes != 0 || states[0].ExceededAt != nil {
 		t.Fatalf("after reset = %+v", states)
+	}
+	// A node without a count has nothing to reset: still a success.
+	if rec := callAs(t, s, "POST", "/api/v1/nodes/"+b.ID+"/quota/reset", "", true); rec.Code != 204 {
+		t.Errorf("reset without a count = %d %s", rec.Code, rec.Body)
 	}
 	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "not-a-uuid"} {
 		if rec := callAs(t, s, "POST", "/api/v1/nodes/"+id+"/quota/reset", "", true); rec.Code != 404 {

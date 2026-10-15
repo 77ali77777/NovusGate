@@ -148,3 +148,49 @@ func TestReset(t *testing.T) {
 		t.Fatalf("reset = %+v", st)
 	}
 }
+
+// A new count gets its period's end; the period changes only when now
+// reaches it.
+func TestNewCountGetsPeriodEnd(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, tz)
+	st, _ := Advance(State{}, profile(), 0, 0, now)
+	if !st.PeriodEnd.Equal(time.Date(2026, 11, 1, 0, 0, 0, 0, tz)) || !st.PeriodStart.Equal(time.Date(2026, 10, 1, 0, 0, 0, 0, tz)) {
+		t.Fatalf("period = %v - %v", st.PeriodStart, st.PeriodEnd)
+	}
+}
+
+// Raising the quota above what was used lifts the block (and the warning
+// below 80%) at once; lowering it under the use blocks again.
+func TestQuotaChangesAreReEvaluated(t *testing.T) {
+	now := time.Date(2026, 10, 15, 12, 0, 0, 0, tz)
+	st, _ := Advance(State{}, profile(), 0, 0, now)
+	st, _ = Advance(st, profile(), gb(10), 0, now.Add(time.Minute))
+	raised := profile()
+	raised.QuotaBytes = gb(20)
+	st, ev := Rollover(st, raised, now.Add(2*time.Minute))
+	if len(ev) != 1 || ev[0] != Lifted || st.ExceededAt != nil || st.WarnedAt != nil || st.UsedBytes != gb(10) {
+		t.Fatalf("raised: %v %+v", ev, st)
+	}
+	st, ev = Rollover(st, profile(), now.Add(3*time.Minute))
+	if len(ev) != 2 || ev[1] != Exceeded || st.ExceededAt == nil {
+		t.Fatalf("lowered again: %v %+v", ev, st)
+	}
+}
+
+// Changing the reset day (or time zone) mid-period keeps the count; the new
+// setting applies from the next period.
+func TestResetDayChangeKeepsTheCount(t *testing.T) {
+	now := time.Date(2026, 10, 20, 12, 0, 0, 0, tz)
+	st, _ := Advance(State{}, profile(), 0, 0, now)
+	st, _ = Advance(st, profile(), gb(3), 0, now.Add(time.Minute))
+	moved := profile()
+	moved.ResetDay = 15
+	st, ev := Rollover(st, moved, now.Add(time.Hour))
+	if len(ev) != 0 || st.UsedBytes != gb(3) || !st.PeriodEnd.Equal(time.Date(2026, 11, 1, 0, 0, 0, 0, tz)) {
+		t.Fatalf("mid-period: %v %+v", ev, st)
+	}
+	st, _ = Rollover(st, moved, time.Date(2026, 11, 1, 0, 0, 1, 0, tz))
+	if st.UsedBytes != 0 || !st.PeriodEnd.Equal(time.Date(2026, 11, 15, 0, 0, 0, 0, tz)) {
+		t.Fatalf("next period uses the new day: %+v", st)
+	}
+}

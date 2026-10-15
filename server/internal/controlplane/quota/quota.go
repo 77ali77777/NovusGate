@@ -16,12 +16,15 @@ type Profile struct {
 type State struct {
 	NodeID      string
 	PeriodStart time.Time
-	UsedBytes   int64
-	LastRx      int64 // the WireGuard counters of the last sample
-	LastTx      int64
-	HasLast     bool
-	WarnedAt    *time.Time // 80% reached in this period
-	ExceededAt  *time.Time // 100% reached in this period
+	// PeriodEnd is fixed when the period starts: a reset day or time zone
+	// changed later applies from the next period.
+	PeriodEnd  time.Time
+	UsedBytes  int64
+	LastRx     int64 // the WireGuard counters of the last sample
+	LastTx     int64
+	HasLast    bool
+	WarnedAt   *time.Time // 80% reached in this period
+	ExceededAt *time.Time // 100% reached in this period
 }
 
 // Event is what changed with a sample.
@@ -30,7 +33,7 @@ type Event string
 const (
 	Warned   Event = "warned"   // 80% of the quota used
 	Exceeded Event = "exceeded" // the quota is used up
-	Lifted   Event = "lifted"   // an exceeded quota no longer applies (new period)
+	Lifted   Event = "lifted"   // an exceeded quota no longer applies (new period, raised quota, reset)
 )
 
 // WarnPercent is the share of the quota that sends a warning.
@@ -56,43 +59,73 @@ func delta(prev, cur int64) int64 {
 	return cur - prev
 }
 
-// Rollover starts a new period when now is past the stored one. It is
-// applied before every sample and on its own for nodes that send nothing
-// (a blocked node may not), so a block is lifted on time.
-func Rollover(st State, p Profile, now time.Time) (State, []Event) {
-	start := PeriodStart(now, p.ResetDay, p.Loc)
-	if st.PeriodStart.Equal(start) {
+// NextPeriodStart is the start of the period after the one starting at start.
+func NextPeriodStart(start time.Time, resetDay int, loc *time.Location) time.Time {
+	s := start.In(loc)
+	return time.Date(s.Year(), s.Month()+1, resetDay, 0, 0, 0, 0, loc)
+}
+
+// newPeriod starts a period when there is none or now reached the end of
+// the stored one; the new one follows the profile's current settings.
+func newPeriod(st State, p Profile, now time.Time) (State, []Event) {
+	if !st.PeriodEnd.IsZero() && now.Before(st.PeriodEnd) {
 		return st, nil
 	}
 	var events []Event
 	if st.ExceededAt != nil {
 		events = append(events, Lifted)
 	}
-	st.PeriodStart, st.UsedBytes, st.WarnedAt, st.ExceededAt = start, 0, nil, nil
+	start := PeriodStart(now, p.ResetDay, p.Loc)
+	st.PeriodStart, st.PeriodEnd = start, NextPeriodStart(start, p.ResetDay, p.Loc)
+	st.UsedBytes, st.WarnedAt, st.ExceededAt = 0, nil, nil
 	return st, events
+}
+
+// evaluate sets or clears the 80% and 100% marks against the current quota,
+// so raising the quota lifts a block and lowering it blocks.
+func evaluate(st State, p Profile, now time.Time, events []Event) (State, []Event) {
+	if p.QuotaBytes <= 0 {
+		return st, events
+	}
+	at := now
+	warn := st.UsedBytes*100 >= p.QuotaBytes*WarnPercent
+	switch {
+	case warn && st.WarnedAt == nil:
+		st.WarnedAt = &at
+		events = append(events, Warned)
+	case !warn:
+		st.WarnedAt = nil
+	}
+	over := st.UsedBytes >= p.QuotaBytes
+	switch {
+	case over && st.ExceededAt == nil:
+		st.ExceededAt = &at
+		events = append(events, Exceeded)
+	case !over && st.ExceededAt != nil:
+		st.ExceededAt = nil
+		events = append(events, Lifted)
+	}
+	return st, events
+}
+
+// Rollover starts a new period when now reached the end of the stored one
+// and re-checks the count against the current quota. It runs on its own for
+// nodes that send nothing (a blocked node may not), so a block is lifted on
+// time.
+func Rollover(st State, p Profile, now time.Time) (State, []Event) {
+	st, events := newPeriod(st, p, now)
+	return evaluate(st, p, now, events)
 }
 
 // Advance adds one sample (cumulative rx and tx) to the count. The first
 // sample only sets the baseline.
 func Advance(st State, p Profile, rx, tx int64, now time.Time) (State, []Event) {
-	st, events := Rollover(st, p, now)
+	st, events := newPeriod(st, p, now)
 	if st.HasLast {
 		st.UsedBytes += delta(st.LastRx, rx) + delta(st.LastTx, tx)
 	}
 	st.LastRx, st.LastTx, st.HasLast = rx, tx, true
-	if p.QuotaBytes <= 0 {
-		return st, events
-	}
-	at := now
-	if st.WarnedAt == nil && st.UsedBytes*100 >= p.QuotaBytes*WarnPercent {
-		st.WarnedAt = &at
-		events = append(events, Warned)
-	}
-	if st.ExceededAt == nil && st.UsedBytes >= p.QuotaBytes {
-		st.ExceededAt = &at
-		events = append(events, Exceeded)
-	}
-	return st, events
+	return evaluate(st, p, now, events)
 }
 
 // Reset starts the count of the current period again and lifts the quota;

@@ -120,7 +120,8 @@ func TestEngineBlocksNodesOverQuota(t *testing.T) {
 		limitStore: &limitStore{memStore: h.st,
 			profiles: []models.LimitProfile{{ID: "p1", Name: "q", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"}},
 			limits:   []models.NodeLimit{{NodeID: "node-7", VirtualIP: "10.20.0.7", ProfileID: "p1"}}},
-		states: []models.NodeQuotaState{{NodeID: "node-7", PeriodStart: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), ExceededAt: &over}},
+		states: []models.NodeQuotaState{{NodeID: "node-7", PeriodStart: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
+			PeriodEnd: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC), UsedBytes: 2e9, ExceededAt: &over}},
 	}
 	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
 		t.Fatal(err)
@@ -129,5 +130,27 @@ func TestEngineBlocksNodesOverQuota(t *testing.T) {
 	if !strings.Contains(applied, "set quota_v4 {\n\t\ttype ipv4_addr\n\t\telements = { 10.20.0.7 }") ||
 		!strings.Contains(applied, `ip saddr @quota_v4 counter drop comment "quota:block"`) {
 		t.Fatalf("applied ruleset does not block the node:\n%s", applied)
+	}
+}
+
+// A blocked node is let go at its period's end even before the tracker runs:
+// the engine reloads then.
+func TestEngineReloadsAtQuotaPeriodEnd(t *testing.T) {
+	h := newHarness(ModeNft)
+	q := 1000
+	over := engineNow.Add(-time.Hour)
+	end := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	h.e.Store = &quotaStore{
+		limitStore: &limitStore{memStore: h.st,
+			profiles: []models.LimitProfile{{ID: "p1", Name: "q", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"}},
+			limits:   []models.NodeLimit{{NodeID: "node-7", VirtualIP: "10.20.0.7", ProfileID: "p1"}}},
+		states: []models.NodeQuotaState{{NodeID: "node-7", PeriodStart: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
+			PeriodEnd: end, UsedBytes: 2e9, ExceededAt: &over}},
+	}
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if want := end.Sub(engineNow) + time.Second; h.expiryIn != want {
+		t.Fatalf("next reload in %v, want %v (the period end)", h.expiryIn, want)
 	}
 }

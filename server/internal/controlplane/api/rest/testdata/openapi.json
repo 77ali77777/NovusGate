@@ -1793,6 +1793,10 @@
           "node_id": {
             "type": "string"
           },
+          "period_end": {
+            "format": "date-time",
+            "type": "string"
+          },
           "period_start": {
             "format": "date-time",
             "type": "string"
@@ -1809,6 +1813,7 @@
         "required": [
           "exceeded_at",
           "node_id",
+          "period_end",
           "period_start",
           "used_bytes",
           "warned_at"

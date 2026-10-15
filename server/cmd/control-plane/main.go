@@ -15,13 +15,13 @@ import (
 	"time"
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
-	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
+	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/notify"
-	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/quota"
-	"github.com/novusgate/novusgate/internal/controlplane/traffic"
+	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
+	"github.com/novusgate/novusgate/internal/controlplane/traffic"
 	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -80,12 +80,12 @@ func init() {
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: /etc/novusgate/server.yaml)")
-	
+
 	// Serve command flags
 	serveCmd.Flags().String("listen", ":8080", "HTTP listen address")
 	serveCmd.Flags().String("grpc-listen", ":8443", "gRPC listen address")
 	serveCmd.Flags().String("database", "", "Database connection string")
-	
+
 	// Init command flags
 	initCmd.Flags().String("name", "", "Network name (required)")
 	initCmd.Flags().String("cidr", "10.99.0.0/24", "Network CIDR")
@@ -150,7 +150,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	// Get configuration
 	listenAddr := viper.GetString("listen")
 	databaseURL := viper.GetString("database_url")
-	
+
 	if databaseURL == "" {
 		databaseURL = os.Getenv("DATABASE_URL")
 	}
@@ -210,8 +210,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 	peerWatcher := &notify.PeerWatcher{
 		Notifier: notifier,
 		Nodes:    func(ctx context.Context) ([]notify.WatchedNode, error) { return watchedNodes(ctx, db) },
-		Peers:    func(iface string) (map[string]wireguard.PeerStatus, error) { return wireguard.NewManager(iface).GetPeers() },
-		Now:      time.Now,
+		Peers: func(iface string) (map[string]wireguard.PeerStatus, error) {
+			return wireguard.NewManager(iface).GetPeers()
+		},
+		Now: time.Now,
 	}
 	go peerWatcher.Run(recCtx)
 	go (&notify.Fail2BanWatcher{Notifier: notifier, Path: rest.Fail2BanLogPath}).Run(recCtx)
@@ -239,16 +241,19 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Traffic history (P8): every node's counters every 5 minutes, 30 days kept.
 	sampler := &traffic.Sampler{
-		Store:     db,
-		Peers:     func(iface string) (map[string]wireguard.PeerStatus, error) { return wireguard.NewManager(iface).GetPeers() },
+		Store: db,
+		Peers: func(iface string) (map[string]wireguard.PeerStatus, error) {
+			return wireguard.NewManager(iface).GetPeers()
+		},
 		Now:       time.Now,
 		Retention: 30 * 24 * time.Hour,
 	}
 	// Traffic quotas (P9c): every sample run counts the nodes with a quota.
 	quotas := &quota.Tracker{
-		Store: db,
-		Now:   time.Now,
-		Apply: func() { apiServer.ApplyLimits(context.Background()) },
+		Store:     db,
+		Now:       time.Now,
+		Apply:     func() { apiServer.ApplyLimits(context.Background()) },
+		Enforcing: apiServer.EnforcesLimits,
 		Notify: func(key, text string) {
 			notifier.Notify(notify.Event{Kind: notify.QuotaExceeded, Key: key, Text: text})
 		},
@@ -352,7 +357,7 @@ func runMigrations(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("Running database migrations...")
-	
+
 	// Connect to database
 	db, err := store.New(databaseURL)
 	if err != nil {
@@ -373,7 +378,7 @@ func initNetwork(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
 	cidr, _ := cmd.Flags().GetString("cidr")
 	databaseURL, _ := cmd.Flags().GetString("database")
-	
+
 	if databaseURL == "" {
 		databaseURL = viper.GetString("database_url")
 	}
@@ -393,16 +398,16 @@ func initNetwork(cmd *cobra.Command, args []string) error {
 
 	// Create network with WireGuard keys
 	ctx := context.Background()
-	
+
 	// Generate WireGuard key pair for the hub (server)
 	privateKey, publicKey, err := wireguard.GenerateKeys()
 	if err != nil {
 		return fmt.Errorf("failed to generate WireGuard keys: %w", err)
 	}
-	
+
 	// Get server endpoint from environment or use default
 	serverEndpoint := wireguard.GetServerEndpoint()
-	
+
 	network := &models.Network{
 		Name:             name,
 		CIDR:             cidr,
@@ -410,7 +415,7 @@ func initNetwork(cmd *cobra.Command, args []string) error {
 		ServerPublicKey:  publicKey,
 		ServerEndpoint:   fmt.Sprintf("%s:51820", serverEndpoint),
 	}
-	
+
 	if err := db.CreateNetwork(ctx, network); err != nil {
 		// Check if network already exists
 		existing, errList := db.ListNetworks(ctx)
@@ -438,7 +443,7 @@ func initNetwork(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Server Public Key: %s\n", network.ServerPublicKey)
 		fmt.Printf("  Server Endpoint: %s\n", network.ServerEndpoint)
 	}
-	
+
 	// Initialize WireGuard for this network
 	// Initialize WireGuard for this network
 	wgManager := wireguard.NewManager("wg0")
@@ -446,10 +451,10 @@ func initNetwork(cmd *cobra.Command, args []string) error {
 	_, ipNet, _ := net.ParseCIDR(network.CIDR)
 	ip := ipNet.IP
 	// Increment IP to get .1 (hacky increment for IPv4)
-	ip[len(ip)-1]++ 
+	ip[len(ip)-1]++
 	serverIP := fmt.Sprintf("%s/%s", ip.String(), strings.Split(network.CIDR, "/")[1])
 	serverPort := 51820
-	
+
 	// Create WireGuard config using the network's private key
 	if err := wgManager.CreateServerConfigWithKey(network.ServerPrivateKey, serverIP, serverPort); err != nil {
 		fmt.Printf("Warning: Failed to create WireGuard config: %v\n", err)
@@ -553,13 +558,13 @@ func bootstrapSystem(db *store.Store) error {
 		// CRITICAL: We MUST read keys from existing wg0.conf created by installer
 		// The installer creates wg0 on the HOST before starting Docker containers
 		var privateKey, publicKey string
-		
+
 		// Step 1: Try to read private key from config file (this is the source of truth)
 		configPath := "/etc/wireguard/wg0.conf"
 		if privKeyBytes, err := os.ReadFile(configPath); err == nil {
 			config := string(privKeyBytes)
 			slog.Info("Found existing wg0.conf, reading keys...")
-			
+
 			// Parse PrivateKey
 			if idx := strings.Index(config, "PrivateKey = "); idx != -1 {
 				start := idx + len("PrivateKey = ")
@@ -586,7 +591,7 @@ func bootstrapSystem(db *store.Store) error {
 				slog.Error(fmt.Sprintf("Warning: Failed to derive public key: %v", err))
 			}
 		}
-		
+
 		// Step 3: Fallback - try to get public key from running interface
 		if publicKey == "" {
 			mgr := wireguard.NewManager("wg0")
@@ -627,13 +632,13 @@ func bootstrapSystem(db *store.Store) error {
 	} else {
 		// Admin Network already exists - verify and sync keys if needed
 		slog.Info(fmt.Sprintf("Admin Network (wg0) already exists in DB with public key: %s", adminNet.ServerPublicKey))
-		
+
 		// Read actual keys from wg0.conf to verify they match
 		configPath := "/etc/wireguard/wg0.conf"
 		if privKeyBytes, err := os.ReadFile(configPath); err == nil {
 			config := string(privKeyBytes)
 			var actualPrivateKey, actualPublicKey string
-			
+
 			// Parse PrivateKey from config
 			if idx := strings.Index(config, "PrivateKey = "); idx != -1 {
 				start := idx + len("PrivateKey = ")
@@ -642,7 +647,7 @@ func bootstrapSystem(db *store.Store) error {
 					actualPrivateKey = strings.TrimSpace(config[start : start+end])
 				}
 			}
-			
+
 			// Derive public key
 			if actualPrivateKey != "" {
 				cmd := exec.Command("wg", "pubkey")
@@ -652,13 +657,13 @@ func bootstrapSystem(db *store.Store) error {
 					actualPublicKey = strings.TrimSpace(string(output))
 				}
 			}
-			
+
 			// Check if DB keys match actual wg0 keys
 			if actualPublicKey != "" && actualPublicKey != adminNet.ServerPublicKey {
 				slog.Warn(fmt.Sprintf("WARNING: DB public key (%s) does not match wg0.conf key (%s)",
 					adminNet.ServerPublicKey, actualPublicKey))
 				slog.Info("Updating DB with correct keys from wg0.conf...")
-				
+
 				// Update network with correct keys
 				if err := db.UpdateNetworkKeys(ctx, adminNet.ID, actualPrivateKey, actualPublicKey); err != nil {
 					slog.Error(fmt.Sprintf("Failed to update network keys: %v", err))
@@ -669,12 +674,12 @@ func bootstrapSystem(db *store.Store) error {
 				slog.Info("Keys are in sync ✓")
 			}
 		}
-		
+
 		// Also check CIDR mismatch
 		if adminNet.CIDR != cidr {
 			slog.Info(fmt.Sprintf("CORRECTION: Existing Admin Network (wg0) CIDR (%s) mismatches ENV config (%s).", adminNet.CIDR, cidr))
 			slog.Info("Applying correction to Database...")
-			
+
 			if err := db.UpdateNetworkCIDR(ctx, adminNet.ID, cidr); err != nil {
 				slog.Error(fmt.Sprintf("failed to update network CIDR: %v", err))
 			} else {

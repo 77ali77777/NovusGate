@@ -169,5 +169,17 @@ func NextLimitReload(ctx context.Context, src Source, now time.Time) (time.Time,
 			next, found = t, true
 		}
 	}
+	// A node over its quota (P9c) is let go when its period ends.
+	if qs, ok := src.(QuotaSource); ok {
+		states, err := qs.ListQuotaStates(ctx)
+		if err != nil {
+			return time.Time{}, false, err
+		}
+		for _, st := range states {
+			if st.ExceededAt != nil && st.PeriodEnd.After(now) && (!found || st.PeriodEnd.Before(next)) {
+				next, found = st.PeriodEnd, true
+			}
+		}
+	}
 	return next, found, nil
 }

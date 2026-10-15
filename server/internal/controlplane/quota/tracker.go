@@ -14,7 +14,10 @@ type Store interface {
 	ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, error)
 	ListNodeLimits(ctx context.Context) ([]models.NodeLimit, error)
 	ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, error)
-	SaveQuotaState(ctx context.Context, st models.NodeQuotaState) error
+	// SaveQuotaStateIf writes st only if the stored row is still the one read
+	// (prev is its updated_at, nil when there was none); false otherwise.
+	SaveQuotaStateIf(ctx context.Context, st models.NodeQuotaState, prev *time.Time) (bool, error)
+	DeleteQuotaState(ctx context.Context, nodeID string) error
 	GetNode(ctx context.Context, id string) (*models.Node, error)
 }
 
@@ -27,15 +30,17 @@ type Tracker struct {
 	Apply func()
 	// Notify sends a notification; key deduplicates it.
 	Notify func(key, text string)
+	// Enforcing reports whether the firewall applies quotas (nft mode).
+	Enforcing func() bool
 }
 
 func toState(m models.NodeQuotaState) State {
-	return State{NodeID: m.NodeID, PeriodStart: m.PeriodStart, UsedBytes: m.UsedBytes, LastRx: m.LastRx,
+	return State{NodeID: m.NodeID, PeriodStart: m.PeriodStart, PeriodEnd: m.PeriodEnd, UsedBytes: m.UsedBytes, LastRx: m.LastRx,
 		LastTx: m.LastTx, HasLast: true, WarnedAt: m.WarnedAt, ExceededAt: m.ExceededAt}
 }
 
 func toModel(s State) models.NodeQuotaState {
-	return models.NodeQuotaState{NodeID: s.NodeID, PeriodStart: s.PeriodStart, UsedBytes: s.UsedBytes,
+	return models.NodeQuotaState{NodeID: s.NodeID, PeriodStart: s.PeriodStart, PeriodEnd: s.PeriodEnd, UsedBytes: s.UsedBytes,
 		LastRx: s.LastRx, LastTx: s.LastTx, WarnedAt: s.WarnedAt, ExceededAt: s.ExceededAt}
 }
 
@@ -44,7 +49,7 @@ func sameTime(a, b *time.Time) bool {
 }
 
 func same(a, b State) bool {
-	return a.PeriodStart.Equal(b.PeriodStart) && a.UsedBytes == b.UsedBytes && a.LastRx == b.LastRx &&
+	return a.PeriodStart.Equal(b.PeriodStart) && a.PeriodEnd.Equal(b.PeriodEnd) && a.UsedBytes == b.UsedBytes && a.LastRx == b.LastRx &&
 		a.LastTx == b.LastTx && a.HasLast == b.HasLast && sameTime(a.WarnedAt, b.WarnedAt) && sameTime(a.ExceededAt, b.ExceededAt)
 }
 
@@ -93,12 +98,14 @@ func (t *Tracker) Observe(ctx context.Context, samples []traffic.Sample) error {
 	}
 	now := t.Now()
 	apply := false
+	tracked := map[string]bool{}
 	for _, nl := range nodeLimits {
 		profile := byID[nl.ProfileID]
 		q, ok := profileQuota(profile)
 		if !ok {
 			continue
 		}
+		tracked[nl.NodeID] = true
 		m, has := states[nl.NodeID]
 		before := State{NodeID: nl.NodeID}
 		if has {
@@ -114,8 +121,18 @@ func (t *Tracker) Observe(ctx context.Context, samples []traffic.Sample) error {
 			continue
 		}
 		if !has || !same(before, after) {
-			if err := t.Store.SaveQuotaState(ctx, toModel(after)); err != nil {
+			var prev *time.Time
+			if has {
+				prev = &m.UpdatedAt
+			}
+			saved, err := t.Store.SaveQuotaStateIf(ctx, toModel(after), prev)
+			if err != nil {
 				return err
+			}
+			if !saved {
+				// Changed since it was read (a reset): the next run counts
+				// from the stored row, and nothing here is acted on.
+				continue
 			}
 		}
 		for _, e := range events {
@@ -125,6 +142,18 @@ func (t *Tracker) Observe(ctx context.Context, samples []traffic.Sample) error {
 			}
 			if e == Warned || e == Exceeded {
 				t.notify(ctx, nl.NodeID, profile, q, after, e)
+			}
+		}
+	}
+	// A node without a quota keeps no count: an old baseline would count
+	// the traffic it moved meanwhile, if a quota came back.
+	for id := range states {
+		if !tracked[id] {
+			if err := t.Store.DeleteQuotaState(ctx, id); err != nil {
+				return err
+			}
+			if states[id].ExceededAt != nil {
+				apply = true
 			}
 		}
 	}
@@ -144,7 +173,12 @@ func (t *Tracker) notify(ctx context.Context, nodeID string, p models.LimitProfi
 	if n, err := t.Store.GetNode(ctx, nodeID); err == nil && n != nil {
 		name = n.Name
 	}
-	key := fmt.Sprintf("%s:%s:%s", nodeID, st.PeriodStart.UTC().Format(time.RFC3339), e)
+	// The mark's time keeps a repeat after a reset or a raised quota apart.
+	at := st.ExceededAt
+	if e == Warned {
+		at = st.WarnedAt
+	}
+	key := fmt.Sprintf("%s:%s:%s", nodeID, e, at.UTC().Format(time.RFC3339Nano))
 	var text string
 	if e == Warned {
 		text = fmt.Sprintf("NovusGate: %s used %d%% of its monthly traffic quota (%s of %s).",
@@ -154,9 +188,11 @@ func (t *Tracker) notify(ctx context.Context, nodeID string, p models.LimitProfi
 		if p.QuotaAction == "throttle" {
 			action = "throttled"
 		}
-		next := time.Date(st.PeriodStart.In(q.Loc).Year(), st.PeriodStart.In(q.Loc).Month()+1, q.ResetDay, 0, 0, 0, 0, q.Loc)
 		text = fmt.Sprintf("NovusGate: %s used its monthly traffic quota (%s); its VPN traffic is %s until %s.",
-			name, gigabytes(q.QuotaBytes), action, next.Format("2006-01-02"))
+			name, gigabytes(q.QuotaBytes), action, st.PeriodEnd.In(q.Loc).Format("2006-01-02"))
+		if t.Enforcing != nil && !t.Enforcing() {
+			text += " The firewall runs in iptables mode and does not enforce quotas."
+		}
 	}
 	t.Notify(key, text)
 }

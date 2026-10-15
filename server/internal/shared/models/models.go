@@ -273,11 +273,13 @@ type LimitProfile struct {
 type NodeQuotaState struct {
 	NodeID      string     `json:"node_id"`
 	PeriodStart time.Time  `json:"period_start"`
+	PeriodEnd   time.Time  `json:"period_end"` // fixed at the period start
 	UsedBytes   int64      `json:"used_bytes"`
 	LastRx      int64      `json:"-"`
 	LastTx      int64      `json:"-"`
 	WarnedAt    *time.Time `json:"warned_at"`
 	ExceededAt  *time.Time `json:"exceeded_at"`
+	UpdatedAt   time.Time  `json:"-"` // guards concurrent writers (tracker vs reset)
 }
 
 // ScheduleWindow allows traffic on Days from From to To, local time of the
