@@ -14,6 +14,7 @@ import {
 } from '@/api/client'
 import { Badge, Button, Card, EmptyState, Input, Modal } from '@/components/ui'
 import { formatRate, kbpsToMbps, mbpsToKbps, scheduleSummary } from '@/lib/limits'
+import { formatBytes, gbToMb, mbToGb } from '@/lib/quota'
 import type { LimitProfile, LimitProfileRequest, NodeLimit, ScheduleWindow } from '@/types'
 
 const weekOrder = [1, 2, 3, 4, 5, 6, 0] // Monday first
@@ -86,6 +87,15 @@ export const LimitsTab = () => {
                     {p.max_connections != null && (
                       <Badge variant="warning">
                         {t('connections', { count: p.max_connections })}
+                      </Badge>
+                    )}
+                    {p.quota_mb != null && (
+                      <Badge variant="danger">
+                        {t(p.quota_action === 'throttle' ? 'quotaThrottle' : 'quotaBlock', {
+                          quota: formatBytes(p.quota_mb * 1e6),
+                          day: p.quota_reset_day,
+                          rate: p.throttle_kbps != null ? formatRate(p.throttle_kbps) : '',
+                        })}
                       </Badge>
                     )}
                   </div>
@@ -179,6 +189,10 @@ const ProfileModal = ({
   const [zone, setZone] = useState(
     profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
   )
+  const [quotaGb, setQuotaGb] = useState(mbToGb(profile?.quota_mb))
+  const [quotaAction, setQuotaAction] = useState(profile?.quota_action || 'block')
+  const [throttle, setThrottle] = useState(kbpsToMbps(profile?.throttle_kbps))
+  const [resetDay, setResetDay] = useState(profile?.quota_reset_day || 1)
   const [windows, setWindows] = useState<ScheduleWindow[]>(profile?.schedule ?? [])
   // Stable React keys for the window rows, kept beside the windows.
   const nextKey = useRef(windows.length)
@@ -214,6 +228,19 @@ const ProfileModal = ({
       setError(t('errors.noDays'))
       return
     }
+    const quotaMb = gbToMb(quotaGb)
+    if (quotaMb === 'invalid') {
+      setError(t('errors.quota'))
+      return
+    }
+    const throttleKbps = mbpsToKbps(throttle)
+    if (
+      throttleKbps === 'invalid' ||
+      (quotaMb !== null && quotaAction === 'throttle' && throttleKbps === null)
+    ) {
+      setError(t('errors.throttle'))
+      return
+    }
     const req: LimitProfileRequest = {
       name,
       down_kbps: downKbps,
@@ -221,6 +248,10 @@ const ProfileModal = ({
       max_connections: maxConns,
       timezone: zone,
       schedule: windows,
+      quota_mb: quotaMb,
+      quota_action: quotaAction,
+      throttle_kbps: throttleKbps,
+      quota_reset_day: resetDay,
     }
     setError('')
     // On failure the mutation toast shows the server's message; the modal stays open.
@@ -257,6 +288,52 @@ const ProfileModal = ({
           />
         </div>
         <p className="text-xs text-gray-500">{t('perNodeHint')}</p>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">{t('quota')}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <Input
+              label={t('quotaLabel')}
+              value={quotaGb}
+              onChange={(e) => setQuotaGb(e.target.value)}
+              placeholder={t('noQuota')}
+              inputMode="decimal"
+            />
+            <label className="block text-sm">
+              {t('quotaActionLabel')}
+              <select
+                value={quotaAction}
+                onChange={(e) => setQuotaAction(e.target.value)}
+                className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                <option value="block">{t('quotaActions.block')}</option>
+                <option value="throttle">{t('quotaActions.throttle')}</option>
+              </select>
+            </label>
+            <Input
+              label={t('throttleLabel')}
+              value={throttle}
+              onChange={(e) => setThrottle(e.target.value)}
+              disabled={quotaAction !== 'throttle'}
+              inputMode="decimal"
+            />
+            <label className="block text-sm">
+              {t('resetDayLabel')}
+              <select
+                value={resetDay}
+                onChange={(e) => setResetDay(Number(e.target.value))}
+                className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="text-xs text-gray-500">{t('quotaHint')}</p>
+        </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">

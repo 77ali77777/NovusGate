@@ -44,3 +44,9 @@ test('enabling needs a chat and a token (new or stored)', () => {
   assert.match(lookup(locale('en'), noToken), /token/i)
   assert.equal(notificationUpdate({ ...base, enabled: false }, false).error, undefined)
 })
+
+test('the quota switch (P9c) is sent', () => {
+  const { request } = notificationUpdate({ ...base, quota_exceeded: false }, true)
+  assert.equal(request.quota_exceeded, false)
+  assert.equal(notificationUpdate({ ...base, quota_exceeded: true }, true).request.quota_exceeded, true)
+})

@@ -36,7 +36,8 @@
       "labels": "Labels",
       "expires": "Expires",
       "config": "Config",
-      "groups": "Groups"
+      "groups": "Groups",
+      "quota": "Quota"
     },
     "configUnavailable": "Config not available for imported nodes",
     "downloadConfig": "Download Config",
@@ -167,5 +168,13 @@
     },
     "loadError": "Traffic history could not be loaded.",
     "empty": "No traffic recorded in this range yet. Samples are taken every 5 minutes."
+  },
+  "quota": {
+    "title": "Traffic quota",
+    "used": "{{used}} of {{quota}}",
+    "blocked": "blocked",
+    "throttled": "slowed down",
+    "reset": "Reset now",
+    "resetConfirm": "Start this node’s quota count again? A block or slow-down is lifted at once."
   }
 }

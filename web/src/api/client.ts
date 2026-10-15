@@ -226,6 +226,11 @@ class ApiClient {
     return data
   }
 
+  // Start a node's traffic quota count again and lift its block (P9c).
+  async resetQuota(nodeId: string): Promise<void> {
+    await this.client.post(`/nodes/${nodeId}/quota/reset`)
+  }
+
   async deleteLimit(id: string): Promise<void> {
     await this.client.delete(`/limits/${id}`)
   }
@@ -881,6 +886,12 @@ export const useDeleteLimit = () =>
     (id: string) => api.deleteLimit(id),
     'toasts:failedToDeleteLimit',
     'toasts:limitDeleted'
+  )
+export const useResetQuota = () =>
+  useLimitMutation(
+    (nodeId: string) => api.resetQuota(nodeId),
+    'toasts:failedToResetQuota',
+    'toasts:quotaReset'
   )
 export const useSetLimitBindings = () =>
   useLimitMutation(

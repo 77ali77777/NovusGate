@@ -36,7 +36,8 @@
       "labels": "Etiketlər",
       "expires": "Müddət bitir",
       "config": "Konfiqurasiya",
-      "groups": "Qruplar"
+      "groups": "Qruplar",
+      "quota": "Kvota"
     },
     "configUnavailable": "İdxal edilmiş node-lar üçün konfiqurasiya mövcud deyil",
     "downloadConfig": "Konfiqurasiyanı yüklə",
@@ -167,5 +168,13 @@
     },
     "loadError": "Trafik tarixçəsini yükləmək mümkün olmadı.",
     "empty": "Bu aralıqda hələ trafik qeydə alınmayıb. Ölçmələr hər 5 dəqiqədən bir götürülür."
+  },
+  "quota": {
+    "title": "Trafik kvotası",
+    "used": "{{used}} / {{quota}}",
+    "blocked": "bloklanıb",
+    "throttled": "sürəti azaldılıb",
+    "reset": "İndi sıfırla",
+    "resetConfirm": "Bu node-un kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür."
   }
 }

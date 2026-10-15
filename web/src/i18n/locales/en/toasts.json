@@ -71,5 +71,7 @@
   "failedToDeleteLimit": "Failed to delete the limit profile",
   "limitDeleted": "Limit profile deleted",
   "failedToSaveBindings": "Failed to save the bindings",
-  "bindingsSaved": "Bindings saved"
+  "bindingsSaved": "Bindings saved",
+  "failedToResetQuota": "Failed to reset the quota",
+  "quotaReset": "Quota count reset"
 }

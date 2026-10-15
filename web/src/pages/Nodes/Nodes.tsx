@@ -25,6 +25,7 @@ import {
   useNetworks,
   useNode,
   useNodes,
+  useResetQuota,
   useUpdateNode,
 } from '@/api/client'
 import { CreateNodeModal } from '@/components/CreateNodeModal'
@@ -35,6 +36,7 @@ import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
 import { dateFnsLocale, formatDateTime } from '@/i18n'
 import { groupsByNode } from '@/lib/groups'
+import { formatBytes as formatQuotaBytes, type QuotaUsage, quotaFor } from '@/lib/quota'
 import { useCurrentNetworkId } from '@/store'
 import type { Node } from '@/types'
 
@@ -46,6 +48,34 @@ const formatBytes = (bytes: number = 0) => {
   return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
 }
 
+// QuotaBar: a node's use of its monthly traffic quota (P9c).
+const QuotaBar = ({ usage }: { usage: QuotaUsage }) => {
+  const { t } = useTranslation('nodes')
+  const color = usage.exceeded
+    ? 'bg-red-500'
+    : usage.percent >= 80
+      ? 'bg-amber-500'
+      : 'bg-green-500'
+  return (
+    <div className="min-w-[8rem]">
+      <div className="h-2 w-full rounded bg-gray-200 dark:bg-gray-700">
+        <div className={`h-2 rounded ${color}`} style={{ width: `${usage.percent}%` }} />
+      </div>
+      <p className="mt-1 text-xs text-gray-500">
+        {t('quota.used', {
+          used: formatQuotaBytes(usage.usedBytes),
+          quota: formatQuotaBytes(usage.quotaBytes),
+        })}
+        {usage.exceeded && (
+          <span className="ml-1 text-red-600">
+            {t(usage.action === 'throttle' ? 'quota.throttled' : 'quota.blocked')}
+          </span>
+        )}
+      </p>
+    </div>
+  )
+}
+
 export const NodesPage: React.FC = () => {
   const { t } = useTranslation('nodes')
   const navigate = useNavigate()
@@ -55,6 +85,7 @@ export const NodesPage: React.FC = () => {
   const canEdit = useCan('operator')
   const { data: groupData } = useGroups()
   const nodeGroups = groupsByNode(groupData?.groups)
+  const { data: limits } = useLimits()
   const groupOptions = (groupData?.groups ?? []).filter((g) => g !== null)
   const [groupFilter, setGroupFilter] = useState('')
   const nodes = groupFilter
@@ -221,6 +252,14 @@ export const NodesPage: React.FC = () => {
           ))}
         </div>
       ),
+    },
+    {
+      key: 'quota',
+      header: t('list.columns.quota'),
+      render: (node: Node) => {
+        const usage = quotaFor(node.id, limits)
+        return usage ? <QuotaBar usage={usage} /> : <span className="text-xs text-gray-400">—</span>
+      },
     },
     {
       key: 'config',
@@ -492,6 +531,8 @@ export const NodeDetailPage: React.FC = () => {
   const nodeLimit = limits?.node_limits?.find((l) => l.node_id === id)
   const limitProfile = limits?.profiles?.find((p) => p.id === nodeLimit?.profile_id)
   const limitGroup = groupData?.groups?.find((g) => g?.id === nodeLimit?.group_id)
+  const quotaUsage = quotaFor(id || '', limits)
+  const resetQuota = useResetQuota()
 
   // Update node mutation
   const queryClient = useQueryClient()
@@ -717,6 +758,26 @@ export const NodeDetailPage: React.FC = () => {
                 )}
               </span>
             </div>
+            {quotaUsage && (
+              <div className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-gray-500">{t('quota.title')}</span>
+                <div className="flex items-center gap-2">
+                  <QuotaBar usage={quotaUsage} />
+                  {canEdit && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={resetQuota.isPending}
+                      onClick={() => {
+                        if (confirm(t('quota.resetConfirm'))) resetQuota.mutate(id || '')
+                      }}
+                    >
+                      {t('quota.reset')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 

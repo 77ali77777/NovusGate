@@ -6,6 +6,7 @@ export interface NotificationEvents {
   node_expired: boolean
   fail2ban_ban: boolean
   firewall_change: boolean
+  quota_exceeded: boolean // P9c: 80% and 100% of a traffic quota
 }
 
 export interface NotificationForm extends NotificationEvents {
@@ -42,6 +43,7 @@ export function notificationUpdate(
     node_expired: form.node_expired,
     fail2ban_ban: form.fail2ban_ban,
     firewall_change: form.firewall_change,
+    quota_exceeded: form.quota_exceeded,
   }
   if (token !== '') request.bot_token = token
   if (form.enabled && chatId === '')

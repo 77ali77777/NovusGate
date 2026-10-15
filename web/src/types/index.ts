@@ -139,6 +139,7 @@ export type LimitProfileRequest = S['LimitProfileRequest']
 export type LimitProfilesResponse = S['LimitProfilesResponse']
 export type NodeLimit = S['NodeLimit']
 export type ScheduleWindow = S['ScheduleWindow']
+export type NodeQuotaState = S['NodeQuotaState']
 
 // Manual backup (P8): /api/v1/backups
 export type BackupInfo = S['Info']

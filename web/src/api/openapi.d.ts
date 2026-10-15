@@ -902,6 +902,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nodes/{id}/quota/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a node's traffic quota count again and lift its block (P9c) */
+        post: operations["post_nodes_by_id_quota_reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/nodes/{id}/traffic": {
         parameters: {
             query?: never;
@@ -1570,7 +1587,11 @@ export interface components {
             max_connections: number | null;
             name: string;
             node_ids: string[] | null;
+            quota_action: string;
+            quota_mb: number | null;
+            quota_reset_day: number;
             schedule: components["schemas"]["ScheduleWindow"][] | null;
+            throttle_kbps: number | null;
             timezone: string;
             up_kbps: number | null;
         };
@@ -1578,7 +1599,11 @@ export interface components {
             down_kbps?: number | null;
             max_connections?: number | null;
             name?: string;
+            quota_action?: string;
+            quota_mb?: number | null;
+            quota_reset_day?: number;
             schedule?: components["schemas"]["ScheduleWindowInput"][] | null;
+            throttle_kbps?: number | null;
             timezone?: string;
             up_kbps?: number | null;
         };
@@ -1586,6 +1611,7 @@ export interface components {
             enforcing: boolean;
             node_limits: components["schemas"]["NodeLimit"][] | null;
             profiles: components["schemas"]["LimitProfile"][] | null;
+            quota_states: components["schemas"]["NodeQuotaState"][] | null;
         };
         LoginRequest: {
             password?: string;
@@ -1732,6 +1758,16 @@ export interface components {
             profile_id: string;
             virtual_ip: string;
         };
+        NodeQuotaState: {
+            /** Format: date-time */
+            exceeded_at: string | null;
+            node_id: string;
+            /** Format: date-time */
+            period_start: string;
+            used_bytes: number;
+            /** Format: date-time */
+            warned_at: string | null;
+        };
         NodeTrafficResponse: {
             bucket_seconds: number;
             node_id: string;
@@ -1745,6 +1781,7 @@ export interface components {
             firewall_change: boolean;
             node_expired: boolean;
             node_offline: boolean;
+            quota_exceeded: boolean;
             token_set: boolean;
         };
         NotificationSettingsRequest: {
@@ -1755,6 +1792,7 @@ export interface components {
             firewall_change?: boolean;
             node_expired?: boolean;
             node_offline?: boolean;
+            quota_exceeded?: boolean;
         };
         OKCheck: {
             ok: boolean;
@@ -4118,6 +4156,35 @@ export interface operations {
                 content: {
                     "image/png": string;
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_nodes_by_id_quota_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

@@ -42,7 +42,9 @@
   "errors": {
     "speed": "Speeds must be positive numbers in Mbit/s (at most 100000), or empty.",
     "connections": "Open connections must be a positive whole number, or empty.",
-    "noDays": "Every window needs at least one day."
+    "noDays": "Every window needs at least one day.",
+    "quota": "The quota must be a positive number of GB (at most 1000000), or empty.",
+    "throttle": "Slowing down needs a positive speed in Mbit/s."
   },
   "days": {
     "0": "Sun",
@@ -52,5 +54,18 @@
     "4": "Thu",
     "5": "Fri",
     "6": "Sat"
-  }
+  },
+  "quota": "Monthly traffic quota",
+  "quotaLabel": "Quota, GB",
+  "noQuota": "No quota",
+  "quotaActionLabel": "When used up",
+  "quotaActions": {
+    "block": "Block VPN traffic",
+    "throttle": "Slow down"
+  },
+  "throttleLabel": "Slowed to, Mbit/s",
+  "resetDayLabel": "Starts again on day",
+  "quotaHint": "Download and upload count together, for each node. At 80% a warning is sent; the period starts again on the chosen day at midnight in the profile’s time zone.",
+  "quotaBlock": "Quota {{quota}}/month, then blocked (from day {{day}})",
+  "quotaThrottle": "Quota {{quota}}/month, then {{rate}} (from day {{day}})"
 }

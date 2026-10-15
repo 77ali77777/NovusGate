@@ -71,5 +71,7 @@
   "failedToDeleteLimit": "Limit profili silinmədi",
   "limitDeleted": "Limit profili silindi",
   "failedToSaveBindings": "Bağlamalar yadda saxlanmadı",
-  "bindingsSaved": "Bağlamalar yadda saxlanıldı"
+  "bindingsSaved": "Bağlamalar yadda saxlanıldı",
+  "failedToResetQuota": "Kvota sıfırlanmadı",
+  "quotaReset": "Kvota sayğacı sıfırlandı"
 }

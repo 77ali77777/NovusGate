@@ -62,7 +62,8 @@
       "node_offline": "A node goes offline or comes back",
       "node_expired": "A node's access expires",
       "fail2ban_ban": "Fail2Ban bans an address",
-      "firewall_change": "The firewall is changed"
+      "firewall_change": "The firewall is changed",
+      "quota_exceeded": "A node uses 80% or all of its traffic quota"
     },
     "errors": {
       "chatIdRequired": "Enter the chat ID to enable notifications.",

@@ -62,7 +62,8 @@
       "node_offline": "Node oflayn olur və ya geri qayıdır",
       "node_expired": "Node-un giriş müddəti bitir",
       "fail2ban_ban": "Fail2Ban ünvanı bloklayır",
-      "firewall_change": "Firewall dəyişdirilir"
+      "firewall_change": "Firewall dəyişdirilir",
+      "quota_exceeded": "Node trafik kvotasının 80%-ni və ya hamısını istifadə edir"
     },
     "errors": {
       "chatIdRequired": "Bildirişləri aktivləşdirmək üçün chat ID-ni daxil edin.",

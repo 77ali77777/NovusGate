@@ -42,7 +42,9 @@
   "errors": {
     "speed": "Sürət Mbit/s ilə müsbət ədəd olmalıdır (ən çox 100000) və ya boş qalmalıdır.",
     "connections": "Açıq bağlantı sayı müsbət tam ədəd olmalıdır və ya boş qalmalıdır.",
-    "noDays": "Hər pəncərəyə ən azı bir gün lazımdır."
+    "noDays": "Hər pəncərəyə ən azı bir gün lazımdır.",
+    "quota": "Kvota GB ilə müsbət ədəd olmalıdır (ən çox 1000000) və ya boş qalmalıdır.",
+    "throttle": "Sürəti azaltmaq üçün Mbit/s ilə müsbət sürət lazımdır."
   },
   "days": {
     "0": "B.",
@@ -52,5 +54,18 @@
     "4": "C.a.",
     "5": "C.",
     "6": "Ş."
-  }
+  },
+  "quota": "Aylıq trafik kvotası",
+  "quotaLabel": "Kvota, GB",
+  "noQuota": "Kvota yoxdur",
+  "quotaActionLabel": "Bitəndə",
+  "quotaActions": {
+    "block": "VPN trafikini blokla",
+    "throttle": "Sürəti azalt"
+  },
+  "throttleLabel": "Azaldılmış sürət, Mbit/s",
+  "resetDayLabel": "Yenidən başladığı gün",
+  "quotaHint": "Endirmə və yükləmə hər node üçün birlikdə sayılır. 80%-də xəbərdarlıq göndərilir; dövr seçilən gün profilin saat qurşağında gecə yarısı yenidən başlayır.",
+  "quotaBlock": "Kvota ayda {{quota}}, sonra blok ({{day}}-dən)",
+  "quotaThrottle": "Kvota ayda {{quota}}, sonra {{rate}} ({{day}}-dən)"
 }

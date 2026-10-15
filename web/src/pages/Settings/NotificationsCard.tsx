@@ -19,6 +19,7 @@ const EVENTS: (keyof NotificationEvents)[] = [
   'node_expired',
   'fail2ban_ban',
   'firewall_change',
+  'quota_exceeded',
 ]
 
 const EMPTY: NotificationForm = {
@@ -29,6 +30,7 @@ const EMPTY: NotificationForm = {
   node_expired: true,
   fail2ban_ban: true,
   firewall_change: true,
+  quota_exceeded: true,
 }
 
 // NotificationsCard: Telegram notifications (P8). The bot token is write-only:
