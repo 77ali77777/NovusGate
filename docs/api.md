@@ -297,3 +297,19 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `POST /nodes/{id}/quota/reset` → 204 (sayğac sıfırlanır, blok/yavaşlatma dərhal götürülür; sayğacı olmayan node üçün də 204); naməlum node və ya UUID olmayan id → 404. Rol: operator.
 - `quota_states[].period_end`: dövrün sonu; panel bitmiş dövrün sayğacını boş göstərir.
 - Bildiriş ayarlarında yeni `quota_exceeded` açarı (default `true`): 80% və 100%.
+
+## Server idarəsi — `/api/v1/server/*` (P10a, 2026-10-15)
+- Yalnız admin; oxumalar da (`sensitiveReads`). Hər dəyişiklik **step-up** tələb edir: `POST /auth/step-up` `{password}` → 204, sessiya 5 dəqiqəlik yüksəldilir. Yanlış parol → **400** `invalid_password` (401 paneli çıxışa atardı); istifadəçi başına 15 dəqiqədə 5 yanlış cəhddən sonra → 429 `too_many_attempts` + `Retry-After`. Step-up olmadan dəyişiklik → 403 `step_up_required`.
+- `GET /server/services` → `{services:[{name,state}]}` (docker, fail2ban, `wg-quick@wgN`); `POST /server/services/{unit}/restart` → 204 (yalnız bu siyahı, başqası 400).
+- `GET /server/sysctl` → `{keys,values}`; `PUT /server/sysctl` `{values}` → `{confirm_within}` (90 s): dəyişiklik dərhal qüvvədədir, `POST /server/sysctl/confirm` (204) gəlməsə host köhnə dəyərləri bərpa edir. İcazəli açarlar: `net.ipv4.ip_forward` (0/1), `net.ipv4.conf.all.rp_filter` (0–2), `net.netfilter.nf_conntrack_max` (1024–16777216), `net.ipv4.tcp_congestion_control` (bbr/cubic), `net.core.default_qdisc` (fq, fq_codel, pfifo_fast, cake).
+- `GET /server/system` → `{hostname,timezone,ntp,ntp_synchronized,kernel,os}`; `PUT /server/system/hostname` `{hostname}`; `PUT /server/system/timezone` `{timezone,ntp}` (IANA adı).
+- `GET /server/packages` → `{packages:[{name,version,from,security}]}`; `GET /server/packages/upgrade` → son yeniləmə `{running,started_at,finished_at,ok,output}`; `POST /server/packages/upgrade` `{confirm:"upgrade"}` → 202 (gedən yeniləmə varsa 409 `upgrade_running`).
+- `POST /server/reboot` `{confirm:"reboot"}` → 202, 2 s sonra.
+- `GET /server/network` → `{addresses,routes,links}`: `ip -j` siyahıları olduğu kimi (obyekt massivləri), yalnız oxunur.
+- Host komandası uğursuz olanda 500 mesajı `<nə> failed; see the server log` olur: komanda çıxışı, yollar və alət mesajları yalnız log-a yazılır.
+
+## Şəbəkənin klient DNS-i (P10a, 2026-10-15)
+- `PUT /api/v1/networks/{id}/dns` `{client_dns}` → 200 `Network`. Vergüllə ayrılmış ən çox 3 IP; `"a, b"` şəklinə salınır; başqa dəyər → 400 `invalid_dns`; boş = default. Rol: operator. Naməlum və ya UUID olmayan id → 404.
+- `POST /networks` da `client_dns` qəbul edir (eyni yoxlama).
+- `Network` cavablarında yeni `client_dns` sahəsi.
+- Konfiqlər: DNS varsa split və tam tunel konfiqlərinə yazılır; yoxdursa tam tunel `1.1.1.1`, split DNS-siz. Cihazlarda olan konfiqlər yenidən endirilənə qədər dəyişmir.

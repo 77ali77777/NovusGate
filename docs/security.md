@@ -120,3 +120,10 @@
 - Rate limit-ə düşən login (429) audit-ə yazılmır: parol yoxlanmadan cavab verilir, yazılsaydı hər kəs cədvəli pulsuz böyüdə bilərdi. Audit yazıları 180 gün saxlanılır (6 saatdan bir təmizlənir).
 - Center iş log-ları server silinəndə silinir (parolları ola bilər); silinmiş serverin log-u 404 verir. Log yazılmasa (disk dolu) iş davam edir.
 - Məlum, dəyişməyən: Center auth-suz lokal alətdir (açıq CORS); log-larda parollar maskalanmır (istifadəçi qərarı).
+
+## Server idarəsi (P10a, 2026-10-15)
+- Yalnız admin; hər dəyişiklik step-up istəyir (parol yenidən, 5 dəqiqə). Oğurlanmış sessiya tokeni parolu bilmədən hosta toxuna bilmir; parol təxmini istifadəçi başına 15 dəqiqədə 5 cəhdlə məhduddur (429).
+- Komandalar allow-list ilə: yalnız docker, fail2ban, `wg-quick@wgN` restart; yalnız 5 sysctl açarı dəyər yoxlaması ilə; host adı RFC 1123; saat qurşağı zoneinfo-dan. Arqumentlər shell-dən keçmir.
+- sysctl dəyişikliyi 90 s ərzində təsdiqlənməsə systemd timer köhnə dəyərləri və köhnə faylı bərpa edir (bağlantını kəsən dəyişiklik özü geri qayıdır). Reboot və upgrade üçün sözün yazılması lazımdır.
+- 500 cavabları host alətinin çıxışını göstərmir (yalnız log).
+- Klient DNS yalnız IP ünvanları qəbul edir, ona görə konfiqə və install skriptinə təhlükəsiz yazılır.

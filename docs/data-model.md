@@ -118,3 +118,8 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `notification_settings.quota_exceeded` BOOLEAN DEFAULT TRUE.
 - Rollback: `migrations_rollback/016_traffic_quota.down.sql`.
 - 017: `node_quota_state.period_end` (dövr başlayanda sabitlənir; mövcud sətirlərdə `period_start + 1 ay`), `updated_at` optimistik yazma üçün işlənir. Kvotası olmayan node-un sətri silinir. Rollback: `migrations_rollback/017_quota_period_end.down.sql`.
+
+## 019 (P10a): step-up və klient DNS
+- `sessions.elevated_until` TIMESTAMPTZ NULL: step-up-ın bitmə vaxtı (5 dəqiqə).
+- `networks.client_dns` TEXT NOT NULL DEFAULT `''`: klient konfiqlərinin DNS serverləri (`"a, b"`, ən çox 3 IP); boş = default.
+- Rollback: `migrations_rollback/019_server_admin.down.sql`.

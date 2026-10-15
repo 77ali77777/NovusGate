@@ -101,3 +101,8 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
 ## Limit profilləri və saat qurşağı (P9b)
 - Boot unit-də (`novusgate-firewall.service`) `Environment=TZ=UTC` var. Center Update `setup-firewall.sh`-ı yenidən işlədir və unit yenilənir.
 - Funksional yoxlama: `bash server/scripts/limits-functional-check.sh` (NET_ADMIN + SYS_ADMIN, `--privileged` yox; netns ilə real trafik: sürət, bağlantı limiti, cədvəl; konteyner Asia/Baku saat qurşağında işləyir).
+
+## Server idarəsi (P10a)
+- Panelin "Server" səhifəsi host komandalarını control-plane konteynerindən `nsenter -t 1` ilə icra edir; bu, konteynerin host PID namespace-i ilə işləməsini tələb edir (`docker-compose.yml`-də `pid: host`). İzolə test konteynerində (host PID-siz) host oxumaları 500 verir; bu gözlənilir.
+- sysctl idarə faylı: `/etc/sysctl.d/90-novusgate.conf`; geri qaytarma skripti: `/var/lib/novusgate/sysctl-rollback.sh`; timer: `novusgate-sysctl-rollback`.
+- Migration 019 control-plane başlayanda avtomatik tətbiq olunur.
