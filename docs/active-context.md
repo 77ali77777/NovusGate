@@ -198,6 +198,14 @@
   - real logrotate;
   - preflight real serverdə;
   - brauzerdə tablar.
+- **Müstəqil review (opus):** 1 Important və 5 Minor tapıldı.
+  - Düzəldildi (`ca8d628`, `a2aa734`):
+    - uğursuz install-dan sonra wg0 51820-də qalırdı və retry preflight-da dayanırdı;
+    - `install.sh`-də xam CR baytı;
+    - baseline və dəyişiklik ayrı insert-lərlə yazılırdı;
+    - history yazısında timeout yox idi;
+    - restore təsdiqi fail2ban ban-larının da silindiyini demirdi.
+  - Qərar gözləyir: `/etc/logrotate.d/fail2ban` dpkg conffile-dır. Paket bu faylı dəyişsə, unattended-upgrades fail2ban yeniləməsini saxlaya bilər.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
