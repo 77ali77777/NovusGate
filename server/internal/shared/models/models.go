@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"net"
 	"time"
 )
@@ -182,4 +183,16 @@ type FirewallForward struct {
 	TargetPort int       `json:"target_port"`
 	Comment    string    `json:"comment,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+// FirewallHistoryEntry is the stored firewall state after one applied change
+// (P3c History). State is the engine's state as JSON; Action says what made
+// the change ("baseline" for the state before the first recorded one).
+type FirewallHistoryEntry struct {
+	ID        string          `json:"id"`
+	CreatedAt time.Time       `json:"created_at"`
+	UserID    string          `json:"user_id,omitempty"`
+	Username  string          `json:"username,omitempty"`
+	Action    string          `json:"action"`
+	State     json.RawMessage `json:"-"`
 }

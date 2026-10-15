@@ -251,7 +251,9 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if fwMode != firewall.ModeIptables {
-		apiServer.SetFirewall(firewall.NewHostEngine(fwMode, db))
+		fw := firewall.NewHostEngine(fwMode, db)
+		fw.History = db // P3c History: every applied change is recorded
+		apiServer.SetFirewall(fw)
 		go func() {
 			if err := apiServer.StartFirewall(context.Background()); err != nil {
 				slog.Error(fmt.Sprintf("[Firewall] startup failed: %v", err))

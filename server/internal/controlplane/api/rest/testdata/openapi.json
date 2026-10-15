@@ -1888,6 +1888,60 @@
         ],
         "type": "object"
       },
+      "V2HistoryEntry": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "removed": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "added",
+          "created_at",
+          "id",
+          "removed"
+        ],
+        "type": "object"
+      },
+      "V2HistoryResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/V2HistoryEntry"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "type": "object"
+      },
       "V2LiveResponse": {
         "properties": {
           "conntrack": {
@@ -3153,6 +3207,98 @@
           }
         },
         "summary": "Remove a port forward",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/history": {
+      "get": {
+        "operationId": "get_firewall_v2_history",
+        "parameters": [
+          {
+            "description": "newest entries to return (default 50, at most 200)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2HistoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Applied firewall changes, newest first, with the lines each added and removed",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/history/{id}/restore": {
+      "post": {
+        "operationId": "post_firewall_v2_history_by_id_restore",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Restore the firewall state of a history entry (as a confirmable change)",
         "tags": [
           "firewall-v2"
         ]

@@ -67,10 +67,10 @@ type HostInfo struct {
 
 // State is the stored firewall state before compilation.
 type State struct {
-	Services      []*models.FirewallService
-	IPRules       []*models.FirewallIPRule
-	Forwards      []*models.FirewallForward
-	EgressNodeIDs []string
+	Services      []*models.FirewallService `json:"services"`
+	IPRules       []*models.FirewallIPRule  `json:"ip_rules"`
+	Forwards      []*models.FirewallForward `json:"forwards"`
+	EgressNodeIDs []string                  `json:"egress_node_ids"`
 }
 
 // Change is an edit proposed through the engine. Mutate applies it to a copy
@@ -104,6 +104,8 @@ type Engine struct {
 	// AfterApply runs (under the engine lock) after every change that became
 	// final on the host, was stored and whose boot-time ruleset was written.
 	AfterApply func()
+	// History, when set, records the state after every applied change.
+	History HistoryStore
 
 	mu         sync.Mutex
 	pending    *pendingCommit
@@ -130,6 +132,7 @@ type pendingCommit struct {
 	commit func(ctx context.Context) error
 	script string
 	state  State
+	record func(context.Context) // nil when nothing stored changes
 }
 
 // LoadState reads the stored firewall state.
@@ -191,8 +194,11 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 	if err != nil {
 		return Result{}, err
 	}
+	var record func(context.Context)
 	var before map[string]bool
 	if ch.Mutate != nil {
+		prev, actor := copyState(st), ActorFrom(ctx)
+		record = func(c context.Context) { e.record(c, actor, prev, st) }
 		// Stored rows that are invalid only warn; an invalid new entry must
 		// be rejected, so remember which warnings existed before the change.
 		_, _, old, err := e.desired(ctx, st)
@@ -233,10 +239,10 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 		return Result{Warnings: warnings}, err
 	}
 	if confirm {
-		e.pending = &pendingCommit{id: p.ID, commit: ch.Commit, script: script, state: st}
+		e.pending = &pendingCommit{id: p.ID, commit: ch.Commit, script: script, state: st, record: record}
 		return Result{Pending: &p, Warnings: warnings}, nil
 	}
-	extra, err := e.finish(ctx, ch.Commit, script, st)
+	extra, err := e.finish(ctx, ch.Commit, script, st, record)
 	return Result{Warnings: append(warnings, extra...)}, err
 }
 
@@ -301,7 +307,7 @@ func (e *Engine) Confirm(ctx context.Context, id string) error {
 	if pc == nil || pc.id != id {
 		return nil
 	}
-	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state)
+	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state, pc.record)
 	for _, w := range extra {
 		slog.Warn(fmt.Sprintf("firewall: %v", w))
 	}
@@ -317,7 +323,7 @@ func (e *Engine) PendingChange() (nft.Pending, bool) {
 // request, so a disconnecting client cannot leave it unsaved), schedules the
 // next expiry and writes the boot-time ruleset. It returns warnings and an
 // error.
-func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State) ([]error, error) {
+func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State, record func(context.Context)) ([]error, error) {
 	// The stored state is live: a pending retry is no longer needed.
 	if e.stopRetry != nil {
 		e.stopRetry()
@@ -331,6 +337,9 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 			e.scheduleRetryLocked()
 			return nil, fmt.Errorf("firewall change applied but not saved (the stored state is re-applied shortly): %w", err)
 		}
+	}
+	if record != nil {
+		record(ctx)
 	}
 	e.scheduleExpiry(st)
 	if e.Persist != nil {

@@ -262,7 +262,7 @@ func (s *Server) Router() http.Handler {
 func (s *Server) setupRoutes() {
 	// Route middleware: panic recovery, then auth. The request log wraps the
 	// whole mux in Router (it records the 500 that RecoverMiddleware writes).
-	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware, s.firewallChangeMiddleware)
+	s.router.Use(RecoverMiddleware, APIKeyMiddleware, s.authMiddleware, s.firewallActorMiddleware, s.firewallChangeMiddleware)
 
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
