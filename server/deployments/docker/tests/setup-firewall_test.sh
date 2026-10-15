@@ -316,6 +316,30 @@ chmod +x "$d/iptables"
 ) || fail "no ip6tables: apply_rules must not fail"
 assert_drop_last "$d/iptables.log" "no ip6tables"
 
+# Case 16: fail2ban's logrotate gets copytruncate, so the log keeps the inode
+# the control plane's single-file bind mount follows. Running twice adds it once.
+d="$(mktemp -d)"
+cat > "$d/fail2ban" << 'ROT'
+/var/log/fail2ban.log {
+
+    weekly
+    rotate 4
+    compress
+    create 640 root adm
+}
+ROT
+(
+  export F2B_LOGROTATE="$d/fail2ban"
+  # shellcheck source=../setup-firewall.sh
+  source "$SCRIPT"
+  configure_fail2ban_logrotate > /dev/null
+  configure_fail2ban_logrotate > /dev/null
+  F2B_LOGROTATE="$d/missing" configure_fail2ban_logrotate > /dev/null
+) || fail "logrotate: configure_fail2ban_logrotate failed"
+[ "$(grep -c '^ *copytruncate$' "$d/fail2ban")" = "1" ] || fail "logrotate: want exactly one copytruncate, got: $(cat "$d/fail2ban")"
+[ "$(sed -n 2p "$d/fail2ban")" = "    # NovusGate: keep the inode (the control plane bind-mounts this file)" ] || fail "logrotate: marker must follow the opening line"
+[ ! -e "$d/missing" ] || fail "logrotate: a missing file must not be created"
+
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"
   exit 1

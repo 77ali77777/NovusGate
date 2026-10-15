@@ -608,6 +608,8 @@ if [ -f /etc/fail2ban/jail.d/novusgate.local ]; then
   rm -f /etc/fail2ban/jail.d/novusgate.local
   systemctl reload fail2ban 2>/dev/null || true
 fi
+# setup-firewall.sh added a marker line and copytruncate to fail2ban's logrotate
+[ -f /etc/logrotate.d/fail2ban ] && sed -i '/# NovusGate: keep the inode/{N;d}' /etc/logrotate.d/fail2ban || true
 if command -v netfilter-persistent &> /dev/null; then
     netfilter-persistent save
 fi

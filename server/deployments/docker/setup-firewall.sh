@@ -93,6 +93,24 @@ configure_fail2ban() {
   fi
 }
 
+# configure_fail2ban_logrotate adds copytruncate to fail2ban's logrotate
+# block. The control plane bind-mounts /var/log/fail2ban.log as a single
+# file; a rename rotation would leave it reading the old inode, so ban
+# notifications and the panel's log view would stop until a restart.
+F2B_LOGROTATE_MARK="    # NovusGate: keep the inode (the control plane bind-mounts this file)"
+configure_fail2ban_logrotate() {
+  local f="${F2B_LOGROTATE:-/etc/logrotate.d/fail2ban}" tmp
+  [ -f "$f" ] || return 0
+  grep -qF "$F2B_LOGROTATE_MARK" "$f" && return 0
+  grep -q '^/var/log/fail2ban\.log.*{' "$f" || return 0
+  tmp="$(mktemp)"
+  awk -v mark="$F2B_LOGROTATE_MARK" '
+    { print }
+    !done && /^\/var\/log\/fail2ban\.log.*\{/ { print mark; print "    copytruncate"; done = 1 }
+  ' "$f" > "$tmp" && cat "$tmp" > "$f"
+  rm -f "$tmp"
+}
+
 # remove_nft_engine undoes FIREWALL_ENGINE=nft; call it only after the
 # iptables baseline (INPUT DROP) is back.
 remove_nft_engine() {
@@ -233,6 +251,7 @@ main() {
     install_boot_unit || echo "[FIREWALL] Warning: $BOOT_UNIT could not be installed; FIREWALL_ENGINE=nft will refuse to start until it is"
   fi
   configure_fail2ban "$engine"
+  configure_fail2ban_logrotate || echo "[FIREWALL] Warning: fail2ban logrotate not updated; ban notifications stop after a rotation until the control plane restarts"
   if [ "$engine" = "nft" ] && [ -f "$NFT_RULESET" ]; then
     echo "[FIREWALL] FIREWALL_ENGINE=nft: the control plane owns INPUT filtering; iptables and Docker are left unchanged."
     return 0

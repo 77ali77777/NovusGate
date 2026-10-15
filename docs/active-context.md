@@ -172,7 +172,7 @@
   - real serverdə full tunnel ilə internet çıxışı;
   - `pg_dump`-dan restore;
   - brauzerdə kartların görünüşü.
-- **Məlum məhdudiyyət:** `fail2ban.log` konteynerə tək fayl kimi mount olunub, ona görə rename ilə rotasiyadan sonra ban bildirişləri konteyner restart olunana qədər dayanır (`deployment.md`).
+- **Fail2Ban log rotasiyası:** `fail2ban.log` konteynerə tək fayl kimi mount olunub. Bu, sonradan `copytruncate` ilə həll olundu (aşağıdakı sessiyaya baxın).
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

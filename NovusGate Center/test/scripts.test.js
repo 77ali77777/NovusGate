@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { spawnSync } = require('node:child_process');
+const { spawnSync, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -237,5 +237,23 @@ test('rollback restores the backed-up code, keeps server/data and exits 1', () =
     assert.match(out.stdout, /previous version is running again/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// setup-firewall.sh adds a marker line and copytruncate to fail2ban's
+// logrotate block; uninstall must take exactly those two lines out.
+test('uninstall reverts the fail2ban logrotate change', () => {
+  const line = scripts.UNINSTALL_SCRIPT.split('\n').find((l) => l.includes('/etc/logrotate.d/fail2ban') && l.includes('sed -i'));
+  assert.ok(line, 'uninstall must edit /etc/logrotate.d/fail2ban');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-rot-'));
+  try {
+    const original = '/var/log/fail2ban.log {\n    weekly\n    create 640 root adm\n}\n';
+    const patched = original.replace('{\n', '{\n    # NovusGate: keep the inode (the control plane bind-mounts this file)\n    copytruncate\n');
+    const f = path.join(dir, 'fail2ban');
+    fs.writeFileSync(f, patched);
+    execFileSync('bash', ['-c', line.trim().replaceAll('/etc/logrotate.d/fail2ban', f)]);
+    assert.equal(fs.readFileSync(f, 'utf8'), original);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
