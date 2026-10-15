@@ -222,3 +222,18 @@ export type FirewallV2ServiceRequest = S['v2ServiceRequest']
 export type FirewallV2IPRuleRequest = S['v2IPRuleRequest']
 
 export type FirewallV2ForwardRequest = S['v2ForwardRequest']
+
+// Server administration (P10a, admin only). Changes need a step-up.
+export type ServiceStatus = S['ServiceStatus']
+
+export type SysctlSettings = S['SysctlResponse']
+
+export type SysctlChange = S['SysctlChangeResponse']
+
+export type HostSystem = S['SystemInfo']
+
+export type UpgradablePackage = S['Package']
+
+export type UpgradeJob = S['UpgradeJob']
+
+export type HostNetwork = S['NetworkView']

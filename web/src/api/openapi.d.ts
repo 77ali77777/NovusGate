@@ -132,7 +132,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Enter the password again: server changes are allowed for 5 minutes (401 invalid_password) */
+        /** Enter the password again: server changes are allowed for 5 minutes (400 invalid_password; 429 after 5 wrong passwords in 15 minutes) */
         post: operations["post_auth_step_up"];
         delete?: never;
         options?: never;
@@ -775,6 +775,23 @@ export interface paths {
         post?: never;
         /** Delete a network (not wg0) */
         delete: operations["delete_networks_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/networks/{id}/dns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split) */
+        put: operations["put_networks_by_id_dns"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1521,6 +1538,9 @@ export interface components {
             policy: string;
             rules: components["schemas"]["FirewallRule"][] | null;
         };
+        ClientDNSRequest: {
+            client_dns?: string;
+        };
         ClosePortRequest: {
             force?: boolean;
             port?: number;
@@ -1862,6 +1882,7 @@ export interface components {
         };
         Network: {
             cidr: string;
+            client_dns: string;
             /** Format: date-time */
             created_at: string;
             id: string;
@@ -1875,6 +1896,7 @@ export interface components {
         };
         NetworkInput: {
             cidr?: string;
+            client_dns?: string;
             /** Format: date-time */
             created_at?: string;
             id?: string;
@@ -1900,9 +1922,15 @@ export interface components {
             transfer_tx: number;
         };
         NetworkView: {
-            addresses: number[] | null;
-            links: number[] | null;
-            routes: number[] | null;
+            addresses: {
+                [key: string]: unknown;
+            }[] | null;
+            links: {
+                [key: string]: unknown;
+            }[] | null;
+            routes: {
+                [key: string]: unknown;
+            }[] | null;
         };
         Node: {
             /** Format: date-time */
@@ -4105,6 +4133,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_networks_by_id_dns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientDNSRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
             };
             /** @description Error */
             default: {

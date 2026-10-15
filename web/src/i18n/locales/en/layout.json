@@ -8,7 +8,8 @@
     "fail2ban": "Fail2Ban",
     "audit": "Audit log",
     "settings": "Settings",
-    "groups": "Groups"
+    "groups": "Groups",
+    "server": "Server"
   },
   "network": "Network",
   "selectNetwork": "Select network...",

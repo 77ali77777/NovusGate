@@ -537,6 +537,86 @@ class ApiClient {
     return data
   }
 
+  // DNS servers of a network's client configs (P10a); '' is the default.
+  async setNetworkDNS(id: string, clientDNS: string): Promise<Network> {
+    const { data } = await this.client.put<Network>(`/networks/${id}/dns`, {
+      client_dns: clientDNS,
+    })
+    return data
+  }
+
+  // Server administration (P10a). Changes answer 403 step_up_required until
+  // stepUp has checked the password again (5 minutes).
+  async stepUp(password: string): Promise<void> {
+    await this.client.post('/auth/step-up', { password })
+  }
+
+  async getServerServices(): Promise<ServiceStatus[]> {
+    const { data } = await this.client.get<{ services: ServiceStatus[] | null }>('/server/services')
+    return data.services ?? []
+  }
+
+  async restartServerService(unit: string): Promise<void> {
+    await this.client.post(`/server/services/${encodeURIComponent(unit)}/restart`)
+  }
+
+  async getSysctl(): Promise<SysctlSettings> {
+    const { data } = await this.client.get<SysctlSettings>('/server/sysctl')
+    return data
+  }
+
+  async setSysctl(values: Record<string, string>): Promise<SysctlChange> {
+    const { data } = await this.client.put<SysctlChange>('/server/sysctl', { values })
+    return data
+  }
+
+  async confirmSysctl(): Promise<void> {
+    await this.client.post('/server/sysctl/confirm')
+  }
+
+  async getHostSystem(): Promise<HostSystem> {
+    const { data } = await this.client.get<HostSystem>('/server/system')
+    return data
+  }
+
+  async setHostname(hostname: string): Promise<HostSystem> {
+    const { data } = await this.client.put<HostSystem>('/server/system/hostname', { hostname })
+    return data
+  }
+
+  async setTimezone(timezone: string, ntp: boolean): Promise<HostSystem> {
+    const { data } = await this.client.put<HostSystem>('/server/system/timezone', {
+      timezone,
+      ntp,
+    })
+    return data
+  }
+
+  async getUpgradablePackages(): Promise<UpgradablePackage[]> {
+    const { data } = await this.client.get<{ packages: UpgradablePackage[] | null }>(
+      '/server/packages'
+    )
+    return data.packages ?? []
+  }
+
+  async getUpgradeJob(): Promise<UpgradeJob> {
+    const { data } = await this.client.get<UpgradeJob>('/server/packages/upgrade')
+    return data
+  }
+
+  async startUpgrade(): Promise<void> {
+    await this.client.post('/server/packages/upgrade', { confirm: 'upgrade' })
+  }
+
+  async rebootServer(): Promise<void> {
+    await this.client.post('/server/reboot', { confirm: 'reboot' })
+  }
+
+  async getHostNetwork(): Promise<HostNetwork> {
+    const { data } = await this.client.get<HostNetwork>('/server/network')
+    return data
+  }
+
   // Telegram notifications (P8).
   async getNotificationSettings(): Promise<NotificationSettings> {
     const { data } = await this.client.get<NotificationSettings>('/notifications/settings')
@@ -649,7 +729,17 @@ import { type AuditCursor, nextBefore } from '@/lib/audit'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
 import { roleAtLeast } from '@/lib/roles'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
-import type { BackupInfo, NotificationSettings } from '@/types'
+import type {
+  BackupInfo,
+  HostNetwork,
+  HostSystem,
+  NotificationSettings,
+  ServiceStatus,
+  SysctlChange,
+  SysctlSettings,
+  UpgradablePackage,
+  UpgradeJob,
+} from '@/types'
 
 // Export hooks
 
@@ -1288,3 +1378,61 @@ export const useRestoreFirewallV2History = () =>
     (id: string) => api.restoreFirewallV2History(id),
     'toasts:failedToRestoreFirewallState'
   )
+
+// Network client DNS (P10a).
+export function useSetNetworkDNS() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToSaveDns', successTitle: 'toasts:dnsSaved' },
+    mutationFn: (v: { id: string; clientDNS: string }) => api.setNetworkDNS(v.id, v.clientDNS),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['networks'] }),
+  })
+}
+
+// Server administration (P10a, admin only). The mutations take a function
+// that runs the change through withStepUp (pages/Server), so the password
+// prompt can sit between the 403 and the retry.
+export function useServerServices() {
+  return useQuery({
+    queryKey: ['server', 'services'],
+    queryFn: () => api.getServerServices(),
+    refetchInterval: 15000,
+  })
+}
+
+export function useSysctl() {
+  return useQuery({ queryKey: ['server', 'sysctl'], queryFn: () => api.getSysctl() })
+}
+
+export function useHostSystem() {
+  return useQuery({ queryKey: ['server', 'system'], queryFn: () => api.getHostSystem() })
+}
+
+export function useUpgradablePackages() {
+  return useQuery({
+    queryKey: ['server', 'packages'],
+    queryFn: () => api.getUpgradablePackages(),
+  })
+}
+
+// The last upgrade; polled while one runs.
+export function useUpgradeJob() {
+  return useQuery({
+    queryKey: ['server', 'upgrade'],
+    queryFn: () => api.getUpgradeJob(),
+    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+  })
+}
+
+export function useHostNetwork() {
+  return useQuery({ queryKey: ['server', 'network'], queryFn: () => api.getHostNetwork() })
+}
+
+export function useServerChange<T>(errorTitle: string, successTitle?: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle, successTitle },
+    mutationFn: (run: () => Promise<T>) => run(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['server'] }),
+  })
+}

@@ -73,5 +73,20 @@
   "failedToSaveBindings": "Bağlamalar yadda saxlanmadı",
   "bindingsSaved": "Bağlamalar yadda saxlanıldı",
   "failedToResetQuota": "Kvota sıfırlanmadı",
-  "quotaReset": "Kvota sayğacı sıfırlandı"
+  "quotaReset": "Kvota sayğacı sıfırlandı",
+  "failedToSaveDns": "DNS serverləri saxlanılmadı",
+  "dnsSaved": "DNS serverləri saxlanıldı",
+  "failedToRestartService": "Servis yenidən başladılmadı",
+  "serviceRestarted": "Servis yenidən başladıldı",
+  "failedToApplySysctl": "Kernel parametrləri tətbiq olunmadı",
+  "failedToKeepSysctl": "Kernel parametrləri saxlanılmadı",
+  "sysctlKept": "Kernel parametrləri saxlanıldı",
+  "failedToSetHostname": "Host adı dəyişdirilmədi",
+  "hostnameSet": "Host adı dəyişdirildi",
+  "failedToSetTimezone": "Saat qurşağı təyin olunmadı",
+  "timezoneSet": "Saat qurşağı təyin olundu",
+  "failedToReboot": "Server yenidən başladılmadı",
+  "rebootStarted": "Server yenidən başlayır",
+  "failedToStartUpgrade": "Yeniləmə başladılmadı",
+  "upgradeStarted": "Paket yeniləməsi başladı"
 }

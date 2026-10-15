@@ -43,7 +43,10 @@
     "toIt": "to it",
     "fromIt": "from it",
     "rules": "VPN rules naming this network",
-    "noRules": "None."
+    "noRules": "None.",
+    "clientDns": "Client DNS servers",
+    "clientDnsDefault": "Default: 1.1.1.1 for full tunnel, none for split",
+    "clientDnsHint": "Up to 3 IP addresses, comma separated. New and re-downloaded configs use them."
   },
   "verdict": {
     "allow": "allow",

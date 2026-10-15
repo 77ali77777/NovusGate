@@ -1,0 +1,75 @@
+{
+  "title": "Server",
+  "description": "Hub-ın işlədiyi host: servislər, şəbəkə, kernel parametrləri və sistem. Dəyişikliklər parolunuzu yenidən soruşur.",
+  "adminOnly": "Server idarəetməsi yalnız adminlər üçündür.",
+  "loadError": "Bu məlumat serverdən oxunmadı.",
+  "tabs": {
+    "services": "Servislər",
+    "network": "Şəbəkə",
+    "kernel": "Kernel",
+    "system": "Sistem"
+  },
+  "stepUp": {
+    "title": "Parolunuzla təsdiqləyin",
+    "hint": "Serverdə dəyişiklik üçün parolunuz yenidən lazımdır; 5 dəqiqə keçərlidir.",
+    "password": "Parol",
+    "confirm": "Təsdiqlə",
+    "wrong": "Parol düzgün deyil.",
+    "tooMany": "Çox sayda yanlış parol. Bir az sonra yenidən cəhd edin.",
+    "failed": "Parol yoxlanıla bilmədi."
+  },
+  "confirmWord": "Təsdiq üçün {{word}} yazın",
+  "services": {
+    "restart": "Yenidən başlat",
+    "restartConfirm": "{{name}} yenidən başladılsın? Bağlantıları bir anlıq kəsiləcək.",
+    "hint": "Burada yalnız docker, fail2ban və WireGuard interfeysləri yenidən başladıla bilər."
+  },
+  "network": {
+    "interfaces": "İnterfeyslər",
+    "routes": "Marşrutlar",
+    "name": "Ad",
+    "state": "Vəziyyət",
+    "addresses": "Ünvanlar",
+    "destination": "Təyinat",
+    "gateway": "Şlüz",
+    "device": "Cihaz",
+    "readOnly": "Yalnız oxunur: host şəbəkəsi serverin özündə dəyişdirilir."
+  },
+  "kernel": {
+    "apply": "Tətbiq et",
+    "reset": "Redaktələri geri al",
+    "keep": "Dəyişikliyi saxla",
+    "pending": "Dəyişiklik qüvvədədir. {{seconds}} s ərzində saxlayın, yoxsa server köhnə dəyərləri bərpa edəcək.",
+    "hint": "Bağlantınızı kəsən dəyişiklik özü geri qayıdır: yalnız panel hələ işləyirsə saxlayın."
+  },
+  "system": {
+    "os": "Əməliyyat sistemi",
+    "kernel": "Kernel",
+    "clock": "Saat",
+    "synced": "Sinxrondur (NTP)",
+    "notSynced": "Sinxron deyil",
+    "hostname": "Host adı",
+    "timezone": "Saat qurşağı",
+    "ntp": "Saatı sinxronlaşdır (NTP)",
+    "save": "Yadda saxla"
+  },
+  "packages": {
+    "title": "Paket yeniləmələri",
+    "count_one": "{{count}} yenilənə bilən paket, {{security}} təhlükəsizlik",
+    "count_other": "{{count}} yenilənə bilən paket, {{security}} təhlükəsizlik",
+    "refresh": "Yenidən yoxla",
+    "upgrade": "Paketləri yenilə",
+    "security": "təhlükəsizlik",
+    "lastRun": "Son yeniləmə: {{when}}",
+    "running": "Gedir",
+    "ok": "Bitdi",
+    "failed": "Uğursuz oldu",
+    "confirmText": "Serverdə apt-get upgrade işləyəcək. Bu zaman servislər yenidən başlaya bilər."
+  },
+  "reboot": {
+    "title": "Serveri yenidən başlat",
+    "hint": "Server qayıdana qədər bütün VPN bağlantıları və panel işləməyəcək.",
+    "action": "Yenidən başlat",
+    "confirmText": "Server bir neçə saniyəyə yenidən başlayacaq. Qayıdana qədər VPN bağlantıları və panel dayanacaq."
+  }
+}

@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Flame,
   GitFork,
+  HardDrive,
   LogOut,
   Menu,
   Network,
@@ -18,7 +19,7 @@ import type React from 'react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { api, useNetworks } from '@/api/client'
+import { api, useCan, useNetworks } from '@/api/client'
 import { LANGUAGES, setLanguage } from '@/i18n'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
@@ -29,6 +30,7 @@ interface NavItem {
   labelKey: string // layout:nav.*
   href: string
   icon: React.ReactNode
+  adminOnly?: boolean // hidden for other roles; the API refuses them anyway
 }
 
 const navigation: NavItem[] = [
@@ -40,6 +42,12 @@ const navigation: NavItem[] = [
   { labelKey: 'nav.firewall', href: '/firewall', icon: <Flame className="w-5 h-5" /> },
   { labelKey: 'nav.fail2ban', href: '/fail2ban', icon: <Shield className="w-5 h-5" /> },
   { labelKey: 'nav.audit', href: '/audit', icon: <ClipboardList className="w-5 h-5" /> },
+  {
+    labelKey: 'nav.server',
+    href: '/server',
+    icon: <HardDrive className="w-5 h-5" />,
+    adminOnly: true,
+  },
   { labelKey: 'nav.settings', href: '/settings', icon: <Settings className="w-5 h-5" /> },
 ]
 
@@ -49,6 +57,7 @@ export const Layout = () => {
   const sidebarOpen = useSidebarOpen()
   const { toggleSidebar, currentNetworkId, setCurrentNetworkId } = useAppStore()
   const { data: networks } = useNetworks()
+  const isAdmin = useCan('admin')
 
   // Auto-select first network if none selected
   useEffect(() => {
@@ -125,24 +134,26 @@ export const Layout = () => {
 
         {/* Navigation */}
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={clsx(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                )}
-              >
-                {item.icon}
-                {t(item.labelKey)}
-              </Link>
-            )
-          })}
+          {navigation
+            .filter((item) => !item.adminOnly || isAdmin)
+            .map((item) => {
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={clsx(
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  )}
+                >
+                  {item.icon}
+                  {t(item.labelKey)}
+                </Link>
+              )
+            })}
         </nav>
 
         {/* Footer Actions */}

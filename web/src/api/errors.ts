@@ -19,6 +19,19 @@ export function errorBodyMessage(data: unknown): string | undefined {
   return undefined
 }
 
+// errorBodyCode returns the stable code of a unified error response
+// ({"error":{"code"}}) carried by an axios error, if there is one.
+export function errorBodyCode(err: unknown): string | undefined {
+  const data = (err as { response?: { data?: unknown } } | undefined)?.response?.data
+  if (!data || typeof data !== 'object') return undefined
+  const error = (data as { error?: unknown }).error
+  if (error && typeof error === 'object') {
+    const code = (error as { code?: unknown }).code
+    if (typeof code === 'string') return code
+  }
+  return undefined
+}
+
 // apiErrorMessage returns the server's message for an axios error. An HTTP
 // error without one shows fallback (not axios' "Request failed with status
 // code …"); only errors without a response (network down) show their own

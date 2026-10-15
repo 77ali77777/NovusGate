@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { apiErrorMessage, errorBodyMessage } from './api/errors'
 import { Layout } from './components/Layout'
 import i18n from './i18n'
+import { StepUpCancelled } from './lib/serverAdmin'
 import { AuditPage } from './pages/Audit/AuditPage'
 import { DashboardPage } from './pages/Dashboard/Dashboard'
 import { Fail2BanPage } from './pages/Fail2Ban/Fail2Ban'
@@ -13,6 +14,7 @@ import { GroupsPage } from './pages/Groups/GroupsPage'
 import { NetworkDetailPage } from './pages/Networks/NetworkDetail'
 import { Networks } from './pages/Networks/Networks'
 import { NodeDetailPage, NodesPage } from './pages/Nodes/Nodes'
+import { ServerPage } from './pages/Server/ServerPage'
 import { SettingsPage } from './pages/Settings/SettingsPage'
 import { TopologyPage } from './pages/Topology/TopologyPage'
 import { useAppStore } from './store'
@@ -24,7 +26,8 @@ import { useAppStore } from './store'
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: (error, _vars, _ctx, mutation) => {
-      if (mutation.meta?.inlineError) return
+      // A closed password prompt is the person's choice, not a failure.
+      if (mutation.meta?.inlineError || error instanceof StepUpCancelled) return
       useAppStore.getState().addNotification({
         type: 'error',
         title: i18n.t((mutation.meta?.errorTitle as string) ?? 'toasts:actionFailed'),
@@ -187,6 +190,7 @@ function App() {
             <Route path="firewall" element={<Firewall />} />
             <Route path="fail2ban" element={<Fail2BanPage />} />
             <Route path="audit" element={<AuditPage />} />
+            <Route path="server" element={<ServerPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

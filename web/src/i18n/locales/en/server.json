@@ -1,0 +1,75 @@
+{
+  "title": "Server",
+  "description": "The host the hub runs on: services, network, kernel settings and system. Changes ask for your password again.",
+  "adminOnly": "Server administration is for admins.",
+  "loadError": "Could not read this from the server.",
+  "tabs": {
+    "services": "Services",
+    "network": "Network",
+    "kernel": "Kernel",
+    "system": "System"
+  },
+  "stepUp": {
+    "title": "Confirm with your password",
+    "hint": "Changes to the server need your password again; it is good for 5 minutes.",
+    "password": "Password",
+    "confirm": "Confirm",
+    "wrong": "The password is not correct.",
+    "tooMany": "Too many wrong passwords. Try again later.",
+    "failed": "The password could not be checked."
+  },
+  "confirmWord": "Type {{word}} to confirm",
+  "services": {
+    "restart": "Restart",
+    "restartConfirm": "Restart {{name}}? Its connections drop for a moment.",
+    "hint": "Only docker, fail2ban and the WireGuard interfaces can be restarted here."
+  },
+  "network": {
+    "interfaces": "Interfaces",
+    "routes": "Routes",
+    "name": "Name",
+    "state": "State",
+    "addresses": "Addresses",
+    "destination": "Destination",
+    "gateway": "Gateway",
+    "device": "Device",
+    "readOnly": "Read-only: the host network is changed on the server itself."
+  },
+  "kernel": {
+    "apply": "Apply",
+    "reset": "Undo edits",
+    "keep": "Keep the change",
+    "pending": "The change is live. Keep it within {{seconds}} s or the server restores the old values.",
+    "hint": "A change that cuts you off is undone by itself: keep it only once the panel still works."
+  },
+  "system": {
+    "os": "Operating system",
+    "kernel": "Kernel",
+    "clock": "Clock",
+    "synced": "Synchronised (NTP)",
+    "notSynced": "Not synchronised",
+    "hostname": "Host name",
+    "timezone": "Time zone",
+    "ntp": "Sync the clock (NTP)",
+    "save": "Save"
+  },
+  "packages": {
+    "title": "Package updates",
+    "count_one": "{{count}} upgradable package, {{security}} security",
+    "count_other": "{{count}} upgradable packages, {{security}} security",
+    "refresh": "Check again",
+    "upgrade": "Upgrade packages",
+    "security": "security",
+    "lastRun": "Last upgrade: {{when}}",
+    "running": "Running",
+    "ok": "Finished",
+    "failed": "Failed",
+    "confirmText": "apt-get upgrade runs on the server. Services may restart while it runs."
+  },
+  "reboot": {
+    "title": "Reboot the server",
+    "hint": "Every VPN connection and the panel are down until the server is back.",
+    "action": "Reboot",
+    "confirmText": "The server reboots in a few seconds. VPN connections and the panel stop until it is back."
+  }
+}

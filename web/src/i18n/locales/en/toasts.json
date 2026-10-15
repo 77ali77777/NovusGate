@@ -73,5 +73,20 @@
   "failedToSaveBindings": "Failed to save the bindings",
   "bindingsSaved": "Bindings saved",
   "failedToResetQuota": "Failed to reset the quota",
-  "quotaReset": "Quota count reset"
+  "quotaReset": "Quota count reset",
+  "failedToSaveDns": "Failed to save the DNS servers",
+  "dnsSaved": "DNS servers saved",
+  "failedToRestartService": "Failed to restart the service",
+  "serviceRestarted": "Service restarted",
+  "failedToApplySysctl": "Failed to apply the kernel settings",
+  "failedToKeepSysctl": "Failed to keep the kernel settings",
+  "sysctlKept": "Kernel settings kept",
+  "failedToSetHostname": "Failed to change the host name",
+  "hostnameSet": "Host name changed",
+  "failedToSetTimezone": "Failed to set the time zone",
+  "timezoneSet": "Time zone set",
+  "failedToReboot": "Failed to reboot the server",
+  "rebootStarted": "The server is rebooting",
+  "failedToStartUpgrade": "Failed to start the upgrade",
+  "upgradeStarted": "Package upgrade started"
 }
