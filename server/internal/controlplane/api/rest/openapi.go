@@ -113,7 +113,7 @@ var docOps = []docOp{
 	{"PUT", "/api/v1/limits/{id}", "Replace a limit profile; bound nodes get it at once", "limits", LimitProfileRequest{}, 200, models.LimitProfile{}, false},
 	{"DELETE", "/api/v1/limits/{id}", "Delete a limit profile (409 limit_in_use while bound)", "limits", nil, 204, nil, false},
 	{"PUT", "/api/v1/limits/{id}/bindings", "Make these the nodes and groups bound to the profile", "limits", LimitBindingsRequest{}, 200, models.LimitProfile{}, false},
-	{"POST", "/api/v1/auth/step-up", "Enter the password again: server changes are allowed for 5 minutes (401 invalid_password)", "auth", StepUpRequest{}, 204, nil, false},
+	{"POST", "/api/v1/auth/step-up", "Enter the password again: server changes are allowed for 5 minutes (400 invalid_password; 429 after 5 wrong passwords in 15 minutes)", "auth", StepUpRequest{}, 204, nil, false},
 	{"GET", "/api/v1/server/services", "Managed services and their state (admin, P10a)", "server", nil, 200, ServicesResponse{}, false},
 	{"POST", "/api/v1/server/services/{unit}/restart", "Restart docker, fail2ban or a wg-quick@ unit (step-up)", "server", nil, 204, nil, false},
 	{"GET", "/api/v1/server/sysctl", "Managed kernel settings and their values", "server", nil, 200, SysctlResponse{}, false},

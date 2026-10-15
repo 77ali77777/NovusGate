@@ -3524,7 +3524,7 @@
             "description": "Error"
           }
         },
-        "summary": "Enter the password again: server changes are allowed for 5 minutes (401 invalid_password)",
+        "summary": "Enter the password again: server changes are allowed for 5 minutes (400 invalid_password; 429 after 5 wrong passwords in 15 minutes)",
         "tags": [
           "auth"
         ]

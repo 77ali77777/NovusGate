@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -119,11 +120,21 @@ func (s *Server) registerServerAdminRoutes(api *mux.Router) {
 	api.HandleFunc("/server/network", s.handleNetwork).Methods("GET")
 }
 
+// stepUpLimit counts wrong step-up passwords per user (replaced in tests).
+var stepUpLimit = newLoginLimiter(5, 15*time.Minute)
+
 // handleStepUp checks the password again and steps the session up.
 func (s *Server) handleStepUp(w http.ResponseWriter, r *http.Request) {
 	user, hash := sessionFrom(r)
 	if user == nil {
 		errorWithCode(w, http.StatusUnauthorized, "invalid_token", "invalid token")
+		return
+	}
+	// Counted per user: a stolen session must not guess the password.
+	key := "user:" + user.Username
+	if wait, ok := stepUpLimit.begin(key, authNow()); !ok {
+		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+		errorWithCode(w, http.StatusTooManyRequests, "too_many_attempts", "too many wrong passwords, try again later")
 		return
 	}
 	var req StepUpRequest
@@ -133,9 +144,10 @@ func (s *Server) handleStepUp(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.GetUserByUsername(r.Context(), user.Username)
 	if err != nil || u == nil || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)) != nil {
-		errorWithCode(w, http.StatusUnauthorized, "invalid_password", "the password is not correct")
+		errorWithCode(w, http.StatusBadRequest, "invalid_password", "the password is not correct") // 400: a 401 logs the panel out
 		return
 	}
+	stepUpLimit.succeed(key)
 	if err := s.store.ElevateSession(r.Context(), hash, authNow().Add(stepUpTTL)); err != nil {
 		slog.Error("step-up not stored", "error", err)
 		errorResponse(w, http.StatusInternalServerError, "failed to step up")

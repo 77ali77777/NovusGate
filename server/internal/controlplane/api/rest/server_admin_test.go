@@ -60,7 +60,7 @@ func TestServerChangesNeedStepUp(t *testing.T) {
 	if h.ran("hostnamectl set-hostname hub2") {
 		t.Fatal("nothing may run without step-up")
 	}
-	if rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"wrong"}`, true); rec.Code != 401 {
+	if rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"wrong"}`, true); rec.Code != 400 || errorCode(t, rec.Body.Bytes()) != "invalid_password" {
 		t.Fatalf("step-up with a wrong password = %d", rec.Code)
 	}
 	if rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true); rec.Code != 204 {
@@ -171,5 +171,24 @@ func TestServerUpgradeJob(t *testing.T) {
 	}
 	if job.Running || !job.OK || !strings.Contains(job.Output, "0 upgraded") || job.FinishedAt == nil {
 		t.Fatalf("job = %+v", job)
+	}
+}
+
+// A wrong step-up password is 400, not 401 (a 401 logs the panel out), and
+// guessing is limited per user: after 5 failures even the right password
+// waits.
+func TestStepUpGuessingIsLimited(t *testing.T) {
+	saved := stepUpLimit
+	stepUpLimit = newLoginLimiter(5, 15*time.Minute)
+	defer func() { stepUpLimit = saved }()
+	s, _ := newServerAdmin(t)
+	for i := 0; i < 5; i++ {
+		if rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"wrong"}`, true); rec.Code != 400 {
+			t.Fatalf("attempt %d = %d", i, rec.Code)
+		}
+	}
+	rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
+	if rec.Code != 429 || errorCode(t, rec.Body.Bytes()) != "too_many_attempts" || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("after 5 failures = %d %s", rec.Code, rec.Body)
 	}
 }
