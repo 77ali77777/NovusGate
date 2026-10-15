@@ -32,12 +32,14 @@ func newServerAdmin(t *testing.T) (*Server, *hostFake) {
 	t.Helper()
 	s, _, _ := newContractServer(t)
 	h := &hostFake{out: map[string]string{
-		"hostname":         "vpn-hub\n",
-		"timedatectl show": "Timezone=UTC\nNTP=yes\nNTPSynchronized=yes\n",
-		"uname -r":         "5.15.0\n",
-		"ip -j addr":       "[]", "ip -j route": "[]", "ip -j link": "[]",
-		"sysctl -n net.ipv4.ip_forward":                             "1\n",
-		"apt list --upgradable":                                     "Listing...\n",
+		"hostname":                      "vpn-hub\n",
+		"timedatectl show":              "Timezone=UTC\nNTP=yes\nNTPSynchronized=yes\n",
+		"uname -r":                      "5.15.0\n",
+		"ip -j addr":                    `[{"ifname":"eth0","operstate":"UP","addr_info":[{"family":"inet","local":"203.0.113.5","prefixlen":24}]}]`,
+		"ip -j route":                   `[{"dst":"default","gateway":"203.0.113.1","dev":"eth0"}]`,
+		"ip -j link":                    `[{"ifname":"eth0","operstate":"UP"}]`,
+		"sysctl -n net.ipv4.ip_forward": "1\n",
+		"apt list --upgradable":         "Listing...\n",
 		"systemctl list-units wg-quick@* --all --no-legend --plain": "",
 	}}
 	s.host = h

@@ -1552,21 +1552,24 @@
         "properties": {
           "addresses": {
             "items": {
-              "type": "integer"
+              "additionalProperties": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"
           },
           "links": {
             "items": {
-              "type": "integer"
+              "additionalProperties": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"
           },
           "routes": {
             "items": {
-              "type": "integer"
+              "additionalProperties": true,
+              "type": "object"
             },
             "nullable": true,
             "type": "array"

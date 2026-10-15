@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"reflect"
@@ -184,6 +185,9 @@ var docOps = []docOp{
 var (
 	timeType = reflect.TypeOf(time.Time{})
 	ipType   = reflect.TypeOf(net.IP{})
+	// rawJSONType carries the lists `ip -j` prints (hostadmin.NetworkView),
+	// passed through as they are: arrays of objects, not bytes.
+	rawJSONType = reflect.TypeOf(json.RawMessage{})
 	// nodeStatusType is documented as an enum of the NodeStatus constants.
 	nodeStatusType = reflect.TypeOf(models.NodeStatus(""))
 	pathVar        = regexp.MustCompile(`\{([^}]+)\}`)
@@ -226,6 +230,8 @@ func (g *schemaGen) typeSchema(t reflect.Type) map[string]any {
 		return map[string]any{"type": "string", "format": "date-time"}
 	case nodeStatusType:
 		return map[string]any{"type": "string", "enum": []any{"pending", "online", "offline", "expired"}}
+	case rawJSONType:
+		return nullable(map[string]any{"type": "array", "items": map[string]any{"type": "object", "additionalProperties": true}})
 	case ipType:
 		return map[string]any{"type": "string", "description": "IP address"}
 	}
