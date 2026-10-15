@@ -5,20 +5,28 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
 type memHistory struct {
 	entries []*models.FirewallHistoryEntry
+	calls   int // InsertFirewallHistory calls (one transaction each)
 	err     error
+	block   bool // wait for the context like a hung database
 }
 
-func (m *memHistory) InsertFirewallHistory(_ context.Context, e *models.FirewallHistoryEntry) error {
+func (m *memHistory) InsertFirewallHistory(ctx context.Context, es ...*models.FirewallHistoryEntry) error {
+	if m.block {
+		<-ctx.Done()
+		return ctx.Err()
+	}
 	if m.err != nil {
 		return m.err
 	}
-	m.entries = append(m.entries, e)
+	m.calls++
+	m.entries = append(m.entries, es...)
 	return nil
 }
 
@@ -105,5 +113,42 @@ func TestHistoryFailureDoesNotFailTheChange(t *testing.T) {
 	commits := 0
 	if _, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil); err != nil || commits != 1 {
 		t.Fatalf("propose = %v commits %d", err, commits)
+	}
+}
+
+// The baseline and the first change are stored together or not at all.
+func TestHistoryBaselineAndChangeInOneTransaction(t *testing.T) {
+	h := newHarness(ModeNft)
+	hist := &memHistory{}
+	h.e.History = hist
+	commits := 0
+	if _, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil); err != nil {
+		t.Fatal(err)
+	}
+	if hist.calls != 1 || len(hist.entries) != 2 {
+		t.Fatalf("calls %d entries %d", hist.calls, len(hist.entries))
+	}
+}
+
+// A hung database must not hold the engine lock for ever.
+func TestHistoryWriteTimesOut(t *testing.T) {
+	orig := historyTimeout
+	historyTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { historyTimeout = orig })
+	h := newHarness(ModeNft)
+	h.e.History = &memHistory{block: true}
+	commits := 0
+	done := make(chan error, 1)
+	go func() {
+		_, err := h.e.Propose(context.Background(), openPort(h, 443, &commits), false, nil)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Propose is stuck on the history write")
 	}
 }

@@ -101,3 +101,20 @@ func TestReplaceFirewallState(t *testing.T) {
 		t.Fatalf("after replace: %+v %+v %+v %v", svcs, rules, fwds, egress)
 	}
 }
+
+// Entries passed together are stored together or not at all.
+func TestFirewallHistoryInsertIsAtomic(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	if _, err := s.db.ExecContext(ctx, "DELETE FROM fw_history"); err != nil {
+		t.Fatal(err)
+	}
+	ok := &models.FirewallHistoryEntry{ID: "00000000-0000-0000-0000-0000000000a1", CreatedAt: time.Now(), Action: "baseline", State: []byte(`{}`)}
+	bad := &models.FirewallHistoryEntry{ID: "not-a-uuid", CreatedAt: time.Now(), Action: "change", State: []byte(`{}`)}
+	if err := s.InsertFirewallHistory(ctx, ok, bad); err == nil {
+		t.Fatal("a bad entry must fail the insert")
+	}
+	if has, _ := s.HasFirewallHistory(ctx); has {
+		t.Fatal("the good entry must not be stored alone")
+	}
+}

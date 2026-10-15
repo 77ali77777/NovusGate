@@ -56,7 +56,12 @@ export const HistoryTab = () => {
                       disabled={!enforcing || !!state?.pending}
                       loading={restore.isPending && restore.variables === e.id}
                       onClick={() => {
-                        if (confirm('Restore the firewall rules as they were after this change?'))
+                        if (
+                          confirm(
+                            'Restore the firewall rules as they were after this change?\n\n' +
+                              'Every rule added since then is removed, including Fail2Ban permanent bans.'
+                          )
+                        )
                           restore.mutate(e.id)
                       }}
                     >

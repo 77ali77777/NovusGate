@@ -137,3 +137,6 @@
   - Kim və hansı endpoint: `firewallActorMiddleware` request kontekstinə `firewall.Actor` qoyur.
   - `firewall.Describe` vəziyyəti oxunaqlı sətirlərə çevirir, `DiffLines` əlavə olunan və silinən sətirləri tapır.
   - Restore `proposeV2` ilə adi dəyişiklik kimi işləyir: təsdiq və avtomatik rollback eynidir. Commit `store.ReplaceFirewallState` ilə bir transaksiyada gedir.
+  - Baseline və dəyişiklik bir transaksiyada yazılır; yazma 10 s ilə məhdudlaşdırılıb (engine lock altında işləyir).
+  - **Məhdudiyyət:** engine-dən keçməyən dəyişikliklər ayrıca yazı almır. Məsələn, node silinəndə `fw_egress` cascade ilə silinir. Bu fərq növbəti dəyişikliyin diff-ində "removed" kimi görünür və həmin dəyişikliyi edən istifadəçinin adına düşür.
+  - Restore ondan sonra əlavə olunan bütün IP qaydalarını, o cümlədən Fail2Ban-ın daimi ban-larını silir; UI təsdiqində bu yazılıb.

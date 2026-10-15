@@ -12,18 +12,20 @@ import (
 // historyKeep is how many firewall history entries are kept.
 const historyKeep = 200
 
-// InsertFirewallHistory stores an entry and drops the oldest beyond
-// historyKeep, in one transaction.
-func (s *Store) InsertFirewallHistory(ctx context.Context, e *models.FirewallHistoryEntry) error {
+// InsertFirewallHistory stores the entries and drops the oldest beyond
+// historyKeep, all in one transaction.
+func (s *Store) InsertFirewallHistory(ctx context.Context, es ...*models.FirewallHistoryEntry) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO fw_history (id, created_at, user_id, action, state) VALUES ($1, $2, $3, $4, $5)`,
-		e.ID, e.CreatedAt, nullString(e.UserID), e.Action, string(e.State)); err != nil {
-		return err
+	for _, e := range es {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO fw_history (id, created_at, user_id, action, state) VALUES ($1, $2, $3, $4, $5)`,
+			e.ID, e.CreatedAt, nullString(e.UserID), e.Action, string(e.State)); err != nil {
+			return err
+		}
 	}
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM fw_history WHERE id NOT IN (
