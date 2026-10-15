@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
-
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
@@ -171,5 +171,47 @@ func TestGroupChangesReapplyLimits(t *testing.T) {
 	}
 	if strings.Contains(r.last(), "jump limits") {
 		t.Fatalf("no group, no limits:\n%s", r.last())
+	}
+}
+
+// Quota settings (P9c) are part of the profile; GET /limits carries the
+// counts, and an operator can reset a node's count.
+func TestLimitQuotaAPI(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	ctx := context.Background()
+	_, a, _ := groupNodes(t, s)
+	clearLimits(t)
+	clearTable(t, "node_quota_state")
+
+	rec := callAs(t, s, "POST", "/api/v1/limits",
+		`{"name":"quota","timezone":"UTC","quota_mb":50000,"quota_action":"throttle","throttle_kbps":512,"quota_reset_day":10}`, true)
+	if rec.Code != 201 || !strings.Contains(rec.Body.String(), `"quota_mb":50000`) || !strings.Contains(rec.Body.String(), `"quota_reset_day":10`) {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/limits", `{"name":"x","timezone":"UTC","quota_mb":1,"quota_action":"throttle"}`, true); rec.Code != 400 {
+		t.Fatalf("throttle without a rate = %d", rec.Code)
+	}
+	over := time.Now()
+	if err := s.store.SaveQuotaState(ctx, models.NodeQuotaState{NodeID: a.ID, PeriodStart: over.Add(-time.Hour), UsedBytes: 99, ExceededAt: &over}); err != nil {
+		t.Fatal(err)
+	}
+	list := callAs(t, s, "GET", "/api/v1/limits", "", true)
+	if !strings.Contains(list.Body.String(), `"used_bytes":99`) {
+		t.Fatalf("list = %s", list.Body)
+	}
+	assertMatchesSpec(t, s, "GET", "/api/v1/limits", list)
+
+	rec = callAs(t, s, "POST", "/api/v1/nodes/"+a.ID+"/quota/reset", "", true)
+	if rec.Code != 204 {
+		t.Fatalf("reset = %d %s", rec.Code, rec.Body)
+	}
+	states, _ := s.store.ListQuotaStates(ctx)
+	if len(states) != 1 || states[0].UsedBytes != 0 || states[0].ExceededAt != nil {
+		t.Fatalf("after reset = %+v", states)
+	}
+	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "not-a-uuid"} {
+		if rec := callAs(t, s, "POST", "/api/v1/nodes/"+id+"/quota/reset", "", true); rec.Code != 404 {
+			t.Errorf("reset %s = %d", id, rec.Code)
+		}
 	}
 }

@@ -1,5 +1,5 @@
 // Package notify sends Telegram notifications (P8): nodes going offline or
-// expiring, Fail2Ban bans and firewall changes.
+// expiring, Fail2Ban bans, firewall changes and traffic quotas.
 package notify
 
 import (
@@ -25,6 +25,8 @@ const (
 	NodeExpired    Kind = "node_expired"
 	Fail2BanBan    Kind = "fail2ban_ban"
 	FirewallChange Kind = "firewall_change"
+	// QuotaExceeded: a node used 80% or all of its traffic quota (P9c).
+	QuotaExceeded Kind = "quota_exceeded"
 )
 
 // Event is one notification. Events with the same Kind and Key within
@@ -163,6 +165,8 @@ func wanted(s models.NotificationSettings, k Kind) bool {
 		return s.Fail2BanBan
 	case FirewallChange:
 		return s.FirewallChange
+	case QuotaExceeded:
+		return s.QuotaExceeded
 	}
 	return false
 }

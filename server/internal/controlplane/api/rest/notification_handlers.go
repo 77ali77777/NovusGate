@@ -32,6 +32,7 @@ type NotificationSettingsRequest struct {
 	NodeExpired    bool   `json:"node_expired"`
 	Fail2BanBan    bool   `json:"fail2ban_ban"`
 	FirewallChange bool   `json:"firewall_change"`
+	QuotaExceeded  bool   `json:"quota_exceeded"`
 }
 
 var (
@@ -84,7 +85,8 @@ func (s *Server) handleUpdateNotificationSettings(w http.ResponseWriter, r *http
 		return
 	}
 	in := models.NotificationSettings{Enabled: req.Enabled, ChatID: req.ChatID, NodeOffline: req.NodeOffline,
-		NodeExpired: req.NodeExpired, Fail2BanBan: req.Fail2BanBan, FirewallChange: req.FirewallChange}
+		NodeExpired: req.NodeExpired, Fail2BanBan: req.Fail2BanBan, FirewallChange: req.FirewallChange,
+		QuotaExceeded: req.QuotaExceeded}
 	var token *string
 	if req.BotToken != "" {
 		token = &req.BotToken

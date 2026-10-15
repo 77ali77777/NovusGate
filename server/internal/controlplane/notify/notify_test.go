@@ -200,3 +200,18 @@ func TestSettingsErrorIsNotFatal(t *testing.T) {
 		t.Fatal("no settings, no message")
 	}
 }
+
+// Quota events (P9c) follow their own switch.
+func TestQuotaEventsFollowTheirSwitch(t *testing.T) {
+	ctx := context.Background()
+	n, fs, _ := newNotifier(models.NotificationSettings{Enabled: true, ChatID: "42", QuotaExceeded: true})
+	n.Deliver(ctx, Event{Kind: QuotaExceeded, Key: "n1:p:100", Text: "over quota"})
+	if len(fs.messages()) != 1 {
+		t.Fatal("quota event not sent")
+	}
+	n, fs, _ = newNotifier(models.NotificationSettings{Enabled: true, ChatID: "42", FirewallChange: true})
+	n.Deliver(ctx, Event{Kind: QuotaExceeded, Key: "n1:p:100", Text: "over quota"})
+	if len(fs.messages()) != 0 {
+		t.Fatal("quota switch off: nothing must be sent")
+	}
+}

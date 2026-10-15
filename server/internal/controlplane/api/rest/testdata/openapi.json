@@ -1134,12 +1134,26 @@
             "nullable": true,
             "type": "array"
           },
+          "quota_action": {
+            "type": "string"
+          },
+          "quota_mb": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "quota_reset_day": {
+            "type": "integer"
+          },
           "schedule": {
             "items": {
               "$ref": "#/components/schemas/ScheduleWindow"
             },
             "nullable": true,
             "type": "array"
+          },
+          "throttle_kbps": {
+            "nullable": true,
+            "type": "integer"
           },
           "timezone": {
             "type": "string"
@@ -1157,7 +1171,11 @@
           "max_connections",
           "name",
           "node_ids",
+          "quota_action",
+          "quota_mb",
+          "quota_reset_day",
           "schedule",
+          "throttle_kbps",
           "timezone",
           "up_kbps"
         ],
@@ -1176,12 +1194,26 @@
           "name": {
             "type": "string"
           },
+          "quota_action": {
+            "type": "string"
+          },
+          "quota_mb": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "quota_reset_day": {
+            "type": "integer"
+          },
           "schedule": {
             "items": {
               "$ref": "#/components/schemas/ScheduleWindowInput"
             },
             "nullable": true,
             "type": "array"
+          },
+          "throttle_kbps": {
+            "nullable": true,
+            "type": "integer"
           },
           "timezone": {
             "type": "string"
@@ -1211,12 +1243,20 @@
             },
             "nullable": true,
             "type": "array"
+          },
+          "quota_states": {
+            "items": {
+              "$ref": "#/components/schemas/NodeQuotaState"
+            },
+            "nullable": true,
+            "type": "array"
           }
         },
         "required": [
           "enforcing",
           "node_limits",
-          "profiles"
+          "profiles",
+          "quota_states"
         ],
         "type": "object"
       },
@@ -1743,6 +1783,38 @@
         ],
         "type": "object"
       },
+      "NodeQuotaState": {
+        "properties": {
+          "exceeded_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "used_bytes": {
+            "type": "integer"
+          },
+          "warned_at": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "exceeded_at",
+          "node_id",
+          "period_start",
+          "used_bytes",
+          "warned_at"
+        ],
+        "type": "object"
+      },
       "NodeTrafficResponse": {
         "properties": {
           "bucket_seconds": {
@@ -1790,6 +1862,9 @@
           "node_offline": {
             "type": "boolean"
           },
+          "quota_exceeded": {
+            "type": "boolean"
+          },
           "token_set": {
             "type": "boolean"
           }
@@ -1801,6 +1876,7 @@
           "firewall_change",
           "node_expired",
           "node_offline",
+          "quota_exceeded",
           "token_set"
         ],
         "type": "object"
@@ -1826,6 +1902,9 @@
             "type": "boolean"
           },
           "node_offline": {
+            "type": "boolean"
+          },
+          "quota_exceeded": {
             "type": "boolean"
           }
         },
@@ -5567,6 +5646,40 @@
         "summary": "Client config as a QR code",
         "tags": [
           "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/quota/reset": {
+      "post": {
+        "operationId": "post_nodes_by_id_quota_reset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Start a node's traffic quota count again and lift its block (P9c)",
+        "tags": [
+          "limits"
         ]
       }
     },

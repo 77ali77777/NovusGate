@@ -127,6 +127,9 @@ type Ruleset struct {
 	Egress          []netip.Addr // full-tunnel nodes allowed to reach the internet
 	Groups          []Group
 	Limits          []Limit
+	// QuotaBlocked are nodes over their traffic quota (P9c): their VPN
+	// traffic is dropped both ways; handshakes (input) still work.
+	QuotaBlocked []netip.Addr
 }
 
 const (

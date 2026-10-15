@@ -19,6 +19,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
 	"github.com/novusgate/novusgate/internal/controlplane/notify"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
+	"github.com/novusgate/novusgate/internal/controlplane/quota"
 	"github.com/novusgate/novusgate/internal/controlplane/traffic"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/logging"
@@ -242,6 +243,20 @@ func runServer(cmd *cobra.Command, args []string) error {
 		Peers:     func(iface string) (map[string]wireguard.PeerStatus, error) { return wireguard.NewManager(iface).GetPeers() },
 		Now:       time.Now,
 		Retention: 30 * 24 * time.Hour,
+	}
+	// Traffic quotas (P9c): every sample run counts the nodes with a quota.
+	quotas := &quota.Tracker{
+		Store: db,
+		Now:   time.Now,
+		Apply: func() { apiServer.ApplyLimits(context.Background()) },
+		Notify: func(key, text string) {
+			notifier.Notify(notify.Event{Kind: notify.QuotaExceeded, Key: key, Text: text})
+		},
+	}
+	sampler.After = func(ctx context.Context, samples []traffic.Sample) {
+		if err := quotas.Observe(ctx, samples); err != nil {
+			slog.Warn("traffic quota update failed", "error", err)
+		}
 	}
 	go sampler.Run(recCtx, 5*time.Minute)
 

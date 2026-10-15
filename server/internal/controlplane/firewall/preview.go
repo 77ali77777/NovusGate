@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"time"
 
 	"github.com/novusgate/novusgate/internal/netctl/nft"
@@ -25,6 +26,11 @@ type GroupSource interface {
 type LimitSource interface {
 	ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, error)
 	ListNodeLimits(ctx context.Context) ([]models.NodeLimit, error)
+}
+
+// QuotaSource is a LimitSource that also keeps quota counts (P9c).
+type QuotaSource interface {
+	ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, error)
 }
 
 // DetectHost reads the host facts a ruleset depends on: the ports SSH must
@@ -93,6 +99,7 @@ func BuildRulesetAt(ctx context.Context, src Source, sshPorts []uint16, egress s
 	vpnRules, sets, ruleWarnings := vpnRulesWithGroups(rules, byID, nodes, groups)
 	warnings = append(warnings, ruleWarnings...)
 	var limits []nft.Limit
+	var quotaBlocked []netip.Addr
 	if ls, ok := src.(LimitSource); ok {
 		profiles, nodeLimits, err := listLimits(ctx, ls)
 		if err != nil {
@@ -101,6 +108,13 @@ func BuildRulesetAt(ctx context.Context, src Source, sshPorts []uint16, egress s
 		var limitWarnings []error
 		limits, limitWarnings = LimitsFromModels(profiles, nodeLimits, now)
 		warnings = append(warnings, limitWarnings...)
+		if qs, ok := src.(QuotaSource); ok {
+			states, err := qs.ListQuotaStates(ctx)
+			if err != nil {
+				return nft.Ruleset{}, nil, fmt.Errorf("list quota states: %w", err)
+			}
+			limits, quotaBlocked = ApplyQuotas(limits, profiles, nodeLimits, states, now)
+		}
 	}
 	return nft.Ruleset{
 		SSHPorts:        sshPorts,
@@ -109,6 +123,7 @@ func BuildRulesetAt(ctx context.Context, src Source, sshPorts []uint16, egress s
 		VPNRules:        vpnRules,
 		Groups:          sets,
 		Limits:          limits,
+		QuotaBlocked:    quotaBlocked,
 	}, warnings, nil
 }
 

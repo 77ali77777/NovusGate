@@ -52,10 +52,13 @@ func (s *Store) CreateLimitProfile(ctx context.Context, p *models.LimitProfile) 
 	if err != nil {
 		return err
 	}
+	quotaDefaults(p)
 	_, err = s.db.ExecContext(ctx, `INSERT INTO limit_profiles
-		(id, name, down_kbps, up_kbps, max_connections, schedule, timezone, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		p.ID, p.Name, p.DownKbps, p.UpKbps, p.MaxConnections, sched, p.Timezone, p.CreatedAt)
+		(id, name, down_kbps, up_kbps, max_connections, schedule, timezone, created_at,
+		 quota_mb, quota_action, throttle_kbps, quota_reset_day)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		p.ID, p.Name, p.DownKbps, p.UpKbps, p.MaxConnections, sched, p.Timezone, p.CreatedAt,
+		p.QuotaMB, p.QuotaAction, p.ThrottleKbps, p.QuotaResetDay)
 	return limitError(err)
 }
 
@@ -66,9 +69,12 @@ func (s *Store) UpdateLimitProfile(ctx context.Context, p *models.LimitProfile) 
 	if err != nil {
 		return err
 	}
+	quotaDefaults(p)
 	res, err := s.db.ExecContext(ctx, `UPDATE limit_profiles SET name = $2, down_kbps = $3, up_kbps = $4,
-		max_connections = $5, schedule = $6, timezone = $7 WHERE id = $1`,
-		p.ID, p.Name, p.DownKbps, p.UpKbps, p.MaxConnections, sched, p.Timezone)
+		max_connections = $5, schedule = $6, timezone = $7,
+		quota_mb = $8, quota_action = $9, throttle_kbps = $10, quota_reset_day = $11 WHERE id = $1`,
+		p.ID, p.Name, p.DownKbps, p.UpKbps, p.MaxConnections, sched, p.Timezone,
+		p.QuotaMB, p.QuotaAction, p.ThrottleKbps, p.QuotaResetDay)
 	if err != nil {
 		return limitError(err)
 	}
@@ -129,7 +135,7 @@ func (s *Store) SetLimitProfileBindings(ctx context.Context, profileID string, n
 // ListLimitProfiles returns every profile with its bindings, by name.
 func (s *Store) ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT p.id, p.name, p.down_kbps, p.up_kbps, p.max_connections,
-		p.schedule, p.timezone, p.created_at,
+		p.schedule, p.timezone, p.created_at, p.quota_mb, p.quota_action, p.throttle_kbps, p.quota_reset_day,
 		COALESCE((SELECT array_agg(n.id::text ORDER BY n.id) FROM nodes n WHERE n.limit_profile_id = p.id), '{}'),
 		COALESCE((SELECT array_agg(g.id::text ORDER BY g.id) FROM node_groups g WHERE g.limit_profile_id = p.id), '{}')
 		FROM limit_profiles p ORDER BY p.name`)
@@ -143,11 +149,13 @@ func (s *Store) ListLimitProfiles(ctx context.Context) ([]models.LimitProfile, e
 		var down, up, conns sql.NullInt64
 		var sched []byte
 		var nodeIDs, groupIDs pq.StringArray
+		var quotaMB, throttle sql.NullInt64
 		if err := rows.Scan(&p.ID, &p.Name, &down, &up, &conns, &sched, &p.Timezone, &p.CreatedAt,
-			&nodeIDs, &groupIDs); err != nil {
+			&quotaMB, &p.QuotaAction, &throttle, &p.QuotaResetDay, &nodeIDs, &groupIDs); err != nil {
 			return nil, err
 		}
 		p.DownKbps, p.UpKbps, p.MaxConnections = intPtr(down), intPtr(up), intPtr(conns)
+		p.QuotaMB, p.ThrottleKbps = intPtr(quotaMB), intPtr(throttle)
 		if err := json.Unmarshal(sched, &p.Schedule); err != nil {
 			return nil, fmt.Errorf("limit profile %s: schedule: %w", p.ID, err)
 		}
@@ -192,4 +200,66 @@ func intPtr(v sql.NullInt64) *int {
 	}
 	i := int(v.Int64)
 	return &i
+}
+
+// quotaDefaults fills the quota settings a request may leave out.
+func quotaDefaults(p *models.LimitProfile) {
+	if p.QuotaAction == "" {
+		p.QuotaAction = "block"
+	}
+	if p.QuotaResetDay == 0 {
+		p.QuotaResetDay = 1
+	}
+}
+
+// ListQuotaStates returns every node's quota count (P9c).
+func (s *Store) ListQuotaStates(ctx context.Context) ([]models.NodeQuotaState, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT node_id, period_start, used_bytes, last_rx, last_tx,
+		warned_at, exceeded_at FROM node_quota_state ORDER BY node_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []models.NodeQuotaState{}
+	for rows.Next() {
+		var st models.NodeQuotaState
+		var warned, exceeded sql.NullTime
+		if err := rows.Scan(&st.NodeID, &st.PeriodStart, &st.UsedBytes, &st.LastRx, &st.LastTx, &warned, &exceeded); err != nil {
+			return nil, err
+		}
+		if warned.Valid {
+			st.WarnedAt = &warned.Time
+		}
+		if exceeded.Valid {
+			st.ExceededAt = &exceeded.Time
+		}
+		out = append(out, st)
+	}
+	return out, rows.Err()
+}
+
+// SaveQuotaState stores a node's count, replacing the previous one.
+func (s *Store) SaveQuotaState(ctx context.Context, st models.NodeQuotaState) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO node_quota_state
+		(node_id, period_start, used_bytes, last_rx, last_tx, warned_at, exceeded_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		ON CONFLICT (node_id) DO UPDATE SET period_start = EXCLUDED.period_start,
+			used_bytes = EXCLUDED.used_bytes, last_rx = EXCLUDED.last_rx, last_tx = EXCLUDED.last_tx,
+			warned_at = EXCLUDED.warned_at, exceeded_at = EXCLUDED.exceeded_at, updated_at = NOW()`,
+		st.NodeID, st.PeriodStart, st.UsedBytes, st.LastRx, st.LastTx, st.WarnedAt, st.ExceededAt)
+	return err
+}
+
+// ResetQuotaState starts a node's count of the current period again and
+// lifts its quota ("reset now" in the panel); sql.ErrNoRows without a count.
+func (s *Store) ResetQuotaState(ctx context.Context, nodeID string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE node_quota_state SET used_bytes = 0, warned_at = NULL,
+		exceeded_at = NULL, updated_at = NOW() WHERE node_id = $1`, nodeID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

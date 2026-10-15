@@ -56,3 +56,21 @@ func TestNotificationSettingsRoundTrip(t *testing.T) {
 		t.Fatalf("after keep = %+v token %q", got, token)
 	}
 }
+
+// The quota switch (P9c) defaults to on and round-trips.
+func TestNotificationQuotaSwitch(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	s.db.ExecContext(ctx, "DELETE FROM notification_settings")
+	got, _, err := s.NotificationSettings(ctx)
+	if err != nil || !got.QuotaExceeded {
+		t.Fatalf("default = %+v %v, want quota_exceeded on", got, err)
+	}
+	got.QuotaExceeded = false
+	if err := s.SaveNotificationSettings(ctx, got, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, _ = s.NotificationSettings(ctx); got.QuotaExceeded {
+		t.Fatal("quota_exceeded must stay off")
+	}
+}

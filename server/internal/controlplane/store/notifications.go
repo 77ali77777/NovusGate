@@ -15,12 +15,12 @@ const notificationTokenContext = "notification_settings.bot_token"
 // NotificationSettings returns the Telegram settings and the bot token. With
 // no row yet it returns the defaults: disabled, every event on, no token.
 func (s *Store) NotificationSettings(ctx context.Context) (models.NotificationSettings, string, error) {
-	out := models.NotificationSettings{NodeOffline: true, NodeExpired: true, Fail2BanBan: true, FirewallChange: true}
+	out := models.NotificationSettings{NodeOffline: true, NodeExpired: true, Fail2BanBan: true, FirewallChange: true, QuotaExceeded: true}
 	var sealed sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT enabled, chat_id, bot_token_enc, node_offline, node_expired, fail2ban_ban, firewall_change
+		SELECT enabled, chat_id, bot_token_enc, node_offline, node_expired, fail2ban_ban, firewall_change, quota_exceeded
 		FROM notification_settings WHERE id = 1`).Scan(
-		&out.Enabled, &out.ChatID, &sealed, &out.NodeOffline, &out.NodeExpired, &out.Fail2BanBan, &out.FirewallChange)
+		&out.Enabled, &out.ChatID, &sealed, &out.NodeOffline, &out.NodeExpired, &out.Fail2BanBan, &out.FirewallChange, &out.QuotaExceeded)
 	if err == sql.ErrNoRows {
 		return out, "", nil
 	}
@@ -51,14 +51,15 @@ func (s *Store) SaveNotificationSettings(ctx context.Context, in models.Notifica
 	}
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO notification_settings
-			(id, enabled, chat_id, bot_token_enc, node_offline, node_expired, fail2ban_ban, firewall_change, updated_at)
-		VALUES (1, $1, $2, $3, $4, $5, $6, $7, NOW())
+			(id, enabled, chat_id, bot_token_enc, node_offline, node_expired, fail2ban_ban, firewall_change, quota_exceeded, updated_at)
+		VALUES (1, $1, $2, $3, $4, $5, $6, $7, $9, NOW())
 		ON CONFLICT (id) DO UPDATE SET
 			enabled = EXCLUDED.enabled, chat_id = EXCLUDED.chat_id,
 			bot_token_enc = CASE WHEN $8 THEN EXCLUDED.bot_token_enc ELSE notification_settings.bot_token_enc END,
 			node_offline = EXCLUDED.node_offline, node_expired = EXCLUDED.node_expired,
 			fail2ban_ban = EXCLUDED.fail2ban_ban, firewall_change = EXCLUDED.firewall_change,
+			quota_exceeded = EXCLUDED.quota_exceeded,
 			updated_at = NOW()`,
-		in.Enabled, in.ChatID, sealed, in.NodeOffline, in.NodeExpired, in.Fail2BanBan, in.FirewallChange, token != nil)
+		in.Enabled, in.ChatID, sealed, in.NodeOffline, in.NodeExpired, in.Fail2BanBan, in.FirewallChange, token != nil, in.QuotaExceeded)
 	return err
 }

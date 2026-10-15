@@ -64,7 +64,7 @@ func TestRolesLimitWhatUsersCanDo(t *testing.T) {
 		{viewer, "GET", "/api/v1/nodes/" + seed.node.ID + "/config", "", 403},     // private key
 		{viewer, "GET", "/api/v1/nodes/" + seed.node.ID + "/install.sh", "", 403}, // creates an enrollment token
 		{viewer, "GET", "/api/v1/firewall/vpn/rules", "", 200},
-		{viewer, "POST", "/api/v1/auth/logout", "", 204},                          // own session
+		{viewer, "POST", "/api/v1/auth/logout", "", 204}, // own session
 		{operator, "POST", "/api/v1/networks", `{"name":"o-net","cidr":"10.96.0.0/24"}`, 201},
 		{operator, "GET", "/api/v1/nodes/" + seed.node.ID + "/config", "", 200},
 		{operator, "POST", "/api/v1/firewall/v2/services", `{"protocol":"tcp","port_from":9}`, 403},

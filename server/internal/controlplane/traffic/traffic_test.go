@@ -112,3 +112,29 @@ func TestSamplerRecordsKnownPeersAndPrunes(t *testing.T) {
 		t.Fatalf("pruned before %v", st.cutoff)
 	}
 }
+
+// After (the quota tracker, P9c) gets every run's samples, also an empty run.
+func TestSamplerCallsAfter(t *testing.T) {
+	st := &fakeStore{
+		networks: []*models.Network{{ID: "n1", InterfaceName: "wg1"}},
+		nodes:    map[string][]*models.Node{"n1": {{ID: "a", PublicKey: "KA"}}},
+	}
+	var got [][]Sample
+	s := &Sampler{
+		Store: st, Now: func() time.Time { return t0 }, Retention: time.Hour,
+		Peers: func(string) (map[string]wireguard.PeerStatus, error) {
+			return map[string]wireguard.PeerStatus{"KA": {PublicKey: "KA", TransferRx: 7}}, nil
+		},
+		After: func(_ context.Context, samples []Sample) { got = append(got, samples) },
+	}
+	if err := s.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	st.nodes = map[string][]*models.Node{}
+	if err := s.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || len(got[0]) != 1 || got[0][0].Rx != 7 || len(got[1]) != 0 {
+		t.Fatalf("After got %+v", got)
+	}
+}

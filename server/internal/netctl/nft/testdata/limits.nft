@@ -21,6 +21,10 @@ table inet novusgate {
 	set egress_v4 {
 		type ipv4_addr
 	}
+	set quota_v4 {
+		type ipv4_addr
+		elements = { 10.20.0.11 }
+	}
 	set lim_0 {
 		type ipv4_addr
 		elements = { 10.20.0.5, 10.20.0.6 }
@@ -100,6 +104,8 @@ table inet novusgate {
 		counter drop comment "vpn default drop"
 	}
 	chain limits {
+		ip saddr @quota_v4 counter drop comment "quota:block"
+		ip daddr @quota_v4 counter drop comment "quota:block"
 		ip saddr @lim_0 jump lim_0_time
 		ip daddr @lim_0 jump lim_0_time
 		ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 65536 bytes } counter drop comment "limit:office:up"

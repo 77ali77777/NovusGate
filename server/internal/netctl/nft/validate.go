@@ -183,6 +183,11 @@ func Validate(rs Ruleset) error {
 	if err := validateLimits(rs.Limits); err != nil {
 		return err
 	}
+	for _, a := range rs.QuotaBlocked {
+		if !a.Is4() {
+			return fmt.Errorf("quota address %s must be IPv4", a)
+		}
+	}
 	for _, a := range rs.Egress {
 		if !a.Is4() {
 			return fmt.Errorf("egress address %s must be IPv4", a)

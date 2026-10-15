@@ -390,6 +390,7 @@ func limitRuleset() Ruleset {
 				}},
 			{Name: "lim_1", ID: "guests", Members: []netip.Addr{netip.MustParseAddr("10.20.0.9")}, DownBytes: 62500},
 		},
+		QuotaBlocked: []netip.Addr{netip.MustParseAddr("10.20.0.11")},
 	}
 	return rs
 }
@@ -467,5 +468,37 @@ func TestLimitValidation(t *testing.T) {
 		Limits: []Limit{{Name: "lim_0", ID: "a", UpBytes: 1}, {Name: "lim_0", ID: "b", UpBytes: 1}}}
 	if err := Validate(dup); err == nil {
 		t.Error("duplicate limit names: want an error")
+	}
+}
+
+// Nodes over their quota (P9c) lose VPN traffic both ways; the limits chain
+// runs even without limit profiles, before established traffic is accepted.
+func TestQuotaBlockedCompile(t *testing.T) {
+	rs := Ruleset{SSHPorts: []uint16{22}, EgressInterface: "eth0",
+		Networks:     []VPNNetwork{{Interface: "wg1", CIDR: netip.MustParsePrefix("10.20.0.0/24"), ListenPort: 51821}},
+		QuotaBlocked: []netip.Addr{netip.MustParseAddr("10.20.0.9"), netip.MustParseAddr("10.20.0.3")}}
+	got, err := Compile(rs, testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{
+		"set quota_v4 {\n\t\ttype ipv4_addr\n\t\telements = { 10.20.0.3, 10.20.0.9 }\n\t}",
+		"\t\tjump limits\n\t\tct state established,related accept",
+		"chain limits {\n\t\tip saddr @quota_v4 counter drop comment \"quota:block\"\n\t\tip daddr @quota_v4 counter drop comment \"quota:block\"\n",
+	} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing:\n%s\n--- got ---\n%s", s, got)
+		}
+	}
+	if os.Getenv("NFT_CHECK") == "1" {
+		cmd := exec.Command("nft", "-c", "-f", "-")
+		cmd.Stdin = strings.NewReader(got)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("nft -c: %v\n%s", err, out)
+		}
+	}
+	rs.QuotaBlocked = []netip.Addr{netip.MustParseAddr("2001:db8::1")}
+	if err := Validate(rs); err == nil {
+		t.Error("an IPv6 quota address must be rejected")
 	}
 }

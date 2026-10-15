@@ -70,6 +70,10 @@ func writeSets(b *builder, rs Ruleset, now time.Time) {
 	for _, g := range groups {
 		b.set(g.Name, "ipv4_addr", nil, addrElems(g.Members))
 	}
+	// Nodes over their traffic quota (P9c).
+	if len(rs.QuotaBlocked) > 0 {
+		b.set("quota_v4", "ipv4_addr", nil, addrElems(rs.QuotaBlocked))
+	}
 	// Limit profiles (P9b): the members, and per-member meters.
 	for _, l := range sortedLimits(rs.Limits) {
 		b.set(l.Name, "ipv4_addr", nil, addrElems(l.Members))
@@ -193,7 +197,7 @@ func writeForward(b *builder, rs Ruleset) {
 	b.line(2, "ip saddr @blocked_v4 counter drop")
 	b.line(2, "ip6 saddr @blocked_v6 counter drop")
 	// Limits also cover connections that already exist.
-	if len(rs.Limits) > 0 {
+	if hasLimits(rs) {
 		b.line(2, "jump limits")
 	}
 	b.line(2, "ct state established,related accept")
@@ -269,6 +273,9 @@ func sortedLimits(limits []Limit) []Limit {
 	return out
 }
 
+// hasLimits: limit profiles or quota blocks need the limits chain.
+func hasLimits(rs Ruleset) bool { return len(rs.Limits) > 0 || len(rs.QuotaBlocked) > 0 }
+
 // minBurst keeps the bucket (rate+burst) larger than one 64 KiB packet, the
 // most GRO merges on the receive path: a smaller bucket would drop every
 // merged packet at low rates.
@@ -289,11 +296,15 @@ func limitBurst(rate uint64) uint64 {
 // schedule chain per profile with time windows. Rates are policed: packets
 // above the rate, after a short burst, are dropped.
 func writeLimits(b *builder, rs Ruleset) {
-	if len(rs.Limits) == 0 {
+	if !hasLimits(rs) {
 		return
 	}
 	limits := sortedLimits(rs.Limits)
 	b.line(1, "chain limits {")
+	if len(rs.QuotaBlocked) > 0 {
+		b.line(2, `ip saddr @quota_v4 counter drop comment "quota:block"`)
+		b.line(2, `ip daddr @quota_v4 counter drop comment "quota:block"`)
+	}
 	for _, l := range limits {
 		if len(l.Windows) > 0 {
 			b.line(2, fmt.Sprintf("ip saddr @%s jump %s_time", l.Name, l.Name))

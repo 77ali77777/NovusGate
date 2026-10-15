@@ -153,6 +153,7 @@ type NotificationSettings struct {
 	NodeExpired    bool   `json:"node_expired"`    // a node's access expired
 	Fail2BanBan    bool   `json:"fail2ban_ban"`    // Fail2Ban banned an address
 	FirewallChange bool   `json:"firewall_change"` // a firewall rule was changed
+	QuotaExceeded  bool   `json:"quota_exceeded"`  // a node reached 80% or 100% of its traffic quota (P9c)
 }
 
 // FirewallService opens a host port through the nftables engine.
@@ -257,7 +258,26 @@ type LimitProfile struct {
 	Timezone       string           `json:"timezone"`
 	NodeIDs        []string         `json:"node_ids"`  // nodes bound directly
 	GroupIDs       []string         `json:"group_ids"` // groups bound; their members inherit it
-	CreatedAt      time.Time        `json:"created_at"`
+	// Monthly traffic quota (P9c): nil = none. Over it a node is blocked or
+	// throttled to ThrottleKbps until the period starts again on
+	// QuotaResetDay (1-28, local midnight in Timezone).
+	QuotaMB       *int      `json:"quota_mb"`
+	QuotaAction   string    `json:"quota_action"` // block or throttle
+	ThrottleKbps  *int      `json:"throttle_kbps"`
+	QuotaResetDay int       `json:"quota_reset_day"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// NodeQuotaState is one node's traffic in the current quota period (P9c).
+// LastRx/LastTx are the WireGuard counters of the last sample.
+type NodeQuotaState struct {
+	NodeID      string     `json:"node_id"`
+	PeriodStart time.Time  `json:"period_start"`
+	UsedBytes   int64      `json:"used_bytes"`
+	LastRx      int64      `json:"-"`
+	LastTx      int64      `json:"-"`
+	WarnedAt    *time.Time `json:"warned_at"`
+	ExceededAt  *time.Time `json:"exceeded_at"`
 }
 
 // ScheduleWindow allows traffic on Days from From to To, local time of the

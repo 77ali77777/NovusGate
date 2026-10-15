@@ -101,3 +101,33 @@ func TestReloadPlanningHasATimeout(t *testing.T) {
 		t.Fatal("scheduleExpiry waited for the database without a timeout")
 	}
 }
+
+type quotaStore struct {
+	*limitStore
+	states []models.NodeQuotaState
+}
+
+func (q *quotaStore) ListQuotaStates(context.Context) ([]models.NodeQuotaState, error) {
+	return q.states, nil
+}
+
+// A node over its quota (P9c) reaches the applied ruleset as quota_v4.
+func TestEngineBlocksNodesOverQuota(t *testing.T) {
+	h := newHarness(ModeNft)
+	q := 1000
+	over := engineNow.Add(-time.Hour)
+	h.e.Store = &quotaStore{
+		limitStore: &limitStore{memStore: h.st,
+			profiles: []models.LimitProfile{{ID: "p1", Name: "q", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"}},
+			limits:   []models.NodeLimit{{NodeID: "node-7", VirtualIP: "10.20.0.7", ProfileID: "p1"}}},
+		states: []models.NodeQuotaState{{NodeID: "node-7", PeriodStart: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), ExceededAt: &over}},
+	}
+	if _, err := h.e.Reconcile(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	applied := h.r.applied[len(h.r.applied)-1]
+	if !strings.Contains(applied, "set quota_v4 {\n\t\ttype ipv4_addr\n\t\telements = { 10.20.0.7 }") ||
+		!strings.Contains(applied, `ip saddr @quota_v4 counter drop comment "quota:block"`) {
+		t.Fatalf("applied ruleset does not block the node:\n%s", applied)
+	}
+}

@@ -179,3 +179,76 @@ func TestUTCWindowsRunningOvernightUsesYesterday(t *testing.T) {
 		t.Fatalf("got %v\nwant %v", got, want)
 	}
 }
+
+// Over the quota (P9c) a node is blocked, or moved to a throttled copy of
+// its profile; a count from an earlier period no longer applies.
+func TestApplyQuotas(t *testing.T) {
+	now := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
+	q, throttle := 1000, 256
+	profiles := []models.LimitProfile{
+		{ID: "block-p", Name: "b", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 1, Timezone: "UTC"},
+		{ID: "slow-p", Name: "s", QuotaMB: &q, QuotaAction: "throttle", ThrottleKbps: &throttle, QuotaResetDay: 1,
+			MaxConnections: intp(9), Timezone: "UTC"},
+	}
+	nodes := []models.NodeLimit{
+		{NodeID: "n1", VirtualIP: "10.1.0.1", ProfileID: "block-p"},
+		{NodeID: "n2", VirtualIP: "10.1.0.2", ProfileID: "slow-p"},
+		{NodeID: "n3", VirtualIP: "10.1.0.3", ProfileID: "slow-p"},
+		{NodeID: "n4", VirtualIP: "10.1.0.4", ProfileID: "block-p"},
+	}
+	period := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	over := now.Add(-time.Hour)
+	states := []models.NodeQuotaState{
+		{NodeID: "n1", PeriodStart: period, ExceededAt: &over},
+		{NodeID: "n2", PeriodStart: period, ExceededAt: &over},
+		{NodeID: "n3", PeriodStart: period},                                                         // under quota
+		{NodeID: "n4", PeriodStart: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), ExceededAt: &over}, // last period
+	}
+	limits, _ := LimitsFromModels(profiles, nodes, now)
+	limits, blocked := ApplyQuotas(limits, profiles, nodes, states, now)
+	if len(blocked) != 1 || blocked[0].String() != "10.1.0.1" {
+		t.Fatalf("blocked = %v", blocked)
+	}
+	var slow, throttled *nft.Limit
+	for i := range limits {
+		switch limits[i].ID {
+		case "slow-p":
+			slow = &limits[i]
+		case "slow-p:quota":
+			throttled = &limits[i]
+		}
+	}
+	if slow == nil || throttled == nil {
+		t.Fatalf("limits = %+v", limits)
+	}
+	if len(slow.Members) != 1 || slow.Members[0].String() != "10.1.0.3" {
+		t.Errorf("slow members = %v, want only n3", slow.Members)
+	}
+	if len(throttled.Members) != 1 || throttled.Members[0].String() != "10.1.0.2" ||
+		throttled.UpBytes != 32000 || throttled.DownBytes != 32000 || throttled.MaxConns != 9 || throttled.Name != "lim_2" {
+		t.Errorf("throttled = %+v", throttled)
+	}
+}
+
+func TestValidateQuota(t *testing.T) {
+	q := 1000
+	ok := models.LimitProfile{Name: "q", Timezone: "UTC", QuotaMB: &q, QuotaAction: "block", QuotaResetDay: 5}
+	if err := ValidateLimitProfile(ok); err != nil {
+		t.Fatalf("a quota-only profile is valid: %v", err)
+	}
+	bad := map[string]func(p *models.LimitProfile){
+		"zero quota":         func(p *models.LimitProfile) { p.QuotaMB = intp(0) },
+		"unknown action":     func(p *models.LimitProfile) { p.QuotaAction = "delete" },
+		"throttle no rate":   func(p *models.LimitProfile) { p.QuotaAction = "throttle" },
+		"reset day 29":       func(p *models.LimitProfile) { p.QuotaResetDay = 29 },
+		"reset day negative": func(p *models.LimitProfile) { p.QuotaResetDay = -1 },
+		"zero throttle":      func(p *models.LimitProfile) { p.QuotaAction, p.ThrottleKbps = "throttle", intp(0) },
+	}
+	for name, mutate := range bad {
+		p := ok
+		mutate(&p)
+		if err := ValidateLimitProfile(p); err == nil {
+			t.Errorf("%s: want an error", name)
+		}
+	}
+}

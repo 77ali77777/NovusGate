@@ -34,6 +34,7 @@ var operatorRoutes = map[string]bool{
 	"PUT /api/v1/limits/{id}":                   true,
 	"DELETE /api/v1/limits/{id}":                true,
 	"PUT /api/v1/limits/{id}/bindings":          true,
+	"POST /api/v1/nodes/{id}/quota/reset":       true,
 	"POST /api/v1/firewall/vpn/rules":           true,
 	"PUT /api/v1/firewall/vpn/rules/{id}":       true,
 	"DELETE /api/v1/firewall/vpn/rules/{id}":    true,

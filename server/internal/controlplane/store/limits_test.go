@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
@@ -131,5 +133,70 @@ func TestEffectiveNodeLimits(t *testing.T) {
 	}
 	if len(got) != 2 {
 		t.Errorf("got %d nodes, want 2", len(got))
+	}
+}
+
+// Quota settings (P9c) round-trip with the profile; quota states are saved,
+// listed and reset per node, and go with their node.
+func TestQuotaFieldsAndState(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	_, a, b := groupFixture(t, s)
+	s.db.ExecContext(ctx, "UPDATE nodes SET limit_profile_id = NULL")
+	s.db.ExecContext(ctx, "UPDATE node_groups SET limit_profile_id = NULL")
+	s.db.ExecContext(ctx, "DELETE FROM limit_profiles")
+	s.db.ExecContext(ctx, "DELETE FROM node_quota_state")
+
+	q, throttle := 50000, 512
+	p := &models.LimitProfile{Name: "quota", Timezone: "UTC", QuotaMB: &q, QuotaAction: "throttle",
+		ThrottleKbps: &throttle, QuotaResetDay: 15}
+	if err := s.CreateLimitProfile(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := s.ListLimitProfiles(ctx)
+	got := list[0]
+	if got.QuotaMB == nil || *got.QuotaMB != 50000 || got.QuotaAction != "throttle" || *got.ThrottleKbps != 512 || got.QuotaResetDay != 15 {
+		t.Fatalf("profile = %+v", got)
+	}
+
+	start := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
+	exceeded := start.Add(48 * time.Hour)
+	for _, st := range []models.NodeQuotaState{
+		{NodeID: a.ID, PeriodStart: start, UsedBytes: 123, LastRx: 10, LastTx: 20, ExceededAt: &exceeded},
+		{NodeID: b.ID, PeriodStart: start, UsedBytes: 7},
+	} {
+		if err := s.SaveQuotaState(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Saving again updates.
+	if err := s.SaveQuotaState(ctx, models.NodeQuotaState{NodeID: b.ID, PeriodStart: start, UsedBytes: 9, LastRx: 1}); err != nil {
+		t.Fatal(err)
+	}
+	states, err := s.ListQuotaStates(ctx)
+	if err != nil || len(states) != 2 {
+		t.Fatalf("states = %v %v", states, err)
+	}
+	byNode := map[string]models.NodeQuotaState{}
+	for _, st := range states {
+		byNode[st.NodeID] = st
+	}
+	if st := byNode[a.ID]; st.UsedBytes != 123 || st.LastTx != 20 || st.ExceededAt == nil || !st.ExceededAt.Equal(exceeded) || !st.PeriodStart.Equal(start) {
+		t.Errorf("a = %+v", st)
+	}
+	if st := byNode[b.ID]; st.UsedBytes != 9 || st.LastRx != 1 || st.ExceededAt != nil {
+		t.Errorf("b = %+v", st)
+	}
+	if err := s.ResetQuotaState(ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	states, _ = s.ListQuotaStates(ctx)
+	for _, st := range states {
+		if st.NodeID == a.ID && (st.UsedBytes != 0 || st.ExceededAt != nil || st.WarnedAt != nil || st.LastTx != 20) {
+			t.Errorf("after reset a = %+v", st)
+		}
+	}
+	if err := s.ResetQuotaState(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("reset unknown = %v", err)
 	}
 }

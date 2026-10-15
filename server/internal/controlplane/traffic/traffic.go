@@ -79,6 +79,9 @@ type Sampler struct {
 	Peers     func(iface string) (map[string]wireguard.PeerStatus, error)
 	Now       func() time.Time
 	Retention time.Duration
+	// After, when set, gets each run's samples (the quota tracker, P9c);
+	// it also runs when there are none, so periods roll over on time.
+	After func(ctx context.Context, samples []Sample)
 }
 
 // RunOnce takes one sample of every node a WireGuard interface reports. An
@@ -110,6 +113,9 @@ func (s *Sampler) RunOnce(ctx context.Context) error {
 		if err := s.Store.InsertTrafficSamples(ctx, samples); err != nil {
 			return err
 		}
+	}
+	if s.After != nil {
+		s.After(ctx, samples)
 	}
 	_, err = s.Store.DeleteTrafficSamplesBefore(ctx, now.Add(-s.Retention))
 	return err

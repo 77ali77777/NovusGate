@@ -26,6 +26,11 @@ type LimitProfileRequest struct {
 	MaxConnections *int                    `json:"max_connections"`
 	Schedule       []models.ScheduleWindow `json:"schedule"`
 	Timezone       string                  `json:"timezone"`
+	// Monthly traffic quota (P9c); quota_action block (default) or throttle.
+	QuotaMB       *int   `json:"quota_mb"`
+	QuotaAction   string `json:"quota_action"`
+	ThrottleKbps  *int   `json:"throttle_kbps"`
+	QuotaResetDay int    `json:"quota_reset_day"`
 }
 
 // LimitBindingsRequest makes these the nodes and groups bound to a profile.
@@ -41,6 +46,8 @@ type LimitProfilesResponse struct {
 	Profiles   []models.LimitProfile `json:"profiles"`
 	NodeLimits []models.NodeLimit    `json:"node_limits"`
 	Enforcing  bool                  `json:"enforcing"`
+	// QuotaStates are the nodes' traffic counts in their quota periods.
+	QuotaStates []models.NodeQuotaState `json:"quota_states"`
 }
 
 func (s *Server) registerLimitRoutes(api *mux.Router) {
@@ -49,6 +56,7 @@ func (s *Server) registerLimitRoutes(api *mux.Router) {
 	api.HandleFunc("/limits/{id}", s.handleUpdateLimit).Methods("PUT")
 	api.HandleFunc("/limits/{id}", s.handleDeleteLimit).Methods("DELETE")
 	api.HandleFunc("/limits/{id}/bindings", s.handleSetLimitBindings).Methods("PUT")
+	api.HandleFunc("/nodes/{id}/quota/reset", s.handleResetQuota).Methods("POST")
 }
 
 func limitStoreError(w http.ResponseWriter, err error) {
@@ -86,7 +94,8 @@ func decodeLimitRequest(w http.ResponseWriter, r *http.Request) (models.LimitPro
 		return models.LimitProfile{}, false
 	}
 	p := models.LimitProfile{Name: strings.TrimSpace(req.Name), DownKbps: req.DownKbps, UpKbps: req.UpKbps,
-		MaxConnections: req.MaxConnections, Schedule: req.Schedule, Timezone: req.Timezone}
+		MaxConnections: req.MaxConnections, Schedule: req.Schedule, Timezone: req.Timezone,
+		QuotaMB: req.QuotaMB, QuotaAction: req.QuotaAction, ThrottleKbps: req.ThrottleKbps, QuotaResetDay: req.QuotaResetDay}
 	if p.Schedule == nil {
 		p.Schedule = []models.ScheduleWindow{}
 	}
@@ -96,6 +105,10 @@ func decodeLimitRequest(w http.ResponseWriter, r *http.Request) (models.LimitPro
 	}
 	return p, true
 }
+
+// ApplyLimits re-applies the firewall for the quota tracker (P9c), when a
+// node becomes blocked or free.
+func (s *Server) ApplyLimits(ctx context.Context) { s.applyLimits(ctx) }
 
 // applyLimits re-applies the firewall after a limit change; only the nft
 // engine enforces limits.
@@ -133,7 +146,13 @@ func (s *Server) handleListLimits(w http.ResponseWriter, r *http.Request) {
 		limitStoreError(w, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, LimitProfilesResponse{Profiles: profiles, NodeLimits: nodeLimits, Enforcing: s.engineEnforces()})
+	states, err := s.store.ListQuotaStates(r.Context())
+	if err != nil {
+		limitStoreError(w, err)
+		return
+	}
+	jsonResponse(w, http.StatusOK, LimitProfilesResponse{Profiles: profiles, NodeLimits: nodeLimits,
+		Enforcing: s.engineEnforces(), QuotaStates: states})
 }
 
 func (s *Server) handleCreateLimit(w http.ResponseWriter, r *http.Request) {
@@ -230,4 +249,24 @@ func (s *Server) handleSetLimitBindings(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	jsonResponse(w, http.StatusOK, updated)
+}
+
+// handleResetQuota starts a node's quota count again and lifts a block or
+// throttle at once (P9c); 404 when the node has no count.
+func (s *Server) handleResetQuota(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if _, err := uuid.Parse(id); err != nil {
+		errorResponse(w, http.StatusNotFound, "no quota count for this node")
+		return
+	}
+	if err := s.store.ResetQuotaState(r.Context(), id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errorResponse(w, http.StatusNotFound, "no quota count for this node")
+			return
+		}
+		limitStoreError(w, err)
+		return
+	}
+	s.applyLimits(r.Context())
+	w.WriteHeader(http.StatusNoContent)
 }

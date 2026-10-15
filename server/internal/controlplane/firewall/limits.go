@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/novusgate/novusgate/internal/controlplane/quota"
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/models"
 )
@@ -64,8 +65,11 @@ func ValidateLimitProfile(p models.LimitProfile) error {
 			return fmt.Errorf("schedule window %d: from and to are equal", i+1)
 		}
 	}
-	if p.DownKbps == nil && p.UpKbps == nil && p.MaxConnections == nil && len(p.Schedule) == 0 {
-		return fmt.Errorf("a profile needs a speed limit, a connection limit or a schedule")
+	if err := validateQuota(p); err != nil {
+		return err
+	}
+	if p.DownKbps == nil && p.UpKbps == nil && p.MaxConnections == nil && len(p.Schedule) == 0 && p.QuotaMB == nil {
+		return fmt.Errorf("a profile needs a speed limit, a connection limit, a schedule or a quota")
 	}
 	return nil
 }
@@ -195,4 +199,109 @@ func LimitsFromModels(profiles []models.LimitProfile, nodes []models.NodeLimit, 
 		out = append(out, l)
 	}
 	return out, warnings
+}
+
+// MaxQuotaMB bounds a monthly quota (1 PB).
+const MaxQuotaMB = 1_000_000_000
+
+// validateQuota checks the quota settings (P9c); an empty action is block
+// and reset day 0 is the 1st, as the store fills them in.
+func validateQuota(p models.LimitProfile) error {
+	if p.QuotaMB != nil && (*p.QuotaMB < 1 || *p.QuotaMB > MaxQuotaMB) {
+		return fmt.Errorf("quota_mb must be 1-%d", MaxQuotaMB)
+	}
+	switch p.QuotaAction {
+	case "", "block":
+	case "throttle":
+		if p.ThrottleKbps == nil {
+			return fmt.Errorf("throttle_kbps is required when quota_action is throttle")
+		}
+	default:
+		return fmt.Errorf("quota_action must be block or throttle")
+	}
+	if p.ThrottleKbps != nil && (*p.ThrottleKbps < 1 || *p.ThrottleKbps > MaxLimitKbps) {
+		return fmt.Errorf("throttle_kbps must be 1-%d", MaxLimitKbps)
+	}
+	if p.QuotaResetDay < 0 || p.QuotaResetDay > 28 {
+		return fmt.Errorf("quota_reset_day must be 1-28")
+	}
+	return nil
+}
+
+// ApplyQuotas enforces exceeded quotas (P9c) on the limits LimitsFromModels
+// built: a node over the quota of its profile in the current period is
+// blocked, or moved to a throttled copy of its profile (ID "<profile>:quota",
+// both directions at throttle_kbps, other limits kept). A count from an
+// earlier period no longer applies.
+func ApplyQuotas(limits []nft.Limit, profiles []models.LimitProfile, nodes []models.NodeLimit,
+	states []models.NodeQuotaState, now time.Time) ([]nft.Limit, []netip.Addr) {
+	byID := map[string]models.LimitProfile{}
+	for _, p := range profiles {
+		byID[p.ID] = p
+	}
+	stateOf := map[string]models.NodeQuotaState{}
+	for _, st := range states {
+		stateOf[st.NodeID] = st
+	}
+	var blocked []netip.Addr
+	throttled := map[string][]netip.Addr{} // profile ID -> moved members
+	for _, n := range nodes {
+		p, ok := byID[n.ProfileID]
+		st, has := stateOf[n.NodeID]
+		if !ok || p.QuotaMB == nil || !has || st.ExceededAt == nil {
+			continue
+		}
+		loc, err := time.LoadLocation(p.Timezone)
+		if err != nil {
+			continue // LimitsFromModels already reported it
+		}
+		resetDay := p.QuotaResetDay
+		if resetDay == 0 {
+			resetDay = 1
+		}
+		if !st.PeriodStart.Equal(quota.PeriodStart(now, resetDay, loc)) {
+			continue
+		}
+		addr, err := netip.ParseAddr(n.VirtualIP)
+		if err != nil || !addr.Is4() {
+			continue
+		}
+		if p.QuotaAction == "throttle" && p.ThrottleKbps != nil {
+			throttled[p.ID] = append(throttled[p.ID], addr)
+		} else {
+			blocked = append(blocked, addr)
+		}
+	}
+	ids := make([]string, 0, len(throttled))
+	for id := range throttled {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		moved := map[netip.Addr]bool{}
+		for _, a := range throttled[id] {
+			moved[a] = true
+		}
+		var base *nft.Limit
+		for i := range limits {
+			if limits[i].ID == id {
+				base = &limits[i]
+				kept := limits[i].Members[:0:0]
+				for _, a := range limits[i].Members {
+					if !moved[a] {
+						kept = append(kept, a)
+					}
+				}
+				limits[i].Members = kept
+			}
+		}
+		rate := uint64(*byID[id].ThrottleKbps) * 125
+		l := nft.Limit{Name: fmt.Sprintf("lim_%d", len(limits)), ID: id + ":quota", Members: throttled[id],
+			UpBytes: rate, DownBytes: rate}
+		if base != nil {
+			l.MaxConns, l.Windows = base.MaxConns, base.Windows
+		}
+		limits = append(limits, l)
+	}
+	return limits, blocked
 }

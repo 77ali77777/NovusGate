@@ -110,6 +110,7 @@ var docOps = []docOp{
 	{"PUT", "/api/v1/limits/{id}", "Replace a limit profile; bound nodes get it at once", "limits", LimitProfileRequest{}, 200, models.LimitProfile{}, false},
 	{"DELETE", "/api/v1/limits/{id}", "Delete a limit profile (409 limit_in_use while bound)", "limits", nil, 204, nil, false},
 	{"PUT", "/api/v1/limits/{id}/bindings", "Make these the nodes and groups bound to the profile", "limits", LimitBindingsRequest{}, 200, models.LimitProfile{}, false},
+	{"POST", "/api/v1/nodes/{id}/quota/reset", "Start a node's traffic quota count again and lift its block (P9c)", "limits", nil, 204, nil, false},
 	{"GET", "/api/v1/audit", "Audit log: changes made through the API and login attempts, newest first", "audit", nil, 200, AuditLogResponse{}, false},
 	{"GET", "/api/v1/auth/sessions", "Login sessions that have not expired (current marks the caller's)", "auth", nil, 200, SessionsResponse{}, false},
 	{"DELETE", "/api/v1/auth/sessions/{id}", "End a login session", "auth", nil, 204, nil, false},
