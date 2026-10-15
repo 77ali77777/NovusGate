@@ -236,9 +236,30 @@
   - Qalan: F5 — operatorun öz `logtarget`-i (`fail2ban.local`) drop-in ilə əvəz olunur, sənəddə qeyd var.
 - **Yoxlamalar:** Go 14 paket `ok`, shell `OK`, Center 84/84, web 24/24, `tsc` OK, `vite build` OK.
 
+### 2026-10-15: Center iş log-ları və P5/P6-nın yenidən analizi
+- **İstifadəçi qərarları:**
+  - Center log-ları `data/jobs`-da, maskasız və limitsiz saxlanılır;
+  - P5/P6-dan bu işlər hazırkı dizaynda edilir: ErrorBoundary, paket təmizliyi, Audit, Sessions, Network detalı, Topologiya, i18n (az/en), OpenAPI tipləri.
+- **Commit-lər:**
+  - Center iş log-ları: `ef72424`;
+  - ErrorBoundary və istifadə olunmayan 4 paketin silinməsi: `d57700e`;
+  - audit middleware və sessiyalar (backend): `5e4f5f9`; UI: `ba7bb94`;
+  - Network detalı və Topologiya: `b619180`;
+  - OpenAPI-dən generasiya olunan tiplər: `9979f60`, `ea62479`;
+  - i18n: `a685d0f` (12 namespace, səhifələri 5 paralel agent çevirdi);
+  - matris izahlarının tərcüməsi: `ad3b99d`.
+- **Yoxlamalar:**
+  - Go 14 paket `ok`;
+  - Center 88/88;
+  - web 39/39 (OpenAPI drift testi daxil), `tsc` OK, `vite build` OK, biome 74/31 (əvvəl 91);
+  - brauzer (vite preview + Playwright): login və Firewall Azərbaycanca göstərilir, dil keçidi səhifəni yeniləmədən işləyir.
+- **Qeyd:** `registerNotificationRoutes` `8812781`-dən bəri iki dəfə çağırılırdı, `5e4f5f9`-da düzəldildi.
+- **İcra olunmayıb:** brauzerdə real backend ilə bütün səhifələr; real serverdə Center log-ları.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | i18n (az/en), OpenAPI tipləri, Audit, Sessions, Network detalı, Topologiya, ErrorBoundary, Center iş log-ları | web/src/**, server/.../rest/audit_handlers.go, store/{audit,sessions}.go, NovusGate Center/lib/joblog.js | P5/P6 yenidən analiz · `ef72424`..`ad3b99d` |
 | 2026-10-15 | iptables VPN qaydaları öz zəncirində (drop/reject işləyir), create sync edir; matris backend-də; recidive və rollback düzəlişləri | firewall_handlers.go, firewall/matrix.go, api/rest/firewall_matrix.go, setup-firewall.sh, Center update/uninstall, web PolicyMatrix | ikinci review · `5ac6b9a`, `7396ddf`, `a48b55a` |
 | 2026-10-15 | Network Policies matrisi, System Rules tabı | web/src/lib/{policyMatrix,systemRules}.ts, pages/Firewall/{PolicyMatrix,SystemRulesTab,Firewall}.tsx | P3c qalığı · `2069c84` |
 | 2026-10-15 | Fail2Ban `/var/log/novusgate`-a yazır (conffile-a toxunulmur) | setup-firewall.sh (+test), compose, fail2ban_parse.go, main.go, Center uninstall/fail2ban.js | review: conffile riski · `9eedb44` |
