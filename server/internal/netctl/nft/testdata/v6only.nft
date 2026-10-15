@@ -22,6 +22,18 @@ table inet novusgate {
 	set egress_v4 {
 		type ipv4_addr
 	}
+	set dropped_v4 {
+		type ipv4_addr
+		size 4096
+		flags dynamic, timeout
+		timeout 1h
+	}
+	set dropped_v6 {
+		type ipv6_addr
+		size 4096
+		flags dynamic, timeout
+		timeout 1h
+	}
 	chain input {
 		type filter hook input priority filter - 10; policy drop;
 		iif "lo" accept
@@ -37,6 +49,8 @@ table inet novusgate {
 		ip6 saddr { 2001:db8::/32 } tcp dport 443 accept comment "svc:v6-https"
 		tcp dport { 3007, 5432, 8080, 8443 } counter drop comment "admin ports: VPN only"
 		meta l4proto { icmp, ipv6-icmp } accept
+		update @dropped_v4 { ip saddr }
+		update @dropped_v6 { ip6 saddr }
 		counter comment "default drop"
 	}
 	chain forward {

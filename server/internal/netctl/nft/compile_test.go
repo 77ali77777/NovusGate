@@ -298,3 +298,28 @@ func TestCompileEdgeGoldens(t *testing.T) {
 		}
 	}
 }
+
+// Packets that reach the end of input are dropped by the policy; their
+// sources go to dynamic sets for an hour, so the panel can show who was
+// turned away without kernel logging. Accepts and verdicts are unchanged.
+func TestDroppedSourcesAreTracked(t *testing.T) {
+	got, err := Compile(fullRuleset(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{
+		"set dropped_v4 {\n\t\ttype ipv4_addr\n\t\tsize 4096\n\t\tflags dynamic, timeout\n\t\ttimeout 1h\n\t}",
+		"set dropped_v6 {\n\t\ttype ipv6_addr\n\t\tsize 4096\n\t\tflags dynamic, timeout\n\t\ttimeout 1h\n\t}",
+	} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing set:\n%s", s)
+		}
+	}
+	tail := "\t\tmeta l4proto { icmp, ipv6-icmp } accept\n" +
+		"\t\tupdate @dropped_v4 { ip saddr }\n" +
+		"\t\tupdate @dropped_v6 { ip6 saddr }\n" +
+		"\t\tcounter comment \"default drop\"\n\t}"
+	if !strings.Contains(got, tail) {
+		t.Errorf("input must record sources just before the default drop; got:\n%s", got)
+	}
+}

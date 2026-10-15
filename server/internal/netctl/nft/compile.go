@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+// DroppedSetSize caps the dropped_v4 and dropped_v6 sets; when one is full
+// new sources are not recorded (packets are dropped as before).
+const DroppedSetSize = 4096
+
 // Compile renders rs as an nft script that atomically replaces table
 // inet novusgate. The script is valid input for `nft -f` and `nft -c -f`.
 // now is used to turn blocked-entry expiry times into remaining timeouts.
@@ -59,6 +63,15 @@ func writeSets(b *builder, rs Ruleset, now time.Time) {
 	b.set("blocked_v4", "ipv4_addr", []string{"interval", "timeout"}, v4)
 	b.set("blocked_v6", "ipv6_addr", []string{"interval", "timeout"}, v6)
 	b.set("egress_v4", "ipv4_addr", nil, addrElems(rs.Egress))
+	// Sources of packets the input policy drops, kept for an hour (Live view).
+	for _, d := range [][2]string{{"dropped_v4", "ipv4_addr"}, {"dropped_v6", "ipv6_addr"}} {
+		b.line(1, "set "+d[0]+" {")
+		b.line(2, "type "+d[1])
+		b.line(2, "size "+strconv.Itoa(DroppedSetSize))
+		b.line(2, "flags dynamic, timeout")
+		b.line(2, "timeout 1h")
+		b.line(1, "}")
+	}
 }
 
 func writeInput(b *builder, rs Ruleset) {
@@ -97,6 +110,9 @@ func writeInput(b *builder, rs Ruleset) {
 		}
 	}
 	b.line(2, "meta l4proto { icmp, ipv6-icmp } accept")
+	// Record who reaches the policy drop; a full set only stops recording.
+	b.line(2, "update @dropped_v4 { ip saddr }")
+	b.line(2, "update @dropped_v6 { ip6 saddr }")
 	b.line(2, `counter comment "default drop"`)
 	b.line(1, "}")
 }
