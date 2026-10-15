@@ -68,5 +68,11 @@
     "type": "Type",
     "priority": "Priority",
     "action": "Action"
+  },
+  "help": {
+    "what": "What it is:",
+    "who": "Who needs it:",
+    "effect": "If you change it:",
+    "button": "Help for this field"
   }
 }

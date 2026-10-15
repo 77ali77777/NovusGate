@@ -1,0 +1,22 @@
+{
+  "search": {
+    "what": "Filters the list below by network name, address range (CIDR) or interface name (wg0, wg1…).",
+    "who": "Anyone looking for one network among many.",
+    "effect": "Only changes what this page shows; nothing is saved or changed on the server."
+  },
+  "name": {
+    "what": "The name of the new VPN network, shown in the network selector, the topology and the firewall rules.",
+    "who": "Operators who keep separate networks for groups of devices (for example office, servers, staff).",
+    "effect": "Must be unique. It cannot be renamed later: to change it, delete the network and create it again."
+  },
+  "cidr": {
+    "what": "The private address range of the network, for example 10.20.0.0/24. The hub takes the first address; devices get the next free ones.",
+    "who": "Needed for every network: it decides which addresses its devices use.",
+    "effect": "It may not overlap another network (the server refuses it). It cannot be changed later. Creating the network also creates a new WireGuard interface (wg1, wg2…) on its own UDP port starting at 51820, which must be reachable from the internet."
+  },
+  "clientDns": {
+    "what": "The DNS servers written into this network's device configs: up to 3 IPv4 addresses, comma separated.",
+    "who": "Networks whose devices should resolve names through a particular server, for example an internal DNS reachable over the VPN.",
+    "effect": "Empty: full-tunnel devices use 1.1.1.1 and split-tunnel devices keep their own DNS. With a value, every device of the network uses it. Only new or re-downloaded configs change; configs already on devices stay as they are until you send them again."
+  }
+}

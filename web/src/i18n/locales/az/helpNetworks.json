@@ -1,0 +1,22 @@
+{
+  "search": {
+    "what": "Aşağıdakı siyahını şəbəkə adına, ünvan aralığına (CIDR) və ya interfeys adına (wg0, wg1…) görə süzür.",
+    "who": "Çox şəbəkə arasında birini axtaran hər kəs.",
+    "effect": "Yalnız bu səhifədə görünəni dəyişir; serverdə heç nə saxlanmır və dəyişmir."
+  },
+  "name": {
+    "what": "Yeni VPN şəbəkəsinin adı. Şəbəkə seçicisində, topologiyada və firewall qaydalarında görünür.",
+    "who": "Cihaz qrupları üçün ayrı şəbəkələr saxlayan operatorlar (məsələn ofis, serverlər, işçilər).",
+    "effect": "Unikal olmalıdır. Sonradan dəyişdirilə bilmir: dəyişmək üçün şəbəkəni silib yenidən yaratmaq lazımdır."
+  },
+  "cidr": {
+    "what": "Şəbəkənin özəl ünvan aralığı, məsələn 10.20.0.0/24. İlk ünvanı hub götürür, cihazlar növbəti boş ünvanları alır.",
+    "who": "Hər şəbəkə üçün lazımdır: cihazlarının hansı ünvanları işlədəcəyini müəyyən edir.",
+    "effect": "Başqa şəbəkə ilə üst-üstə düşə bilməz (server rədd edir). Sonradan dəyişdirilə bilmir. Şəbəkə yaradılanda serverdə yeni WireGuard interfeysi (wg1, wg2…) öz UDP portu ilə (51820-dən başlayaraq) yaranır; bu port internetdən əlçatan olmalıdır."
+  },
+  "clientDns": {
+    "what": "Bu şəbəkənin cihaz konfiqlərinə yazılan DNS serverləri: vergüllə ayrılmış ən çox 3 IPv4 ünvanı.",
+    "who": "Cihazları adları müəyyən serverdən (məsələn VPN üzərindən çatılan daxili DNS-dən) həll etməli olan şəbəkələr.",
+    "effect": "Boş olanda tam tunel cihazları 1.1.1.1 işlədir, split tunel cihazları öz DNS-lərini saxlayır. Dəyər yazılanda şəbəkənin bütün cihazları onu işlədir. Yalnız yeni və ya yenidən endirilən konfiqlər dəyişir; cihazlarda olan konfiqlər yenidən göndərilənə qədər olduğu kimi qalır."
+  }
+}

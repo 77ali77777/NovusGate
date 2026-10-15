@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type React from 'react'
 import { useEffect, useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { HelpTip } from './HelpTip'
 
 // Button component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -188,12 +189,14 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
   helperText?: string
+  help?: string // HelpTip key "namespace:path" (tests/helpTips.test.mjs)
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
   error,
   helperText,
+  help,
   className,
   id,
   ...props
@@ -202,13 +205,18 @@ export const Input: React.FC<InputProps> = ({
   const inputId = id ?? autoId
   return (
     <div className="space-y-1">
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          {label}
-        </label>
+      {(label || help) && (
+        <div className="flex items-center">
+          {label && (
+            <label
+              htmlFor={inputId}
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {label}
+            </label>
+          )}
+          {help && <HelpTip k={help} />}
+        </div>
       )}
       <input
         id={inputId}
@@ -232,12 +240,14 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   error?: string
   options: { value: string; label: string }[]
+  help?: string // HelpTip key "namespace:path"
 }
 
 export const Select: React.FC<SelectProps> = ({
   label,
   error,
   options,
+  help,
   className,
   id,
   ...props
@@ -246,13 +256,18 @@ export const Select: React.FC<SelectProps> = ({
   const selectId = id ?? autoId
   return (
     <div className="space-y-1">
-      {label && (
-        <label
-          htmlFor={selectId}
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          {label}
-        </label>
+      {(label || help) && (
+        <div className="flex items-center">
+          {label && (
+            <label
+              htmlFor={selectId}
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {label}
+            </label>
+          )}
+          {help && <HelpTip k={help} />}
+        </div>
       )}
       <select
         id={selectId}

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useCan, useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { dateFnsLocale } from '@/i18n'
 import type { CreateNetworkForm } from '@/types'
@@ -83,15 +84,17 @@ export const Networks = () => {
 
       {/* Search */}
       <div className="mb-6">
-        <div className="relative max-w-md">
+        <div className="relative flex max-w-md items-center gap-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
+            data-help="helpNetworks:search"
             type="text"
             placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
           />
+          <HelpTip k="helpNetworks:search" />
         </div>
       </div>
 
@@ -226,8 +229,10 @@ export const Networks = () => {
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     {t('form.name')}
+                    <HelpTip k="helpNetworks:name" />
                   </label>
                   <input
+                    data-help="helpNetworks:name"
                     id="net-1"
                     type="text"
                     required
@@ -243,8 +248,10 @@ export const Networks = () => {
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     {t('card.cidrRange')}
+                    <HelpTip k="helpNetworks:cidr" />
                   </label>
                   <input
+                    data-help="helpNetworks:cidr"
                     id="net-2"
                     type="text"
                     required

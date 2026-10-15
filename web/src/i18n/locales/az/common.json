@@ -68,5 +68,11 @@
     "type": "Növ",
     "priority": "Prioritet",
     "action": "Əməliyyat"
+  },
+  "help": {
+    "what": "Nədir:",
+    "who": "Kimə, nə üçün lazımdır:",
+    "effect": "Dəyişsən nə olur:",
+    "button": "Bu sahə haqqında kömək"
   }
 }

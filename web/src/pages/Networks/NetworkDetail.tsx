@@ -49,6 +49,7 @@ const ClientDNSForm = ({ id, current }: { id: string; current: string }) => {
     >
       <div className="min-w-[16rem] flex-1">
         <Input
+          help="helpNetworks:clientDns"
           label={t('detail.clientDns')}
           placeholder={t('detail.clientDnsDefault')}
           helperText={t('detail.clientDnsHint')}
