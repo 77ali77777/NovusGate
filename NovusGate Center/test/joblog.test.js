@@ -66,3 +66,34 @@ test('teeSSE copies every streamed event into the log and finishes it', () => {
   assert.match(text, /exit 3/);
   assert.match(text, /# finished: failed/);
 });
+
+// Writing the log is best-effort: a disk that is full or not writable must
+// not stop the job (or keep its server locked).
+test('a log that cannot be written never throws', () => {
+  const dir = tmp();
+  const blocker = path.join(dir, 'file');
+  fs.writeFileSync(blocker, 'not a directory');
+  const logs = createJobLogs(blocker, () => at('09:30:05')); // mkdir fails
+  const log = logs.start('srv1', 'install', {});
+  assert.doesNotThrow(() => {
+    log.append('text');
+    log.finish(true, 0);
+  });
+  const ok = createJobLogs(dir, () => at('09:30:05')).start('srv2', 'update', {});
+  fs.rmSync(path.join(dir, 'srv2'), { recursive: true }); // vanishes mid-job
+  assert.doesNotThrow(() => {
+    ok.append('more');
+    ok.finish(false, 1);
+  });
+});
+
+// A deleted server's logs go with it (they may hold its passwords).
+test('remove deletes a server\'s logs', () => {
+  const dir = tmp();
+  const logs = createJobLogs(dir, () => at('09:30:05'));
+  logs.start('srv1', 'install', {}).finish(true, 0);
+  logs.remove('srv1');
+  assert.strictEqual(fs.existsSync(path.join(dir, 'srv1')), false);
+  assert.deepStrictEqual(logs.list('srv1'), []);
+  assert.doesNotThrow(() => logs.remove('../etc'));
+});

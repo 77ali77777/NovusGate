@@ -19,7 +19,18 @@ function createJobLogs(dir, now = () => new Date()) {
   const serverDir = (id) => (ID_RE.test(String(id)) ? path.join(dir, String(id)) : null);
 
   // start opens a new log; server is { name, host } for the header line.
+  // Logging is best-effort: when the log cannot be written (disk full, no
+  // permission) the job goes on without it and the error is printed.
   function start(serverId, action, server = {}) {
+    try {
+      return openLog(serverId, action, server);
+    } catch (err) {
+      console.error(`[joblog] ${action}: the job log is not written: ${err.message}`);
+      return { name: null, path: null, append() {}, finish() {} };
+    }
+  }
+
+  function openLog(serverId, action, server) {
     const sdir = serverDir(serverId);
     if (!sdir) throw new Error(`invalid server id for a job log: ${serverId}`);
     fs.mkdirSync(sdir, { recursive: true, mode: 0o700 });
@@ -33,17 +44,27 @@ function createJobLogs(dir, now = () => new Date()) {
     const who = server.name ? ` on ${server.name}${server.host ? ` (${server.host})` : ''}` : '';
     fs.writeFileSync(file, `# NovusGate Center job: ${safeAction}${who}, started ${started.toISOString()}\n`, { mode: 0o600 });
     let finished = false;
+    let broken = false;
+    const write = (text) => {
+      if (broken) return;
+      try {
+        fs.appendFileSync(file, text);
+      } catch (err) {
+        broken = true; // stop trying; the job itself goes on
+        console.error(`[joblog] ${name}: writing the log failed: ${err.message}`);
+      }
+    };
     return {
       name,
       path: file,
       append(text) {
-        if (!finished && text) fs.appendFileSync(file, text);
+        if (!finished && text) write(text);
       },
       finish(success, code) {
         if (finished) return;
         finished = true;
         const exit = code === undefined || code === null ? '' : ` (exit ${code})`;
-        fs.appendFileSync(file, `\n# finished: ${success ? 'success' : 'failed'}${exit} at ${now().toISOString()}\n`);
+        write(`\n# finished: ${success ? 'success' : 'failed'}${exit} at ${now().toISOString()}\n`);
       },
     };
   }
@@ -79,7 +100,14 @@ function createJobLogs(dir, now = () => new Date()) {
     return fs.existsSync(file) ? file : null;
   }
 
-  return { start, list, open };
+  // remove deletes a server's logs (the server was deleted; they may hold
+  // its passwords).
+  function remove(serverId) {
+    const sdir = serverDir(serverId);
+    if (sdir) fs.rmSync(sdir, { recursive: true, force: true });
+  }
+
+  return { start, list, open, remove };
 }
 
 // teeSSE copies the text of every SSE event written to res into log and

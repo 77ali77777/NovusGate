@@ -155,6 +155,12 @@ app.delete('/api/servers/:id', (req, res) => {
   store.update((data) => {
     data.servers = data.servers.filter(s => s.id !== req.params.id);
   });
+  // Its job logs may hold its passwords: they go with it.
+  try {
+    jobLogs.remove(req.params.id);
+  } catch (err) {
+    console.error(`[joblog] logs of ${req.params.id} not removed: ${err.message}`);
+  }
   res.json({ message: 'Server deleted' });
 });
 
@@ -594,6 +600,9 @@ app.get('/api/servers/:id/jobs', (req, res) => {
 
 // GET /api/servers/:id/jobs/:name - one job log as text (?download=1 saves it)
 app.get('/api/servers/:id/jobs/:name', (req, res) => {
+  if (!loadServers().servers.some(s => s.id === req.params.id)) {
+    return res.status(404).json({ error: 'Server not found' });
+  }
   const file = jobLogs.open(req.params.id, req.params.name);
   if (!file) return res.status(404).json({ error: 'Job log not found' });
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
