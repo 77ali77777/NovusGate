@@ -336,6 +336,8 @@ chmod +x "$d/fail2ban-client" "$d/systemctl"
 ) || fail "f2b log: configure_fail2ban_log failed"
 assert_has "$d/fail2ban.d/novusgate.local" "logtarget = $d/log/fail2ban.log" "f2b log: logtarget drop-in"
 [ -d "$d/log" ] || fail "f2b log: log directory not created"
+# A file-backend jail (recidive) refuses to start fail2ban without the file.
+[ -f "$d/log/fail2ban.log" ] || fail "f2b log: log file not created"
 assert_has "$d/logrotate.d/novusgate-fail2ban" "$d/log/fail2ban.log {" "f2b log: own logrotate file"
 assert_has "$d/logrotate.d/novusgate-fail2ban" "fail2ban-client flushlogs" "f2b log: reopen after rotation"
 assert_not "$d/logrotate.d/fail2ban" "NovusGate" "f2b log: old marker removed"
@@ -354,6 +356,8 @@ mkdir -p "$d2/jail.d"
 ) || fail "f2b log: configure_fail2ban failed"
 assert_has "$d2/jail.d/novusgate.local" "[recidive]" "f2b log: recidive section"
 assert_has "$d2/jail.d/novusgate.local" "logpath = /var/log/novusgate/fail2ban.log" "f2b log: recidive logpath"
+# Ubuntu 24.04 defaults every jail to backend = systemd, which ignores logpath.
+assert_has "$d2/jail.d/novusgate.local" "backend = auto" "f2b log: recidive reads the file"
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES failure(s)"

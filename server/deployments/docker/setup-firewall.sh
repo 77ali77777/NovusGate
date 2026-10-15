@@ -93,6 +93,8 @@ configure_fail2ban() {
     # recidive reads fail2ban's own log, which configure_fail2ban_log moves.
     echo "[recidive]"
     echo "logpath = $F2B_LOG_DIR/fail2ban.log"
+    # Ubuntu 24.04 sets backend = systemd for all jails, which ignores logpath.
+    echo "backend = auto"
   } > "$F2B_JAIL_DIR/novusgate.local"
   if systemctl is-active --quiet fail2ban 2> /dev/null; then
     systemctl reload fail2ban || echo "[FIREWALL] Warning: fail2ban reload failed; check 'fail2ban-client status'"
@@ -111,6 +113,9 @@ configure_fail2ban_log() {
   [ -d "$conf" ] || return 0
   mkdir -p "$F2B_LOG_DIR"
   chmod 755 "$F2B_LOG_DIR"
+  # A file-backend jail (recidive) stops fail2ban from starting when its
+  # logpath does not exist yet; fail2ban only creates the file once running.
+  [ -f "$log" ] || { touch "$log" && chmod 600 "$log"; }
   {
     echo "# Managed by NovusGate setup-firewall.sh"
     echo "[Definition]"

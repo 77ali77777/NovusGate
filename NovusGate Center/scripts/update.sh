@@ -30,6 +30,17 @@ rollback() {
   cd /
   clean_install_dir "$INSTALL_DIR"
   tar -xzf "$BACKUP_DIR/code.tar.gz" -C "$INSTALL_DIR"
+  # An older version reads /var/log/fail2ban.log: undo the log move the new
+  # setup-firewall.sh may already have made.
+  if ! grep -q /var/log/novusgate "$INSTALL_DIR/server/deployments/docker/docker-compose.yml" 2>/dev/null; then
+    rm -f /etc/fail2ban/fail2ban.d/novusgate.local
+    rm -f /etc/logrotate.d/novusgate-fail2ban
+    [ -f /etc/fail2ban/jail.d/novusgate.local ] && sed -i '/^\[recidive\]/,$d' /etc/fail2ban/jail.d/novusgate.local
+    if systemctl is-active --quiet fail2ban 2>/dev/null; then
+      fail2ban-client set logtarget /var/log/fail2ban.log > /dev/null 2>&1 || true
+      systemctl reload fail2ban 2>/dev/null || true
+    fi
+  fi
   cd "$INSTALL_DIR"
   compose -f server/deployments/docker/docker-compose.yml up -d --build --force-recreate || true
   if wait_healthy; then

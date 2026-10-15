@@ -282,3 +282,19 @@ test('every script file is used and fully rendered', () => {
     assert.doesNotMatch(s, /@@[A-Z_]+@@/);
   }
 });
+
+// A rolled-back version that mounts /var/log/fail2ban.log (not the
+// /var/log/novusgate directory) needs fail2ban logging there again.
+test('rollback moves the fail2ban log back for an older version', () => {
+  const s = scripts.UPDATE_SCRIPT;
+  const body = s.slice(s.indexOf('rollback() {'), s.indexOf('\n}\n', s.indexOf('rollback() {')));
+  for (const piece of [
+    'grep -q /var/log/novusgate "$INSTALL_DIR/server/deployments/docker/docker-compose.yml"',
+    'rm -f /etc/fail2ban/fail2ban.d/novusgate.local',
+    'rm -f /etc/logrotate.d/novusgate-fail2ban',
+    'fail2ban-client set logtarget /var/log/fail2ban.log',
+  ]) {
+    assert.ok(body.includes(piece), `rollback is missing: ${piece}`);
+  }
+  assert.ok(body.indexOf('tar -xzf') < body.indexOf('grep -q /var/log/novusgate'), 'the check reads the restored compose file');
+});
