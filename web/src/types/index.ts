@@ -379,6 +379,42 @@ export interface FirewallV2Preview {
   warnings: string[]
 }
 
+// GET /firewall/v2/live: counters and dropped come from the nftables table
+// (empty when it is not loaded, e.g. in iptables mode); conntrack always.
+export interface FirewallV2RuleCounter {
+  chain: string
+  rule: string
+  comment?: string
+  packets: number
+  bytes: number
+}
+
+export interface FirewallV2Live {
+  mode: string
+  table_loaded: boolean
+  counters: FirewallV2RuleCounter[]
+  dropped: { address: string; seconds_ago: number }[]
+  conntrack: {
+    available: boolean
+    count: number
+    max: number
+    by_protocol: Record<string, number> | null
+    tcp_states: Record<string, number> | null
+    truncated?: boolean
+  }
+  error?: string
+}
+
+// GET /firewall/v2/history: newest first; added/removed are readable lines.
+export interface FirewallV2HistoryEntry {
+  id: string
+  created_at: string
+  username?: string
+  action: string
+  added: string[]
+  removed: string[]
+}
+
 export interface FirewallV2ServiceRequest {
   protocol: 'tcp' | 'udp'
   port_from: number

@@ -27,3 +27,29 @@ export function toRFC3339(local: string): string | undefined {
   const d = new Date(local)
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
 }
+
+// formatAgo says how long ago a dropped source was last seen.
+export function formatAgo(seconds: number): string {
+  if (seconds <= 0) return 'just now'
+  if (seconds < 60) return `${seconds} s ago`
+  return `${Math.floor(seconds / 60)} min ago`
+}
+
+const byteUnits = ['B', 'KB', 'MB', 'GB', 'TB']
+
+// formatBytes renders a byte count with binary units (1 KB = 1024 B).
+export function formatBytes(bytes: number): string {
+  let i = 0
+  let v = bytes
+  while (v >= 1024 && i < byteUnits.length - 1) {
+    v /= 1024
+    i++
+  }
+  return i === 0 ? `${v} B` : `${v.toFixed(1)} ${byteUnits[i]}`
+}
+
+// usagePercent is count/max as a whole percent, capped at 100; 0 without max.
+export function usagePercent(count: number, max: number): number {
+  if (max <= 0) return 0
+  return Math.min(100, Math.floor((count / max) * 100))
+}

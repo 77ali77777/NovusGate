@@ -30,7 +30,7 @@ const protocolOptions = [
 ]
 
 // Pending change: the host already runs it; without Confirm it is rolled back.
-const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
+export const PendingBanner = ({ pending }: { pending: FirewallV2Pending }) => {
   const confirm = useConfirmFirewallV2()
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {

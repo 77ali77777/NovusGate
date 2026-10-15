@@ -12,6 +12,8 @@ import type {
   FirewallV2ForwardRequest,
   FirewallV2IPRuleRequest,
   FirewallV2Preview,
+  FirewallV2Live,
+  FirewallV2HistoryEntry,
   FirewallV2ServiceRequest,
   FirewallV2State,
   ImportRulesRequest,
@@ -413,6 +415,21 @@ class ApiClient {
 
   async getFirewallV2Preview(): Promise<FirewallV2Preview> {
     const { data } = await this.client.get<FirewallV2Preview>('/firewall/v2/preview')
+    return data
+  }
+
+  async getFirewallV2Live(): Promise<FirewallV2Live> {
+    const { data } = await this.client.get<FirewallV2Live>('/firewall/v2/live')
+    return data
+  }
+
+  async getFirewallV2History(): Promise<{ entries: FirewallV2HistoryEntry[] }> {
+    const { data } = await this.client.get<{ entries: FirewallV2HistoryEntry[] }>('/firewall/v2/history')
+    return data
+  }
+
+  async restoreFirewallV2History(id: string): Promise<FirewallV2Change> {
+    const { data } = await this.client.post<FirewallV2Change>(`/firewall/v2/history/${id}/restore`)
     return data
   }
 
@@ -867,6 +884,22 @@ export function useFirewallV2Preview(enabled: boolean) {
   })
 }
 
+// Live view: refreshed every 10 s while the tab is open.
+export function useFirewallV2Live() {
+  return useQuery({
+    queryKey: ['firewall', 'v2', 'live'],
+    queryFn: () => api.getFirewallV2Live(),
+    refetchInterval: 10000,
+  })
+}
+
+export function useFirewallV2History() {
+  return useQuery({
+    queryKey: ['firewall', 'v2', 'history'],
+    queryFn: () => api.getFirewallV2History(),
+  })
+}
+
 function useFirewallV2Mutation<T>(fn: (vars: T) => Promise<unknown>, errorTitle: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -897,3 +930,5 @@ export const useSetFirewallV2Egress = () =>
   )
 export const useConfirmFirewallV2 = () =>
   useFirewallV2Mutation((id: string) => api.confirmFirewallV2(id), 'Failed to confirm the change')
+export const useRestoreFirewallV2History = () =>
+  useFirewallV2Mutation((id: string) => api.restoreFirewallV2History(id), 'Failed to restore the firewall state')

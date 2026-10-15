@@ -1,8 +1,10 @@
 import {
+  Activity,
   Ban,
   CheckCircle,
   Download,
   Globe,
+  History,
   Lock,
   Network,
   Plus,
@@ -33,13 +35,23 @@ import { Button, Card, Modal } from '@/components/ui'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
 import { AdvancedTab } from './AdvancedTab'
 import { BlockedIPsTab } from './BlockedIPsTab'
+import { HistoryTab } from './HistoryTab'
 import { HostRulesTab } from './HostRulesTab'
+import { LiveTab } from './LiveTab'
 import { OpenPortsTab } from './OpenPortsTab'
 import { OverviewTab } from './OverviewTab'
 import { VPNRuleModal } from './VPNRuleModal'
 import { VPNRulesTab } from './VPNRulesTab'
 
-type TabId = 'overview' | 'host-rules' | 'open-ports' | 'vpn-rules' | 'blocked-ips' | 'advanced'
+type TabId =
+  | 'overview'
+  | 'host-rules'
+  | 'open-ports'
+  | 'vpn-rules'
+  | 'blocked-ips'
+  | 'advanced'
+  | 'live'
+  | 'history'
 
 export const Firewall: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -311,6 +323,8 @@ export const Firewall: React.FC = () => {
     { id: 'vpn-rules' as TabId, label: 'VPN Rules', icon: Network, count: vpnRuleCount },
     { id: 'blocked-ips' as TabId, label: 'Blocked IPs', icon: Ban, count: blockedIPs },
     { id: 'advanced' as TabId, label: 'Advanced (nftables)', icon: SlidersHorizontal },
+    { id: 'live' as TabId, label: 'Live', icon: Activity },
+    { id: 'history' as TabId, label: 'History', icon: History },
   ]
 
   // Quick Actions Component - shown in all tabs
@@ -410,8 +424,8 @@ export const Firewall: React.FC = () => {
         ))}
       </div>
 
-      {/* Quick Actions Bar - shown in all tabs except Overview */}
-      {activeTab !== 'overview' && activeTab !== 'advanced' && <QuickActionsBar />}
+      {/* Quick Actions Bar - shown in the iptables-era tabs only */}
+      {!['overview', 'advanced', 'live', 'history'].includes(activeTab) && <QuickActionsBar />}
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
@@ -472,6 +486,10 @@ export const Firewall: React.FC = () => {
 
       {/* nftables engine (firewall v2): services, IP rules, forwards, full tunnel */}
       {activeTab === 'advanced' && <AdvancedTab />}
+
+      {/* Live counters, dropped sources, conntrack; change history with restore */}
+      {activeTab === 'live' && <LiveTab />}
+      {activeTab === 'history' && <HistoryTab />}
 
       {/* Open Port Modal */}
       <Modal
