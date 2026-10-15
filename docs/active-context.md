@@ -205,11 +205,28 @@
     - baseline və dəyişiklik ayrı insert-lərlə yazılırdı;
     - history yazısında timeout yox idi;
     - restore təsdiqi fail2ban ban-larının da silindiyini demirdi.
-  - Qərar gözləyir: `/etc/logrotate.d/fail2ban` dpkg conffile-dır. Paket bu faylı dəyişsə, unattended-upgrades fail2ban yeniləməsini saxlaya bilər.
+  - Conffile riski `9eedb44`-də həll olundu: fail2ban öz qovluğuna yazır.
+
+### 2026-10-15: Fail2Ban öz log qovluğu, Network Policies, System Rules
+- **İstifadəçi qərarları:**
+  - Fail2Ban üçün öz log qovluğu (conffile riskinə görə);
+  - matris və System Rules edilir.
+- **Fail2Ban (`9eedb44`):**
+  - fail2ban `/var/log/novusgate/fail2ban.log`-a yazır (`fail2ban.d` drop-in, recidive `logpath`, öz logrotate faylı);
+  - compose qovluğu mount edir; paketin conffile-ına toxunulmur, köhnə copytruncate silinir;
+  - Center uninstall hamısını geri qaytarır.
+  - Real fail2ban ilə (ubuntu:24.04) yoxlandı: logtarget dəyişdi, `logrotate -d` təmizdir, conffile dəyişməyib.
+- **UI (`2069c84`):**
+  - VPN Rules tabında şəbəkə×şəbəkə matrisi (allow/deny/partial, klik qayda modalını açır);
+  - System Rules tabı (preview-dan, izahlarla).
+- **Yoxlamalar:** Go 14 paket `ok`, shell `OK`, Center 83/83, web 27/27, `tsc` OK, `vite build` OK, biome 94/31.
+- **İcra olunmayıb:** brauzerdə tablar; real serverdə Update ilə log köçürülməsi.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | Network Policies matrisi, System Rules tabı | web/src/lib/{policyMatrix,systemRules}.ts, pages/Firewall/{PolicyMatrix,SystemRulesTab,Firewall}.tsx | P3c qalığı · `2069c84` |
+| 2026-10-15 | Fail2Ban `/var/log/novusgate`-a yazır (conffile-a toxunulmur) | setup-firewall.sh (+test), compose, fail2ban_parse.go, main.go, Center uninstall/fail2ban.js | review: conffile riski · `9eedb44` |
 | 2026-10-15 | Firewall Live (counter-lər, drop olunan mənbələr, conntrack) və History (diff, restore) | netctl/nft/{compile,live}.go, netctl/conntrack, firewall/{live,history,describe,engine}.go, store/firewall_history.go + 012, api/rest/firewall_{live,history}.go, web Firewall Live/History tabları | P3c qalığı · `75f4d53`..`cf31aee` |
 | 2026-10-15 | Center: preflight, skriptlər `scripts/*.sh`-də | NovusGate Center/{lib/scripts.js,lib/run.js,scripts/,test/} | spec §4.5 · `72307f1`, `36041ec` |
 | 2026-10-15 | Fail2Ban log-u rotasiyadan sonra da oxunur (copytruncate) | setup-firewall.sh (+test), Center scripts | bildiriş məhdudiyyəti · `ba39d85` |

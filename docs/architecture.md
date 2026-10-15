@@ -140,3 +140,9 @@
   - Baseline və dəyişiklik bir transaksiyada yazılır; yazma 10 s ilə məhdudlaşdırılıb (engine lock altında işləyir).
   - **Məhdudiyyət:** engine-dən keçməyən dəyişikliklər ayrıca yazı almır. Məsələn, node silinəndə `fw_egress` cascade ilə silinir. Bu fərq növbəti dəyişikliyin diff-ində "removed" kimi görünür və həmin dəyişikliyi edən istifadəçinin adına düşür.
   - Restore ondan sonra əlavə olunan bütün IP qaydalarını, o cümlədən Fail2Ban-ın daimi ban-larını silir; UI təsdiqində bu yazılıb.
+
+## Network Policies matrisi və System Rules (P3c, 2026-10-15)
+- **Matris** (`web/src/lib/policyMatrix.ts`) tamamilə frontend-də hesablanır. Mənbə VPN qaydalarıdır, API-nin verdiyi sıra ilə (`priority`, sonra `created_at`), ilk uyğun gələn qayda qalib gəlir — kompilyatordakı `vpn_policy` ilə eyni.
+  - Default: nft-də eyni şəbəkə daxilində allow, şəbəkələr arasında deny; iptables və shadow rejimində allow (`-A FORWARD -i wg+ -j ACCEPT`).
+  - Port, protokol, node və ya custom ünvanla məhdudlaşan qayda nəticədən fərqlənirsə, xana `partial` olur.
+- **System Rules** (`web/src/lib/systemRules.ts`) `/firewall/v2/preview` skriptini parse edir. `svc:`/`ip:`/`rule:`/`fwd:` comment-li sətirlər istifadəçinin qaydalarıdır və göstərilmir. İzahlar regex cədvəlindədir. Tanınmayan qayda izahsız göstərilir, siyahıdan çıxarılmır. Bu view iptables rejimində (engine yoxdur) mövcud deyil.
