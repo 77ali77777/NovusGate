@@ -357,7 +357,8 @@ func (e *Engine) finish(ctx context.Context, commit func(context.Context) error,
 
 // scheduleExpiry re-runs reconcile when the next IP rule expires, so rules the
 // kernel cannot time out on its own (port-scoped rules, allows, bans longer
-// than nft's timeout limit) are removed on time.
+// than nft's timeout limit) are removed on time, and when a limit schedule's
+// time zone changes its UTC offset (P9b), so schedules follow local time.
 func (e *Engine) scheduleExpiry(st State) {
 	if e.AfterFunc == nil {
 		return
@@ -372,6 +373,9 @@ func (e *Engine) scheduleExpiry(st State) {
 		if r.ExpiresAt != nil && r.ExpiresAt.After(now) && (next == nil || r.ExpiresAt.Before(*next)) {
 			next = r.ExpiresAt
 		}
+	}
+	if reload, ok := NextLimitReload(context.Background(), e.Store, now); ok && (next == nil || reload.Before(*next)) {
+		next = &reload
 	}
 	if next == nil {
 		return
@@ -390,11 +394,11 @@ func (e *Engine) desired(ctx context.Context, st State) (nft.Ruleset, HostInfo, 
 	if err != nil {
 		return nft.Ruleset{}, host, nil, fmt.Errorf("host detection failed: %w", err)
 	}
-	rs, warnings, err := BuildRuleset(ctx, e.Store, host.SSHPorts, host.Egress)
+	now := e.Now()
+	rs, warnings, err := BuildRulesetAt(ctx, e.Store, host.SSHPorts, host.Egress, now)
 	if err != nil {
 		return rs, host, warnings, err
 	}
-	now := e.Now()
 
 	for _, s := range st.Services {
 		svc := nft.Service{ID: s.ID, Proto: nft.Protocol(s.Protocol),

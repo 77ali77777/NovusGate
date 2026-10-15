@@ -32,22 +32,22 @@ type Network struct {
 
 // Node represents a peer (spoke) in the VPN network
 type Node struct {
-	ID        string            `json:"id"`
-	NetworkID string            `json:"network_id"`
-	Name      string            `json:"name"`
-	VirtualIP net.IP            `json:"virtual_ip"`
-	PublicKey string            `json:"public_key"`
-	Labels    map[string]string `json:"labels"`
-	Status    NodeStatus        `json:"status"`
-	LastSeen  time.Time         `json:"last_seen"`
-	PublicIP  string            `json:"public_ip,omitempty"`
-	TransferRx int64            `json:"transfer_rx,omitempty"`
-	TransferTx int64            `json:"transfer_tx,omitempty"`
-	ExpiresAt *time.Time        `json:"expires_at,omitempty"`
-	NodeInfo  *NodeInfo         `json:"node_info,omitempty"`
-	Endpoints []string          `json:"endpoints"`
-	HasConfig bool              `json:"has_config"` // the server holds its private key: config, QR and install script work
-	CreatedAt time.Time         `json:"created_at"`
+	ID         string            `json:"id"`
+	NetworkID  string            `json:"network_id"`
+	Name       string            `json:"name"`
+	VirtualIP  net.IP            `json:"virtual_ip"`
+	PublicKey  string            `json:"public_key"`
+	Labels     map[string]string `json:"labels"`
+	Status     NodeStatus        `json:"status"`
+	LastSeen   time.Time         `json:"last_seen"`
+	PublicIP   string            `json:"public_ip,omitempty"`
+	TransferRx int64             `json:"transfer_rx,omitempty"`
+	TransferTx int64             `json:"transfer_tx,omitempty"`
+	ExpiresAt  *time.Time        `json:"expires_at,omitempty"`
+	NodeInfo   *NodeInfo         `json:"node_info,omitempty"`
+	Endpoints  []string          `json:"endpoints"`
+	HasConfig  bool              `json:"has_config"` // the server holds its private key: config, QR and install script work
+	CreatedAt  time.Time         `json:"created_at"`
 }
 
 // Active reports whether the node may hold a WireGuard peer at time now: it
@@ -94,44 +94,44 @@ const (
 
 // VPNFirewallRule represents a firewall rule for VPN traffic control
 type VPNFirewallRule struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description,omitempty"`
-	
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+
 	// Source configuration
-	SourceType      string    `json:"source_type"`       // any, network, node, custom
-	SourceNetworkID *string   `json:"source_network_id,omitempty"`
-	SourceNodeID    *string   `json:"source_node_id,omitempty"`
-	SourceIP        string    `json:"source_ip,omitempty"`
-	
+	SourceType      string  `json:"source_type"` // any, network, node, custom
+	SourceNetworkID *string `json:"source_network_id,omitempty"`
+	SourceNodeID    *string `json:"source_node_id,omitempty"`
+	SourceIP        string  `json:"source_ip,omitempty"`
+
 	// Destination configuration
-	DestType        string    `json:"dest_type"`         // any, network, node, custom
-	DestNetworkID   *string   `json:"dest_network_id,omitempty"`
-	DestNodeID      *string   `json:"dest_node_id,omitempty"`
-	DestIP          string    `json:"dest_ip,omitempty"`
-	
+	DestType      string  `json:"dest_type"` // any, network, node, custom
+	DestNetworkID *string `json:"dest_network_id,omitempty"`
+	DestNodeID    *string `json:"dest_node_id,omitempty"`
+	DestIP        string  `json:"dest_ip,omitempty"`
+
 	// Group endpoints (source_type / dest_type "group", P9a)
 	SourceGroupID *string `json:"source_group_id,omitempty"`
 	DestGroupID   *string `json:"dest_group_id,omitempty"`
-	
+
 	// Rule details
-	Protocol        string    `json:"protocol"`          // tcp, udp, icmp, all
-	Port            string    `json:"port,omitempty"`    // port or range
-	Action          string    `json:"action"`            // accept, drop, reject
-	
+	Protocol string `json:"protocol"`       // tcp, udp, icmp, all
+	Port     string `json:"port,omitempty"` // port or range
+	Action   string `json:"action"`         // accept, drop, reject
+
 	// Metadata
-	Priority        int       `json:"priority"`
-	Enabled         bool      `json:"enabled"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	
+	Priority  int       `json:"priority"`
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
 	// Joined fields for display (not stored in DB)
-	SourceNetworkName string  `json:"source_network_name,omitempty"`
-	SourceNodeName    string  `json:"source_node_name,omitempty"`
-	DestNetworkName   string  `json:"dest_network_name,omitempty"`
-	DestNodeName      string  `json:"dest_node_name,omitempty"`
-	SourceGroupName   string  `json:"source_group_name,omitempty"`
-	DestGroupName     string  `json:"dest_group_name,omitempty"`
+	SourceNetworkName string `json:"source_network_name,omitempty"`
+	SourceNodeName    string `json:"source_node_name,omitempty"`
+	DestNetworkName   string `json:"dest_network_name,omitempty"`
+	DestNodeName      string `json:"dest_node_name,omitempty"`
+	SourceGroupName   string `json:"source_group_name,omitempty"`
+	DestGroupName     string `json:"dest_group_name,omitempty"`
 }
 
 // FirewallAuditLog represents an audit log entry for firewall changes
@@ -142,7 +142,6 @@ type FirewallAuditLog struct {
 	UserIP    string                 `json:"user_ip,omitempty"`
 	CreatedAt time.Time              `json:"created_at"`
 }
-
 
 // NotificationSettings are the Telegram notification settings (P8). The bot
 // token is stored sealed and never returned; TokenSet says whether one is.
@@ -243,4 +242,38 @@ type NodeGroupMember struct {
 	Name      string `json:"name"`
 	VirtualIP string `json:"virtual_ip"`
 	NetworkID string `json:"network_id"`
+}
+
+// LimitProfile (P9b) limits each bound node separately: speed, concurrent
+// connections and the times it may use the VPN. Nil limits are unlimited;
+// an empty schedule allows every time.
+type LimitProfile struct {
+	ID             string           `json:"id"`
+	Name           string           `json:"name"`
+	DownKbps       *int             `json:"down_kbps"`
+	UpKbps         *int             `json:"up_kbps"`
+	MaxConnections *int             `json:"max_connections"`
+	Schedule       []ScheduleWindow `json:"schedule"`
+	Timezone       string           `json:"timezone"`
+	NodeIDs        []string         `json:"node_ids"`  // nodes bound directly
+	GroupIDs       []string         `json:"group_ids"` // groups bound; their members inherit it
+	CreatedAt      time.Time        `json:"created_at"`
+}
+
+// ScheduleWindow allows traffic on Days from From to To, local time of the
+// profile's time zone. To "24:00" is the end of the day; To before From
+// runs past midnight into the next day.
+type ScheduleWindow struct {
+	Days []int  `json:"days"` // 0 = Sunday … 6 = Saturday
+	From string `json:"from"` // "HH:MM"
+	To   string `json:"to"`   // "HH:MM"
+}
+
+// NodeLimit is the limit profile in force for a node (P9b): its own, or
+// else that of its first group (by name) with a profile.
+type NodeLimit struct {
+	NodeID    string `json:"node_id"`
+	VirtualIP string `json:"virtual_ip"`
+	ProfileID string `json:"profile_id"`
+	GroupID   string `json:"group_id,omitempty"` // set when inherited from a group
 }
