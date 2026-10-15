@@ -23,6 +23,9 @@ type MatrixCell struct {
 	ReasonKey string   `json:"reason_key"`
 	Rule      string   `json:"rule,omitempty"`
 	Rules     []string `json:"rules"` // names of the rules that touch the pair, in order
+	// Limited: a node on either side has a limit profile (P9b) the firewall
+	// enforces; the verdict is the same, the traffic is limited.
+	Limited bool `json:"limited"`
 }
 
 // Matrix is the network policy matrix; Cells[from][to].
@@ -110,10 +113,24 @@ func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, [
 	for _, g := range rs.Groups {
 		sets[g.Name] = g.Members
 	}
+	limited := map[string]bool{}
+	if nftEnforcing {
+		for _, l := range rs.Limits {
+			for _, a := range l.Members {
+				for id, p := range cidrs {
+					if p.Contains(a) {
+						limited[id] = true
+					}
+				}
+			}
+		}
+	}
 	for _, from := range m.Networks {
 		m.Cells[from.ID] = map[string]MatrixCell{}
 		for _, to := range m.Networks {
-			m.Cells[from.ID][to.ID] = matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, sets, names, nftEnforcing)
+			c := matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, sets, names, nftEnforcing)
+			c.Limited = limited[from.ID] || limited[to.ID]
+			m.Cells[from.ID][to.ID] = c
 		}
 	}
 	return m, warnings, nil

@@ -1283,6 +1283,9 @@
       },
       "MatrixCell": {
         "properties": {
+          "limited": {
+            "type": "boolean"
+          },
           "reason": {
             "type": "string"
           },
@@ -1304,6 +1307,7 @@
           }
         },
         "required": [
+          "limited",
           "reason",
           "reason_key",
           "rules",

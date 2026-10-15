@@ -233,3 +233,42 @@ func TestGroupRulesBuildAndMatrix(t *testing.T) {
 		t.Fatalf("a->a %+v", cell)
 	}
 }
+
+type limitMatrixSource struct {
+	matrixSource
+	limits []models.NodeLimit
+}
+
+func (l limitMatrixSource) ListLimitProfiles(context.Context) ([]models.LimitProfile, error) {
+	up := 1000
+	return []models.LimitProfile{{ID: "p1", Name: "slow", UpKbps: &up, Timezone: "UTC"}}, nil
+}
+func (l limitMatrixSource) ListNodeLimits(context.Context) ([]models.NodeLimit, error) {
+	return l.limits, nil
+}
+
+// Limits do not change verdicts; a cell is marked limited when a limited
+// node is on either side, and only where nftables enforces limits.
+func TestMatrixMarksLimitedCells(t *testing.T) {
+	src := limitMatrixSource{matrixSource: matrixSource{networks: matrixNets()},
+		limits: []models.NodeLimit{{NodeID: "n1", VirtualIP: "10.1.0.5", ProfileID: "p1"}}}
+	m, _, err := PolicyMatrix(context.Background(), src, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for from, row := range m.Cells {
+		for to, c := range row {
+			want := from == "a" || to == "a"
+			if c.Limited != want {
+				t.Errorf("%s->%s limited = %v, want %v", from, to, c.Limited, want)
+			}
+		}
+	}
+	if m.Cells["b"]["c"].Verdict != "deny" || m.Cells["a"]["a"].Verdict != "allow" {
+		t.Errorf("verdicts changed: %+v", m.Cells)
+	}
+	m, _, _ = PolicyMatrix(context.Background(), src, false)
+	if m.Cells["a"]["b"].Limited {
+		t.Error("iptables mode does not enforce limits")
+	}
+}
