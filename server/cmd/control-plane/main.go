@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	_ "time/tzdata" // the alpine image has no zoneinfo; limit schedules and quotas need time zones
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
