@@ -36,6 +36,11 @@ func (r *recRunner) Run(stdin, name string, args ...string) (string, error) {
 		r.applied = append(r.applied, stdin)
 	case "nft list table inet novusgate":
 		return "table inet novusgate {\n}\n", nil
+	case "nft -a list table inet novusgate":
+		return "table inet novusgate { # handle 1\n\tchain input { # handle 2\n" +
+			"\t\tcounter packets 9 bytes 540 comment \"default drop\" # handle 3\n\t}\n}\n", nil
+	case "nft -j list table inet novusgate":
+		return `{"nftables":[{"set":{"name":"dropped_v4","timeout":3600,"elem":[{"elem":{"val":"203.0.113.50","expires":3540}}]}}]}`, nil
 	}
 	return "", nil
 }

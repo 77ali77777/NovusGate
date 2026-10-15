@@ -302,6 +302,21 @@
         ],
         "type": "object"
       },
+      "DroppedSource": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "seconds_ago": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "address",
+          "seconds_ago"
+        ],
+        "type": "object"
+      },
       "Error": {
         "properties": {
           "error": {
@@ -1551,6 +1566,32 @@
         ],
         "type": "object"
       },
+      "RuleCounter": {
+        "properties": {
+          "bytes": {
+            "type": "integer"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "packets": {
+            "type": "integer"
+          },
+          "rule": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "chain",
+          "packets",
+          "rule"
+        ],
+        "type": "object"
+      },
       "StatsOverviewResponse": {
         "properties": {
           "expired_nodes": {
@@ -1621,6 +1662,44 @@
         },
         "required": [
           "status"
+        ],
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "by_protocol": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          },
+          "tcp_states": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available",
+          "by_protocol",
+          "count",
+          "max",
+          "tcp_states"
         ],
         "type": "object"
       },
@@ -1806,6 +1885,44 @@
           "item",
           "pending",
           "warnings"
+        ],
+        "type": "object"
+      },
+      "V2LiveResponse": {
+        "properties": {
+          "conntrack": {
+            "$ref": "#/components/schemas/Summary"
+          },
+          "counters": {
+            "items": {
+              "$ref": "#/components/schemas/RuleCounter"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "dropped": {
+            "items": {
+              "$ref": "#/components/schemas/DroppedSource"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "error": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "table_loaded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conntrack",
+          "counters",
+          "dropped",
+          "mode",
+          "table_loaded"
         ],
         "type": "object"
       },
@@ -3138,6 +3255,37 @@
           }
         },
         "summary": "Remove an IP rule",
+        "tags": [
+          "firewall-v2"
+        ]
+      }
+    },
+    "/api/v1/firewall/v2/live": {
+      "get": {
+        "operationId": "get_firewall_v2_live",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2LiveResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rule counters, sources dropped in the last hour and the conntrack table (any mode)",
         "tags": [
           "firewall-v2"
         ]

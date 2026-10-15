@@ -130,6 +130,7 @@ var docOps = []docOp{
 	{"POST", "/api/v1/firewall/vpn/apply", "Re-apply all VPN firewall rules", "firewall-vpn", nil, 200, StatusMessageResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/state", "nftables engine state", "firewall-v2", nil, 200, V2StateResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/preview", "Compiled nftables ruleset", "firewall-v2", nil, 200, V2PreviewResponse{}, false},
+	{"GET", "/api/v1/firewall/v2/live", "Rule counters, sources dropped in the last hour and the conntrack table (any mode)", "firewall-v2", nil, 200, V2LiveResponse{}, false},
 	{"POST", "/api/v1/firewall/v2/services", "Open a service (pending until confirmed unless ?confirm=false)", "firewall-v2", v2ServiceRequest{}, 200, V2ChangeResponse{}, false},
 	{"DELETE", "/api/v1/firewall/v2/services/{id}", "Close a service", "firewall-v2", nil, 200, V2ChangeResponse{}, false},
 	{"POST", "/api/v1/firewall/v2/ip-rules", "Add an IP block/allow rule", "firewall-v2", v2IPRuleRequest{}, 200, V2ChangeResponse{}, false},

@@ -21,6 +21,7 @@ import (
 func (s *Server) setupFirewallV2Routes(api *mux.Router) {
 	api.HandleFunc("/firewall/v2/state", s.handleFirewallV2State).Methods("GET")
 	api.HandleFunc("/firewall/v2/preview", s.handleFirewallV2Preview).Methods("GET")
+	api.HandleFunc("/firewall/v2/live", s.handleFirewallV2Live).Methods("GET")
 	api.HandleFunc("/firewall/v2/services", s.handleFirewallV2CreateService).Methods("POST")
 	api.HandleFunc("/firewall/v2/services/{id}", s.handleFirewallV2DeleteService).Methods("DELETE")
 	api.HandleFunc("/firewall/v2/ip-rules", s.handleFirewallV2CreateIPRule).Methods("POST")
