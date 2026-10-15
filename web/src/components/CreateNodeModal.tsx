@@ -49,6 +49,7 @@ export const CreateNodeModal = ({ isOpen, onClose, onSubmit, isLoading }: Create
     <Modal isOpen={isOpen} onClose={onClose} title={t('create.title')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
+          help="helpNodes:create.name"
           label={t('fields.peerName')}
           placeholder={t('fields.peerNamePlaceholder')}
           value={name}
@@ -56,27 +57,18 @@ export const CreateNodeModal = ({ isOpen, onClose, onSubmit, isLoading }: Create
           required
         />
 
-        <div className="space-y-1">
-          <label
-            htmlFor="expiry-type"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {t('create.expiryLabel')}
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Select
-                id="expiry-type"
-                options={expiryOptions}
-                value={expiryType}
-                onChange={(e) => setExpiryType(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
+        <Select
+          id="expiry-type"
+          label={t('create.expiryLabel')}
+          help="helpNodes:create.expiry"
+          options={expiryOptions}
+          value={expiryType}
+          onChange={(e) => setExpiryType(e.target.value)}
+        />
 
         {expiryType === 'custom' && (
           <Input
+            help="helpNodes:create.customDate"
             label={t('create.customDate')}
             type="datetime-local"
             value={customDate}

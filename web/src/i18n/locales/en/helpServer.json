@@ -1,0 +1,61 @@
+{
+  "stepUp": {
+    "password": {
+      "what": "Your own panel login password, asked again before any change to the server (service restart, kernel settings, host name, time zone, package upgrade, reboot).",
+      "who": "Every admin who changes the server here. It stops someone who only has an open browser session from changing the host.",
+      "effect": "Nothing is changed: the password is only checked. A correct password unlocks server changes in this session for 5 minutes; after 5 wrong passwords within 15 minutes further tries are refused for a while."
+    }
+  },
+  "confirmWord": {
+    "what": "A safety word for a dangerous action: type exactly the word shown in the label (reboot or upgrade).",
+    "who": "Whoever starts a server reboot or a package upgrade; it prevents a click by mistake.",
+    "effect": "The button stays disabled until the word matches exactly (lower case). Only the panel checks the word; it is a guard against a click by mistake, not a second password."
+  },
+  "hostname": {
+    "what": "The server's host name (hostnamectl). Letters, digits and hyphens; dot-separated parts of at most 63 characters, 253 in total, no hyphen at the start or end of a part.",
+    "who": "Admins who want the host to carry a recognisable name, for example in its shell prompt and logs.",
+    "effect": "The server's system name changes at once; VPN networks, device configs and the panel address are not changed. Leave the field empty to keep the current name (shown greyed out)."
+  },
+  "timezone": {
+    "what": "The server's time zone as an IANA name, for example Europe/Berlin or Asia/Baku. The suggestions come from your browser.",
+    "who": "Admins who want the host's local time (log timestamps, scheduled jobs on the host) to match their region.",
+    "effect": "Only how the host shows and interprets local time changes; the clock itself does not move. The server refuses names it does not know. Saved together with the NTP switch next to it."
+  },
+  "ntp": {
+    "what": "Whether the server keeps its clock in sync with internet time servers (timedatectl set-ntp).",
+    "who": "Almost every server should keep it on; turn it off only if the clock is set some other way.",
+    "effect": "Off: the clock is no longer corrected and drifts over time, which shifts log times and can break certificate checks (for example HTTPS downloads). Applies when you press Save."
+  },
+  "sysctl": {
+    "ipForward": {
+      "what": "net.ipv4.ip_forward: whether the server forwards IPv4 packets between its interfaces. 1 = on, 0 = off.",
+      "who": "The VPN hub needs 1: it is how devices reach each other and, in full tunnel, the internet through the hub. Docker's container networking relies on it too.",
+      "effect": "0 stops all routing through the hub: VPN devices can still reach the server itself but not each other or anything behind it. Like every setting here it is undone after 90 seconds unless you keep it (a reboot within those 90 seconds keeps the change)."
+    },
+    "rpFilter": {
+      "what": "net.ipv4.conf.all.rp_filter: reverse-path filtering. 0 = off, 1 = strict, 2 = loose. It checks that a packet's source address is routed back through the interface it arrived on.",
+      "who": "Hardening against spoofed source addresses; only matters if you know your routes are symmetric.",
+      "effect": "1 (strict) drops packets whose return route uses a different interface, which can silently cut asymmetric VPN traffic (for example site-to-site or multi-homed hosts). The kernel uses the higher of this value and each interface's own value, so an interface set to 2 stays loose. 0 leaves the choice to each interface."
+    },
+    "conntrackMax": {
+      "what": "net.netfilter.nf_conntrack_max: the size of the kernel's connection tracking table, used by the firewall and NAT to follow every connection. Allowed: 1024 to 16777216.",
+      "who": "Busy hubs with many devices or many connections (NAT for full-tunnel clients, port forwards).",
+      "effect": "When the table is full the kernel drops packets of new connections. A higher value allows more connections but every tracked entry uses kernel memory; a value below the current number of connections causes drops."
+    },
+    "congestionControl": {
+      "what": "net.ipv4.tcp_congestion_control: the algorithm that sets how fast this server sends over TCP. cubic is the Linux default; bbr often keeps higher speed on long or lossy links.",
+      "who": "Admins tuning throughput of TCP connections that the server itself sends (panel, downloads, services on the host).",
+      "effect": "Only new TCP connections of this host use it. Traffic forwarded through the VPN is not affected (WireGuard is UDP; TCP inside the tunnel belongs to the devices). If the kernel cannot load bbr, the change fails and the old value stays."
+    },
+    "defaultQdisc": {
+      "what": "net.core.default_qdisc: the default queueing discipline, i.e. how packets wait and are ordered on a network interface. fq, fq_codel, pfifo_fast or cake.",
+      "who": "Tuning latency under load; fq is the usual partner of bbr, fq_codel and cake reduce queueing delay (bufferbloat).",
+      "effect": "Used for interfaces set up after the change; interfaces already up keep their current queueing until they are re-created or the server reboots. If the kernel lacks the chosen one, the change fails and the old value stays."
+    },
+    "other": {
+      "what": "A kernel setting the server manages that this version of the panel does not describe.",
+      "who": "Admins who know what this setting does on Linux.",
+      "effect": "The server only accepts the values it allows for this key. Like every setting here it is live at once and undone after 90 seconds unless you keep it."
+    }
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "vpnRule": {
+    "name": {
+      "what": "A short name for the rule, shown in the VPN rules list and the audit log.",
+      "who": "Anyone who later has to find, edit or delete this rule.",
+      "effect": "Required; the server refuses a rule without a name. The name does not change what traffic the rule matches."
+    },
+    "priority": {
+      "what": "The order in which the rule is checked. Lower numbers are checked first; rules with the same number go in the order they were created.",
+      "who": "Operators with several rules that cover the same traffic, for example a narrow accept before a broad drop.",
+      "effect": "The first rule that matches a packet decides; later rules are not checked. The form takes 1 to 1000 (default 100). Changing it re-orders the rules as soon as you save."
+    },
+    "description": {
+      "what": "An optional note that explains why the rule exists.",
+      "who": "Colleagues who read the rule later.",
+      "effect": "Only stored and shown; it has no effect on traffic."
+    },
+    "endpointType": {
+      "what": "What the source (where traffic comes from) or the destination (where it goes) is: any address, a whole VPN network, one device (node), a group of devices, or your own IPv4 address or range.",
+      "who": "Everyone writing a rule: this is how you say whose traffic it is about.",
+      "effect": "Any matches every address. Changing the type clears the network, node, group or IP chosen before for this side."
+    },
+    "network": {
+      "what": "The VPN network whose whole address range (CIDR) is the source or destination of the rule.",
+      "who": "Operators who control traffic between whole networks, for example office to servers.",
+      "effect": "Required for the network type; the rule then matches every device of that network, including devices added later."
+    },
+    "nodeNetwork": {
+      "what": "The network to pick the device from.",
+      "who": "Needed only to list the devices below.",
+      "effect": "It only narrows the device list; the rule matches the one device you choose below. Changing it clears the chosen device."
+    },
+    "node": {
+      "what": "One device (node); the rule matches its VPN address only.",
+      "who": "Operators who allow or block a single device, for example one server or one laptop.",
+      "effect": "Required for the node type. The rule follows the device's VPN IP; other devices of the same network are not affected."
+    },
+    "group": {
+      "what": "A device group (from the Groups page); the rule matches the VPN addresses of its members.",
+      "who": "Operators who manage access for a role or team instead of single devices.",
+      "effect": "Required for the group type; the server refuses a group that does not exist. Adding or removing members changes who the rule covers; an empty group matches nothing."
+    },
+    "customIp": {
+      "what": "Your own address or range: one IPv4 address (for example 10.10.0.5) or an IPv4 CIDR (for example 10.10.0.0/24).",
+      "who": "Operators who need a range that is not a whole network, node or group, for example a LAN behind a gateway device.",
+      "effect": "Required for the custom type. Only IPv4 is accepted; the server refuses IPv6 and invalid values. A single address means exactly that address (/32)."
+    },
+    "protocol": {
+      "what": "Which traffic the rule matches: all protocols, TCP, UDP or ICMP (ping).",
+      "who": "Operators who limit a rule to one kind of traffic, for example only web (TCP) or only ping.",
+      "effect": "All matches every protocol. A port can be set only with TCP or UDP; with All or ICMP the port field is off."
+    },
+    "port": {
+      "what": "Destination port or ports for TCP or UDP: one port (80), a list (80,443) or a range (8000-9000 or 8000:9000), each 1 to 65535.",
+      "who": "Operators who open or close one service only, for example SSH (22) or a web app.",
+      "effect": "Empty means every port. The server refuses invalid ports and ports with a protocol other than TCP or UDP."
+    },
+    "action": {
+      "what": "What happens to matching traffic: Accept lets it through, Drop discards it silently, Reject discards it and tells the sender.",
+      "who": "Everyone writing a rule.",
+      "effect": "Applies as soon as the rule is saved. With Drop the sender waits until it times out; with Reject it gets an error at once. With the nftables engine, traffic that matches no rule is dropped, except replies to allowed connections, port forwards, traffic between devices of the same network and full-tunnel internet traffic."
+    },
+    "enabled": {
+      "what": "Turns the rule on or off without deleting it.",
+      "who": "Operators who want to pause a rule, for example while testing.",
+      "effect": "A disabled rule stays saved but is not enforced; traffic is then decided by the other rules."
+    }
+  },
+  "openPort": {
+    "port": {
+      "what": "The port on the server to open for incoming traffic, 1 to 65535.",
+      "who": "Admins who run a service on the server that must be reachable from outside, for example a web server on 443.",
+      "effect": "Only admins may open ports. It applies at once, without a confirm step. With the nftables engine, TCP ports 3007, 5432, 8080 and 8443 are refused because they stay VPN-only."
+    },
+    "protocol": {
+      "what": "TCP, UDP or both.",
+      "who": "Pick what the service uses: web and SSH use TCP, many games and VPNs use UDP.",
+      "effect": "Both creates one TCP and one UDP rule for the port."
+    },
+    "source": {
+      "what": "An optional IP address or CIDR that may use the port (for example 192.168.1.0/24).",
+      "who": "Admins who want the port reachable only from a known office or address.",
+      "effect": "Empty opens the port to every address. The server refuses an invalid address; IPv6 needs the nftables engine."
+    }
+  },
+  "blockIp": {
+    "ip": {
+      "what": "The IP address or CIDR range to block, for example 203.0.113.7 or 203.0.113.0/24.",
+      "who": "Admins who stop an attacker or unwanted network from reaching the server.",
+      "effect": "Only admins may block. It applies at once, without a confirm step. With the nftables engine the server refuses a block that covers your own address; in iptables mode there is no such check, so check the address first. IPv6 needs the nftables engine."
+    },
+    "ports": {
+      "what": "Optional TCP ports to block for this address: one port, a list (22,80,443) or a range written 8000:9000.",
+      "who": "Admins who block only some services for an address and keep the rest reachable.",
+      "effect": "Empty blocks all traffic from the address. Ports here are always TCP."
+    }
+  },
+  "allowIp": {
+    "ip": {
+      "what": "The IP address or CIDR range to let through the host firewall, for example 198.51.100.10.",
+      "who": "Admins who give a trusted address (an office, a monitoring server) access to the server.",
+      "effect": "Only admins may allow. It applies at once, without a confirm step. The server refuses an invalid address; IPv6 needs the nftables engine."
+    },
+    "ports": {
+      "what": "Optional TCP ports this address may reach: one port, a list (22,80,443) or a range written 8000:9000.",
+      "who": "Admins who want to open only some services to the address.",
+      "effect": "Empty allows the address on all ports except the panel, database and API ports (3007, 5432, 8080, 8443), which stay reachable only over the VPN; listing one of them is refused. Ports here are always TCP."
+    }
+  },
+  "hostRules": {
+    "chain": {
+      "what": "Which list of host rules the table shows: INPUT (traffic to the server), FORWARD (traffic passing through it) or OUTPUT (traffic the server sends).",
+      "who": "Anyone checking what the host firewall currently does.",
+      "effect": "Only changes the view; nothing is changed on the server. With the nftables engine only INPUT holds rules here."
+    }
+  },
+  "services": {
+    "protocol": {
+      "what": "TCP or UDP for the service to open on the server.",
+      "who": "Admins who open a port for a service running on the server.",
+      "effect": "One service covers one protocol; add a second one for the other protocol if the service needs both."
+    },
+    "port": {
+      "what": "The port to open, 1 to 65535, or the first port of a range.",
+      "who": "Admins who make a service on the server reachable.",
+      "effect": "The change is applied to the host at once and rolled back unless you confirm it within 60 seconds. Only admins may change it, and only with the nftables engine. TCP 3007, 5432, 8080 and 8443 are refused unless the interface is a VPN interface."
+    },
+    "toPort": {
+      "what": "The last port of a range. Empty means the single port on the left.",
+      "who": "Admins who open a block of ports, for example 10000 to 10100 for media.",
+      "effect": "Must not be lower than the first port; the server refuses it otherwise. Every port in the range is opened."
+    },
+    "sources": {
+      "what": "Addresses or ranges allowed to use the service, separated by commas or spaces; IPv4 and IPv6 both work.",
+      "who": "Admins who want the service reachable only from known places.",
+      "effect": "Empty opens it to every address. One invalid entry makes the server refuse the whole service."
+    },
+    "interface": {
+      "what": "An optional network interface name (for example wg1 or eth0); the service is then open only for traffic arriving on it.",
+      "who": "Admins who want a service reachable only over one VPN network or one network card.",
+      "effect": "Empty means every interface. The name may have up to 15 letters, digits, dots, dashes or underscores; other names are refused."
+    },
+    "comment": {
+      "what": "An optional note, for example the name of the service.",
+      "who": "Anyone who reads the list later.",
+      "effect": "Only shown in the panel; it has no effect on traffic."
+    }
+  },
+  "ipRules": {
+    "action": {
+      "what": "Block drops traffic from the address; Allow lets it through the host firewall.",
+      "who": "Admins who stop an attacker or let a trusted address in.",
+      "effect": "Applied at once and rolled back unless you confirm within 60 seconds. The server refuses a block that covers the address you are connected from. Allow never opens the VPN-only ports 3007, 5432, 8080 and 8443."
+    },
+    "prefix": {
+      "what": "One IP address or a CIDR range, IPv4 or IPv6, for example 203.0.113.7 or 2001:db8::/32.",
+      "who": "Needed for every IP rule.",
+      "effect": "The server refuses an invalid address. A wide range (for example /8) can affect many users at once."
+    },
+    "protocol": {
+      "what": "TCP or UDP for the ports field.",
+      "who": "Admins who limit the rule to ports of one protocol.",
+      "effect": "Used only when ports are set; without ports the rule covers all traffic from the address."
+    },
+    "ports": {
+      "what": "Optional ports: one port, a list (22,80) or a range (8000-8100 or 8000:8100).",
+      "who": "Admins who block or allow only some services for the address.",
+      "effect": "Empty covers all ports. An allow rule for TCP may not include 3007, 5432, 8080 or 8443; the server refuses it."
+    },
+    "expires": {
+      "what": "An optional date and time (in your browser's time zone) when the rule stops applying.",
+      "who": "Admins who block or allow an address only for a while, for example during maintenance.",
+      "effect": "Empty means the rule never expires. The time must be in the future; the server refuses a past time."
+    },
+    "comment": {
+      "what": "An optional note, for example why the address is blocked.",
+      "who": "Anyone who reads the list later.",
+      "effect": "Only stored and shown; it has no effect on traffic."
+    }
+  },
+  "forwards": {
+    "protocol": {
+      "what": "TCP or UDP for the forwarded port.",
+      "who": "Admins who publish a service running on a VPN device.",
+      "effect": "One TCP and one UDP forward can use the same public port; the same protocol and port can be forwarded only once."
+    },
+    "publicPort": {
+      "what": "The port on the server's public address that people connect to, 1 to 65535.",
+      "who": "Admins who make a device behind the VPN reachable from the internet.",
+      "effect": "Applied at once and rolled back unless you confirm within 60 seconds. TCP 3007, 5432, 8080, 8443 and the SSH port are refused, and so are UDP WireGuard ports."
+    },
+    "targetIp": {
+      "what": "The VPN IPv4 address of the device that receives the traffic, for example 10.20.0.5.",
+      "who": "Needed for every forward.",
+      "effect": "Must be an IPv4 address inside one of the VPN networks; the server refuses anything else."
+    },
+    "targetPort": {
+      "what": "The port on the device. Empty means the same as the public port.",
+      "who": "Admins whose service listens on a different port than the one published.",
+      "effect": "Must be 1 to 65535. Traffic to the public port is sent to this port on the device."
+    },
+    "comment": {
+      "what": "An optional note, for example the name of the service.",
+      "who": "Anyone who reads the list later.",
+      "effect": "Only stored and shown; it has no effect on traffic."
+    }
+  }
+}

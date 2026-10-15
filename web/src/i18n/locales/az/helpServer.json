@@ -1,0 +1,61 @@
+{
+  "stepUp": {
+    "password": {
+      "what": "Panelə girdiyiniz öz parolunuz. Serverdə istənilən dəyişiklikdən (servisi yenidən başlatmaq, kernel parametrləri, host adı, saat qurşağı, paket yeniləməsi, yenidən başlatma) əvvəl yenidən soruşulur.",
+      "who": "Burada serveri dəyişən hər admin. Yalnız açıq brauzer sessiyası olan biri hostu dəyişə bilməsin deyə lazımdır.",
+      "effect": "Heç nə dəyişmir, parol sadəcə yoxlanılır. Düzgün parol bu sessiyada server dəyişikliklərini 5 dəqiqəlik açır; 15 dəqiqə ərzində 5 yanlış paroldan sonra yeni cəhdlər bir müddət rədd edilir."
+    }
+  },
+  "confirmWord": {
+    "what": "Təhlükəli əməliyyat üçün təsdiq sözü: başlıqda göstərilən sözü (reboot və ya upgrade) olduğu kimi yazın.",
+    "who": "Serveri yenidən başladan və ya paketləri yeniləyən şəxs; təsadüfi kliklə əməliyyatın başlamasının qarşısını alır.",
+    "effect": "Söz tam uyğun gələnə qədər (kiçik hərflərlə) düymə bağlı qalır. Sözü yalnız panel yoxlayır; bu, ikinci parol yox, təsadüfi klikə qarşı qorumadır."
+  },
+  "hostname": {
+    "what": "Serverin host adı (hostnamectl). Hərf, rəqəm və defis; nöqtə ilə ayrılan hər hissə ən çox 63 simvol, cəmi 253 simvol, hissənin əvvəlində və sonunda defis olmur.",
+    "who": "Hostun tanınan ad daşımasını istəyən adminlər, məsələn shell sətrində və loglarda.",
+    "effect": "Serverin sistem adı dərhal dəyişir; VPN şəbəkələri, cihaz konfiqləri və panelin ünvanı dəyişmir. Cari adı (boz göstərilir) saxlamaq üçün sahəni boş buraxın."
+  },
+  "timezone": {
+    "what": "Serverin saat qurşağı, IANA adı ilə, məsələn Asia/Baku və ya Europe/Berlin. Təkliflər brauzerinizdən gəlir.",
+    "who": "Hostun yerli vaxtının (log vaxtları, hostdakı planlı işlər) öz regionlarına uyğun olmasını istəyən adminlər.",
+    "effect": "Yalnız hostun yerli vaxtı necə göstərib anlaması dəyişir, saatın özü irəli-geri getmir. Server tanımadığı adları rədd edir. Yanındakı NTP seçimi ilə birlikdə saxlanılır."
+  },
+  "ntp": {
+    "what": "Serverin saatını internetdəki vaxt serverləri ilə sinxron saxlayıb-saxlamaması (timedatectl set-ntp).",
+    "who": "Demək olar ki, hər server üçün açıq qalmalıdır; yalnız saat başqa üsulla qurulursa söndürün.",
+    "effect": "Söndürülsə saat artıq düzəldilmir və zamanla sürüşür: log vaxtları yanlış olur, sertifikat yoxlamaları (məsələn HTTPS ilə yükləmələr) poza bilər. Yadda saxla düyməsini basanda tətbiq olunur."
+  },
+  "sysctl": {
+    "ipForward": {
+      "what": "net.ipv4.ip_forward: server IPv4 paketlərini interfeysləri arasında ötürürmü. 1 = açıq, 0 = bağlı.",
+      "who": "VPN hub-ı üçün 1 lazımdır: cihazlar bir-birinə və full tunnel rejimində internetə hub vasitəsilə belə çatır. Docker konteyner şəbəkəsi də buna söykənir.",
+      "effect": "0 hub üzərindən bütün marşrutlamanı dayandırır: VPN cihazları serverin özünə çata bilir, amma bir-birinə və arxadakı heç nəyə çata bilmir. Buradakı hər parametr kimi saxlamasanız 90 saniyədən sonra geri qaytarılır (bu 90 saniyədə server yenidən başlasa dəyişiklik qalır)."
+    },
+    "rpFilter": {
+      "what": "net.ipv4.conf.all.rp_filter: əks marşrut yoxlaması. 0 = bağlı, 1 = sərt, 2 = yumşaq. Paketin mənbə ünvanına qayıdan marşrutun paketin gəldiyi interfeysdən keçdiyini yoxlayır.",
+      "who": "Saxta mənbə ünvanlarına qarşı sərtləşdirmə; yalnız marşrutlarınızın simmetrik olduğunu bilirsinizsə mənası var.",
+      "effect": "1 (sərt) qayıdış marşrutu başqa interfeysdən keçən paketləri atır; bu, asimmetrik VPN trafikini (məsələn site-to-site və ya bir neçə şəbəkəyə bağlı hostlar) səssizcə kəsə bilər. Kernel bu dəyərlə hər interfeysin öz dəyərindən böyüyünü işlədir, ona görə 2 qoyulmuş interfeys yumşaq qalır. 0 seçimi hər interfeysə buraxır."
+    },
+    "conntrackMax": {
+      "what": "net.netfilter.nf_conntrack_max: kernelin bağlantı izləmə cədvəlinin ölçüsü; firewall və NAT hər bağlantını bununla izləyir. İcazə verilən: 1024-dən 16777216-ya qədər.",
+      "who": "Çoxlu cihazı və ya çoxlu bağlantısı olan yüklü hub-lar (full tunnel klientləri üçün NAT, port yönləndirmələri).",
+      "effect": "Cədvəl dolanda kernel yeni bağlantıların paketlərini atır. Böyük dəyər daha çox bağlantıya imkan verir, amma hər izlənən qeyd kernel yaddaşı tutur; cari bağlantı sayından kiçik dəyər yeni bağlantıların atılmasına səbəb olur."
+    },
+    "congestionControl": {
+      "what": "net.ipv4.tcp_congestion_control: serverin TCP ilə nə qədər sürətlə göndərdiyini idarə edən alqoritm. cubic Linux-un standartıdır; bbr uzun və ya itkili xətlərdə adətən sürəti daha yaxşı saxlayır.",
+      "who": "Serverin özünün göndərdiyi TCP bağlantılarının (panel, yükləmələr, hostdakı servislər) sürətini tənzimləyən adminlər.",
+      "effect": "Yalnız bu hostun yeni TCP bağlantıları onu işlədir. VPN üzərindən ötürülən trafikə təsir etmir (WireGuard UDP-dir, tuneldəki TCP cihazların özünə aiddir). Kernel bbr-i yükləyə bilməsə dəyişiklik alınmır və köhnə dəyər qalır."
+    },
+    "defaultQdisc": {
+      "what": "net.core.default_qdisc: standart növbə qaydası, yəni paketlərin şəbəkə interfeysində necə gözləyib sıralandığı. fq, fq_codel, pfifo_fast və ya cake.",
+      "who": "Yük altında gecikməni tənzimləmək üçün; fq adətən bbr ilə birlikdə işlədilir, fq_codel və cake növbə gecikməsini (bufferbloat) azaldır.",
+      "effect": "Dəyişiklikdən sonra qaldırılan interfeyslərə aid olur; artıq işləyən interfeyslər yenidən yaradılana və ya server yenidən başlayana qədər köhnə növbəni saxlayır. Kerneldə seçilən növbə yoxdursa dəyişiklik alınmır və köhnə dəyər qalır."
+    },
+    "other": {
+      "what": "Serverin idarə etdiyi, amma panelin bu versiyasının təsvir etmədiyi kernel parametri.",
+      "who": "Bu parametrin Linux-da nə etdiyini bilən adminlər.",
+      "effect": "Server bu açar üçün yalnız icazə verdiyi dəyərləri qəbul edir. Buradakı hər parametr kimi dərhal qüvvəyə minir və saxlamasanız 90 saniyədən sonra geri qaytarılır."
+    }
+  }
+}

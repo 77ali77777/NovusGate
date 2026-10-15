@@ -1,6 +1,7 @@
 import { Lock, Shield, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useCan } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card } from '@/components/ui'
 import type { ChainInfo, FirewallRule } from '@/types'
 
@@ -29,8 +30,12 @@ export const HostRulesTab = ({
       {/* Chain Selector */}
       <Card className="p-4">
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{t('hostRules.chain')}</span>
+          <span className="text-sm text-gray-500">
+            {t('hostRules.chain')}
+            <HelpTip k="helpFirewall:hostRules.chain" />
+          </span>
           <select
+            data-help="helpFirewall:hostRules.chain"
             value={selectedChain}
             onChange={(e) => onChainChange(e.target.value)}
             className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-medium"

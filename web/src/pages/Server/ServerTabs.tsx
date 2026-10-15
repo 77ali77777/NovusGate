@@ -12,6 +12,7 @@ import {
   useUpgradablePackages,
   useUpgradeJob,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card, Input, Select } from '@/components/ui'
 import { dateFnsLocale } from '@/i18n'
 import { addressRows, routeRows, type Step, sysctlField } from '@/lib/serverAdmin'
@@ -192,33 +193,14 @@ export const KernelTab = ({ step }: { step: Step }) => {
               </Button>
             </div>
           )}
-          {(data.keys ?? []).map((key) => {
-            const field = sysctlField(key)
-            const value = draft[key] ?? values[key] ?? ''
-            const onChange = (v: string) => setDraft((d) => ({ ...d, [key]: v }))
-            return field?.kind === 'select' ? (
-              <Select
-                key={key}
-                label={key}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                options={[
-                  ...(field.options.includes(value) ? [] : [{ value, label: value || '—' }]),
-                  ...field.options.map((o) => ({ value: o, label: o })),
-                ]}
-              />
-            ) : (
-              <Input
-                key={key}
-                label={key}
-                type={field?.kind === 'number' ? 'number' : 'text'}
-                min={field?.kind === 'number' ? field.min : undefined}
-                max={field?.kind === 'number' ? field.max : undefined}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-              />
-            )
-          })}
+          {(data.keys ?? []).map((key) => (
+            <SysctlControl
+              key={key}
+              name={key}
+              value={draft[key] ?? values[key] ?? ''}
+              onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
+            />
+          ))}
           <p className="text-xs text-gray-500">{t('kernel.hint')}</p>
           <div className="flex justify-end gap-2">
             <Button
@@ -244,6 +226,59 @@ export const KernelTab = ({ step }: { step: Step }) => {
       )}
     </Card>
   )
+}
+
+// SysctlControl: one kernel setting. Each managed key has its own help text;
+// the help keys are literals so tests/helpScan.mjs can check them.
+const SysctlControl = ({
+  name,
+  value,
+  onChange,
+}: {
+  name: string
+  value: string
+  onChange: (v: string) => void
+}) => {
+  const field = sysctlField(name)
+  const select = {
+    label: name,
+    value,
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
+    options:
+      field?.kind === 'select'
+        ? [
+            ...(field.options.includes(value) ? [] : [{ value, label: value || '—' }]),
+            ...field.options.map((o) => ({ value: o, label: o })),
+          ]
+        : [],
+  }
+  const input = {
+    label: name,
+    type: field?.kind === 'number' ? 'number' : 'text',
+    min: field?.kind === 'number' ? field.min : undefined,
+    max: field?.kind === 'number' ? field.max : undefined,
+    value,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value),
+  }
+  switch (name) {
+    case 'net.ipv4.ip_forward':
+      return <Select {...select} help="helpServer:sysctl.ipForward" />
+    case 'net.ipv4.conf.all.rp_filter':
+      return <Select {...select} help="helpServer:sysctl.rpFilter" />
+    case 'net.netfilter.nf_conntrack_max':
+      return <Input {...input} help="helpServer:sysctl.conntrackMax" />
+    case 'net.ipv4.tcp_congestion_control':
+      return <Select {...select} help="helpServer:sysctl.congestionControl" />
+    case 'net.core.default_qdisc':
+      return <Select {...select} help="helpServer:sysctl.defaultQdisc" />
+    default:
+      // A key this panel version does not describe (a newer server).
+      return field?.kind === 'select' ? (
+        <Select {...select} help="helpServer:sysctl.other" />
+      ) : (
+        <Input {...input} help="helpServer:sysctl.other" />
+      )
+  }
 }
 
 // The time zones the browser knows, for the time zone field's suggestions.
@@ -298,6 +333,7 @@ export const SystemTab = ({ step }: { step: Step }) => {
               <div className="min-w-[16rem] flex-1">
                 <Input
                   label={t('system.hostname')}
+                  help="helpServer:hostname"
                   placeholder={data.hostname}
                   value={hostname}
                   onChange={(e) => setHostname(e.target.value)}
@@ -329,6 +365,7 @@ export const SystemTab = ({ step }: { step: Step }) => {
               <div className="min-w-[16rem] flex-1">
                 <Input
                   label={t('system.timezone')}
+                  help="helpServer:timezone"
                   placeholder={data.timezone}
                   value={timezone}
                   list="server-timezones"
@@ -343,10 +380,12 @@ export const SystemTab = ({ step }: { step: Step }) => {
               <label className="flex items-center gap-2 pb-2 text-sm text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"
+                  data-help="helpServer:ntp"
                   checked={ntp ?? data.ntp}
                   onChange={(e) => setNtp(e.target.checked)}
                 />
                 {t('system.ntp')}
+                <HelpTip k="helpServer:ntp" />
               </label>
               <Button
                 type="submit"

@@ -125,6 +125,7 @@ function useStepUpPrompt() {
         <Input
           type="password"
           label={t('stepUp.password')}
+          help="helpServer:stepUp.password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={error || undefined}

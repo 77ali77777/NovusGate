@@ -34,6 +34,7 @@ import {
   useUpdateVPNFirewallRule,
   useVPNFirewallRules,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { Button, Card, Modal } from '@/components/ui'
 import { pairRulePriority } from '@/lib/policyMatrix'
@@ -563,8 +564,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-1" className="block text-sm font-medium mb-1">
               {t('forms.portNumber')}
+              <HelpTip k="helpFirewall:openPort.port" />
             </label>
             <input
+              data-help="helpFirewall:openPort.port"
               id="fw-1"
               type="number"
               required
@@ -579,8 +582,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-2" className="block text-sm font-medium mb-1">
               {t('common:fields.protocol')}
+              <HelpTip k="helpFirewall:openPort.protocol" />
             </label>
             <select
+              data-help="helpFirewall:openPort.protocol"
               id="fw-2"
               value={openPortForm.protocol}
               onChange={(e) => setOpenPortForm({ ...openPortForm, protocol: e.target.value })}
@@ -594,8 +599,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-3" className="block text-sm font-medium mb-1">
               {t('forms.sourceIpOptional')}
+              <HelpTip k="helpFirewall:openPort.source" />
             </label>
             <input
+              data-help="helpFirewall:openPort.source"
               id="fw-3"
               type="text"
               value={openPortForm.source}
@@ -626,8 +633,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-4" className="block text-sm font-medium mb-1">
               {t('forms.ipOrCidr')}
+              <HelpTip k="helpFirewall:blockIp.ip" />
             </label>
             <input
+              data-help="helpFirewall:blockIp.ip"
               id="fw-4"
               type="text"
               required
@@ -640,8 +649,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-5" className="block text-sm font-medium mb-1">
               {t('forms.portsOptional')}
+              <HelpTip k="helpFirewall:blockIp.ports" />
             </label>
             <input
+              data-help="helpFirewall:blockIp.ports"
               id="fw-5"
               type="text"
               value={blockIPForm.ports}
@@ -672,8 +683,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-6" className="block text-sm font-medium mb-1">
               {t('forms.ipOrCidr')}
+              <HelpTip k="helpFirewall:allowIp.ip" />
             </label>
             <input
+              data-help="helpFirewall:allowIp.ip"
               id="fw-6"
               type="text"
               required
@@ -686,8 +699,10 @@ export const Firewall: React.FC = () => {
           <div>
             <label htmlFor="fw-7" className="block text-sm font-medium mb-1">
               {t('forms.portsOptional')}
+              <HelpTip k="helpFirewall:allowIp.ports" />
             </label>
             <input
+              data-help="helpFirewall:allowIp.ports"
               id="fw-7"
               type="text"
               value={allowIPForm.ports}

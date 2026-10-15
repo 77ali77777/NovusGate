@@ -1,6 +1,7 @@
 import { HelpCircle } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { tipShift } from '@/lib/helpTip'
 
 // HelpTip: the "?" next to a field. k is "namespace:path"; the texts are
 // <path>.what (what the field is), <path>.who (who needs it and why) and
@@ -13,6 +14,16 @@ export const HelpTip = ({ k }: { k: string }) => {
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
   const box = useRef<HTMLSpanElement>(null)
+  const tip = useRef<HTMLSpanElement>(null)
+  const [shift, setShift] = useState(0)
+
+  // Keep the open tip inside the screen (a "?" near the right edge of a phone
+  // screen would push it off). Measured from the "?" so the shift is stable.
+  useLayoutEffect(() => {
+    if (!open || !box.current || !tip.current) return
+    const left = box.current.getBoundingClientRect().left
+    setShift(tipShift(left, tip.current.getBoundingClientRect().width, window.innerWidth))
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -66,7 +77,9 @@ export const HelpTip = ({ k }: { k: string }) => {
       {open && (
         <span
           id={id}
+          ref={tip}
           role="tooltip"
+          style={{ transform: `translateX(${shift}px)` }}
           className="absolute left-0 top-full z-50 mt-1 block w-72 max-w-[calc(100vw-2rem)] space-y-1.5 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed text-gray-700 shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
         >
           {part('what')}

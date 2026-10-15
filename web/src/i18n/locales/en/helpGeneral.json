@@ -1,0 +1,26 @@
+{
+  "login": {
+    "username": {
+      "what": "The name of your panel account.",
+      "who": "Everyone who signs in. The first admin account is created during installation (named admin unless set otherwise); admins add other accounts in Settings.",
+      "effect": "Must match exactly, including upper and lower case. A wrong name and a wrong password give the same error, so the panel does not reveal which accounts exist. Your account's role (admin, operator or viewer) decides what you may change."
+    },
+    "password": {
+      "what": "The password of your panel account.",
+      "who": "Everyone who signs in.",
+      "effect": "After 10 failed sign-ins within 15 minutes from one IP address (for IPv6: one /64 network), further attempts are refused until that window passes. A sign-in lasts 24 hours and is not extended by use; after that you sign in again."
+    }
+  },
+  "layout": {
+    "network": {
+      "what": "Chooses the VPN network whose devices the Nodes page and the firewall's full tunnel section show.",
+      "who": "Operators with more than one network.",
+      "effect": "New devices are created in the selected network. The choice is saved in this browser only; nothing changes on the server."
+    },
+    "language": {
+      "what": "The language of the panel: Azərbaycanca or English.",
+      "who": "Every user.",
+      "effect": "Changes only the panel's text. The choice is saved in this browser; other users and the server are not affected."
+    }
+  }
+}

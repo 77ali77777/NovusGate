@@ -1,0 +1,68 @@
+{
+  "password": {
+    "username": {
+      "what": "The account you are signed in as. It is shown here only and cannot be edited.",
+      "who": "Every user: it shows whose password this form changes.",
+      "effect": "Nothing to change. The server always changes the password of the signed-in user, never another account."
+    },
+    "current": {
+      "what": "Your password as it is now.",
+      "who": "Every user, whatever the role: it proves the change comes from you.",
+      "effect": "If it is wrong, the server refuses the change, nothing is changed and you stay signed in."
+    },
+    "new": {
+      "what": "The password you will sign in with from now on.",
+      "who": "Every user who wants a new password, for example after sharing or forgetting the old one.",
+      "effect": "The server sets no minimum length or character rules, so choose a strong one; more than 72 bytes cannot be stored. After the change all your other sessions are signed out; this one stays."
+    },
+    "confirm": {
+      "what": "The new password typed a second time.",
+      "who": "Every user: it catches a typing mistake before you lock yourself out.",
+      "effect": "If it does not match the new password, the panel shows an error and sends nothing."
+    }
+  },
+  "users": {
+    "username": {
+      "what": "The login name of the new user.",
+      "who": "Admins giving a person their own account instead of sharing one.",
+      "effect": "It must be unique; an existing name is refused. It cannot be renamed later: delete the user and create it again."
+    },
+    "password": {
+      "what": "The first password of the new user.",
+      "who": "Admins creating the account; give the password to the person in a safe way.",
+      "effect": "The server sets no minimum length or character rules. Only the user can change it later, under Change password; there is no reset for another user here."
+    },
+    "newRole": {
+      "what": "What the new user may do: Admin, Operator or Viewer.",
+      "who": "Admins giving each person only the access they need.",
+      "effect": "Admin can do everything, including users, Fail2Ban, the host firewall, backups, notifications and the Server page. Operator can change networks, nodes, groups, limits and VPN rules. Viewer can look at networks, nodes, the firewall and Fail2Ban and change their own password; viewers cannot change anything else or download device configs."
+    },
+    "role": {
+      "what": "The role selector beside each user changes that user's role.",
+      "who": "Admins promoting or limiting an existing account.",
+      "effect": "It is saved as soon as you pick a role and applies to the user's next request. The server refuses to demote or delete the last admin. If you demote yourself, the server treats you by the new role from your next request and you cannot undo it yourself."
+    }
+  },
+  "notifications": {
+    "enabled": {
+      "what": "The main switch for Telegram notifications.",
+      "who": "Admins who want server events sent to a Telegram chat.",
+      "effect": "Turning it on needs a chat ID and a bot token; the panel and the server refuse it otherwise. When it is off nothing is sent, but the test message still works."
+    },
+    "chatId": {
+      "what": "The Telegram chat that receives the messages: a numeric chat or group ID or a public @channel name.",
+      "who": "Admins choosing where alerts arrive; the bot must be a member of that chat.",
+      "effect": "The server checks the format and refuses anything else. Save first: the test message goes to the saved chat ID."
+    },
+    "botToken": {
+      "what": "The token BotFather gives your bot, in the form 123456789:ABC…",
+      "who": "Admins setting up notifications; Telegram needs it to send as your bot.",
+      "effect": "The server checks the format, stores it encrypted and never sends it back to the panel. An empty field keeps the stored token. The test message works only after a token and a chat ID are saved."
+    },
+    "events": {
+      "what": "The events that send a message: a node going offline or coming back, a node's access expiring, a Fail2Ban ban, a firewall change and a node using 80% or all of its traffic quota.",
+      "who": "Admins who want to hear about some events and not others.",
+      "effect": "Only checked events are sent, and only while notifications are on. Repeats of an identical event within 30 minutes are sent once; every change made on the Firewall page is sent (Fail2Ban permanent bans are not). A node counts as offline after 5 minutes without a WireGuard handshake."
+    }
+  }
+}

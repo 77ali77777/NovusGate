@@ -1,0 +1,26 @@
+{
+  "group": {
+    "name": {
+      "what": "Node qrupunun adı. Bu siyahıda, qrupu istifadə edən VPN qaydalarında və limit profillərini bağlayanda görünür.",
+      "who": "VPN qaydalarını və ya limitləri bir-bir node üçün deyil, node dəsti üçün yazan operator və adminlər.",
+      "effect": "Məcburidir, 1–100 simvol və unikal olmalıdır: başqa qrupda olan adı server rədd edir. VPN qaydaları qrupun özünə istinad edir, ona görə adı dəyişmək onları pozmur. Node limit profili olan bir neçə qrupdadırsa, onun profilini ada görə ilk qrup müəyyən edir, ona görə ad dəyişikliyi bunu dəyişə bilər; yadda saxlayanda limitlər yenidən tətbiq olunur."
+    },
+    "description": {
+      "what": "Qrup haqqında sərbəst qeyd; bu siyahıda adının altında görünür.",
+      "who": "Qrupun nə üçün olduğunu və ya kimə aid olduğunu qeyd etmək istəyən komandalar.",
+      "effect": "İstəyə bağlıdır. Yalnız paneldə göstərilir, heç bir qaydanı və ya limiti dəyişmir."
+    }
+  },
+  "members": {
+    "network": {
+      "what": "Aşağıda hansı şəbəkənin node-larının göstəriləcəyini seçir.",
+      "who": "Node tapmaq üçün lazımdır, çünki siyahı hər dəfə bir şəbəkəni göstərir. Qrupda bir neçə şəbəkədən node ola bilər.",
+      "effect": "Yalnız siyahını dəyişir; başqa şəbəkələrdə seçilmiş node-lar seçili qalır. Yadda saxla düyməsini basana qədər heç nə saxlanmır."
+    },
+    "nodes": {
+      "what": "Bu qrupa aid node-lar. Bir node bir neçə qrupda ola bilər.",
+      "who": "Qrupun işə yaraması üçün lazımdır: qrupu istifadə edən VPN qaydaları və limit profilləri bu node-lara tətbiq olunur.",
+      "effect": "Yadda saxlamaq bütün üzv siyahısını əvəz edir və VPN qaydalarını dərhal yenidən tətbiq edir; burada əlavə edilən və ya çıxarılan node həmin qaydaların verdiyi girişi və qrupun limit profilini qazanır və ya itirir."
+    }
+  }
+}

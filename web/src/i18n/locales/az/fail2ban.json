@@ -108,6 +108,7 @@
     "permanentRemoveFailed": "Daimi banı silmək alınmadı",
     "permanentRemoved": "Daimi ban silindi",
     "reloadFailed": "Fail2Ban-ı yenidən yükləmək alınmadı",
-    "reloaded": "Fail2Ban yenidən yükləndi"
+    "reloaded": "Fail2Ban yenidən yükləndi",
+    "settingsPartial": "Bəzi parametrlər saxlanılmadı"
   }
 }

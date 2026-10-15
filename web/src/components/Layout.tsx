@@ -24,6 +24,7 @@ import { LANGUAGES, setLanguage } from '@/i18n'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
 import { ErrorBoundary } from './ErrorBoundary'
+import { HelpTip } from './HelpTip'
 import { Toaster } from './Toaster'
 
 interface NavItem {
@@ -108,9 +109,11 @@ export const Layout = () => {
             className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
           >
             {t('network')}
+            <HelpTip k="helpGeneral:layout.network" />
           </label>
           <div className="relative">
             <select
+              data-help="helpGeneral:layout.network"
               id="layout-network-select"
               value={currentNetworkId || ''}
               onChange={(e) => setCurrentNetworkId(e.target.value || null)}
@@ -160,8 +163,12 @@ export const Layout = () => {
         <div className="p-4 border-t dark:border-gray-700">
           <Branding className="mb-4" />
           <label className="mb-3 flex items-center justify-between gap-2 px-3 text-xs text-gray-500 dark:text-gray-400">
-            {t('language')}
+            <span className="inline-flex items-center">
+              {t('language')}
+              <HelpTip k="helpGeneral:layout.language" />
+            </span>
             <select
+              data-help="helpGeneral:layout.language"
               value={i18n.language}
               onChange={(e) => setLanguage(e.target.value)}
               className="rounded-md bg-gray-100 px-2 py-1 text-sm text-gray-900 dark:bg-gray-700 dark:text-white"

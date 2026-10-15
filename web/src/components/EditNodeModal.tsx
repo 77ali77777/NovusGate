@@ -122,6 +122,7 @@ export const EditNodeModal = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
+          help="helpNodes:edit.name"
           label={t('fields.peerName')}
           placeholder={t('fields.peerNamePlaceholder')}
           value={name}
@@ -163,23 +164,18 @@ export const EditNodeModal = ({
         </fieldset>
 
         {/* Expiration Control */}
-        <div className="space-y-1">
-          <label
-            htmlFor={expiryId}
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {t('fields.expiration')}
-          </label>
-          <Select
-            id={expiryId}
-            options={expiryOptions}
-            value={expiryType}
-            onChange={(e) => setExpiryType(e.target.value as ExpiryChoice)}
-          />
-        </div>
+        <Select
+          id={expiryId}
+          label={t('fields.expiration')}
+          help="helpNodes:edit.expiry"
+          options={expiryOptions}
+          value={expiryType}
+          onChange={(e) => setExpiryType(e.target.value as ExpiryChoice)}
+        />
 
         {expiryType === 'custom' && (
           <Input
+            help="helpNodes:edit.customDate"
             label={t('edit.dateTime')}
             type="datetime-local"
             value={customDate}
@@ -226,12 +222,14 @@ export const EditNodeModal = ({
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <Input
+              help="helpNodes:edit.os"
               label={t('fields.os')}
               placeholder={t('edit.osPlaceholder')}
               value={os}
               onChange={(e) => setOs(e.target.value)}
             />
             <Input
+              help="helpNodes:edit.arch"
               label={t('fields.architecture')}
               placeholder={t('edit.archPlaceholder')}
               value={arch}
@@ -239,6 +237,7 @@ export const EditNodeModal = ({
             />
             <div className="col-span-2">
               <Input
+                help="helpNodes:edit.hostname"
                 label={t('fields.hostname')}
                 placeholder={t('edit.hostnamePlaceholder')}
                 value={hostname}

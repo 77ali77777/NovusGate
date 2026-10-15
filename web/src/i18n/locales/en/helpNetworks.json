@@ -10,9 +10,9 @@
     "effect": "Must be unique. It cannot be renamed later: to change it, delete the network and create it again."
   },
   "cidr": {
-    "what": "The private address range of the network, for example 10.20.0.0/24. The hub takes the first address; devices get the next free ones.",
+    "what": "The address range of the network, for example 10.20.0.0/24; use a private range. The hub takes the first address and the second is reserved; devices start at the third.",
     "who": "Needed for every network: it decides which addresses its devices use.",
-    "effect": "It may not overlap another network (the server refuses it). It cannot be changed later. Creating the network also creates a new WireGuard interface (wg1, wg2…) on its own UDP port starting at 51820, which must be reachable from the internet."
+    "effect": "It may not overlap another network (the server refuses it). It cannot be changed later. Creating the network also creates a new WireGuard interface (wg1, wg2…) on the next free UDP port above wg0's 51820, which must be reachable from the internet."
   },
   "clientDns": {
     "what": "The DNS servers written into this network's device configs: up to 3 IPv4 addresses, comma separated.",

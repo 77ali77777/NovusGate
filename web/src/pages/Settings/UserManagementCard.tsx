@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCreateUser, useDeleteUser, useSetUserRole, useUsers } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { HelpTip } from '@/components/HelpTip'
 import { locale } from '@/i18n'
 import type { UserRole } from '@/types'
 
@@ -54,6 +55,7 @@ export const UserManagementCard: React.FC = () => {
           </div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {t('users.title')}
+            <HelpTip k="helpSettings:users.role" />
           </h2>
         </div>
         <button
@@ -77,26 +79,36 @@ export const UserManagementCard: React.FC = () => {
             </h3>
             {error && <div className="text-sm text-red-600 dark:text-red-400">{error}</div>}
             <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder={t('users.usernamePlaceholder')}
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                className="px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              />
-              <input
-                type="password"
-                placeholder={t('users.passwordPlaceholder')}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  data-help="helpSettings:users.username"
+                  type="text"
+                  placeholder={t('users.usernamePlaceholder')}
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="min-w-0 flex-1 px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                />
+                <HelpTip k="helpSettings:users.username" />
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  data-help="helpSettings:users.password"
+                  type="password"
+                  placeholder={t('users.passwordPlaceholder')}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="min-w-0 flex-1 px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                />
+                <HelpTip k="helpSettings:users.password" />
+              </div>
             </div>
             <label className="block text-sm text-gray-700 dark:text-gray-300">
               {t('users.role')}
+              <HelpTip k="helpSettings:users.newRole" />
               <select
+                data-help="helpSettings:users.newRole"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as UserRole)}
                 className="mt-1 w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -157,6 +169,7 @@ export const UserManagementCard: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <select
+                    data-help="helpSettings:users.role"
                     aria-label={t('users.roleFor', { username: user.username })}
                     value={user.role}
                     disabled={setRole.isPending}

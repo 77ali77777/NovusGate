@@ -1,0 +1,75 @@
+{
+  "profile": {
+    "name": {
+      "what": "The name of the limit profile, shown in this list, in the node details and when you bind it.",
+      "who": "Operators and admins who keep several profiles, for example one for guests and one for staff.",
+      "effect": "Required, 1–100 characters, and unique: the server refuses a name another profile already has. Renaming does not change which nodes the profile limits."
+    },
+    "downKbps": {
+      "what": "The highest speed each bound node may receive through the server (from other nodes and the internet), in Mbit/s (1 Mbit/s = 1000 kbit/s). Decimals are allowed.",
+      "who": "Networks where one device should not take all the bandwidth, for example guests or test machines.",
+      "effect": "Empty means unlimited; the most is 100000 Mbit/s. Every node gets the full value on its own. Packets above the speed are dropped after a short burst, also on connections that are already open."
+    },
+    "upKbps": {
+      "what": "The highest speed each bound node may send through the server (to other nodes and the internet), in Mbit/s (1 Mbit/s = 1000 kbit/s). Decimals are allowed.",
+      "who": "Networks where uploads from one device (backups, video) should not fill the server's line.",
+      "effect": "Empty means unlimited; the most is 100000 Mbit/s. Every node gets the full value on its own. Packets above the speed are dropped after a short burst."
+    },
+    "maxConnections": {
+      "what": "How many connections at the same time each bound node may have open through the server (to other nodes and the internet).",
+      "who": "Networks that want to stop one device from opening very many connections, for example file sharing or scanners.",
+      "effect": "Empty means unlimited; otherwise a whole number from 1 to 1000000. Over the limit, new connections are refused; connections already open keep working."
+    }
+  },
+  "quota": {
+    "size": {
+      "what": "How much traffic each bound node may use per period, in GB (1 GB = 1000 MB = 10⁹ bytes). Download and upload count together.",
+      "who": "Networks with a limited or paid data volume, or to stop one device from using too much in a month.",
+      "effect": "Empty means no quota; the most is 1000000 GB. The use is counted every 5 minutes, so a node can go slightly over before it is stopped. At 80% and at 100% a Telegram notification is sent if that notification is switched on. Raising the quota lets a stopped node go again."
+    },
+    "action": {
+      "what": "What happens to a node that has used up its quota: its VPN traffic is blocked, or it is slowed down.",
+      "who": "Choose block when the limit must be strict, slow down when the device must stay reachable.",
+      "effect": "Block drops the node's traffic routed through the server (to other nodes and the internet) until the period ends, the quota is raised or the count is reset; the server's own services stay reachable. Slow down needs a speed in the next field."
+    },
+    "throttle": {
+      "what": "The speed, in Mbit/s, a node is slowed to once its quota is used up. Only used when “Slow down” is chosen.",
+      "who": "Profiles that use “Slow down” instead of blocking.",
+      "effect": "Required for “Slow down”, at most 100000 Mbit/s. It applies to download and upload, and never makes a node faster than the profile's own speed limits. Its other limits stay in force."
+    },
+    "resetDay": {
+      "what": "The day of the month (1–28) when the quota count starts again, at midnight in the profile's time zone.",
+      "who": "Set it to match a billing date or the start of the month.",
+      "effect": "On that day the count goes back to zero and a blocked or slowed node is let go. A changed day applies from the next period; the current one keeps its end date."
+    }
+  },
+  "schedule": {
+    "window": {
+      "what": "A time window when bound nodes may use the VPN: the days, the start time and the end time (or until midnight). A window may run past midnight, for example 22:00–02:00.",
+      "who": "Profiles for devices that should only be online at set times, for example during working hours.",
+      "effect": "With no windows the VPN can be used at any time. With windows, the node's traffic routed through the server (to other nodes and the internet) is dropped outside them, also on open connections; the server's own services stay reachable. At most 28 windows; each needs at least one day, and start and end may not be equal."
+    },
+    "timezone": {
+      "what": "The time zone the windows and the quota reset day are read in. The list comes from your browser; a new profile starts with your browser's zone.",
+      "who": "Every profile with a schedule or a quota, especially when the server and the users are in different zones.",
+      "effect": "The server converts the windows to UTC and follows daylight-saving changes. An unknown zone is refused. For the quota, a changed zone applies from the next period."
+    }
+  },
+  "bindings": {
+    "groups": {
+      "what": "The node groups whose members get this profile.",
+      "who": "Operators who limit many nodes at once, for example every guest device.",
+      "effect": "Saving applies the limits at once. A group can have only one profile, so ticking it here moves it from another profile. A node bound on its own keeps its own profile; a node in several groups with profiles gets the profile of the first group by name. Limits work only with the nftables firewall engine."
+    },
+    "network": {
+      "what": "Chooses which network's nodes are listed below.",
+      "who": "Needed to find nodes, because the list shows one network at a time.",
+      "effect": "Only changes the list; nodes ticked in other networks stay selected. Nothing is saved until you press Save."
+    },
+    "nodes": {
+      "what": "The nodes bound to this profile directly, from any network.",
+      "who": "Operators who limit single devices, or who need one node to differ from its group.",
+      "effect": "Saving applies the limits at once. A node bound here uses this profile even if its group has another. A node can have only one profile, so ticking it here moves it from another profile."
+    }
+  }
+}

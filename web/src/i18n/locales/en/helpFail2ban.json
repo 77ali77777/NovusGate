@@ -1,0 +1,48 @@
+{
+  "jail": {
+    "select": {
+      "what": "The Fail2Ban jail this page shows and changes, for example sshd for SSH logins.",
+      "who": "Anyone reading bans; admins pick the jail before they change settings, the whitelist or ban an address.",
+      "effect": "Only switches the view. The banned list, whitelist, settings and the manual ban form all work on the selected jail."
+    },
+    "bantime": {
+      "what": "How long an address stays banned, in seconds. -1 bans it for good.",
+      "who": "Admins deciding how hard repeated failed logins are punished.",
+      "effect": "Saving applies it to the running jail at once; an empty field leaves it unchanged. The panel does not check the value: Fail2Ban refuses an invalid one and the save reports it. It is not written to Fail2Ban's config files. A long time also keeps you out longer if your own address gets banned."
+    },
+    "maxretry": {
+      "what": "How many failures within the find time trigger a ban.",
+      "who": "Admins balancing protection against users who mistype their password.",
+      "effect": "Applied to the running jail at once, not to the config files. A low number bans attackers sooner but can also ban you; add your own address to the whitelist first."
+    },
+    "findtime": {
+      "what": "The time window, in seconds, in which failures are counted toward the maximum.",
+      "who": "Admins tuning how slow attacks are caught.",
+      "effect": "Applied to the running jail at once, not to the config files. A longer window counts more failures together, so it bans more often, including legitimate users."
+    }
+  },
+  "whitelist": {
+    "ip": {
+      "what": "An IP address or a CIDR range this jail never bans (Fail2Ban's ignoreip).",
+      "who": "Admins who want to keep their own office or home address, or a monitoring server, from being locked out.",
+      "effect": "Only admins can add it. The server accepts one IP or a CIDR range and refuses anything else. It is added to the running jail only, not to the config files. A wide range also protects attackers inside it."
+    }
+  },
+  "ban": {
+    "ip": {
+      "what": "One IPv4 or IPv6 address to ban by hand. Ranges (CIDR) are refused; a permanent ban with the iptables engine takes IPv4 only.",
+      "who": "Admins blocking an address they already know is attacking.",
+      "effect": "Without \"permanent\", Fail2Ban bans it in the selected jail. Nothing stops you from banning your own address this way, so check it before you confirm."
+    },
+    "jail": {
+      "what": "The jail the temporary ban goes into. It is the same choice as the jail selector at the top of the page.",
+      "who": "Admins choosing which service the address is banned from.",
+      "effect": "Changing it also switches the page to that jail. A permanent ban ignores the jail."
+    },
+    "permanent": {
+      "what": "Blocks the address in the server firewall instead of a Fail2Ban jail.",
+      "who": "Admins who want an attacker kept out until someone removes the block.",
+      "effect": "The block stays until it is removed on the Permanent bans tab. With the nftables firewall engine the server refuses a block that would cut off your current session; with the legacy iptables firewall there is no such check."
+    }
+  }
+}

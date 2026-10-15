@@ -30,6 +30,7 @@ import {
 } from '@/api/client'
 import { CreateNodeModal } from '@/components/CreateNodeModal'
 import { EditNodeModal } from '@/components/EditNodeModal'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { ServerConfigModal } from '@/components/ServerConfigModal'
 import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
@@ -413,8 +414,10 @@ export const NodesPage: React.FC = () => {
         <div className="mb-4 flex items-center gap-2">
           <label htmlFor="node-group-filter" className="text-sm text-gray-600 dark:text-gray-400">
             {t('list.groupFilter')}
+            <HelpTip k="helpNodes:list.groupFilter" />
           </label>
           <select
+            data-help="helpNodes:list.groupFilter"
             id="node-group-filter"
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}

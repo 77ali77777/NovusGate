@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUpdatePassword } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { HelpTip } from '@/components/HelpTip'
 
 export const ChangePasswordCard: React.FC = () => {
   const { t } = useTranslation('settings')
@@ -66,9 +67,11 @@ export const ChangePasswordCard: React.FC = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('password.username')}
+              <HelpTip k="helpSettings:password.username" />
             </label>
             <input
               id="pw-1"
+              data-help="helpSettings:password.username"
               type="text"
               disabled
               value={localStorage.getItem('auth_username') || ''}
@@ -82,9 +85,11 @@ export const ChangePasswordCard: React.FC = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('password.current')}
+              <HelpTip k="helpSettings:password.current" />
             </label>
             <input
               id="pw-2"
+              data-help="helpSettings:password.current"
               type="password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
@@ -99,9 +104,11 @@ export const ChangePasswordCard: React.FC = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('password.new')}
+              <HelpTip k="helpSettings:password.new" />
             </label>
             <input
               id="pw-3"
+              data-help="helpSettings:password.new"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -116,9 +123,11 @@ export const ChangePasswordCard: React.FC = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('password.confirm')}
+              <HelpTip k="helpSettings:password.confirm" />
             </label>
             <input
               id="pw-4"
+              data-help="helpSettings:password.confirm"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

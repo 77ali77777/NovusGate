@@ -108,6 +108,7 @@
     "permanentRemoveFailed": "Failed to remove permanent ban",
     "permanentRemoved": "Permanent ban removed",
     "reloadFailed": "Failed to reload Fail2Ban",
-    "reloaded": "Fail2Ban reloaded"
+    "reloaded": "Fail2Ban reloaded",
+    "settingsPartial": "Some settings were not saved"
   }
 }

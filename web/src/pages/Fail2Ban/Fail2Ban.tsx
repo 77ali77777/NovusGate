@@ -21,8 +21,12 @@ import {
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, useCan, useFail2BanLogs, useFail2BanStatus, useUnbanIP } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { Badge, Button, Card } from '@/components/ui'
+import i18n from '@/i18n'
+import { jailSaveResult } from '@/lib/fail2ban'
+import { useAppStore } from '@/store'
 import { formatBantime } from './formatBantime'
 
 // Hooks
@@ -49,13 +53,21 @@ const useJailSettings = (jail: string) =>
 const useUpdateJailSettings = () => {
   const qc = useQueryClient()
   return useMutation({
-    meta: {
-      errorTitle: 'fail2ban:toasts.settingsFailed',
-      successTitle: 'fail2ban:toasts.settingsSaved',
-    },
+    meta: { errorTitle: 'fail2ban:toasts.settingsFailed' },
     mutationFn: (data: { jail: string; bantime?: string; maxretry?: string; findtime?: string }) =>
       api.updateJailSettings(data.jail, data),
-    onSuccess: (_, v) => {
+    onSuccess: (res, v) => {
+      // 206: Fail2Ban refused some values; say which instead of "saved".
+      const result = jailSaveResult(res)
+      useAppStore.getState().addNotification(
+        result.ok
+          ? { type: 'success', title: i18n.t('fail2ban:toasts.settingsSaved') }
+          : {
+              type: 'warning',
+              title: i18n.t('fail2ban:toasts.settingsPartial'),
+              message: result.errors.join('; '),
+            }
+      )
       qc.invalidateQueries({ queryKey: ['jail-settings', v.jail] })
       qc.invalidateQueries({ queryKey: ['fail2ban'] })
     },
@@ -255,7 +267,9 @@ export const Fail2BanPage = () => {
             {/* Jail Selector */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">{t('jailLabel')}</span>
+              <HelpTip k="helpFail2ban:jail.select" />
               <select
+                data-help="helpFail2ban:jail.select"
                 value={selectedJail}
                 onChange={(e) => setSelectedJail(e.target.value)}
                 className="px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-medium"
@@ -472,12 +486,14 @@ export const Fail2BanPage = () => {
           <div className="p-4 space-y-4">
             <div className="flex gap-2">
               <input
+                data-help="helpFail2ban:whitelist.ip"
                 type="text"
                 placeholder={t('whitelist.placeholder')}
                 value={newWhitelistIP}
                 onChange={(e) => setNewWhitelistIP(e.target.value)}
                 className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               />
+              <HelpTip k="helpFail2ban:whitelist.ip" />
               {isAdmin && (
                 <Button
                   variant="primary"
@@ -549,9 +565,11 @@ export const Fail2BanPage = () => {
               <div>
                 <label htmlFor="f2b-bantime" className="block text-sm font-medium mb-2">
                   {t('settings.bantime')}
+                  <HelpTip k="helpFail2ban:jail.bantime" />
                 </label>
                 <input
                   id="f2b-bantime"
+                  data-help="helpFail2ban:jail.bantime"
                   type="text"
                   placeholder="3600"
                   value={settingsForm.bantime}
@@ -563,9 +581,11 @@ export const Fail2BanPage = () => {
               <div>
                 <label htmlFor="f2b-maxretry" className="block text-sm font-medium mb-2">
                   {t('settings.maxretry')}
+                  <HelpTip k="helpFail2ban:jail.maxretry" />
                 </label>
                 <input
                   id="f2b-maxretry"
+                  data-help="helpFail2ban:jail.maxretry"
                   type="text"
                   placeholder="3"
                   value={settingsForm.maxretry}
@@ -577,9 +597,11 @@ export const Fail2BanPage = () => {
               <div>
                 <label htmlFor="f2b-findtime" className="block text-sm font-medium mb-2">
                   {t('settings.findtime')}
+                  <HelpTip k="helpFail2ban:jail.findtime" />
                 </label>
                 <input
                   id="f2b-findtime"
+                  data-help="helpFail2ban:jail.findtime"
                   type="text"
                   placeholder="600"
                   value={settingsForm.findtime}
@@ -764,9 +786,11 @@ export const Fail2BanPage = () => {
               <div>
                 <label htmlFor="f2b-ban-ip" className="block text-sm font-medium mb-2">
                   {t('common:fields.ipAddress')}
+                  <HelpTip k="helpFail2ban:ban.ip" />
                 </label>
                 <input
                   id="f2b-ban-ip"
+                  data-help="helpFail2ban:ban.ip"
                   type="text"
                   placeholder={t('banModal.ipPlaceholder')}
                   value={banForm.ip}
@@ -777,9 +801,11 @@ export const Fail2BanPage = () => {
               <div>
                 <label htmlFor="f2b-ban-jail" className="block text-sm font-medium mb-2">
                   {t('banModal.jail')}
+                  <HelpTip k="helpFail2ban:ban.jail" />
                 </label>
                 <select
                   id="f2b-ban-jail"
+                  data-help="helpFail2ban:ban.jail"
                   value={selectedJail}
                   onChange={(e) => setSelectedJail(e.target.value)}
                   className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
@@ -793,6 +819,7 @@ export const Fail2BanPage = () => {
               </div>
               <div className="flex items-center gap-2">
                 <input
+                  data-help="helpFail2ban:ban.permanent"
                   type="checkbox"
                   id="permanent"
                   checked={banForm.permanent}
@@ -801,6 +828,7 @@ export const Fail2BanPage = () => {
                 />
                 <label htmlFor="permanent" className="text-sm">
                   {t('banModal.permanent')}
+                  <HelpTip k="helpFail2ban:ban.permanent" />
                 </label>
               </div>
               {banForm.permanent && (

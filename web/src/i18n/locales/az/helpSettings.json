@@ -1,0 +1,68 @@
+{
+  "password": {
+    "username": {
+      "what": "Daxil olduğunuz hesab. Burada yalnız göstərilir, dəyişdirilə bilməz.",
+      "who": "Hər istifadəçi: bu formanın kimin parolunu dəyişdiyini göstərir.",
+      "effect": "Dəyişiləcək bir şey yoxdur. Server həmişə daxil olmuş istifadəçinin parolunu dəyişir, heç vaxt başqa hesabın parolunu yox."
+    },
+    "current": {
+      "what": "Hazırkı parolunuz.",
+      "who": "Rolundan asılı olmayaraq hər istifadəçi: dəyişikliyin sizdən gəldiyini sübut edir.",
+      "effect": "Səhvdirsə, server dəyişikliyi rədd edir, heç nə dəyişmir və siz sistemdə qalırsınız."
+    },
+    "new": {
+      "what": "Bundan sonra daxil olacağınız parol.",
+      "who": "Yeni parol istəyən hər istifadəçi, məsələn köhnəni paylaşdıqdan və ya unutduqdan sonra.",
+      "effect": "Server minimum uzunluq və ya simvol qaydası qoymur, ona görə güclü parol seçin; 72 baytdan uzun parol saxlanıla bilməz. Dəyişiklikdən sonra bütün digər sessiyalarınız bağlanır; bu sessiya qalır."
+    },
+    "confirm": {
+      "what": "Yeni parol ikinci dəfə yazılır.",
+      "who": "Hər istifadəçi: özünüzü kənarda qoymazdan əvvəl yazı səhvini tutur.",
+      "effect": "Yeni parolla uyğun gəlmirsə, panel xəta göstərir və heç nə göndərmir."
+    }
+  },
+  "users": {
+    "username": {
+      "what": "Yeni istifadəçinin giriş adı.",
+      "who": "Bir hesabı paylaşmaq əvəzinə hər kəsə öz hesabını verən adminlər.",
+      "effect": "Unikal olmalıdır; mövcud ad rədd edilir. Sonradan adını dəyişmək olmur: istifadəçini silib yenidən yaradın."
+    },
+    "password": {
+      "what": "Yeni istifadəçinin ilk parolu.",
+      "who": "Hesabı yaradan adminlər; parolu həmin şəxsə təhlükəsiz yolla verin.",
+      "effect": "Server minimum uzunluq və ya simvol qaydası qoymur. Sonradan onu yalnız istifadəçinin özü \"Parolu dəyiş\" bölməsində dəyişə bilər; burada başqa istifadəçinin parolunu sıfırlamaq imkanı yoxdur."
+    },
+    "newRole": {
+      "what": "Yeni istifadəçinin nə edə biləcəyi: Admin, Operator və ya İzləyici.",
+      "who": "Hər kəsə yalnız ehtiyac duyduğu girişi verən adminlər.",
+      "effect": "Admin hər şeyi edə bilər, o cümlədən istifadəçilər, Fail2Ban, host firewall, ehtiyat nüsxələr, bildirişlər və Server səhifəsi. Operator şəbəkələri, node-ları, qrupları, limitləri və VPN qaydalarını dəyişə bilər. İzləyici şəbəkələrə, node-lara, firewall-a və Fail2Ban-a baxa və öz parolunu dəyişə bilər; başqa heç nəyi dəyişə və cihaz konfiqurasiyalarını yükləyə bilməz."
+    },
+    "role": {
+      "what": "Hər istifadəçinin yanındakı rol seçimi həmin istifadəçinin rolunu dəyişir.",
+      "who": "Mövcud hesabın səlahiyyətini artıran və ya məhdudlaşdıran adminlər.",
+      "effect": "Rolu seçən kimi yadda saxlanılır və istifadəçinin növbəti sorğusuna tətbiq olunur. Server sonuncu admini aşağı salmağa və ya silməyə icazə vermir. Özünüzü aşağı salsanız, server növbəti sorğunuzdan sizə yeni rola görə yanaşır və bunu özünüz geri qaytara bilməzsiniz."
+    }
+  },
+  "notifications": {
+    "enabled": {
+      "what": "Telegram bildirişlərinin əsas açarı.",
+      "who": "Server hadisələrinin Telegram çatına göndərilməsini istəyən adminlər.",
+      "effect": "Aktivləşdirmək üçün chat ID və bot tokeni lazımdır; əks halda panel və server bunu rədd edir. Söndürüləndə heç nə göndərilmir, amma test mesajı yenə işləyir."
+    },
+    "chatId": {
+      "what": "Mesajları qəbul edən Telegram çatı: rəqəmli çat və ya qrup ID-si, yaxud açıq @kanal adı.",
+      "who": "Xəbərdarlıqların hara gələcəyini seçən adminlər; bot həmin çatın üzvü olmalıdır.",
+      "effect": "Server formatı yoxlayır və başqa formatı rədd edir. Əvvəlcə yadda saxlayın: test mesajı yadda saxlanılmış chat ID-yə gedir."
+    },
+    "botToken": {
+      "what": "BotFather-in botunuza verdiyi token, 123456789:ABC… şəklində.",
+      "who": "Bildirişləri quran adminlər; Telegram botunuz adından göndərmək üçün ona ehtiyac duyur.",
+      "effect": "Server formatı yoxlayır, tokeni şifrələnmiş saxlayır və heç vaxt panelə geri göndərmir. Boş sahə saxlanılmış tokeni saxlayır. Test mesajı yalnız token və chat ID yadda saxlanıldıqdan sonra işləyir."
+    },
+    "events": {
+      "what": "Mesaj göndərən hadisələr: node-un oflayn olması və ya geri qayıtması, node-un giriş müddətinin bitməsi, Fail2Ban ban-ı, firewall dəyişikliyi və node-un trafik kvotasının 80%-ni və ya hamısını istifadə etməsi.",
+      "who": "Bəzi hadisələrdən xəbər tutmaq, digərlərindən isə yox istəyən adminlər.",
+      "effect": "Yalnız işarələnmiş hadisələr və yalnız bildirişlər aktiv olanda göndərilir. Eyni hadisənin 30 dəqiqə ərzindəki təkrarı bir dəfə göndərilir; Firewall səhifəsində edilən hər dəyişiklik göndərilir (Fail2Ban daimi ban-ları yox). Node 5 dəqiqə WireGuard handshake olmadıqda oflayn sayılır."
+    }
+  }
+}

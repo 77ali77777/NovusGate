@@ -1,0 +1,26 @@
+{
+  "login": {
+    "username": {
+      "what": "Panel hesabınızın adı.",
+      "who": "Daxil olan hər kəs. İlk admin hesabı quraşdırma zamanı yaradılır (başqa ad verilməyibsə, adı admin olur); digər hesabları adminlər Parametrlər bölməsində əlavə edir.",
+      "effect": "Böyük və kiçik hərflər daxil, tam uyğun gəlməlidir. Səhv ad və səhv parol eyni xətanı verir, ona görə panel hansı hesabların mövcud olduğunu açıqlamır. Hesabınızın rolu (admin, operator və ya viewer) nəyi dəyişə biləcəyinizi müəyyən edir."
+    },
+    "password": {
+      "what": "Panel hesabınızın parolu.",
+      "who": "Daxil olan hər kəs.",
+      "effect": "Bir IP ünvanından (IPv6 üçün bir /64 şəbəkədən) 15 dəqiqə ərzində 10 uğursuz girişdən sonra həmin müddət keçənə qədər yeni cəhdlər rədd edilir. Giriş 24 saat qüvvədə qalır və istifadə ilə uzanmır; sonra yenidən daxil olmalısınız."
+    }
+  },
+  "layout": {
+    "network": {
+      "what": "Node-lar səhifəsinin və firewall-un tam tunel bölməsinin hansı VPN şəbəkəsinin cihazlarını göstərəcəyini seçir.",
+      "who": "Birdən çox şəbəkəsi olan operatorlar.",
+      "effect": "Yeni cihazlar seçilmiş şəbəkədə yaradılır. Seçim yalnız bu brauzerdə saxlanır; serverdə heç nə dəyişmir."
+    },
+    "language": {
+      "what": "Panelin dili: Azərbaycanca və ya English.",
+      "who": "Hər istifadəçi.",
+      "effect": "Yalnız panelin mətnlərini dəyişir. Seçim bu brauzerdə saxlanır; digər istifadəçilərə və serverə təsir etmir."
+    }
+  }
+}

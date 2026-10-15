@@ -1,0 +1,208 @@
+{
+  "vpnRule": {
+    "name": {
+      "what": "Qaydanın qısa adı. VPN qaydaları siyahısında və audit jurnalında görünür.",
+      "who": "Sonradan bu qaydanı tapmalı, redaktə etməli və ya silməli olan hər kəs.",
+      "effect": "Məcburidir; adsız qaydanı server rədd edir. Ad qaydanın hansı trafikə uyğun gəldiyini dəyişmir."
+    },
+    "priority": {
+      "what": "Qaydanın yoxlanma sırası. Kiçik rəqəm əvvəl yoxlanır; eyni rəqəmli qaydalar yaradılma sırası ilə gedir.",
+      "who": "Eyni trafikə aid bir neçə qaydası olan operatorlar, məsələn geniş \"At\" qaydasından əvvəl dar \"Qəbul et\" qaydası.",
+      "effect": "Paketə uyğun gələn ilk qayda qərar verir; sonrakılar yoxlanmır. Forma 1–1000 qəbul edir (standart 100). Dəyişəndə qaydaların sırası yadda saxlanan kimi yenilənir."
+    },
+    "description": {
+      "what": "Qaydanın nə üçün olduğunu izah edən istəyə bağlı qeyd.",
+      "who": "Qaydanı sonradan oxuyan həmkarlar.",
+      "effect": "Yalnız saxlanır və göstərilir; trafikə təsiri yoxdur."
+    },
+    "endpointType": {
+      "what": "Mənbənin (trafikin gəldiyi yer) və ya təyinatın (getdiyi yer) nə olduğu: istənilən ünvan, bütöv VPN şəbəkəsi, bir cihaz (node), cihaz qrupu və ya öz IPv4 ünvanınız/aralığınız.",
+      "who": "Qayda yazan hər kəs: qaydanın kimin trafikinə aid olduğunu bununla bildirirsiniz.",
+      "effect": "\"İstənilən\" bütün ünvanlara uyğun gəlir. Növü dəyişəndə bu tərəf üçün əvvəl seçilmiş şəbəkə, node, qrup və ya IP silinir."
+    },
+    "network": {
+      "what": "Bütöv ünvan aralığı (CIDR) qaydanın mənbəyi və ya təyinatı olan VPN şəbəkəsi.",
+      "who": "Bütöv şəbəkələr arasında trafikə nəzarət edən operatorlar, məsələn ofisdən serverlərə.",
+      "effect": "Şəbəkə növü üçün məcburidir; qayda həmin şəbəkənin bütün cihazlarına, sonradan əlavə olunanlar da daxil, uyğun gəlir."
+    },
+    "nodeNetwork": {
+      "what": "Cihazın seçiləcəyi şəbəkə.",
+      "who": "Yalnız aşağıdakı cihaz siyahısını göstərmək üçün lazımdır.",
+      "effect": "Yalnız cihaz siyahısını daraldır; qayda aşağıda seçdiyiniz tək cihaza uyğun gəlir. Dəyişəndə seçilmiş cihaz silinir."
+    },
+    "node": {
+      "what": "Bir cihaz (node); qayda yalnız onun VPN ünvanına uyğun gəlir.",
+      "who": "Tək cihaza icazə verən və ya onu bloklayan operatorlar, məsələn bir server və ya bir noutbuk.",
+      "effect": "Node növü üçün məcburidir. Qayda cihazın VPN IP-sinə tətbiq olunur; eyni şəbəkənin digər cihazlarına təsir etmir."
+    },
+    "group": {
+      "what": "Cihaz qrupu (Qruplar səhifəsindən); qayda üzvlərinin VPN ünvanlarına uyğun gəlir.",
+      "who": "Girişi tək cihazlar əvəzinə rol və ya komanda üzrə idarə edən operatorlar.",
+      "effect": "Qrup növü üçün məcburidir; mövcud olmayan qrupu server rədd edir. Üzv əlavə etmək və ya çıxarmaq qaydanın kimi əhatə etdiyini dəyişir; boş qrup heç nəyə uyğun gəlmir."
+    },
+    "customIp": {
+      "what": "Öz ünvanınız və ya aralığınız: bir IPv4 ünvanı (məs., 10.10.0.5) və ya IPv4 CIDR (məs., 10.10.0.0/24).",
+      "who": "Bütöv şəbəkə, node və ya qrup olmayan aralığa ehtiyacı olan operatorlar, məsələn şlüz cihazının arxasındakı LAN.",
+      "effect": "Xüsusi IP növü üçün məcburidir. Yalnız IPv4 qəbul olunur; IPv6-nı və yanlış dəyərləri server rədd edir. Tək ünvan məhz həmin ünvan deməkdir (/32)."
+    },
+    "protocol": {
+      "what": "Qaydanın uyğun gəldiyi trafik: bütün protokollar, TCP, UDP və ya ICMP (ping).",
+      "who": "Qaydanı bir növ trafiklə məhdudlaşdıran operatorlar, məsələn yalnız veb (TCP) və ya yalnız ping.",
+      "effect": "\"Hamısı\" bütün protokollara uyğun gəlir. Port yalnız TCP və ya UDP ilə verilə bilər; \"Hamısı\" və ICMP seçiləndə port sahəsi bağlıdır."
+    },
+    "port": {
+      "what": "TCP və ya UDP üçün təyinat portu və ya portları: bir port (80), siyahı (80,443) və ya aralıq (8000-9000 və ya 8000:9000), hər biri 1–65535.",
+      "who": "Yalnız bir servisi açan və ya bağlayan operatorlar, məsələn SSH (22) və ya veb tətbiq.",
+      "effect": "Boş olanda bütün portlar deməkdir. Yanlış portları və TCP/UDP-dən başqa protokolla verilən portu server rədd edir."
+    },
+    "action": {
+      "what": "Uyğun gələn trafiklə nə olur: \"Qəbul et\" buraxır, \"At (drop)\" səssizcə atır, \"Rədd et\" atır və göndərənə bildirir.",
+      "who": "Qayda yazan hər kəs.",
+      "effect": "Qayda yadda saxlanan kimi tətbiq olunur. \"At\" ilə göndərən vaxt bitənə qədər gözləyir; \"Rədd et\" ilə dərhal xəta alır. nftables mühərrikində heç bir qaydaya uyğun gəlməyən trafik atılır; istisnalar: icazəli bağlantılara cavablar, port yönləndirmələri, eyni şəbəkənin cihazları arasındakı trafik və tam tunel internet trafiki."
+    },
+    "enabled": {
+      "what": "Qaydanı silmədən aktiv və ya deaktiv edir.",
+      "who": "Qaydanı müvəqqəti dayandırmaq istəyən operatorlar, məsələn sınaq zamanı.",
+      "effect": "Deaktiv qayda saxlanılır, amma tətbiq olunmur; trafik onda digər qaydalarla həll olunur."
+    }
+  },
+  "openPort": {
+    "port": {
+      "what": "Serverdə gələn trafik üçün açılacaq port, 1–65535.",
+      "who": "Serverdə xaricdən əlçatan olmalı servis işlədən adminlər, məsələn 443-də veb server.",
+      "effect": "Portu yalnız adminlər aça bilər. Dərhal, təsdiq addımı olmadan tətbiq olunur. nftables mühərrikində TCP 3007, 5432, 8080 və 8443 portları rədd edilir, çünki onlar yalnız VPN üzərindən açıq qalır."
+    },
+    "protocol": {
+      "what": "TCP, UDP və ya hər ikisi.",
+      "who": "Servisin işlətdiyini seçin: veb və SSH TCP, bir çox oyun və VPN UDP işlədir.",
+      "effect": "\"Hər ikisi\" port üçün bir TCP və bir UDP qaydası yaradır."
+    },
+    "source": {
+      "what": "Portdan istifadə edə bilən istəyə bağlı IP ünvanı və ya CIDR (məs., 192.168.1.0/24).",
+      "who": "Portun yalnız tanınan ofisdən və ya ünvandan əlçatan olmasını istəyən adminlər.",
+      "effect": "Boş olanda port bütün ünvanlara açılır. Yanlış ünvanı server rədd edir; IPv6 üçün nftables mühərriki lazımdır."
+    }
+  },
+  "blockIp": {
+    "ip": {
+      "what": "Bloklanacaq IP ünvanı və ya CIDR aralığı, məsələn 203.0.113.7 və ya 203.0.113.0/24.",
+      "who": "Hücumçunun və ya arzuolunmaz şəbəkənin serverə çatmasını dayandıran adminlər.",
+      "effect": "Yalnız adminlər bloklaya bilər. Dərhal, təsdiq addımı olmadan tətbiq olunur. nftables mühərrikində öz ünvanınızı əhatə edən bloku server rədd edir; iptables rejimində belə yoxlama yoxdur, ona görə ünvanı əvvəlcə yoxlayın. IPv6 üçün nftables mühərriki lazımdır."
+    },
+    "ports": {
+      "what": "Bu ünvan üçün bloklanacaq istəyə bağlı TCP portları: bir port, siyahı (22,80,443) və ya 8000:9000 kimi yazılan aralıq.",
+      "who": "Ünvan üçün yalnız bəzi servisləri bloklayıb qalanını açıq saxlayan adminlər.",
+      "effect": "Boş olanda ünvandan gələn bütün trafik bloklanır. Buradakı portlar həmişə TCP-dir."
+    }
+  },
+  "allowIp": {
+    "ip": {
+      "what": "Host firewall-dan buraxılacaq IP ünvanı və ya CIDR aralığı, məsələn 198.51.100.10.",
+      "who": "Etibarlı ünvana (ofis, monitorinq serveri) serverə giriş verən adminlər.",
+      "effect": "Yalnız adminlər icazə verə bilər. Dərhal, təsdiq addımı olmadan tətbiq olunur. Yanlış ünvanı server rədd edir; IPv6 üçün nftables mühərriki lazımdır."
+    },
+    "ports": {
+      "what": "Bu ünvanın çata biləcəyi istəyə bağlı TCP portları: bir port, siyahı (22,80,443) və ya 8000:9000 kimi yazılan aralıq.",
+      "who": "Ünvana yalnız bəzi servisləri açmaq istəyən adminlər.",
+      "effect": "Boş olanda ünvana bütün portlarda icazə verilir, panel, verilənlər bazası və API portlarından (3007, 5432, 8080, 8443) başqa: onlar yalnız VPN üzərindən əlçatan qalır, onları yazmaq rədd edilir. Buradakı portlar həmişə TCP-dir."
+    }
+  },
+  "hostRules": {
+    "chain": {
+      "what": "Cədvəlin göstərdiyi host qaydaları siyahısı: INPUT (serverə gələn trafik), FORWARD (serverdən keçən trafik) və ya OUTPUT (serverin göndərdiyi trafik).",
+      "who": "Host firewall-un hazırda nə etdiyini yoxlayan hər kəs.",
+      "effect": "Yalnız görünüşü dəyişir; serverdə heç nə dəyişmir. nftables mühərrikində burada qaydalar yalnız INPUT-dadır."
+    }
+  },
+  "services": {
+    "protocol": {
+      "what": "Serverdə açılacaq servis üçün TCP və ya UDP.",
+      "who": "Serverdə işləyən servis üçün port açan adminlər.",
+      "effect": "Bir servis bir protokolu əhatə edir; servisə hər ikisi lazımdırsa, digər protokol üçün ikinci servis əlavə edin."
+    },
+    "port": {
+      "what": "Açılacaq port, 1–65535, və ya aralığın ilk portu.",
+      "who": "Serverdəki servisi əlçatan edən adminlər.",
+      "effect": "Dəyişiklik hosta dərhal tətbiq olunur və 60 saniyə ərzində təsdiqləməsəniz geri qaytarılır. Yalnız adminlər və yalnız nftables mühərrikində dəyişə bilər. İnterfeys VPN interfeysi deyilsə, TCP 3007, 5432, 8080 və 8443 rədd edilir."
+    },
+    "toPort": {
+      "what": "Aralığın son portu. Boş olanda soldakı tək port deməkdir.",
+      "who": "Port blokunu açan adminlər, məsələn media üçün 10000–10100.",
+      "effect": "İlk portdan kiçik ola bilməz; əks halda server rədd edir. Aralıqdakı bütün portlar açılır."
+    },
+    "sources": {
+      "what": "Servisdən istifadə edə bilən ünvanlar və ya aralıqlar, vergül və ya boşluqla ayrılmış; həm IPv4, həm IPv6 işləyir.",
+      "who": "Servisin yalnız tanınan yerlərdən əlçatan olmasını istəyən adminlər.",
+      "effect": "Boş olanda bütün ünvanlara açılır. Bir yanlış dəyər olduqda server bütün servisi rədd edir."
+    },
+    "interface": {
+      "what": "İstəyə bağlı şəbəkə interfeysinin adı (məs., wg1 və ya eth0); servis onda yalnız bu interfeysdən gələn trafik üçün açıq olur.",
+      "who": "Servisin yalnız bir VPN şəbəkəsi və ya bir şəbəkə kartı üzərindən əlçatan olmasını istəyən adminlər.",
+      "effect": "Boş olanda bütün interfeyslər deməkdir. Ad ən çox 15 hərf, rəqəm, nöqtə, tire və ya alt xəttdən ibarət ola bilər; digər adlar rədd edilir."
+    },
+    "comment": {
+      "what": "İstəyə bağlı qeyd, məsələn servisin adı.",
+      "who": "Siyahını sonradan oxuyan hər kəs.",
+      "effect": "Yalnız paneldə göstərilir; trafikə təsiri yoxdur."
+    }
+  },
+  "ipRules": {
+    "action": {
+      "what": "\"Blokla\" ünvandan gələn trafiki atır; \"İcazə ver\" onu host firewall-dan buraxır.",
+      "who": "Hücumçunu dayandıran və ya etibarlı ünvanı buraxan adminlər.",
+      "effect": "Dərhal tətbiq olunur və 60 saniyə ərzində təsdiqləməsəniz geri qaytarılır. Qoşulduğunuz ünvanı əhatə edən bloku server rədd edir. \"İcazə ver\" yalnız VPN üçün olan 3007, 5432, 8080 və 8443 portlarını heç vaxt açmır."
+    },
+    "prefix": {
+      "what": "Bir IP ünvanı və ya CIDR aralığı, IPv4 və ya IPv6, məsələn 203.0.113.7 və ya 2001:db8::/32.",
+      "who": "Hər IP qaydası üçün lazımdır.",
+      "effect": "Yanlış ünvanı server rədd edir. Geniş aralıq (məsələn /8) eyni anda çox istifadəçiyə təsir edə bilər."
+    },
+    "protocol": {
+      "what": "Portlar sahəsi üçün TCP və ya UDP.",
+      "who": "Qaydanı bir protokolun portları ilə məhdudlaşdıran adminlər.",
+      "effect": "Yalnız portlar verildikdə istifadə olunur; portsuz qayda ünvandan gələn bütün trafiki əhatə edir."
+    },
+    "ports": {
+      "what": "İstəyə bağlı portlar: bir port, siyahı (22,80) və ya aralıq (8000-8100 və ya 8000:8100).",
+      "who": "Ünvan üçün yalnız bəzi servisləri bloklayan və ya onlara icazə verən adminlər.",
+      "effect": "Boş olanda bütün portları əhatə edir. TCP üçün icazə qaydasına 3007, 5432, 8080 və ya 8443 daxil ola bilməz; server onu rədd edir."
+    },
+    "expires": {
+      "what": "Qaydanın tətbiqinin dayanacağı istəyə bağlı tarix və saat (brauzerinizin saat qurşağında).",
+      "who": "Ünvanı yalnız müəyyən müddətə bloklayan və ya ona icazə verən adminlər, məsələn texniki iş zamanı.",
+      "effect": "Boş olanda qaydanın müddəti bitmir. Vaxt gələcəkdə olmalıdır; keçmiş vaxtı server rədd edir."
+    },
+    "comment": {
+      "what": "İstəyə bağlı qeyd, məsələn ünvanın niyə bloklandığı.",
+      "who": "Siyahını sonradan oxuyan hər kəs.",
+      "effect": "Yalnız saxlanır və göstərilir; trafikə təsiri yoxdur."
+    }
+  },
+  "forwards": {
+    "protocol": {
+      "what": "Yönləndirilən port üçün TCP və ya UDP.",
+      "who": "VPN cihazında işləyən servisi dərc edən adminlər.",
+      "effect": "Bir TCP və bir UDP yönləndirməsi eyni ictimai portu işlədə bilər; eyni protokol və port yalnız bir dəfə yönləndirilə bilər."
+    },
+    "publicPort": {
+      "what": "Serverin ictimai ünvanında insanların qoşulduğu port, 1–65535.",
+      "who": "VPN arxasındakı cihazı internetdən əlçatan edən adminlər.",
+      "effect": "Dərhal tətbiq olunur və 60 saniyə ərzində təsdiqləməsəniz geri qaytarılır. TCP 3007, 5432, 8080, 8443 və SSH portu, həmçinin UDP WireGuard portları rədd edilir."
+    },
+    "targetIp": {
+      "what": "Trafiki qəbul edən cihazın VPN IPv4 ünvanı, məsələn 10.20.0.5.",
+      "who": "Hər yönləndirmə üçün lazımdır.",
+      "effect": "VPN şəbəkələrindən birinin daxilində olan IPv4 ünvanı olmalıdır; qalan hər şeyi server rədd edir."
+    },
+    "targetPort": {
+      "what": "Cihazdakı port. Boş olanda ictimai portla eynidir.",
+      "who": "Servisi dərc olunandan fərqli portda dinləyən adminlər.",
+      "effect": "1–65535 olmalıdır. İctimai porta gələn trafik cihazda bu porta göndərilir."
+    },
+    "comment": {
+      "what": "İstəyə bağlı qeyd, məsələn servisin adı.",
+      "who": "Siyahını sonradan oxuyan hər kəs.",
+      "effect": "Yalnız saxlanır və göstərilir; trafikə təsiri yoxdur."
+    }
+  }
+}

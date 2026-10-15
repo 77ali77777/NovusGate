@@ -1,0 +1,75 @@
+{
+  "profile": {
+    "name": {
+      "what": "Limit profilinin adı. Bu siyahıda, node təfərrüatlarında və profili bağlayanda görünür.",
+      "who": "Bir neçə profil saxlayan operator və adminlər, məsələn qonaqlar üçün bir, işçilər üçün başqa profil.",
+      "effect": "Məcburidir, 1–100 simvol və unikal olmalıdır: başqa profildə olan adı server rədd edir. Adı dəyişmək profilin hansı node-ları məhdudlaşdırdığını dəyişmir."
+    },
+    "downKbps": {
+      "what": "Bağlı hər node-un server üzərindən (digər node-lardan və internetdən) ala biləcəyi ən yüksək sürət, Mbit/s ilə (1 Mbit/s = 1000 kbit/s). Onluq kəsr yazmaq olar.",
+      "who": "Bir cihazın bütün kanalı tutmamalı olduğu şəbəkələr, məsələn qonaqlar və ya test maşınları.",
+      "effect": "Boş olanda limitsizdir; ən çox 100000 Mbit/s. Hər node tam dəyəri ayrıca alır. Bu sürətdən artıq paketlər qısa bir partlayışdan sonra atılır, artıq açıq bağlantılarda da."
+    },
+    "upKbps": {
+      "what": "Bağlı hər node-un server üzərindən (digər node-lara və internetə) göndərə biləcəyi ən yüksək sürət, Mbit/s ilə (1 Mbit/s = 1000 kbit/s). Onluq kəsr yazmaq olar.",
+      "who": "Bir cihazın yükləmələrinin (ehtiyat nüsxə, video) serverin xəttini doldurmamalı olduğu şəbəkələr.",
+      "effect": "Boş olanda limitsizdir; ən çox 100000 Mbit/s. Hər node tam dəyəri ayrıca alır. Bu sürətdən artıq paketlər qısa bir partlayışdan sonra atılır."
+    },
+    "maxConnections": {
+      "what": "Bağlı hər node-un server üzərindən (digər node-lara və internetə) eyni anda açıq saxlaya biləcəyi bağlantıların sayı.",
+      "who": "Bir cihazın çox sayda bağlantı açmasını dayandırmaq istəyən şəbəkələr, məsələn fayl paylaşımı və ya skanerlər.",
+      "effect": "Boş olanda limitsizdir; əks halda 1-dən 1000000-ə qədər tam ədəd. Limit keçiləndə yeni bağlantılar rədd edilir; artıq açıq bağlantılar işləməyə davam edir."
+    }
+  },
+  "quota": {
+    "size": {
+      "what": "Bağlı hər node-un bir dövrdə istifadə edə biləcəyi trafik, GB ilə (1 GB = 1000 MB = 10⁹ bayt). Endirmə və yükləmə birlikdə sayılır.",
+      "who": "Məhdud və ya pullu trafik həcmi olan şəbəkələr, ya da bir cihazın ayda çox trafik işlətməsini dayandırmaq üçün.",
+      "effect": "Boş olanda kvota yoxdur; ən çox 1000000 GB. İstifadə hər 5 dəqiqədən bir sayılır, ona görə node dayandırılmazdan əvvəl kvotanı bir az keçə bilər. 80%-də və 100%-də, bu bildiriş açıqdırsa, Telegram bildirişi göndərilir. Kvotanı artırmaq dayandırılmış node-u yenidən buraxır."
+    },
+    "action": {
+      "what": "Kvotası bitən node-a nə olur: VPN trafiki bloklanır və ya sürəti azaldılır.",
+      "who": "Limit sərt olmalıdırsa bloku, cihaz əlçatan qalmalıdırsa sürəti azaltmağı seçin.",
+      "effect": "Blok dövr bitənə, kvota artırılana və ya sayğac sıfırlanana qədər node-un server üzərindən keçən trafikini (digər node-lara və internetə) atır; serverin öz servisləri əlçatan qalır. Sürəti azaltmaq üçün növbəti sahədə sürət lazımdır."
+    },
+    "throttle": {
+      "what": "Kvota bitəndən sonra node-un sürətinin endirildiyi dəyər, Mbit/s ilə. Yalnız “Sürəti azalt” seçiləndə işlənir.",
+      "who": "Blok əvəzinə “Sürəti azalt” işlədən profillər.",
+      "effect": "“Sürəti azalt” üçün məcburidir, ən çox 100000 Mbit/s. Endirmə və yükləməyə tətbiq olunur və node-u heç vaxt profilin öz sürət limitlərindən sürətli etmir. Profilin digər limitləri qüvvədə qalır."
+    },
+    "resetDay": {
+      "what": "Kvota sayğacının yenidən başladığı ay günü (1–28), profilin saat qurşağında gecə yarısı.",
+      "who": "Hesablaşma tarixinə və ya ayın əvvəlinə uyğunlaşdırmaq üçün.",
+      "effect": "Həmin gün sayğac sıfırlanır və bloklanmış və ya sürəti azaldılmış node buraxılır. Dəyişdirilmiş gün növbəti dövrdən tətbiq olunur; cari dövr öz bitmə tarixini saxlayır."
+    }
+  },
+  "schedule": {
+    "window": {
+      "what": "Bağlı node-ların VPN-dən istifadə edə bildiyi vaxt pəncərəsi: günlər, başlanğıc və son vaxt (və ya gecə yarısına qədər). Pəncərə gecə yarısını keçə bilər, məsələn 22:00–02:00.",
+      "who": "Yalnız müəyyən vaxtlarda onlayn olmalı cihazlar üçün profillər, məsələn iş saatlarında.",
+      "effect": "Pəncərə yoxdursa, VPN istənilən vaxt istifadə oluna bilər. Pəncərə varsa, ondan kənarda node-un server üzərindən keçən trafiki (digər node-lara və internetə) atılır, açıq bağlantılarda da; serverin öz servisləri əlçatan qalır. Ən çox 28 pəncərə; hər birinə ən azı bir gün lazımdır, başlanğıc və son eyni ola bilməz."
+    },
+    "timezone": {
+      "what": "Pəncərələrin və kvotanın yenidən başladığı günün oxunduğu saat qurşağı. Siyahı brauzerinizdən gəlir; yeni profil brauzerinizin qurşağı ilə başlayır.",
+      "who": "Cədvəli və ya kvotası olan hər profil, xüsusən server və istifadəçilər fərqli qurşaqlarda olanda.",
+      "effect": "Server pəncərələri UTC-yə çevirir və yay/qış vaxtı keçidlərini izləyir. Naməlum qurşaq rədd edilir. Kvota üçün dəyişdirilmiş qurşaq növbəti dövrdən tətbiq olunur."
+    }
+  },
+  "bindings": {
+    "groups": {
+      "what": "Üzvləri bu profili alan node qrupları.",
+      "who": "Çox node-u birdən məhdudlaşdıran operatorlar, məsələn bütün qonaq cihazları.",
+      "effect": "Yadda saxlayanda limitlər dərhal tətbiq olunur. Qrupun yalnız bir profili ola bilər, ona görə burada seçmək onu başqa profildən köçürür. Ayrıca bağlanmış node öz profilini saxlayır; profili olan bir neçə qrupdakı node ada görə ilk qrupun profilini alır. Limitlər yalnız nftables firewall mühərriki ilə işləyir."
+    },
+    "network": {
+      "what": "Aşağıda hansı şəbəkənin node-larının göstəriləcəyini seçir.",
+      "who": "Node tapmaq üçün lazımdır, çünki siyahı hər dəfə bir şəbəkəni göstərir.",
+      "effect": "Yalnız siyahını dəyişir; başqa şəbəkələrdə seçilmiş node-lar seçili qalır. Yadda saxla düyməsini basana qədər heç nə saxlanmır."
+    },
+    "nodes": {
+      "what": "Bu profilə birbaşa bağlanan node-lar, istənilən şəbəkədən.",
+      "who": "Ayrı-ayrı cihazları məhdudlaşdıran və ya bir node-un qrupundan fərqlənməli olduğu hallarda operatorlar.",
+      "effect": "Yadda saxlayanda limitlər dərhal tətbiq olunur. Burada bağlanan node, qrupunun başqa profili olsa belə, bu profili istifadə edir. Node-un yalnız bir profili ola bilər, ona görə burada seçmək onu başqa profildən köçürür."
+    }
+  }
+}

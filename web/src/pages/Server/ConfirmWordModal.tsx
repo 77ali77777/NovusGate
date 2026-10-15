@@ -40,6 +40,7 @@ export const ConfirmWordModal = ({
         <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
         <Input
           label={t('confirmWord', { word })}
+          help="helpServer:confirmWord"
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           autoComplete="off"

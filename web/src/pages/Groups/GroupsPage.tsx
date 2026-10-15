@@ -11,6 +11,7 @@ import {
   useSetGroupMembers,
   useUpdateGroup,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { Badge, Button, Card, EmptyState, Input, Modal } from '@/components/ui'
 import type { NodeGroup } from '@/types'
@@ -128,9 +129,16 @@ const GroupModal = ({ group, onClose }: { group: NodeGroup | null; onClose: () =
   return (
     <Modal isOpen onClose={onClose} title={group ? t('editTitle') : t('addTitle')}>
       <form onSubmit={submit} className="space-y-4">
-        <Input label={t('name')} value={name} onChange={(e) => setName(e.target.value)} required />
+        <Input
+          label={t('name')}
+          help="helpGroups:group.name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
         <Input
           label={t('descriptionLabel')}
+          help="helpGroups:group.description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -175,7 +183,9 @@ const MembersModal = ({ group, onClose }: { group: NodeGroup; onClose: () => voi
       <div className="space-y-4">
         <label className="block text-sm font-medium">
           {t('common:fields.network')}
+          <HelpTip k="helpGroups:members.network" />
           <select
+            data-help="helpGroups:members.network"
             value={networkId}
             onChange={(e) => setNetworkId(e.target.value)}
             className="mt-1 w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
@@ -201,6 +211,7 @@ const MembersModal = ({ group, onClose }: { group: NodeGroup; onClose: () => voi
                   <label key={n.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
+                      data-help="helpGroups:members.nodes"
                       checked={selected.has(n.id)}
                       onChange={() => toggle(n.id, label)}
                     />
@@ -212,7 +223,10 @@ const MembersModal = ({ group, onClose }: { group: NodeGroup; onClose: () => voi
           </div>
         )}
         <div>
-          <p className="text-sm font-medium">{t('selected', { count: selected.size })}</p>
+          <p className="text-sm font-medium">
+            {t('selected', { count: selected.size })}
+            <HelpTip k="helpGroups:members.nodes" />
+          </p>
           <div className="mt-1 flex flex-wrap gap-1">
             {[...selected.entries()].map(([nodeId, label]) => (
               <Badge key={nodeId}>{label}</Badge>

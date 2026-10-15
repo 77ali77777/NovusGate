@@ -6,6 +6,7 @@ import {
   useTestNotification,
   useUpdateNotificationSettings,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Button, Card, Input } from '@/components/ui'
 import {
   type NotificationEvents,
@@ -73,6 +74,7 @@ export const NotificationsCard = () => {
         <form onSubmit={submit} className="space-y-4">
           <div className="flex items-center gap-2">
             <input
+              data-help="helpSettings:notifications.enabled"
               type="checkbox"
               id="notify-enabled"
               checked={form.enabled}
@@ -81,17 +83,20 @@ export const NotificationsCard = () => {
             />
             <label htmlFor="notify-enabled" className="text-sm font-medium">
               {t('notifications.enabled')}
+              <HelpTip k="helpSettings:notifications.enabled" />
             </label>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               label={t('notifications.chatId')}
+              help="helpSettings:notifications.chatId"
               placeholder={t('notifications.chatIdPlaceholder')}
               value={form.chat_id}
               onChange={(e) => setForm({ ...form, chat_id: e.target.value })}
             />
             <Input
               label={t('notifications.botToken')}
+              help="helpSettings:notifications.botToken"
               type="password"
               autoComplete="off"
               placeholder={tokenStored ? t('notifications.tokenStored') : '123456789:ABC…'}
@@ -100,10 +105,14 @@ export const NotificationsCard = () => {
             />
           </div>
           <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">{t('notifications.notifyWhen')}</legend>
+            <legend className="mb-1 text-sm font-medium">
+              {t('notifications.notifyWhen')}
+              <HelpTip k="helpSettings:notifications.events" />
+            </legend>
             {EVENTS.map((ev) => (
               <div key={ev} className="flex items-center gap-2">
                 <input
+                  data-help="helpSettings:notifications.events"
                   type="checkbox"
                   id={`notify-${ev}`}
                   checked={form[ev]}

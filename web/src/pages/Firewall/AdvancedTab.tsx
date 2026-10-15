@@ -111,12 +111,14 @@ const ServicesSection = ({
       <p className="mb-4 text-sm text-gray-500">{t('services.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Select
+          help="helpFirewall:services.protocol"
           label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
+          help="helpFirewall:services.port"
           label={t('common:fields.port')}
           type="number"
           min={1}
@@ -126,6 +128,7 @@ const ServicesSection = ({
           onChange={(e) => setForm({ ...form, from: e.target.value })}
         />
         <Input
+          help="helpFirewall:services.toPort"
           label={t('services.toPort')}
           type="number"
           min={1}
@@ -134,18 +137,21 @@ const ServicesSection = ({
           onChange={(e) => setForm({ ...form, to: e.target.value })}
         />
         <Input
+          help="helpFirewall:services.sources"
           label={t('services.sourcesOptional')}
           placeholder={t('services.sourcesPlaceholder')}
           value={form.sources}
           onChange={(e) => setForm({ ...form, sources: e.target.value })}
         />
         <Input
+          help="helpFirewall:services.interface"
           label={t('services.interfaceOptional')}
           placeholder={t('services.interfacePlaceholder')}
           value={form.iface}
           onChange={(e) => setForm({ ...form, iface: e.target.value })}
         />
         <Input
+          help="helpFirewall:services.comment"
           label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}
@@ -249,6 +255,7 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
       <p className="mb-4 text-sm text-gray-500">{t('ipRules.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-6">
         <Select
+          help="helpFirewall:ipRules.action"
           label={t('common:fields.action')}
           options={[
             { value: 'block', label: t('ipRules.block') },
@@ -258,6 +265,7 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
           onChange={(e) => setForm({ ...form, action: e.target.value })}
         />
         <Input
+          help="helpFirewall:ipRules.prefix"
           label={t('ipRules.prefix')}
           required
           placeholder="203.0.113.7"
@@ -265,24 +273,28 @@ const IPRulesSection = ({ rules, disabled }: { rules: FirewallV2IPRule[]; disabl
           onChange={(e) => setForm({ ...form, prefix: e.target.value })}
         />
         <Select
+          help="helpFirewall:ipRules.protocol"
           label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
+          help="helpFirewall:ipRules.ports"
           label={t('ipRules.portsOptional')}
           placeholder={t('ipRules.portsPlaceholder')}
           value={form.ports}
           onChange={(e) => setForm({ ...form, ports: e.target.value })}
         />
         <Input
+          help="helpFirewall:ipRules.expires"
           label={t('ipRules.expiresOptional')}
           type="datetime-local"
           value={form.expires}
           onChange={(e) => setForm({ ...form, expires: e.target.value })}
         />
         <Input
+          help="helpFirewall:ipRules.comment"
           label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}
@@ -396,12 +408,14 @@ const ForwardsSection = ({
       <p className="mb-4 text-sm text-gray-500">{t('forwards.intro')}</p>
       <form onSubmit={submit} className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Select
+          help="helpFirewall:forwards.protocol"
           label={t('common:fields.protocol')}
           options={protocolOptions}
           value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value })}
         />
         <Input
+          help="helpFirewall:forwards.publicPort"
           label={t('forwards.publicPort')}
           type="number"
           min={1}
@@ -411,6 +425,7 @@ const ForwardsSection = ({
           onChange={(e) => setForm({ ...form, publicPort: e.target.value })}
         />
         <Input
+          help="helpFirewall:forwards.targetIp"
           label={t('forwards.targetIp')}
           required
           placeholder="10.20.0.5"
@@ -418,6 +433,7 @@ const ForwardsSection = ({
           onChange={(e) => setForm({ ...form, targetIP: e.target.value })}
         />
         <Input
+          help="helpFirewall:forwards.targetPort"
           label={t('forwards.targetPort')}
           type="number"
           min={1}
@@ -427,6 +443,7 @@ const ForwardsSection = ({
           onChange={(e) => setForm({ ...form, targetPort: e.target.value })}
         />
         <Input
+          help="helpFirewall:forwards.comment"
           label={t('common:fields.comment')}
           value={form.comment}
           onChange={(e) => setForm({ ...form, comment: e.target.value })}

@@ -10,9 +10,9 @@
     "effect": "Unikal olmalıdır. Sonradan dəyişdirilə bilmir: dəyişmək üçün şəbəkəni silib yenidən yaratmaq lazımdır."
   },
   "cidr": {
-    "what": "Şəbəkənin özəl ünvan aralığı, məsələn 10.20.0.0/24. İlk ünvanı hub götürür, cihazlar növbəti boş ünvanları alır.",
+    "what": "Şəbəkənin ünvan aralığı, məsələn 10.20.0.0/24; özəl aralıq işlədin. İlk ünvanı hub götürür, ikincisi ehtiyatda saxlanılır; cihazlar üçüncüdən başlayır.",
     "who": "Hər şəbəkə üçün lazımdır: cihazlarının hansı ünvanları işlədəcəyini müəyyən edir.",
-    "effect": "Başqa şəbəkə ilə üst-üstə düşə bilməz (server rədd edir). Sonradan dəyişdirilə bilmir. Şəbəkə yaradılanda serverdə yeni WireGuard interfeysi (wg1, wg2…) öz UDP portu ilə (51820-dən başlayaraq) yaranır; bu port internetdən əlçatan olmalıdır."
+    "effect": "Başqa şəbəkə ilə üst-üstə düşə bilməz (server rədd edir). Sonradan dəyişdirilə bilmir. Şəbəkə yaradılanda serverdə yeni WireGuard interfeysi (wg1, wg2…) wg0-ın 51820 portundan sonrakı ilk boş UDP portu ilə yaranır; bu port internetdən əlçatan olmalıdır."
   },
   "clientDns": {
     "what": "Bu şəbəkənin cihaz konfiqlərinə yazılan DNS serverləri: vergüllə ayrılmış ən çox 3 IPv4 ünvanı.",

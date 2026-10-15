@@ -2,7 +2,9 @@ import { Globe, Server } from 'lucide-react'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, useGroups } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Button, Modal } from '@/components/ui'
+import { withProtocol } from '@/lib/vpnRule'
 import type {
   Network as NetworkType,
   Node,
@@ -95,8 +97,10 @@ export const VPNRuleModal = ({
           <div>
             <label htmlFor="vpn-rule-1" className="block text-sm font-medium mb-1">
               {t('ruleModal.ruleName')}
+              <HelpTip k="helpFirewall:vpnRule.name" />
             </label>
             <input
+              data-help="helpFirewall:vpnRule.name"
               id="vpn-rule-1"
               type="text"
               required
@@ -109,8 +113,10 @@ export const VPNRuleModal = ({
           <div>
             <label htmlFor="vpn-rule-2" className="block text-sm font-medium mb-1">
               {t('common:fields.priority')}
+              <HelpTip k="helpFirewall:vpnRule.priority" />
             </label>
             <input
+              data-help="helpFirewall:vpnRule.priority"
               id="vpn-rule-2"
               type="number"
               required
@@ -126,8 +132,10 @@ export const VPNRuleModal = ({
         <div>
           <label htmlFor="vpn-rule-3" className="block text-sm font-medium mb-1">
             {t('ruleModal.descriptionOptional')}
+            <HelpTip k="helpFirewall:vpnRule.description" />
           </label>
           <input
+            data-help="helpFirewall:vpnRule.description"
             id="vpn-rule-3"
             type="text"
             value={form.description || ''}
@@ -146,8 +154,10 @@ export const VPNRuleModal = ({
             <div>
               <label htmlFor="vpn-rule-4" className="block text-sm font-medium mb-1">
                 {t('common:fields.type')}
+                <HelpTip k="helpFirewall:vpnRule.endpointType" />
               </label>
               <select
+                data-help="helpFirewall:vpnRule.endpointType"
                 id="vpn-rule-4"
                 value={form.source_type}
                 onChange={(e) =>
@@ -173,8 +183,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="vpn-rule-5" className="block text-sm font-medium mb-1">
                   {t('common:fields.network')}
+                  <HelpTip k="helpFirewall:vpnRule.network" />
                 </label>
                 <select
+                  data-help="helpFirewall:vpnRule.network"
                   id="vpn-rule-5"
                   value={form.source_network_id || ''}
                   onChange={(e) =>
@@ -196,8 +208,10 @@ export const VPNRuleModal = ({
                 <div>
                   <label htmlFor="vpn-rule-6" className="block text-sm font-medium mb-1">
                     {t('common:fields.network')}
+                    <HelpTip k="helpFirewall:vpnRule.nodeNetwork" />
                   </label>
                   <select
+                    data-help="helpFirewall:vpnRule.nodeNetwork"
                     id="vpn-rule-6"
                     value={form.source_network_id || ''}
                     onChange={(e) =>
@@ -220,8 +234,10 @@ export const VPNRuleModal = ({
                 <div className="col-span-2">
                   <label htmlFor="vpn-rule-7" className="block text-sm font-medium mb-1">
                     {t('common:fields.node')}
+                    <HelpTip k="helpFirewall:vpnRule.node" />
                   </label>
                   <select
+                    data-help="helpFirewall:vpnRule.node"
                     id="vpn-rule-7"
                     value={form.source_node_id || ''}
                     onChange={(e) =>
@@ -244,8 +260,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="source-group" className="block text-sm font-medium mb-1">
                   {t('ruleModal.group')}
+                  <HelpTip k="helpFirewall:vpnRule.group" />
                 </label>
                 <select
+                  data-help="helpFirewall:vpnRule.group"
                   id="source-group"
                   value={form.source_group_id || ''}
                   onChange={(e) =>
@@ -266,8 +284,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="vpn-rule-8" className="block text-sm font-medium mb-1">
                   IP/CIDR
+                  <HelpTip k="helpFirewall:vpnRule.customIp" />
                 </label>
                 <input
+                  data-help="helpFirewall:vpnRule.customIp"
                   id="vpn-rule-8"
                   type="text"
                   value={form.source_ip || ''}
@@ -289,8 +309,10 @@ export const VPNRuleModal = ({
             <div>
               <label htmlFor="vpn-rule-9" className="block text-sm font-medium mb-1">
                 {t('common:fields.type')}
+                <HelpTip k="helpFirewall:vpnRule.endpointType" />
               </label>
               <select
+                data-help="helpFirewall:vpnRule.endpointType"
                 id="vpn-rule-9"
                 value={form.dest_type}
                 onChange={(e) =>
@@ -316,8 +338,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="vpn-rule-10" className="block text-sm font-medium mb-1">
                   {t('common:fields.network')}
+                  <HelpTip k="helpFirewall:vpnRule.network" />
                 </label>
                 <select
+                  data-help="helpFirewall:vpnRule.network"
                   id="vpn-rule-10"
                   value={form.dest_network_id || ''}
                   onChange={(e) =>
@@ -339,8 +363,10 @@ export const VPNRuleModal = ({
                 <div>
                   <label htmlFor="vpn-rule-11" className="block text-sm font-medium mb-1">
                     {t('common:fields.network')}
+                    <HelpTip k="helpFirewall:vpnRule.nodeNetwork" />
                   </label>
                   <select
+                    data-help="helpFirewall:vpnRule.nodeNetwork"
                     id="vpn-rule-11"
                     value={form.dest_network_id || ''}
                     onChange={(e) =>
@@ -363,8 +389,10 @@ export const VPNRuleModal = ({
                 <div className="col-span-2">
                   <label htmlFor="vpn-rule-12" className="block text-sm font-medium mb-1">
                     {t('common:fields.node')}
+                    <HelpTip k="helpFirewall:vpnRule.node" />
                   </label>
                   <select
+                    data-help="helpFirewall:vpnRule.node"
                     id="vpn-rule-12"
                     value={form.dest_node_id || ''}
                     onChange={(e) =>
@@ -387,8 +415,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="dest-group" className="block text-sm font-medium mb-1">
                   {t('ruleModal.group')}
+                  <HelpTip k="helpFirewall:vpnRule.group" />
                 </label>
                 <select
+                  data-help="helpFirewall:vpnRule.group"
                   id="dest-group"
                   value={form.dest_group_id || ''}
                   onChange={(e) => setForm({ ...form, dest_group_id: e.target.value || undefined })}
@@ -407,8 +437,10 @@ export const VPNRuleModal = ({
               <div>
                 <label htmlFor="vpn-rule-13" className="block text-sm font-medium mb-1">
                   IP/CIDR
+                  <HelpTip k="helpFirewall:vpnRule.customIp" />
                 </label>
                 <input
+                  data-help="helpFirewall:vpnRule.customIp"
                   id="vpn-rule-13"
                   type="text"
                   value={form.dest_ip || ''}
@@ -426,13 +458,13 @@ export const VPNRuleModal = ({
           <div>
             <label htmlFor="vpn-rule-14" className="block text-sm font-medium mb-1">
               {t('common:fields.protocol')}
+              <HelpTip k="helpFirewall:vpnRule.protocol" />
             </label>
             <select
+              data-help="helpFirewall:vpnRule.protocol"
               id="vpn-rule-14"
               value={form.protocol}
-              onChange={(e) =>
-                setForm({ ...form, protocol: e.target.value as VPNFirewallProtocol })
-              }
+              onChange={(e) => setForm(withProtocol(form, e.target.value as VPNFirewallProtocol))}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
             >
               {protocols.map((p) => (
@@ -445,8 +477,10 @@ export const VPNRuleModal = ({
           <div>
             <label htmlFor="vpn-rule-15" className="block text-sm font-medium mb-1">
               {t('ruleModal.portOptional')}
+              <HelpTip k="helpFirewall:vpnRule.port" />
             </label>
             <input
+              data-help="helpFirewall:vpnRule.port"
               id="vpn-rule-15"
               type="text"
               value={form.port || ''}
@@ -459,8 +493,10 @@ export const VPNRuleModal = ({
           <div>
             <label htmlFor="vpn-rule-16" className="block text-sm font-medium mb-1">
               {t('common:fields.action')}
+              <HelpTip k="helpFirewall:vpnRule.action" />
             </label>
             <select
+              data-help="helpFirewall:vpnRule.action"
               id="vpn-rule-16"
               value={form.action}
               onChange={(e) => setForm({ ...form, action: e.target.value as VPNFirewallAction })}
@@ -478,6 +514,7 @@ export const VPNRuleModal = ({
         {/* Enabled Toggle */}
         <div className="flex items-center gap-2">
           <input
+            data-help="helpFirewall:vpnRule.enabled"
             type="checkbox"
             id="enabled"
             checked={form.enabled}
@@ -486,6 +523,7 @@ export const VPNRuleModal = ({
           />
           <label htmlFor="enabled" className="text-sm">
             {t('ruleModal.enabled')}
+            <HelpTip k="helpFirewall:vpnRule.enabled" />
           </label>
         </div>
 

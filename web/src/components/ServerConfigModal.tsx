@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
+import { HelpTip } from '@/components/HelpTip'
 import { Button, Modal } from '@/components/ui'
 
 interface ServerConfigModalProps {
@@ -166,6 +167,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                   className="text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   {t('connect.general.wgConfig')}
+                  <HelpTip k="helpNodes:config.text" />
                 </label>
                 <button
                   type="button"
@@ -177,6 +179,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 </button>
               </div>
               <textarea
+                data-help="helpNodes:config.text"
                 id="server-config-text"
                 className="w-full h-64 p-3 text-xs font-mono bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 outline-none"
                 readOnly

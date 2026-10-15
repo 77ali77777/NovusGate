@@ -1,0 +1,65 @@
+{
+  "create": {
+    "name": {
+      "what": "The name of the new device (peer), for example \"My phone\". It is shown in the node list and on the node's page.",
+      "who": "Every new device needs one, so operators can tell devices apart.",
+      "effect": "Must be unique within the network; the server refuses a name already in use. The device gets the next free address of the network selected in the sidebar."
+    },
+    "expiry": {
+      "what": "How long this device may use the VPN: forever, 1 hour, 1 day or 1 week from now, or until a date you pick.",
+      "who": "Operators giving temporary access, for example to a guest or a contractor.",
+      "effect": "When the time passes, the node's status becomes expired and its WireGuard peer is removed, so the device can no longer connect. The node is kept and can be extended later with Edit."
+    },
+    "customDate": {
+      "what": "The date and time (in your local time) when this device's access ends.",
+      "who": "Needed only when you pick a date instead of a fixed period.",
+      "effect": "Pick a time in the future. When it passes, the node becomes expired and the device can no longer connect."
+    }
+  },
+  "edit": {
+    "name": {
+      "what": "The device's name in the panel.",
+      "who": "Operators who want a clearer name, for example after the device changes owner.",
+      "effect": "Must stay unique within the network. Only the name changes: the device's config, keys and address stay the same, so nothing has to be sent to the device again."
+    },
+    "expiry": {
+      "what": "Changes when this device's access ends: keep the current limit, remove the limit, extend by 1 hour, 1 day or 1 week, or pick an exact date.",
+      "who": "Operators extending or ending a temporary device's access.",
+      "effect": "The extend options add to the current end time if it is still ahead, otherwise to now. A new end time re-activates an expired device and adds its peer back; removing the limit alone does not, so also set the status to Active. When the time passes, the device is marked expired and disconnected."
+    },
+    "customDate": {
+      "what": "The exact date and time (in your local time) when this device's access ends.",
+      "who": "Needed only when you choose to pick a date.",
+      "effect": "Must be in the future. While the current end time has not passed, you can only move it later, not earlier."
+    },
+    "os": {
+      "what": "The device's operating system as a free text note, for example Linux or Android.",
+      "who": "Operators who want to see at a glance what kind of device this is.",
+      "effect": "Shown in the panel only; it changes no config and no rule. The Linux install script fills it in by itself. Emptying the field does not erase a saved value."
+    },
+    "arch": {
+      "what": "The device's processor architecture as a free text note, for example amd64 or arm64.",
+      "who": "Operators who keep track of what hardware their devices run on.",
+      "effect": "Shown in the panel only; it changes no config and no rule. The Linux install script fills it in by itself (the value of uname -m, for example x86_64). Emptying the field does not erase a saved value."
+    },
+    "hostname": {
+      "what": "The device's own host name as a free text note, for example server-01.",
+      "who": "Operators who want to match a node to the machine it runs on.",
+      "effect": "Shown in the panel only; it changes no config and no rule. The Linux install script fills it in with the machine's host name. Emptying the field does not erase a saved value."
+    }
+  },
+  "config": {
+    "text": {
+      "what": "This device's WireGuard configuration, read only: its private key, its VPN address, the server's address and port, the DNS and which traffic goes through the tunnel.",
+      "who": "Whoever sets up the device: copy it or download the .conf file and import it into the WireGuard app. Only operators and admins can open it.",
+      "effect": "It contains the device's private key: anyone who has it can connect as this device, so give it only to the device's owner. After the network's DNS, the device's full tunnel setting or the VPN rules that open other networks to it change, send the new version to the device."
+    }
+  },
+  "list": {
+    "groupFilter": {
+      "what": "Shows only the devices that belong to the chosen group.",
+      "who": "Operators with many devices sorted into groups.",
+      "effect": "Only changes what this list shows; nothing is saved or changed on the server. Groups are managed on the Groups page."
+    }
+  }
+}

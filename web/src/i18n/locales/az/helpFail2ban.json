@@ -1,0 +1,48 @@
+{
+  "jail": {
+    "select": {
+      "what": "Bu səhifənin göstərdiyi və dəyişdiyi Fail2Ban jail-i, məsələn SSH girişləri üçün sshd.",
+      "who": "Banlara baxan hər kəs; adminlər parametrləri, ağ siyahını dəyişməzdən və ya IP-ni ban etməzdən əvvəl jail-i seçir.",
+      "effect": "Yalnız görünüşü dəyişir. Ban edilmiş IP-lər, ağ siyahı, parametrlər və əl ilə ban forması seçilmiş jail üzərində işləyir."
+    },
+    "bantime": {
+      "what": "Ünvanın neçə saniyə ban edilmiş qaldığı. -1 ünvanı daimi ban edir.",
+      "who": "Təkrarlanan uğursuz girişlərin nə qədər sərt cəzalandırılacağına qərar verən adminlər.",
+      "effect": "Yadda saxladıqda dərhal işləyən jail-ə tətbiq olunur; boş sahə dəyəri dəyişmir. Panel dəyəri yoxlamır: yanlış dəyəri Fail2Ban rədd edir və yadda saxlama bunu bildirir. Fail2Ban-ın konfiqurasiya fayllarına yazılmır. Uzun müddət öz ünvanınız ban edilsə, sizi də daha uzun müddət kənarda saxlayır."
+    },
+    "maxretry": {
+      "what": "Axtarış müddəti ərzində neçə uğursuz cəhdin ban-a səbəb olduğu.",
+      "who": "Qorunma ilə parolu səhv yazan istifadəçilər arasında balans quran adminlər.",
+      "effect": "Dərhal işləyən jail-ə tətbiq olunur, konfiqurasiya fayllarına yox. Kiçik rəqəm hücumçuları tez ban edir, amma sizi də ban edə bilər; əvvəlcə öz ünvanınızı ağ siyahıya əlavə edin."
+    },
+    "findtime": {
+      "what": "Uğursuz cəhdlərin maksimuma doğru sayıldığı zaman pəncərəsi (saniyə).",
+      "who": "Yavaş hücumların nə dərəcədə tutulacağını tənzimləyən adminlər.",
+      "effect": "Dərhal işləyən jail-ə tətbiq olunur, konfiqurasiya fayllarına yox. Uzun pəncərə daha çox uğursuz cəhdi birlikdə sayır, ona görə də qanuni istifadəçilər daxil daha tez-tez ban edir."
+    }
+  },
+  "whitelist": {
+    "ip": {
+      "what": "Bu jail-in heç vaxt ban etmədiyi IP ünvanı və ya CIDR diapazonu (Fail2Ban-ın ignoreip siyahısı).",
+      "who": "Öz ofis və ya ev ünvanını, yaxud monitorinq serverini bloklanmaqdan qorumaq istəyən adminlər.",
+      "effect": "Yalnız adminlər əlavə edə bilər. Server bir IP və ya CIDR diapazonu qəbul edir, qalanını rədd edir. Yalnız işləyən jail-ə əlavə olunur, konfiqurasiya fayllarına yox. Geniş diapazon onun içindəki hücumçuları da qoruyur."
+    }
+  },
+  "ban": {
+    "ip": {
+      "what": "Əl ilə ban ediləcək bir IPv4 və ya IPv6 ünvanı. Diapazonlar (CIDR) rədd edilir; iptables mühərrikində daimi ban yalnız IPv4 qəbul edir.",
+      "who": "Hücum etdiyi artıq məlum olan ünvanı bloklayan adminlər.",
+      "effect": "\"Daimi\" seçilməyibsə, Fail2Ban ünvanı seçilmiş jail-də ban edir. Bu yolla öz ünvanınızı ban etməyinizə heç nə mane olmur, ona görə də təsdiqləməzdən əvvəl yoxlayın."
+    },
+    "jail": {
+      "what": "Müvəqqəti ban-ın düşdüyü jail. Səhifənin yuxarısındakı jail seçimi ilə eynidir.",
+      "who": "Ünvanın hansı xidmətdən ban ediləcəyini seçən adminlər.",
+      "effect": "Dəyişdikdə səhifə də həmin jail-ə keçir. Daimi ban jail-i nəzərə almır."
+    },
+    "permanent": {
+      "what": "Ünvanı Fail2Ban jail-i əvəzinə serverin firewall-unda bloklayır.",
+      "who": "Hücumçunu kimsə bloku silənə qədər kənarda saxlamaq istəyən adminlər.",
+      "effect": "Blok \"Daimi banlar\" bölməsində silinənə qədər qalır. nftables firewall mühərriki ilə server cari sessiyanızı kəsəcək bloku rədd edir; köhnə iptables firewall-da belə yoxlama yoxdur."
+    }
+  }
+}

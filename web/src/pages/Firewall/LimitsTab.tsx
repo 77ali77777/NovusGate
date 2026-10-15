@@ -12,6 +12,7 @@ import {
   useSetLimitBindings,
   useUpdateLimit,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card, EmptyState, Input, Modal } from '@/components/ui'
 import { formatRate, kbpsToMbps, mbpsToKbps, scheduleSummary } from '@/lib/limits'
 import { formatBytes, gbToMb, mbToGb } from '@/lib/quota'
@@ -260,10 +261,17 @@ const ProfileModal = ({
     <Modal isOpen onClose={onClose} title={profile ? t('editTitle') : t('addTitle')} size="lg">
       <form onSubmit={submit} className="space-y-4">
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <Input label={t('name')} value={name} onChange={(e) => setName(e.target.value)} required />
+        <Input
+          label={t('name')}
+          help="helpLimits:profile.name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
             label={t('downLabel')}
+            help="helpLimits:profile.downKbps"
             value={down}
             onChange={(e) => setDown(e.target.value)}
             placeholder={t('unlimited')}
@@ -271,6 +279,7 @@ const ProfileModal = ({
           />
           <Input
             label={t('upLabel')}
+            help="helpLimits:profile.upKbps"
             value={up}
             onChange={(e) => setUp(e.target.value)}
             placeholder={t('unlimited')}
@@ -278,6 +287,7 @@ const ProfileModal = ({
           />
           <Input
             label={t('connectionsLabel')}
+            help="helpLimits:profile.maxConnections"
             value={conns}
             onChange={(e) => setConns(e.target.value)}
             placeholder={t('unlimited')}
@@ -291,6 +301,7 @@ const ProfileModal = ({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <Input
               label={t('quotaLabel')}
+              help="helpLimits:quota.size"
               value={quotaGb}
               onChange={(e) => setQuotaGb(e.target.value)}
               placeholder={t('noQuota')}
@@ -298,7 +309,9 @@ const ProfileModal = ({
             />
             <label className="block text-sm">
               {t('quotaActionLabel')}
+              <HelpTip k="helpLimits:quota.action" />
               <select
+                data-help="helpLimits:quota.action"
                 value={quotaAction}
                 onChange={(e) => setQuotaAction(e.target.value)}
                 className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -309,6 +322,7 @@ const ProfileModal = ({
             </label>
             <Input
               label={t('throttleLabel')}
+              help="helpLimits:quota.throttle"
               value={throttle}
               onChange={(e) => setThrottle(e.target.value)}
               disabled={quotaAction !== 'throttle'}
@@ -316,7 +330,9 @@ const ProfileModal = ({
             />
             <label className="block text-sm">
               {t('resetDayLabel')}
+              <HelpTip k="helpLimits:quota.resetDay" />
               <select
+                data-help="helpLimits:quota.resetDay"
                 value={resetDay}
                 onChange={(e) => setResetDay(Number(e.target.value))}
                 className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -334,7 +350,10 @@ const ProfileModal = ({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{t('schedule')}</p>
+            <p className="text-sm font-medium">
+              {t('schedule')}
+              <HelpTip k="helpLimits:schedule.window" />
+            </p>
             <Button type="button" variant="secondary" size="sm" onClick={addWindow}>
               <Plus className="mr-1 h-4 w-4" /> {t('addWindow')}
             </Button>
@@ -368,6 +387,7 @@ const ProfileModal = ({
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <input
                   type="time"
+                  data-help="helpLimits:schedule.window"
                   aria-label={t('from')}
                   value={w.from}
                   onChange={(e) => setWindow(i, { ...w, from: e.target.value })}
@@ -377,6 +397,7 @@ const ProfileModal = ({
                 <span>–</span>
                 <input
                   type="time"
+                  data-help="helpLimits:schedule.window"
                   aria-label={t('to')}
                   value={w.to === '24:00' ? '' : w.to}
                   disabled={w.to === '24:00'}
@@ -387,6 +408,7 @@ const ProfileModal = ({
                 <label className="flex items-center gap-1">
                   <input
                     type="checkbox"
+                    data-help="helpLimits:schedule.window"
                     checked={w.to === '24:00'}
                     onChange={(e) =>
                       setWindow(i, { ...w, to: e.target.checked ? '24:00' : '18:00' })
@@ -408,7 +430,9 @@ const ProfileModal = ({
           ))}
           <label className="block text-sm">
             {t('timezone')}
+            <HelpTip k="helpLimits:schedule.timezone" />
             <select
+              data-help="helpLimits:schedule.timezone"
               value={zone}
               onChange={(e) => setZone(e.target.value)}
               className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -476,7 +500,10 @@ const BindingsModal = ({
     <Modal isOpen onClose={onClose} title={t('bindingsTitle', { name: profile.name })} size="lg">
       <div className="space-y-4">
         <div>
-          <p className="text-sm font-medium">{t('groupsLabel')}</p>
+          <p className="text-sm font-medium">
+            {t('groupsLabel')}
+            <HelpTip k="helpLimits:bindings.groups" />
+          </p>
           {groups.length === 0 ? (
             <p className="text-sm text-gray-500">{t('noGroups')}</p>
           ) : (
@@ -485,6 +512,7 @@ const BindingsModal = ({
                 <label key={g.id} className="flex items-center gap-1 text-sm">
                   <input
                     type="checkbox"
+                    data-help="helpLimits:bindings.groups"
                     checked={groupIds.includes(g.id)}
                     onChange={(e) =>
                       setGroupIds(
@@ -500,7 +528,9 @@ const BindingsModal = ({
         </div>
         <label className="block text-sm font-medium">
           {t('nodesLabel')}
+          <HelpTip k="helpLimits:bindings.network" />
           <select
+            data-help="helpLimits:bindings.network"
             value={networkId}
             onChange={(e) => setNetworkId(e.target.value)}
             className="mt-1 w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -526,6 +556,7 @@ const BindingsModal = ({
                   <label key={n.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
+                      data-help="helpLimits:bindings.nodes"
                       checked={selected.has(n.id)}
                       onChange={() => toggleNode(n.id, label)}
                     />
@@ -537,7 +568,10 @@ const BindingsModal = ({
           </div>
         )}
         <div>
-          <p className="text-sm font-medium">{t('selectedNodes', { count: selected.size })}</p>
+          <p className="text-sm font-medium">
+            {t('selectedNodes', { count: selected.size })}
+            <HelpTip k="helpLimits:bindings.nodes" />
+          </p>
           <div className="mt-1 flex flex-wrap gap-1">
             {[...selected.entries()].map(([nodeId, label]) => (
               <Badge key={nodeId}>{label}</Badge>

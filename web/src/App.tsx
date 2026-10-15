@@ -3,6 +3,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { apiErrorMessage, errorBodyMessage } from './api/errors'
+import { HelpTip } from './components/HelpTip'
 import { Layout } from './components/Layout'
 import i18n from './i18n'
 import { StepUpCancelled } from './lib/serverAdmin'
@@ -117,8 +118,10 @@ const LoginPage = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('login.username')}
+              <HelpTip k="helpGeneral:login.username" />
             </label>
             <input
+              data-help="helpGeneral:login.username"
               id="login-username"
               type="text"
               value={email}
@@ -133,8 +136,10 @@ const LoginPage = () => {
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               {t('login.password')}
+              <HelpTip k="helpGeneral:login.password" />
             </label>
             <input
+              data-help="helpGeneral:login.password"
               id="login-password"
               type="password"
               value={password}
