@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -10,13 +11,14 @@ import (
 // hostFake answers host commands for the server administration routes.
 type hostFake struct {
 	out   map[string]string
+	fail  error // every command fails with it when set
 	calls []string
 }
 
 func (h *hostFake) Run(stdin, name string, args ...string) (string, error) {
 	cmd := strings.Join(append([]string{name}, args...), " ")
 	h.calls = append(h.calls, cmd)
-	return h.out[cmd], nil
+	return h.out[cmd], h.fail
 }
 
 func (h *hostFake) ran(cmd string) bool {
@@ -190,5 +192,16 @@ func TestStepUpGuessingIsLimited(t *testing.T) {
 	rec := callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
 	if rec.Code != 429 || errorCode(t, rec.Body.Bytes()) != "too_many_attempts" || rec.Header().Get("Retry-After") == "" {
 		t.Fatalf("after 5 failures = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// A host command that fails is logged; the client gets no command output,
+// paths or tool messages.
+func TestServerAdminHidesHostErrors(t *testing.T) {
+	s, h := newServerAdmin(t)
+	h.fail = errors.New("nsenter: reassociate to namespace 'ns/ipc' failed: /proc/1/ns")
+	rec := callAs(t, s, "GET", "/api/v1/server/system", "", true)
+	if rec.Code != 500 || strings.Contains(rec.Body.String(), "nsenter") || strings.Contains(rec.Body.String(), "/proc") {
+		t.Fatalf("system = %d %s", rec.Code, rec.Body)
 	}
 }

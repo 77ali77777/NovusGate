@@ -175,7 +175,8 @@ func hostError(w http.ResponseWriter, what string, err error) {
 		return
 	}
 	slog.Error(what+" failed", "error", err)
-	errorResponse(w, http.StatusInternalServerError, what+" failed: "+err.Error())
+	// The tool output stays in the log: it names host paths and commands.
+	errorResponse(w, http.StatusInternalServerError, what+" failed; see the server log")
 }
 
 func decodeAdminRequest(w http.ResponseWriter, r *http.Request, v any) bool {
