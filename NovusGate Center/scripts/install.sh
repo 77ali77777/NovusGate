@@ -198,7 +198,7 @@ log_info "Admin VPN configured."
 log_info "Applying Firewall Rules..."
 if [ -f "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh" ]; then
   if command -v sed &> /dev/null; then
-    sed -i 's/$//' "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh"
+    sed -i 's/\r$//' "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh"
   fi
   chmod +x "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh"
   "$INSTALL_DIR/server/deployments/docker/setup-firewall.sh"

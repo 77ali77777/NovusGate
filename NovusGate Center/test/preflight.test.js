@@ -11,7 +11,7 @@ const GOOD_OS = 'ID=ubuntu\nVERSION_ID="22.04"\n';
 const GB = 1024 * 1024; // in kB
 
 // runPreflight runs PREFLIGHT_FN on a stubbed host and returns { code, out }.
-function runPreflight({ osRelease = GOOD_OS, memKb = 4 * GB, freeKb = 20 * GB, arch = 'x86_64', busy = [], systemd = true } = {}) {
+function runPreflight({ osRelease = GOOD_OS, memKb = 4 * GB, freeKb = 20 * GB, arch = 'x86_64', busy = [], systemd = true, wgPort = '' } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ng-pre-'));
   try {
     const bin = path.join(dir, 'bin');
@@ -24,6 +24,8 @@ function runPreflight({ osRelease = GOOD_OS, memKb = 4 * GB, freeKb = 20 * GB, a
     // ss prints a listener when the filter names a busy port.
     stub('ss', `for p in ${busy.join(' ')}; do case "$*" in *":$p"*) echo "LISTEN 0 4096 0.0.0.0:$p 0.0.0.0:*";; esac; done`);
     if (systemd) stub('systemctl', 'exit 0');
+    // wg show wg0 listen-port: the port of an existing wg0, if any.
+    if (wgPort) stub('wg', `[ "$*" = "show wg0 listen-port" ] && echo ${wgPort}`);
     for (const tool of ['awk', 'grep', 'cat', 'sed']) {
       const real = spawnSync('bash', ['-c', `command -v ${tool}`]).stdout.toString().trim();
       fs.symlinkSync(real, path.join(bin, tool));
@@ -96,4 +98,24 @@ test('the install script runs preflight before touching the host', () => {
 
 test('doneMessage explains a failed preflight', () => {
   assert.match(doneMessage(scripts.EXIT_PREFLIGHT, { install: true }), /requirements/);
+});
+
+// A failed install leaves wg0 up on 51820 before .env exists; the installer
+// replaces wg0 anyway, so a retry must not stop on that port.
+test('preflight lets the installer replace an existing wg0 on 51820', () => {
+  const r = runPreflight({ busy: [51820], wgPort: '51820' });
+  assert.strictEqual(r.code, 0, r.out);
+  assert.match(r.out, /\[WARN\].*wg0.*replace/);
+  const other = runPreflight({ busy: [51820], wgPort: '51999' });
+  assert.notStrictEqual(other.code, 0);
+  assert.match(other.out, /UDP port 51820 is already in use/);
+});
+
+// A raw carriage return in a script turns into a line break in any editor
+// that normalizes line endings; scripts must spell it \r.
+test('no script file contains a carriage return', () => {
+  const dir = path.join(__dirname, '..', 'scripts');
+  for (const f of fs.readdirSync(dir)) {
+    assert.ok(!fs.readFileSync(path.join(dir, f), 'utf8').includes('\r'), `${f} has a raw CR`);
+  }
 });

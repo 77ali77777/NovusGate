@@ -46,7 +46,12 @@ preflight() {
       fi
     done
     if [ -n "$(ss -Hlun "sport = :51820" 2>/dev/null)" ]; then
-      echo "[ERROR] UDP port 51820 is already in use (see: ss -lunp 'sport = :51820')."; errors=$((errors + 1))
+      # wg0 itself (e.g. left by a failed install): the installer replaces it.
+      if [ "$(wg show wg0 listen-port 2>/dev/null)" = "51820" ]; then
+        echo "[WARN] wg0 already listens on UDP 51820; the installer will replace it."
+      else
+        echo "[ERROR] UDP port 51820 is already in use (see: ss -lunp 'sport = :51820')."; errors=$((errors + 1))
+      fi
     fi
   else
     echo "[WARN] ss not found: ports 3007, 5432, 8080, 8443 and 51820/udp were not checked."
