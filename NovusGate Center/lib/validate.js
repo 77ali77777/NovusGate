@@ -31,4 +31,12 @@ function validateInstallConfig(config) {
   return '';
 }
 
-module.exports = { validateInstallConfig };
+// Container names reach a shell over SSH: docker's own name syntax only
+// ([a-zA-Z0-9][a-zA-Z0-9_.-]*), so nothing in one is shell syntax.
+const CONTAINER_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
+
+function validContainerName(name) {
+  return typeof name === 'string' && CONTAINER_NAME.test(name);
+}
+
+module.exports = { validateInstallConfig, validContainerName };

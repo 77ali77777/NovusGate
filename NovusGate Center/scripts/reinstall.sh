@@ -101,6 +101,17 @@ EOF
   # which adds the API key; the key is never copied into the web build.
 fi
 
+# sshd_source sets SSHD_SOURCE for the sshd jail: auth.log where syslog
+# writes one, else the journal (Debian 12 has no rsyslog by default).
+sshd_source() {
+  if [ -f "${AUTH_LOG:-/var/log/auth.log}" ]; then
+    SSHD_SOURCE="logpath = ${AUTH_LOG:-/var/log/auth.log}"
+  else
+    apt_get install -y python3-systemd
+    SSHD_SOURCE="backend = systemd"
+  fi
+}
+
 # Ensure Fail2Ban is installed
 if ! command -v fail2ban-client &> /dev/null; then
   echo "Installing Fail2Ban..."
@@ -108,6 +119,7 @@ if ! command -v fail2ban-client &> /dev/null; then
   apt_get install -y fail2ban
   
   # Create SSH jail config
+  sshd_source
   cat <<F2B > /etc/fail2ban/jail.local
 [DEFAULT]
 bantime = 3600
@@ -119,7 +131,7 @@ ignoreip = 127.0.0.1/8 ::1
 enabled = true
 port = ssh
 filter = sshd
-logpath = /var/log/auth.log
+$SSHD_SOURCE
 maxretry = 3
 bantime = 3600
 F2B

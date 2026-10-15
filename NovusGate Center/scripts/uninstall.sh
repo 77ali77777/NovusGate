@@ -92,6 +92,13 @@ if command -v netfilter-persistent &> /dev/null; then
     netfilter-persistent save
 fi
 
+# The Server page (P10a): a pending rollback timer and the managed sysctl
+# file. Values it set stay in the running kernel until the next reboot.
+systemctl stop novusgate-sysctl-rollback.timer 2>/dev/null || true
+systemctl reset-failed novusgate-sysctl-rollback.service novusgate-sysctl-rollback.timer 2>/dev/null || true
+rm -f /etc/sysctl.d/90-novusgate.conf
+sysctl --system > /dev/null 2>&1 || true
+
 echo "[5/6] Removing files..."
 rm -rf "$INSTALL_DIR"
 rm -rf /etc/novusgate /var/lib/novusgate

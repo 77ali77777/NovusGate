@@ -19,6 +19,18 @@ wait_healthy() {
   return 1
 }
 
+# report_health warns when the hub came up degraded (/health still answers
+# 200 then) or the panel container is not running; the update is kept.
+report_health() {
+  local body web
+  body=$(curl -fsS -m 3 http://127.0.0.1:8080/health 2>/dev/null || true)
+  case "$body" in
+    *'"degraded"'*) echo "  [WARN] The hub is up but degraded: $body" ;;
+  esac
+  web=$(docker inspect -f '{{.State.Running}}' novusgate-web 2>/dev/null || true)
+  [ "$web" = "true" ] || echo "  [WARN] The panel container novusgate-web is not running (docker logs novusgate-web)."
+}
+
 # rollback restores the code and .env saved in BACKUP_DIR and starts that
 # version again. The database is not restored: migrations only add, so the
 # previous version runs on the newer schema; BACKUP_DIR/db.sql is kept for a
@@ -151,27 +163,17 @@ trap rollback ERR
 
 # 3. Copy files (preserving .env and data)
 echo "[3/6] Updating files..."
-if command -v rsync &> /dev/null; then
-  rsync -a --delete \
-    --exclude='.env' \
-    --exclude='server/deployments/docker/.env' \
-    --exclude='web/.env' \
-    --exclude='data/' \
-    --exclude='*.log' \
-    --exclude='admin-vpn.conf' \
-    "$TEMP_DIR/" "$INSTALL_DIR/"
-else
-  # Backup .env files
-  [ -f "$INSTALL_DIR/server/deployments/docker/.env" ] && cp "$INSTALL_DIR/server/deployments/docker/.env" /tmp/NovusGate.env.bak
-  [ -f "$INSTALL_DIR/web/.env" ] && cp "$INSTALL_DIR/web/.env" /tmp/NovusGate.web.env.bak
-  
-  # Copy files
-  cp -r "$TEMP_DIR"/* "$INSTALL_DIR/"
-  
-  # Restore .env files
-  [ -f "/tmp/NovusGate.env.bak" ] && mv /tmp/NovusGate.env.bak "$INSTALL_DIR/server/deployments/docker/.env"
-  [ -f "/tmp/NovusGate.web.env.bak" ] && mv /tmp/NovusGate.web.env.bak "$INSTALL_DIR/web/.env"
-fi
+# rsync mirrors the new tree (deleted files go too); a plain copy would
+# leave old files behind, and they could end up in the build.
+command -v rsync &> /dev/null || apt_get install -y rsync
+rsync -a --delete \
+  --exclude='.env' \
+  --exclude='server/deployments/docker/.env' \
+  --exclude='web/.env' \
+  --exclude='data/' \
+  --exclude='*.log' \
+  --exclude='admin-vpn.conf' \
+  "$TEMP_DIR/" "$INSTALL_DIR/"
 
 rm -rf "$TEMP_DIR"
 cd "$INSTALL_DIR"
@@ -234,6 +236,7 @@ compose -f server/deployments/docker/docker-compose.yml up -d
 echo "[health] Waiting for the control plane..."
 wait_healthy || { echo "[ERROR] The control plane did not answer /health within a minute."; rollback; }
 trap - ERR
+report_health
 # Keep the five newest update backups.
 ls -1dt /var/backups/novusgate/update-* 2>/dev/null | tail -n +6 | xargs -r rm -rf
 

@@ -305,7 +305,11 @@
 - **Yoxlamalar:** Go 16/16 paket `ok`; web tsc strict, 64/64, vite, biome təmiz, i18nScan 0; izolə real-backend brauzer testi: 403 → parol pəncərəsi, yanlış parolda çıxış olmur, düzgün parolda təkrar, ləğvdə toast yoxdur, DNS formu.
 - **İcra olunmayıb:** host komandaları real serverdə (test konteynerində `nsenter` hosta çıxmır); brauzer testində kənar klik müdaxiləsi (`isTrusted` kliklər, başqa sessiya ehtimalı) — əvvəlki "/firewall-a keçid" də bundan idi, tətbiq kodu deyil.
 - **Review (opus) və düzəlişlər** (`1d68402` + UI): Important: ikinci sysctl dəyişikliyi rollback-i köhnə dəyərlərlə əvəz edirdi (409 `sysctl_pending`); gec confirm uğur deyirdi (409 `sysctl_not_pending`); tab dəyişəndə geri sayım itirdi (`pending_until` serverdən); apt docker restart-ı ilə kəsilə bilərdi (`systemd-run` host unit-i, `RuntimeMaxSec`); split konfiqdə DNS Ubuntu-da `resolvconf` olmadan installer-i sındırırdı. Minor: iki parol pəncərəsi, səhv body limitə sayılırdı, IPv6 DNS sızması, upgrade zamanı reboot, sysctl faylının yarımçıq yazılması. PLAUSIBLE hissə (bitmiş timer-in eyni adı bloklaması) systemd 255-də təkrarlanmadı.
-- **Davam:** lokal merge.
+- **Lokal merge:** feature → rebuild/plans → main fast-forward (`d97b5d9`), push edilməyib.
+
+### 2026-10-15: Center auditi və "?" kömək tələbi
+- **Center auditi** (agent + mənim yoxlamam): əsas axın düzgündür (env, compose `pid: host`, migration-lar, update geri qaytarma). Düzəldildi: Join VPN hub-da işləmir; konteyner adı yoxlanılır; uninstall P10a sysctl izlərini silir; install `curl`, Debian 12 fail2ban journal, `https` ünvan, `.env`-də `VPN_IP`; update `rsync`, degraded/web xəbərdarlığı. Center 101/101, 4 skript `bash -n` ok. Real hostda sınanmayıb.
+- **İstifadəçi tələbi:** hər input-a "?" kömək (nədir · kimə lazımdır · nə olur), az+en, panel və Center. Davam: bu iş.
 
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |

@@ -115,7 +115,7 @@ All installation logic is embedded as template literals in `server.js`:
          │
          ▼
 ┌─────────────────┐
-│ Update web/.env │  Write VITE_API_URL and VITE_API_KEY
+│ Show credentials│  No web/.env: the panel's nginx adds the API key
 └─────────────────┘
 ```
 

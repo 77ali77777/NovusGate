@@ -297,7 +297,7 @@ app.get('/api/servers/:id/docker/logs/stream', async (req, res) => {
   const server = data.servers.find(s => s.id === req.params.id);
   
   if (!server) return res.status(404).json({ error: 'Server not found' });
-  if (!container) return res.status(400).json({ error: 'Container name required' });
+  if (!validContainerName(container)) return res.status(400).json({ error: 'A valid container name is required' });
   
   await logService.streamContainerLogs(server, container, req, res);
 });
@@ -309,6 +309,9 @@ app.post('/api/servers/:id/docker/:action', async (req, res) => {
   
   if (!['start', 'stop', 'restart', 'remove', 'logs'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
+  }
+  if (!validContainerName(container)) {
+    return res.status(400).json({ error: 'A valid container name is required' });
   }
   
   const data = loadServers();

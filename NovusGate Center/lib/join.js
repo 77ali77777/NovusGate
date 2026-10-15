@@ -26,10 +26,13 @@ function normalizeScript(script) {
 }
 
 // joinCommand runs the uploaded script and removes it whatever the result,
-// so the token does not stay on disk; the script's exit code is kept.
+// so the token does not stay on disk; the script's exit code is kept. On a
+// NovusGate hub it refuses (exit 3): the node script writes wg0.conf, which
+// there is the hub's own admin VPN.
 function joinCommand(remotePath) {
   const p = shellQuote(remotePath);
-  return `bash ${p}; rc=$?; rm -f ${p}; exit $rc`;
+  return `if [ -d /opt/NovusGate ]; then echo "This server runs the NovusGate hub: Join VPN is for other servers (it would replace the hub's wg0)." >&2; rm -f ${p}; exit 3; fi; ` +
+    `bash ${p}; rc=$?; rm -f ${p}; exit $rc`;
 }
 
 module.exports = { validateJoinScript, normalizeScript, joinCommand };

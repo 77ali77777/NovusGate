@@ -21,7 +21,8 @@ test('validateJoinScript refuses anything else', () => {
 
 test('joinCommand runs the uploaded file and removes it, keeping the exit code', () => {
   const cmd = joinCommand('/tmp/novusgate-join-ab12.sh');
-  assert.strictEqual(cmd, "bash '/tmp/novusgate-join-ab12.sh'; rc=$?; rm -f '/tmp/novusgate-join-ab12.sh'; exit $rc");
+  // After the hub guard (center-audit.test.js).
+  assert.ok(cmd.endsWith("; bash '/tmp/novusgate-join-ab12.sh'; rc=$?; rm -f '/tmp/novusgate-join-ab12.sh'; exit $rc"), cmd);
 });
 
 test('uploadText writes the text with the given mode over SFTP', async () => {

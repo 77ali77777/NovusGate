@@ -15,7 +15,7 @@
   - `web/.dockerignore` `.env` fayllarını build-dən çıxarır;
   - compose faylı artıq onu web konteynerinə mount etmir.
 
-  Center hələ də bu fayla `VITE_*` sətirləri yazır (P7-də təmizlənəcək). Bunun zərəri yoxdur.
+  Center də artıq bu faylı yazmır.
 
 ## Yeni node-un qoşulması (P4b)
 1. Paneldə node-un konfiqurasiya pəncərəsində **Linux → Generate install script** düyməsini basın.
@@ -107,3 +107,16 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
 - sysctl idarə faylı: `/etc/sysctl.d/90-novusgate.conf`; geri qaytarma skripti: `/var/lib/novusgate/sysctl-rollback.sh`; timer: `novusgate-sysctl-rollback`.
 - Migration 019 control-plane başlayanda avtomatik tətbiq olunur.
 - Node installer-i: konfiqdə `DNS =` varsa və `resolvconf` yoxdursa `resolvectl`-ə link yaradır (yoxdursa `openresolv` quraşdırır); wg-quick DNS-i bununla tətbiq edir.
+
+## Center düzəlişləri (audit, 2026-10-15)
+- **Join VPN** hub-un özündə (`/opt/NovusGate` olan serverdə) işləmir (exit 3): node skripti `wg0.conf`-u yazır, bu isə hub-da admin VPN-dir.
+- **Uninstall** paneldəki Server səhifəsinin izlərini də silir: `novusgate-sysctl-rollback.timer` və `/etc/sysctl.d/90-novusgate.conf`. Bu faylın qoyduğu dəyərlər işləyən kernel-də növbəti reboot-a qədər qalır.
+- **Install:**
+  - `curl` yoxdursa quraşdırır; get.docker.com faylı endirilə bilmirsə install dayanır;
+  - `/var/log/auth.log` yoxdursa (Debian 12) fail2ban `sshd` jail-i journal-dan oxuyur (`backend = systemd`, `python3-systemd`);
+  - sonda panel ünvanını `https://…:3007` kimi göstərir;
+  - `.env`-ə `VPN_IP` yazır (Credentials görünüşü üçün).
+- **Update:**
+  - `rsync` yoxdursa quraşdırır; köhnə kopyalama yolu silindi (silinmiş fayllar qalırdı);
+  - hub "degraded" qalxırsa və ya `novusgate-web` işləmirsə xəbərdarlıq yazır, update saxlanılır.
+- **Docker əməliyyatları:** konteyner adı yoxlanılır (`[A-Za-z0-9][A-Za-z0-9_.-]*`), çünki SSH ilə shell-ə gedir.

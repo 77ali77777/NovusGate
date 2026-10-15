@@ -41,7 +41,12 @@ apt_get update -qq
 # Install Docker if not present
 if ! command -v docker &> /dev/null; then
   log_info "Installing Docker..."
-  curl -fsSL https://get.docker.com | sh
+  # A minimal system may lack curl; a failed download must stop the install.
+  command -v curl > /dev/null 2>&1 || apt_get install -y curl ca-certificates
+  DOCKER_SH=$(mktemp)
+  curl -fsSL https://get.docker.com -o "$DOCKER_SH"
+  sh "$DOCKER_SH"
+  rm -f "$DOCKER_SH"
 else
   log_info "Docker already installed ✓"
 fi
@@ -119,12 +124,24 @@ if ! command -v wg &> /dev/null; then
   apt_get install -y wireguard
 fi
 
+# sshd_source sets SSHD_SOURCE for the sshd jail: auth.log where syslog
+# writes one, else the journal (Debian 12 has no rsyslog by default).
+sshd_source() {
+  if [ -f "${AUTH_LOG:-/var/log/auth.log}" ]; then
+    SSHD_SOURCE="logpath = ${AUTH_LOG:-/var/log/auth.log}"
+  else
+    apt_get install -y python3-systemd
+    SSHD_SOURCE="backend = systemd"
+  fi
+}
+
 # Install Fail2Ban for SSH protection
 if ! command -v fail2ban-client &> /dev/null; then
   log_info "Installing Fail2Ban..."
   apt_get install -y fail2ban
   
   # Create SSH jail config
+  sshd_source
   cat <<F2B > /etc/fail2ban/jail.local
 [DEFAULT]
 bantime = 3600
@@ -136,7 +153,7 @@ ignoreip = 127.0.0.1/8 ::1
 enabled = true
 port = ssh
 filter = sshd
-logpath = /var/log/auth.log
+$SSHD_SOURCE
 maxretry = 3
 bantime = 3600
 F2B
@@ -226,6 +243,7 @@ ADMIN_USERNAME=$ADMIN_USERNAME
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 WG_SERVER_ENDPOINT=$SERVER_IP
 ADMIN_CIDR=$VPN_SUBNET
+VPN_IP=$VPN_IP
 EOF
 chmod 600 "$INSTALL_DIR/server/deployments/docker/.env"
 # No web/.env: since P4b the panel calls the API through its own nginx,
@@ -268,7 +286,7 @@ echo ""
 echo "Save this as 'admin-vpn.conf' and import into WireGuard."
 echo "------------------------------------------"
 echo ""
-echo "Admin Dashboard: http://$VPN_IP:3007"
+echo "Admin Dashboard: https://$VPN_IP:3007"
 echo "API Endpoint:    http://$VPN_IP:8080"
 echo ""
 echo "------------------------------------------"
