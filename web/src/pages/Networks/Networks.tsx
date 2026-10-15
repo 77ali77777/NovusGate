@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { Activity, Network, Plus, Search, Shield, Trash2 } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { PageHeader } from '@/components/Layout'
@@ -105,7 +106,11 @@ export const Networks = () => {
                     <Network className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{network.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      <Link to={`/networks/${network.id}`} className="hover:underline">
+                        {network.name}
+                      </Link>
+                    </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Created {format(new Date(network.created_at), 'MMM d, yyyy')}
                     </p>

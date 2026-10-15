@@ -7,9 +7,11 @@ import { AuditPage } from './pages/Audit/AuditPage'
 import { DashboardPage } from './pages/Dashboard/Dashboard'
 import { Fail2BanPage } from './pages/Fail2Ban/Fail2Ban'
 import { Firewall } from './pages/Firewall/Firewall'
+import { NetworkDetailPage } from './pages/Networks/NetworkDetail'
 import { Networks } from './pages/Networks/Networks'
 import { NodeDetailPage, NodesPage } from './pages/Nodes/Nodes'
 import { SettingsPage } from './pages/Settings/SettingsPage'
+import { TopologyPage } from './pages/Topology/TopologyPage'
 import { useAppStore } from './store'
 
 // Create React Query client
@@ -164,6 +166,8 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="networks" element={<Networks />} />
+            <Route path="networks/:id" element={<NetworkDetailPage />} />
+            <Route path="topology" element={<TopologyPage />} />
             <Route path="nodes" element={<NodesPage />} />
             <Route path="nodes/:id" element={<NodeDetailPage />} />
             <Route path="firewall" element={<Firewall />} />
