@@ -10,6 +10,7 @@ import {
 } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { Badge, Card } from '@/components/ui'
+import { matrixReason } from '@/lib/matrixReason'
 
 const verdictVariant = { allow: 'success', deny: 'danger', partial: 'warning' } as const
 
@@ -120,7 +121,7 @@ export const NetworkDetailPage = () => {
                   </Link>
                   <span className="flex items-center gap-3">
                     {out && (
-                      <span title={out.reason}>
+                      <span title={matrixReason(t, out)}>
                         {t('detail.toIt')}{' '}
                         <Badge variant={verdictVariant[out.verdict]}>
                           {t(`verdict.${out.verdict}`, { defaultValue: out.verdict })}
@@ -128,7 +129,7 @@ export const NetworkDetailPage = () => {
                       </span>
                     )}
                     {into && (
-                      <span title={into.reason}>
+                      <span title={matrixReason(t, into)}>
                         {t('detail.fromIt')}{' '}
                         <Badge variant={verdictVariant[into.verdict]}>
                           {t(`verdict.${into.verdict}`, { defaultValue: into.verdict })}

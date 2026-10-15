@@ -154,6 +154,13 @@
     "deny": "Qadağa",
     "partial": "Qismən",
     "cellTitle": "{{from}} → {{to}}: {{reason}}",
-    "cellRules": "Qaydalar: {{rules}}"
+    "cellRules": "Qaydalar: {{rules}}",
+    "reason": {
+      "rule": "\"{{rule}}\" qaydası",
+      "same_network": "standart (eyni şəbəkə)",
+      "isolated": "standart (şəbəkələr bir-birindən təcrid olunub)",
+      "iptables_default": "standart (iptables rejimi heç bir qaydanın atmadığı VPN trafikini qəbul edir)",
+      "partial": "bəzi trafik bundan fərqlənir: {{reason}}"
+    }
   }
 }

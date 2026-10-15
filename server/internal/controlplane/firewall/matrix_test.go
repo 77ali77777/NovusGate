@@ -143,3 +143,32 @@ func TestMatrixScopedRules(t *testing.T) {
 		t.Fatalf("a->c = %+v", c)
 	}
 }
+
+// Each cell says why in a form the panel can translate: reason_key (rule,
+// same_network, isolated, iptables_default) and the deciding rule's name.
+func TestMatrixReasonKeys(t *testing.T) {
+	rules := []*models.VPNFirewallRule{
+		vpnRule("a to b", func(r *models.VPNFirewallRule) { r.SourceNetworkID, r.DestNetworkID = ptr("a"), ptr("b") }),
+		vpnRule("web c", func(r *models.VPNFirewallRule) {
+			r.SourceNetworkID, r.DestNetworkID, r.Protocol, r.Port = ptr("a"), ptr("c"), "tcp", "443"
+		}),
+	}
+	m := buildMatrix(t, rules, nil, true)
+	for _, c := range []struct {
+		from, to, key, rule string
+		partial             bool
+	}{
+		{"a", "b", "rule", "a to b", false},
+		{"a", "a", "same_network", "", false},
+		{"b", "c", "isolated", "", false},
+		{"a", "c", "isolated", "", true},
+	} {
+		got := m.Cells[c.from][c.to]
+		if got.ReasonKey != c.key || got.Rule != c.rule || (got.Verdict == "partial") != c.partial {
+			t.Errorf("%s->%s = %+v", c.from, c.to, got)
+		}
+	}
+	if k := buildMatrix(t, nil, nil, false).Cells["a"]["b"].ReasonKey; k != "iptables_default" {
+		t.Errorf("iptables default key = %q", k)
+	}
+}

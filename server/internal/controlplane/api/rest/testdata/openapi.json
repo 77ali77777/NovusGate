@@ -1140,6 +1140,12 @@
           "reason": {
             "type": "string"
           },
+          "reason_key": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          },
           "rules": {
             "items": {
               "type": "string"
@@ -1153,6 +1159,7 @@
         },
         "required": [
           "reason",
+          "reason_key",
           "rules",
           "verdict"
         ],

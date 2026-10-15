@@ -154,6 +154,13 @@
     "deny": "Deny",
     "partial": "Partial",
     "cellTitle": "{{from}} → {{to}}: {{reason}}",
-    "cellRules": "Rules: {{rules}}"
+    "cellRules": "Rules: {{rules}}",
+    "reason": {
+      "rule": "rule \"{{rule}}\"",
+      "same_network": "default (same network)",
+      "isolated": "default (networks are isolated)",
+      "iptables_default": "default (iptables mode accepts VPN traffic no rule drops)",
+      "partial": "some traffic differs from {{reason}}"
+    }
   }
 }

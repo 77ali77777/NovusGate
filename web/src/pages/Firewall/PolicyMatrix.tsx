@@ -2,6 +2,7 @@ import { Grid3x3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useFirewallPolicyMatrix } from '@/api/client'
 import { Card } from '@/components/ui'
+import { matrixReason } from '@/lib/matrixReason'
 
 type Verdict = 'allow' | 'deny' | 'partial'
 
@@ -65,7 +66,7 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
                 {m.networks.map((to) => {
                   const c = m.cells[from.id]?.[to.id]
                   if (!c) return <td key={to.id} />
-                  const title = `${t('matrix.cellTitle', { from: from.name, to: to.name, reason: c.reason })}${c.rules.length ? `\n${t('matrix.cellRules', { rules: c.rules.join(', ') })}` : ''}`
+                  const title = `${t('matrix.cellTitle', { from: from.name, to: to.name, reason: matrixReason(t, c) })}${c.rules.length ? `\n${t('matrix.cellRules', { rules: c.rules.join(', ') })}` : ''}`
                   return (
                     <td key={to.id} className="p-1">
                       <button

@@ -1435,6 +1435,8 @@ export interface components {
         };
         MatrixCell: {
             reason: string;
+            reason_key: string;
+            rule?: string;
             rules: string[] | null;
             verdict: string;
         };

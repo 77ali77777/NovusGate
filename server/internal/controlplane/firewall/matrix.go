@@ -16,9 +16,13 @@ type MatrixNetwork struct {
 
 // MatrixCell is what traffic from one network to another gets.
 type MatrixCell struct {
-	Verdict string   `json:"verdict"` // allow, deny or partial
-	Reason  string   `json:"reason"`
-	Rules   []string `json:"rules"` // names of the rules that touch the pair, in order
+	Verdict string `json:"verdict"` // allow, deny or partial
+	Reason  string `json:"reason"`
+	// ReasonKey says why, for translation: rule, same_network, isolated or
+	// iptables_default; Rule names the deciding rule (reason_key rule).
+	ReasonKey string   `json:"reason_key"`
+	Rule      string   `json:"rule,omitempty"`
+	Rules     []string `json:"rules"` // names of the rules that touch the pair, in order
 }
 
 // Matrix is the network policy matrix; Cells[from][to].
@@ -100,7 +104,7 @@ func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, [
 func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, names map[string]string, nftEnforcing bool) MatrixCell {
 	touched := []string{}
 	var scoped []string
-	final, reason := "", ""
+	final, reason, key, rule := "", "", "", ""
 	for _, r := range rules {
 		s, d := prefixScope(r.Src, from), prefixScope(r.Dst, to)
 		if s == scopeNone || d == scopeNone {
@@ -109,7 +113,7 @@ func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, names map
 		touched = append(touched, names[r.ID])
 		allTraffic := (r.Proto == nft.All || r.Proto == "") && len(r.Ports) == 0
 		if s == scopeWhole && d == scopeWhole && allTraffic {
-			final, reason = verdictOf(r.Action), fmt.Sprintf("rule %q", names[r.ID])
+			final, reason, key, rule = verdictOf(r.Action), fmt.Sprintf("rule %q", names[r.ID]), "rule", names[r.ID]
 			break
 		}
 		scoped = append(scoped, verdictOf(r.Action))
@@ -117,17 +121,17 @@ func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, names map
 	if final == "" {
 		switch {
 		case !nftEnforcing:
-			final, reason = "allow", "default (iptables mode accepts VPN traffic no rule drops)"
+			final, reason, key = "allow", "default (iptables mode accepts VPN traffic no rule drops)", "iptables_default"
 		case same:
-			final, reason = "allow", "default (same network)"
+			final, reason, key = "allow", "default (same network)", "same_network"
 		default:
-			final, reason = "deny", "default (networks are isolated)"
+			final, reason, key = "deny", "default (networks are isolated)", "isolated"
 		}
 	}
 	for _, v := range scoped {
 		if v != final {
-			return MatrixCell{Verdict: "partial", Reason: "some traffic differs from " + reason, Rules: touched}
+			return MatrixCell{Verdict: "partial", Reason: "some traffic differs from " + reason, ReasonKey: key, Rule: rule, Rules: touched}
 		}
 	}
-	return MatrixCell{Verdict: final, Reason: reason, Rules: touched}
+	return MatrixCell{Verdict: final, Reason: reason, ReasonKey: key, Rule: rule, Rules: touched}
 }
