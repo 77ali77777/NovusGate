@@ -236,7 +236,7 @@ export const Layout = () => {
 
         {/* Page content */}
         <main className="p-6">
-          <ErrorBoundary key={location.pathname}>
+          <ErrorBoundary key={location.key}>
             <Outlet />
           </ErrorBoundary>
         </main>

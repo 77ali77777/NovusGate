@@ -1,8 +1,15 @@
 import { useQueries } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import ReactFlow, { Background, Controls, type Edge, MarkerType, type Node } from 'reactflow'
+import ReactFlow, {
+  Background,
+  Controls,
+  type Edge,
+  MarkerType,
+  type Node,
+  useNodesState,
+} from 'reactflow'
 import 'reactflow/dist/style.css'
 import { api, useFirewallPolicyMatrix, useNetworks } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
@@ -75,6 +82,15 @@ export const TopologyPage = () => {
     return { nodes: flowNodes, edges: flowEdges }
   }, [networks, matrix, peersKey])
 
+  // Dragged positions are kept across the 30 s refetches.
+  const [shownNodes, setShownNodes, onNodesChange] = useNodesState([])
+  useEffect(() => {
+    setShownNodes((prev) => {
+      const moved = new Map(prev.map((n) => [n.id, n.position]))
+      return nodes.map((n) => ({ ...n, position: moved.get(n.id) ?? n.position }))
+    })
+  }, [nodes, setShownNodes])
+
   return (
     <div className="space-y-6">
       <PageHeader title={t('title')} description={t('description')} />
@@ -84,7 +100,8 @@ export const TopologyPage = () => {
         ) : (
           <div style={{ height: '70vh' }}>
             <ReactFlow
-              nodes={nodes}
+              nodes={shownNodes}
+              onNodesChange={onNodesChange}
               edges={edges}
               fitView
               onNodeClick={(_, n) => {

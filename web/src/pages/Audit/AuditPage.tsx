@@ -55,6 +55,13 @@ export const AuditPage = () => {
                           <Badge variant={methodVariant[method] ?? 'default'}>{method}</Badge>
                         )}{' '}
                         <span className="font-mono text-xs">{target}</span>
+                        {/* The concrete path (which node, which rule) when it differs. */}
+                        {typeof e.details?.path === 'string' &&
+                          e.details.path !== `/api/v1${target}` && (
+                            <span className="block font-mono text-xs text-gray-400">
+                              {e.details.path}
+                            </span>
+                          )}
                       </td>
                       <td className="px-4 py-2">
                         {status !== undefined && (

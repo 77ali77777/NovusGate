@@ -2,6 +2,7 @@ import { Activity } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useFirewallV2Live } from '@/api/client'
 import { Badge, Card, Table } from '@/components/ui'
+import { locale } from '@/i18n'
 import { formatAgo, formatBytes, usagePercent } from '@/lib/firewallV2'
 
 // LiveTab: what the host's firewall does now. Counters and dropped sources
@@ -50,8 +51,8 @@ export const LiveTab = () => {
               <div className="mb-1 flex justify-between text-sm">
                 <span>
                   {t('live.conntrackUsage', {
-                    used: ct.count.toLocaleString(),
-                    max: ct.max.toLocaleString(),
+                    used: ct.count.toLocaleString(locale()),
+                    max: ct.max.toLocaleString(locale()),
                   })}
                 </span>
                 <span className={pct >= 80 ? 'font-semibold text-red-600' : 'text-gray-500'}>
@@ -127,7 +128,7 @@ export const LiveTab = () => {
             {
               key: 'packets',
               header: t('live.packets'),
-              render: (c) => c.packets.toLocaleString(),
+              render: (c) => c.packets.toLocaleString(locale()),
             },
             { key: 'bytes', header: t('live.bytes'), render: (c) => formatBytes(c.bytes) },
           ]}
