@@ -21,6 +21,7 @@ import {
   useCreateServerWithConfig,
   useDeleteNode,
   useGroups,
+  useLimits,
   useNetworks,
   useNode,
   useNodes,
@@ -485,6 +486,12 @@ export const NodeDetailPage: React.FC = () => {
   const [copied, setCopied] = useState(false)
   const { data: node, isLoading, error } = useNode(id || '')
   const [showEditModal, setShowEditModal] = useState(false)
+  // The limit profile in force for this node (P9b), and the group it comes from.
+  const { data: limits } = useLimits()
+  const { data: groupData } = useGroups()
+  const nodeLimit = limits?.node_limits?.find((l) => l.node_id === id)
+  const limitProfile = limits?.profiles?.find((p) => p.id === nodeLimit?.profile_id)
+  const limitGroup = groupData?.groups?.find((g) => g?.id === nodeLimit?.group_id)
 
   // Update node mutation
   const queryClient = useQueryClient()
@@ -693,6 +700,19 @@ export const NodeDetailPage: React.FC = () => {
             <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
               <span className="text-gray-500">{t('detail.publicEndpoint')}</span>
               <code className="font-mono">{node.public_ip || t('common:status.unknown')}</code>
+            </div>
+            <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
+              <span className="text-gray-500">{t('detail.limitProfile')}</span>
+              <span>
+                {limitProfile
+                  ? limitGroup
+                    ? t('detail.limitViaGroup', {
+                        profile: limitProfile.name,
+                        group: limitGroup.name,
+                      })
+                    : limitProfile.name
+                  : t('detail.noLimit')}
+              </span>
             </div>
           </div>
         </Card>

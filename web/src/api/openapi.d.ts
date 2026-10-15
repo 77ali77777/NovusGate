@@ -674,6 +674,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Limit profiles and the profile in force for each limited node (P9b) */
+        get: operations["get_limits"];
+        put?: never;
+        /** Create a limit profile (409 limit_name_taken) */
+        post: operations["post_limits"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/limits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a limit profile; bound nodes get it at once */
+        put: operations["put_limits_by_id"];
+        post?: never;
+        /** Delete a limit profile (409 limit_in_use while bound) */
+        delete: operations["delete_limits_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/limits/{id}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Make these the nodes and groups bound to the profile */
+        put: operations["put_limits_by_id_bindings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/networks": {
         parameters: {
             query?: never;
@@ -1504,6 +1557,36 @@ export interface components {
             name: string;
             size: number;
         };
+        LimitBindingsRequest: {
+            group_ids?: string[] | null;
+            node_ids?: string[] | null;
+        };
+        LimitProfile: {
+            /** Format: date-time */
+            created_at: string;
+            down_kbps: number | null;
+            group_ids: string[] | null;
+            id: string;
+            max_connections: number | null;
+            name: string;
+            node_ids: string[] | null;
+            schedule: components["schemas"]["ScheduleWindow"][] | null;
+            timezone: string;
+            up_kbps: number | null;
+        };
+        LimitProfileRequest: {
+            down_kbps?: number | null;
+            max_connections?: number | null;
+            name?: string;
+            schedule?: components["schemas"]["ScheduleWindowInput"][] | null;
+            timezone?: string;
+            up_kbps?: number | null;
+        };
+        LimitProfilesResponse: {
+            enforcing: boolean;
+            node_limits: components["schemas"]["NodeLimit"][] | null;
+            profiles: components["schemas"]["LimitProfile"][] | null;
+        };
         LoginRequest: {
             password?: string;
             username?: string;
@@ -1523,6 +1606,7 @@ export interface components {
             nft_enforcing: boolean;
         };
         MatrixCell: {
+            limited: boolean;
             reason: string;
             reason_key: string;
             rule?: string;
@@ -1642,6 +1726,12 @@ export interface components {
             hostname?: string;
             os?: string;
         };
+        NodeLimit: {
+            group_id?: string;
+            node_id: string;
+            profile_id: string;
+            virtual_ip: string;
+        };
         NodeTrafficResponse: {
             bucket_seconds: number;
             node_id: string;
@@ -1714,6 +1804,16 @@ export interface components {
             comment?: string;
             packets: number;
             rule: string;
+        };
+        ScheduleWindow: {
+            days: number[] | null;
+            from: string;
+            to: string;
+        };
+        ScheduleWindowInput: {
+            days?: number[] | null;
+            from?: string;
+            to?: string;
         };
         SessionInfo: {
             /** Format: date-time */
@@ -3377,6 +3477,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeGroup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitProfilesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitProfile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_limits_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitProfile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_limits_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_limits_by_id_bindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitBindingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitProfile"];
                 };
             };
             /** @description Error */

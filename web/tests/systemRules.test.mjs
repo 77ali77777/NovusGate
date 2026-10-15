@@ -74,3 +74,34 @@ test('an unknown system rule is kept without an explanation', () => {
   assert.equal(got.length, 1)
   assert.equal(got[0].explanation, '')
 })
+
+// Limit profiles (P9b): the per-profile rules carry "limit:" comments and are
+// panel-made; the jumps and schedule windows are explained.
+test('systemRules leaves out limit rules and explains the limit plumbing', () => {
+  const got = systemRules(`table inet novusgate {
+	chain forward {
+		type filter hook forward priority filter - 10; policy accept;
+		jump limits
+		ct state established,related accept
+	}
+	chain limits {
+		ip saddr @lim_0 jump lim_0_time
+		ip saddr @lim_0 update @lim_0_up { ip saddr limit rate over 125000 bytes/second burst 31250 bytes } counter drop comment "limit:p:up"
+	}
+	chain lim_0_time {
+		meta day "Monday" meta hour "04:00:00"-"13:59:59" return
+		counter drop comment "limit:p:schedule"
+	}
+}
+`)
+  assert.deepEqual(
+    got.map((r) => [r.chain, r.explanation]),
+    [
+      ['forward', 'systemRules.explain.limits'],
+      ['forward', 'systemRules.explain.established'],
+      ['limits', 'systemRules.explain.limitSchedule'],
+      ['lim_0_time', 'systemRules.explain.limitWindow'],
+    ]
+  )
+  for (const r of got) assert.equal(typeof english(r.explanation), 'string', r.explanation)
+})

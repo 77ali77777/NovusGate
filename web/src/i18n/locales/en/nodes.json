@@ -64,7 +64,10 @@
     "networkActivity": "Network Activity",
     "publicEndpoint": "Public Endpoint",
     "deviceSystem": "Device & System",
-    "copyPublicKey": "Copy Public Key"
+    "copyPublicKey": "Copy Public Key",
+    "limitProfile": "Limit profile",
+    "limitViaGroup": "{{profile}} (from group {{group}})",
+    "noLimit": "None"
   },
   "create": {
     "title": "Create New Peer",

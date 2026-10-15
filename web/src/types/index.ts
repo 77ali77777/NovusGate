@@ -133,6 +133,13 @@ export type MeResponse = S['MeResponse']
 export type PanelUser = S['User']
 export type UserRole = 'admin' | 'operator' | 'viewer'
 
+// Limit profiles (P9b)
+export type LimitProfile = S['LimitProfile']
+export type LimitProfileRequest = S['LimitProfileRequest']
+export type LimitProfilesResponse = S['LimitProfilesResponse']
+export type NodeLimit = S['NodeLimit']
+export type ScheduleWindow = S['ScheduleWindow']
+
 // Manual backup (P8): /api/v1/backups
 export type BackupInfo = S['Info']
 

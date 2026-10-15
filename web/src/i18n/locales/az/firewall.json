@@ -12,7 +12,8 @@
     "advanced": "Təkmil (nftables)",
     "live": "Canlı",
     "history": "Tarixçə",
-    "systemRules": "Sistem qaydaları"
+    "systemRules": "Sistem qaydaları",
+    "limits": "Limitlər"
   },
   "actions": {
     "openPort": "Port aç",
@@ -166,6 +167,7 @@
       "isolated": "standart (şəbəkələr bir-birindən təcrid olunub)",
       "iptables_default": "standart (iptables rejimi heç bir qaydanın atmadığı VPN trafikini qəbul edir)",
       "partial": "bəzi trafik bundan fərqlənir: {{reason}}"
-    }
+    },
+    "cellLimited": "Buradakı bəzi node-ların limit profili var."
   }
 }

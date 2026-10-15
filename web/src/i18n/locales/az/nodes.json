@@ -64,7 +64,10 @@
     "networkActivity": "Şəbəkə aktivliyi",
     "publicEndpoint": "Açıq endpoint",
     "deviceSystem": "Cihaz və sistem",
-    "copyPublicKey": "Açıq açarı kopyala"
+    "copyPublicKey": "Açıq açarı kopyala",
+    "limitProfile": "Limit profili",
+    "limitViaGroup": "{{profile}} ({{group}} qrupundan)",
+    "noLimit": "Yoxdur"
   },
   "create": {
     "title": "Yeni peer yarat",

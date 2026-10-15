@@ -63,5 +63,13 @@
   "failedToDeleteGroup": "Qrup silinmədi",
   "groupDeleted": "Qrup silindi",
   "failedToSaveMembers": "Üzvlər yadda saxlanmadı",
-  "membersSaved": "Üzvlər yadda saxlanıldı"
+  "membersSaved": "Üzvlər yadda saxlanıldı",
+  "failedToCreateLimit": "Limit profili yaradılmadı",
+  "limitCreated": "Limit profili yaradıldı",
+  "failedToUpdateLimit": "Limit profili yenilənmədi",
+  "limitUpdated": "Limit profili yeniləndi",
+  "failedToDeleteLimit": "Limit profili silinmədi",
+  "limitDeleted": "Limit profili silindi",
+  "failedToSaveBindings": "Bağlamalar yadda saxlanmadı",
+  "bindingsSaved": "Bağlamalar yadda saxlanıldı"
 }

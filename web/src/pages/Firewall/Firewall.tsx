@@ -3,6 +3,7 @@ import {
   Ban,
   CheckCircle,
   Download,
+  Gauge,
   Globe,
   History,
   Lock,
@@ -41,6 +42,7 @@ import { AdvancedTab } from './AdvancedTab'
 import { BlockedIPsTab } from './BlockedIPsTab'
 import { HistoryTab } from './HistoryTab'
 import { HostRulesTab } from './HostRulesTab'
+import { LimitsTab } from './LimitsTab'
 import { LiveTab } from './LiveTab'
 import { OpenPortsTab } from './OpenPortsTab'
 import { OverviewTab } from './OverviewTab'
@@ -54,6 +56,7 @@ type TabId =
   | 'host-rules'
   | 'open-ports'
   | 'vpn-rules'
+  | 'limits'
   | 'blocked-ips'
   | 'advanced'
   | 'live'
@@ -352,6 +355,7 @@ export const Firewall: React.FC = () => {
     { id: 'host-rules' as TabId, label: t('tabs.hostRules'), icon: Lock },
     { id: 'open-ports' as TabId, label: t('tabs.openPorts'), icon: Globe, count: openPorts },
     { id: 'vpn-rules' as TabId, label: t('tabs.vpnRules'), icon: Network, count: vpnRuleCount },
+    { id: 'limits' as TabId, label: t('tabs.limits'), icon: Gauge },
     { id: 'blocked-ips' as TabId, label: t('tabs.blockedIps'), icon: Ban, count: blockedIPs },
     { id: 'advanced' as TabId, label: t('tabs.advanced'), icon: SlidersHorizontal },
     { id: 'live' as TabId, label: t('tabs.live'), icon: Activity },
@@ -531,6 +535,7 @@ export const Firewall: React.FC = () => {
       )}
 
       {/* Blocked IPs Tab */}
+      {activeTab === 'limits' && <LimitsTab />}
       {activeTab === 'blocked-ips' && (
         <BlockedIPsTab
           blockedIPs={getBlockedIPs()}

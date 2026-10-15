@@ -1,8 +1,8 @@
 // System Rules view: the rules NovusGate itself puts into table inet
 // novusgate, read from the compiled ruleset (GET /firewall/v2/preview), with
 // a short explanation (a translation key the view resolves). Panel-made entries (services, IP rules, VPN rules,
-// forwards) carry a "svc:", "ip:", "rule:" or "fwd:" comment and are left
-// out. Kept free of imports so it runs under `node --experimental-strip-types`.
+// forwards, limit profiles) carry a "svc:", "ip:", "rule:", "fwd:" or "limit:"
+// comment and are left out. Kept free of imports so it runs under `node --experimental-strip-types`.
 
 export interface SystemRule {
   chain: string
@@ -11,7 +11,7 @@ export interface SystemRule {
   explanation: string // translation key (firewallv2 namespace), '' when unknown
 }
 
-const userComment = /comment "(svc|ip|rule|fwd):/
+const userComment = /comment "(svc|ip|rule|fwd|limit):/
 
 // Most specific patterns first; the first match explains the rule. Each
 // explanation is a translation key in the firewallv2 namespace.
@@ -38,6 +38,9 @@ const explanations: [RegExp, string][] = [
   [/@egress_v4 accept/, 'systemRules.explain.egressAccept'],
   [/@egress_v4 masquerade/, 'systemRules.explain.egressMasquerade'],
   [/vpn default drop/, 'systemRules.explain.vpnDefaultDrop'],
+  [/^jump limits$/, 'systemRules.explain.limits'],
+  [/jump lim_\d+_time/, 'systemRules.explain.limitSchedule'],
+  [/meta day .* meta hour .* return/, 'systemRules.explain.limitWindow'],
 ]
 
 // explain returns the translation key of the rule's explanation, '' if none.

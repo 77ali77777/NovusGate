@@ -19,6 +19,9 @@ import type {
   FirewallV2ServiceRequest,
   FirewallV2State,
   ImportRulesRequest,
+  LimitProfile,
+  LimitProfileRequest,
+  LimitProfilesResponse,
   MeResponse,
   Network,
   Node,
@@ -203,6 +206,34 @@ class ApiClient {
   async setGroupMembers(id: string, nodeIds: string[]): Promise<NodeGroup> {
     const { data } = await this.client.put<NodeGroup>(`/groups/${id}/members`, {
       node_ids: nodeIds,
+    })
+    return data
+  }
+
+  // Limit profiles (P9b)
+  async getLimits(): Promise<LimitProfilesResponse> {
+    const { data } = await this.client.get<LimitProfilesResponse>('/limits')
+    return data
+  }
+
+  async createLimit(req: LimitProfileRequest): Promise<LimitProfile> {
+    const { data } = await this.client.post<LimitProfile>('/limits', req)
+    return data
+  }
+
+  async updateLimit(id: string, req: LimitProfileRequest): Promise<LimitProfile> {
+    const { data } = await this.client.put<LimitProfile>(`/limits/${id}`, req)
+    return data
+  }
+
+  async deleteLimit(id: string): Promise<void> {
+    await this.client.delete(`/limits/${id}`)
+  }
+
+  async setLimitBindings(id: string, nodeIds: string[], groupIds: string[]): Promise<LimitProfile> {
+    const { data } = await this.client.put<LimitProfile>(`/limits/${id}/bindings`, {
+      node_ids: nodeIds,
+      group_ids: groupIds,
     })
     return data
   }
@@ -809,6 +840,54 @@ export const useSetGroupMembers = () =>
     (v: { id: string; nodeIds: string[] }) => api.setGroupMembers(v.id, v.nodeIds),
     'toasts:failedToSaveMembers',
     'toasts:membersSaved'
+  )
+
+export function useLimits() {
+  return useQuery({ queryKey: ['limits'], queryFn: () => api.getLimits() })
+}
+
+// Limit changes are compiled into the host ruleset (nft mode): the firewall
+// views and the matrix change with them.
+function useLimitMutation<T>(
+  fn: (v: T) => Promise<unknown>,
+  errorTitle: string,
+  successTitle: string
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle, successTitle },
+    mutationFn: fn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['limits'] })
+      queryClient.invalidateQueries({ queryKey: ['firewall'] })
+    },
+  })
+}
+
+export const useCreateLimit = () =>
+  useLimitMutation(
+    (req: LimitProfileRequest) => api.createLimit(req),
+    'toasts:failedToCreateLimit',
+    'toasts:limitCreated'
+  )
+export const useUpdateLimit = () =>
+  useLimitMutation(
+    (v: { id: string; req: LimitProfileRequest }) => api.updateLimit(v.id, v.req),
+    'toasts:failedToUpdateLimit',
+    'toasts:limitUpdated'
+  )
+export const useDeleteLimit = () =>
+  useLimitMutation(
+    (id: string) => api.deleteLimit(id),
+    'toasts:failedToDeleteLimit',
+    'toasts:limitDeleted'
+  )
+export const useSetLimitBindings = () =>
+  useLimitMutation(
+    (v: { id: string; nodeIds: string[]; groupIds: string[] }) =>
+      api.setLimitBindings(v.id, v.nodeIds, v.groupIds),
+    'toasts:failedToSaveBindings',
+    'toasts:bindingsSaved'
   )
 
 export function useCreateUser() {

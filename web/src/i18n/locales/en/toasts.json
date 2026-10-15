@@ -63,5 +63,13 @@
   "failedToDeleteGroup": "Failed to delete the group",
   "groupDeleted": "Group deleted",
   "failedToSaveMembers": "Failed to save the members",
-  "membersSaved": "Members saved"
+  "membersSaved": "Members saved",
+  "failedToCreateLimit": "Failed to create the limit profile",
+  "limitCreated": "Limit profile created",
+  "failedToUpdateLimit": "Failed to update the limit profile",
+  "limitUpdated": "Limit profile updated",
+  "failedToDeleteLimit": "Failed to delete the limit profile",
+  "limitDeleted": "Limit profile deleted",
+  "failedToSaveBindings": "Failed to save the bindings",
+  "bindingsSaved": "Bindings saved"
 }

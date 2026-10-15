@@ -12,7 +12,8 @@
     "advanced": "Advanced (nftables)",
     "live": "Live",
     "history": "History",
-    "systemRules": "System Rules"
+    "systemRules": "System Rules",
+    "limits": "Limits"
   },
   "actions": {
     "openPort": "Open Port",
@@ -166,6 +167,7 @@
       "isolated": "default (networks are isolated)",
       "iptables_default": "default (iptables mode accepts VPN traffic no rule drops)",
       "partial": "some traffic differs from {{reason}}"
-    }
+    },
+    "cellLimited": "Some nodes here have limit profiles."
   }
 }
