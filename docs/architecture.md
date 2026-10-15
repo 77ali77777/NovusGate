@@ -142,7 +142,7 @@
   - Restore ondan sonra əlavə olunan bütün IP qaydalarını, o cümlədən Fail2Ban-ın daimi ban-larını silir; UI təsdiqində bu yazılıb.
 
 ## Network Policies matrisi və System Rules (P3c, 2026-10-15)
-- **Matris** (`web/src/lib/policyMatrix.ts`) tamamilə frontend-də hesablanır. Mənbə VPN qaydalarıdır, API-nin verdiyi sıra ilə (`priority`, sonra `created_at`), ilk uyğun gələn qayda qalib gəlir — kompilyatordakı `vpn_policy` ilə eyni.
-  - Default: nft-də eyni şəbəkə daxilində allow, şəbəkələr arasında deny; iptables və shadow rejimində allow (`-A FORWARD -i wg+ -j ACCEPT`).
+- **Matris** backend-də hesablanır (`firewall.PolicyMatrix`, `GET /api/v1/firewall/policy-matrix`). Qaydaların ünvanları kompilyatordakı kimi həll olunur (node `/32`, custom prefiks) və hər şəbəkənin CIDR-i ilə müqayisə edilir. Mənbə VPN qaydalarıdır, API-nin verdiyi sıra ilə (`priority`, sonra `created_at`), ilk uyğun gələn qayda qalib gəlir — kompilyatordakı `vpn_policy` ilə eyni.
+  - Default: nft-də eyni şəbəkə daxilində allow, şəbəkələr arasında deny; iptables və shadow rejimində allow (`NOVUSGATE-VPN` zəncirindən sonra wg ACCEPT-ləri gəlir).
   - Port, protokol, node və ya custom ünvanla məhdudlaşan qayda nəticədən fərqlənirsə, xana `partial` olur.
 - **System Rules** (`web/src/lib/systemRules.ts`) `/firewall/v2/preview` skriptini parse edir. `svc:`/`ip:`/`rule:`/`fwd:` comment-li sətirlər istifadəçinin qaydalarıdır və göstərilmir. İzahlar regex cədvəlindədir. Tanınmayan qayda izahsız göstərilir, siyahıdan çıxarılmır. Bu view iptables rejimində (engine yoxdur) mövcud deyil.

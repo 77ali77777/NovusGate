@@ -246,3 +246,16 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
   - `fail2ban_ban`: `/var/log/novusgate/fail2ban.log`-da yeni `Ban` sətri görünəndə göndərilir.
   - `firewall_change`: `/api/v1/firewall/*` altında GET olmayan uğurlu (2xx) sorğudan sonra göndərilir.
 - Eyni hadisə (eyni node, jail+IP) 30 dəqiqə ərzində bir dəfə göndərilir. Firewall dəyişikliklərinin hər biri ayrıca göndərilir.
+
+## `GET /api/v1/firewall/policy-matrix` (2026-10-15)
+Şəbəkə×şəbəkə siyasət matrisi; bütün firewall rejimlərində işləyir.
+- **Cavab:**
+  - `nft_enforcing`;
+  - `networks[]` (`id`, `name`);
+  - `cells[from][to]` → `verdict` (`allow` / `deny` / `partial`), `reason`, `rules[]` (qayda adları, sıra ilə).
+- Qaydalar firewall-un kompilyasiya etdiyi kimi qiymətləndirilir:
+  - aktiv qaydalar `priority`, sonra `created_at` sırası ilə yoxlanır, ilk uyğun gələn qalib gəlir;
+  - node `/32` ünvanına, custom isə prefiksə çevrilir.
+- Default nəticə rejimdən asılıdır:
+  - nft: eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`;
+  - iptables və shadow: `allow`.

@@ -81,9 +81,13 @@ Uyğun gəlməsə exit 5 ilə dayanır və heç nə dəyişmir. Reinstall və Up
   4. `docker compose up -d --force-recreate control-plane`
 - Restore üçün eyni `MASTER_KEY` lazımdır (`.env`): node açarları onunla şifrələnib. Backup-da `.env` yoxdur.
 
+## VPN qaydaları iptables rejimində (2026-10-15 Update qeydi)
+Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rejimində ilk dəfə trafiki kəsməyə başlayır: əvvəl wg ACCEPT-lərinin altında qalırdılar. Update-dən əvvəl Firewall → VPN Rules siyahısına və Network policies matrisinə baxın. Ətraflı: `docs/security.md`.
+
 ## Telegram bildirişləri (P8)
 - Panel → Settings → **Telegram notifications** bölməsində qurulur, env dəyişəni lazım deyil. Control-plane serverdən `https://api.telegram.org`-a çıxış imkanı olmalıdır.
 - Miqrasiya `011_notification_settings.sql` yeniləmədə avtomatik tətbiq olunur.
+- **Qeyd:** `/etc/fail2ban/fail2ban.local`-da operatorun öz `logtarget`-i varsa (məsələn SYSLOG), NovusGate drop-in-i onu əvəz edir. Uninstall log-u `/var/log/fail2ban.log`-a qaytarır, əvvəlki dəyərə yox.
 - **Fail2Ban log-u (2026-10-15):** `setup-firewall.sh` fail2ban-ı `/var/log/novusgate/fail2ban.log`-a yazmağa yönləndirir. Yalnız NovusGate-in öz faylları yazılır:
   - `/etc/fail2ban/fail2ban.d/novusgate.local` (`logtarget`), recidive jail-i üçün isə `jail.d/novusgate.local`-da `logpath`;
   - öz logrotate faylı `/etc/logrotate.d/novusgate-fail2ban` (həftəlik, `fail2ban-client flushlogs`);

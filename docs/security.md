@@ -77,3 +77,13 @@
 - Token API cavablarında, log-da və xəta mesajlarında görünmür. Telegram xətasında yalnız Telegram-ın `description` mətni qalır, URL (tokenlə birlikdə) atılır.
 - Endpoint-lər panel sessiyası və ya API açarı tələb edir.
 - Control-plane `api.telegram.org`-a çıxış edir (HTTPS). Mesajlarda node adları, şəbəkə adları və ban olunan IP-lər var; bunlar Telegram serverlərindən keçir.
+
+## VPN qaydaları iptables rejimində (2026-10-15)
+- **Əvvəl:** VPN qaydaları `iptables -A FORWARD` ilə əlavə olunurdu, yəni WireGuard `PostUp`-un `-A FORWARD -i wgX -j ACCEPT` sətirlərindən sonraya düşürdü. Ona görə drop və reject qaydaları **heç vaxt işləmirdi**.
+- **İndi:**
+  - qaydalar `NOVUSGATE-VPN` zəncirindədir və FORWARD-ın başından `-i wg+ -j NOVUSGATE-VPN` ilə çağırılır;
+  - zəncirin ilk sətri `ESTABLISHED,RELATED -j RETURN`-dür, ona görə icazə verilmiş bağlantıların cavabları bloklanmır;
+  - qaydalar priority sırası ilə yazılır.
+- Paket testi ilə yoxlanıb (iki network namespace): köhnə üsulla drop qaydası keçirdi, yeni zəncirdə bloklayır.
+- **Diqqət:** Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları ilk dəfə trafiki kəsməyə başlayır.
+- Yeni qayda yaradılanda (əvvəl yalnız update və delete edirdi) bütün qaydalar yenidən sinxronlaşdırılır. Bu nft rejimində yeni qaydanın dərhal tətbiq olunmamasını da düzəldir.

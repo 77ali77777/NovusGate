@@ -222,9 +222,24 @@
 - **Yoxlamalar:** Go 14 paket `ok`, shell `OK`, Center 83/83, web 27/27, `tsc` OK, `vite build` OK, biome 94/31.
 - **İcra olunmayıb:** brauzerdə tablar; real serverdə Update ilə log köçürülməsi.
 
+### 2026-10-15: İkinci review (9eedb44, 2069c84) və düzəlişlər
+- **Review (opus):** 3 Important və 5 Minor tapıldı. Düzəldildi:
+  - **F3, istifadəçi təsdiqi ilə (`5ac6b9a`):** iptables rejimində VPN drop/reject qaydaları wg ACCEPT-lərindən sonra gəldiyi üçün heç vaxt işləməmişdi. İndi `NOVUSGATE-VPN` zəncirindədirlər, FORWARD-ın başından çağırılırlar. Paket testi ilə yoxlandı.
+  - **F2 (`5ac6b9a`):** qayda yaradılanda nft rejimində reconcile çağırılmırdı.
+  - **F1, F6, F7 (`7396ddf`):**
+    - matris backend-də hesablanır (`GET /firewall/policy-matrix`), node və custom ünvanlar həll olunur;
+    - loading zamanı rejim təxmin edilmir;
+    - klikdən yaranan qaydanın priority-si və ad uzunluğu düzəldi.
+  - **F8 və F4 (`a48b55a`):**
+    - recidive üçün `backend = auto` və log faylı əvvəlcədən yaradılır; bu olmadan fail2ban recidive ilə qalxmırdı (real 24.04-də yoxlandı);
+    - update rollback log köçürməsini geri qaytarır.
+  - Qalan: F5 — operatorun öz `logtarget`-i (`fail2ban.local`) drop-in ilə əvəz olunur, sənəddə qeyd var.
+- **Yoxlamalar:** Go 14 paket `ok`, shell `OK`, Center 84/84, web 24/24, `tsc` OK, `vite build` OK.
+
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-15 | iptables VPN qaydaları öz zəncirində (drop/reject işləyir), create sync edir; matris backend-də; recidive və rollback düzəlişləri | firewall_handlers.go, firewall/matrix.go, api/rest/firewall_matrix.go, setup-firewall.sh, Center update/uninstall, web PolicyMatrix | ikinci review · `5ac6b9a`, `7396ddf`, `a48b55a` |
 | 2026-10-15 | Network Policies matrisi, System Rules tabı | web/src/lib/{policyMatrix,systemRules}.ts, pages/Firewall/{PolicyMatrix,SystemRulesTab,Firewall}.tsx | P3c qalığı · `2069c84` |
 | 2026-10-15 | Fail2Ban `/var/log/novusgate`-a yazır (conffile-a toxunulmur) | setup-firewall.sh (+test), compose, fail2ban_parse.go, main.go, Center uninstall/fail2ban.js | review: conffile riski · `9eedb44` |
 | 2026-10-15 | Firewall Live (counter-lər, drop olunan mənbələr, conntrack) və History (diff, restore) | netctl/nft/{compile,live}.go, netctl/conntrack, firewall/{live,history,describe,engine}.go, store/firewall_history.go + 012, api/rest/firewall_{live,history}.go, web Firewall Live/History tabları | P3c qalığı · `75f4d53`..`cf31aee` |
