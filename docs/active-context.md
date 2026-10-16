@@ -317,10 +317,12 @@
 - **nftables tabları** iptables rejimində ~7 s yüklənirdi: 409 firewall_disabled təkrar soruşulurdu; indi təkrar yoxdur və EngineOff izah verir (`d33992e`).
 - **Center:** yeniləmədə image əvvəl qurulur, sonra konteyner dəyişdirilir (`21bf230`); Center öz qovluğundan köhnədirsə səhifədə və log-da xəbərdarlıq; `.dockerignore` (data/jobs root 0700 build-i sındırırdı, servers.json image-ə düşürdü) (`c1a6989`).
 - **UX auditi:** 28 ekran görüntüsü (izolə Playwright); plan `docs/superpowers/plans/2026-10-16-panel-ux-overhaul.md` (`68a0988`). İstifadəçi "et" dedi: Mərhələ 1 dörd agentə paylandı, nəticələr yoxlanmayıb, commit yoxdur.
-- **Davam:** Mərhələ 1 agentlərinin nəticəsini yoxla (tsc, biome, testlər, əvvəl/sonra ekran görüntüləri, review), commit; sonra Mərhələ 2 (şəbəkə tunel növü; tam tunel iptables-də də — tövsiyə, istifadəçi etiraz etməyib), 4, 3.
+- **Mərhələ 1 commit olundu** (`708b2c1`): layout (B1/B2, başlıqların sarılması, 390px-də 10 səhifədə üfüqi daşma yoxdur), istifadəçi menyusu, "Cihaz" termini, cihaz formasında şəbəkə, cihaz səhifəsində konfiq/QR/skript/bərpa, "Admin VPN", Firewall 5 tab, siyasət cədvəlində görünən səbəb, topologiya sığır (0/9 kənarda), audit cümlələri. fullweb 101/0/0, biome təmiz, yeni suppression yoxdur. Müstəqil review gedir.
+- **Davam:** review tapıntıları; sonra Mərhələ 2 (şəbəkə tunel növü; tam tunel iptables-də də — tövsiyə, istifadəçi etiraz etməyib), 4, 3.
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-16 | Panel UX Mərhələ 1: layout, istifadəçi menyusu, Cihaz termini, cihaz formaları/səhifəsi, Admin VPN, Firewall 5 tab, siyasət cədvəli, topologiya, audit cümlələri | web/src/components/{Layout,UserMenu}.tsx, pages/{Nodes,Networks,Firewall,Audit,Topology}/*, lib/{appStorage,topologyFit,networkDisplay,deviceActions,firewallTabs,auditText}.ts, i18n | UX auditi (28 ekran görüntüsü) · `708b2c1` |
 | 2026-10-16 | nftables tabları iptables rejimində dərhal izah verir (təkrar sorğu yox) | web/src/lib/firewallV2.ts, api/client.ts, pages/Firewall/{EngineOff,AdvancedTab,HistoryTab,SystemRulesTab}.tsx | İstifadəçi: tablar yüklənib qalırdı · `d33992e` |
 | 2026-10-16 | Center: build-sonra-dəyiş yeniləmə; köhnə Center xəbərdarlığı; .dockerignore | NovusGate Center/scripts/update.sh, lib/selfcheck.js, server.js, public/index.html, .dockerignore | Yeniləmə zamanı panel dayanırdı; Center skriptləri image-dədir · `21bf230`, `c1a6989` |
 | 2026-10-16 | UX planı (4 mərhələ) | docs/superpowers/plans/2026-10-16-panel-ux-overhaul.md | İstifadəçi: peşəkar, başa düşülən panel · `68a0988` |
