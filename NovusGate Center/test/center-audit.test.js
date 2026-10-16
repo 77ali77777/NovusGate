@@ -128,3 +128,21 @@ test('reinstall keeps .env readable by root only', () => {
     'after the file is written or restored');
   assert.doesNotMatch(s, /^\s*cp "\$INSTALL_DIR\/server\/deployments\/docker\/\.env" \/tmp/m, 'the /tmp copy keeps its mode (cp -p)');
 });
+
+// The update stopped and removed a container before building its new
+// image, so the panel and the API were down for the whole build (minutes).
+// Now the image is built while the old container runs, then swapped.
+test('update builds the new images before it replaces the containers', () => {
+  const s = scripts.UPDATE_SCRIPT;
+  const rebuild = s.slice(s.indexOf('Rebuilding changed containers'), s.indexOf('[5/6]'));
+  assert.doesNotMatch(rebuild, /compose[^\n]* (stop|rm -f) /, 'nothing is stopped before its image is built');
+  assert.doesNotMatch(rebuild, /down --rmi local/, 'the stack is not taken down to rebuild it');
+  for (const svc of ['control-plane web', 'control-plane', 'web']) {
+    const build = rebuild.indexOf(`build --no-cache ${svc}\n`);
+    const swap = rebuild.indexOf(`up -d --force-recreate --no-deps ${svc}\n`, build);
+    assert.ok(build > -1 && swap > build, `${svc}: build, then swap`);
+  }
+  const all = rebuild.indexOf('build --no-cache\n');
+  assert.ok(all > -1 && rebuild.indexOf('up -d --force-recreate --remove-orphans', all) > all,
+    'a compose change rebuilds every image first, then recreates the stack');
+});

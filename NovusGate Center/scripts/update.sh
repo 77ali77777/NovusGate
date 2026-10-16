@@ -184,26 +184,23 @@ echo "[4/6] Rebuilding changed containers..."
 # Remove dangling images first to avoid conflicts
 docker image prune -f 2>/dev/null || true
 
+# The new images are built while the old containers keep running; only the
+# swap (force-recreate) stops them, so the panel and API are down for seconds
+# instead of the whole build. Volumes and server/data are never removed.
 if [ "$DOCKER_CHANGED" = true ]; then
-  echo "  Docker config changed - full rebuild required"
-  compose -f server/deployments/docker/docker-compose.yml down --rmi local 2>/dev/null || true
-  compose -f server/deployments/docker/docker-compose.yml up -d --build --force-recreate
+  echo "  Docker config changed - rebuilding every image, then recreating the stack"
+  compose -f server/deployments/docker/docker-compose.yml build --no-cache
+  compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --remove-orphans
 elif [ "$SERVER_CHANGED" = true ] && [ "$WEB_CHANGED" = true ]; then
   echo "  Rebuilding: control-plane, web"
-  compose -f server/deployments/docker/docker-compose.yml stop control-plane web 2>/dev/null || true
-  compose -f server/deployments/docker/docker-compose.yml rm -f control-plane web 2>/dev/null || true
   compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane web
   compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane web
 elif [ "$SERVER_CHANGED" = true ]; then
   echo "  Rebuilding: control-plane only"
-  compose -f server/deployments/docker/docker-compose.yml stop control-plane 2>/dev/null || true
-  compose -f server/deployments/docker/docker-compose.yml rm -f control-plane 2>/dev/null || true
   compose -f server/deployments/docker/docker-compose.yml build --no-cache control-plane
   compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps control-plane
 elif [ "$WEB_CHANGED" = true ]; then
   echo "  Rebuilding: web only"
-  compose -f server/deployments/docker/docker-compose.yml stop web 2>/dev/null || true
-  compose -f server/deployments/docker/docker-compose.yml rm -f web 2>/dev/null || true
   compose -f server/deployments/docker/docker-compose.yml build --no-cache web
   compose -f server/deployments/docker/docker-compose.yml up -d --force-recreate --no-deps web
 fi
