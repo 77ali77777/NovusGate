@@ -63,7 +63,8 @@ func runFirewallPreview(cmd *cobra.Command, args []string) error {
 	fmt.Print(script)
 
 	if check, _ := cmd.Flags().GetBool("check"); check {
-		if err := (nft.Executor{Runner: runner}).Check(script); err != nil {
+		// The host's nft, like the engine: the container's may not match the kernel.
+		if err := (nft.Executor{Runner: nft.NsenterRunner{}}).Check(script); err != nil {
 			return err
 		}
 		fmt.Fprintln(os.Stderr, "nft -c: OK")

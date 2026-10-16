@@ -18,13 +18,16 @@ const (
 	ConfirmTimeout = 60 * time.Second
 )
 
-// NewHostEngine wires the engine to the real host. nft runs in the control
-// plane's container (it shares the host's network namespace); the rollback
-// timer, its script and the boot-time ruleset live on the host via nsenter.
+// NewHostEngine wires the engine to the real host. Every nft call (check,
+// apply, snapshot, live readers), the rollback timer, its script and the
+// boot-time ruleset run on the host via nsenter: one nft binary, the one
+// that matches the host kernel. The container's nft can be older than the
+// kernel (Alpine nft 1.0.9 segfaults under kernel 7.0); CheckHost already
+// requires the host's nft in nft mode.
 func NewHostEngine(mode Mode, st Store) *Engine {
 	host := nft.NsenterRunner{}
 	applier := nft.NewSafeApplier(
-		nft.Executor{Runner: nft.HostRunner{}},
+		nft.Executor{Runner: host},
 		nft.SystemdTimer{Runner: host, Unit: rollbackUnit, Path: rollbackPath},
 		ConfirmTimeout,
 	)
