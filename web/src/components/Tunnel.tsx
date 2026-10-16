@@ -18,6 +18,8 @@ import {
   effectiveTunnel,
   fullTunnelBlock,
   type TunnelMode,
+  type TunnelResult,
+  tunnelResultState,
 } from '@/lib/tunnelMode'
 import { PendingBanner } from '@/pages/Firewall/AdvancedTab'
 import type { Network, Node, TunnelChange } from '@/types'
@@ -90,6 +92,7 @@ export const TunnelChoice = ({
                 value={o.mode}
                 checked={checked}
                 disabled={disabled}
+                aria-describedby={disabled ? `${name}-full-blocked` : undefined}
                 onChange={() => onChange(o.mode)}
                 className="mt-1"
               />
@@ -104,13 +107,42 @@ export const TunnelChoice = ({
           )
         })}
       </div>
-      {fullBlocked && <p className="mt-1 text-xs text-gray-500">{fullBlocked}</p>}
+      {fullBlocked && (
+        <p id={`${name}-full-blocked`} className="mt-1 text-xs text-gray-500">
+          {fullBlocked}
+        </p>
+      )}
     </fieldset>
   )
 }
 
-// useEngine is the firewall engine as the v2 state query sees it.
-export const useEngine = () => engineMode(useFirewallV2State())
+// useEngine is the engine that enforces the firewall. Shadow mode answers the
+// v2 state too, but there iptables enforces (the server treats tunnel
+// changes as in iptables mode).
+export const useEngine = () => {
+  const q = useFirewallV2State()
+  const mode = engineMode(q)
+  return mode === 'nft' && q.data?.mode !== 'nft' ? 'iptables' : mode
+}
+
+// useTunnelResult is where an applied tunnel change stands now (see
+// tunnelResultState); stored is the saved value, requested the applied one.
+const useTunnelResult = (
+  change: TunnelChange | null,
+  stored: string | null | undefined,
+  requested: string
+): TunnelResult | null => {
+  const { data } = useFirewallV2State()
+  if (!change) return null
+  const pending = change.pending
+  return tunnelResultState({
+    hadPending: !!pending,
+    stillPending: !!pending && data?.pending?.id === pending.id,
+    stored,
+    requested,
+    deadlinePassed: !!pending && Date.now() > Date.parse(pending.deadline),
+  })
+}
 
 // FirewallPendingNotice: the confirm bar of a firewall change that waits for
 // confirmation, wherever the change was made (e.g. a tunnel mode).
@@ -148,6 +180,7 @@ export const TunnelModeDialog = ({
     engine,
   })
   const affected = affectedByNetworkChange(nodes, current, mode)
+  const state = useTunnelResult(result, network.tunnel_mode, mode)
   // A failure is reported by the mutation's error toast; the dialog stays open.
   const apply = () => setTunnel.mutate({ id: network.id, mode }, { onSuccess: setResult })
 
@@ -158,16 +191,22 @@ export const TunnelModeDialog = ({
       title={t('tunnel.dialogTitle', { name: networkLabel(network, t).name })}
     >
       {result ? (
-        <div className="space-y-3 text-sm">
-          {result.pending ? (
+        <div className="space-y-3 text-sm" aria-live="polite">
+          {state === 'pending' && (
             <>
               <FirewallPendingNotice />
               <p>{t('tunnel.donePending')}</p>
             </>
-          ) : (
-            <p>{t('tunnel.doneNow')}</p>
           )}
-          {result.item.affected_nodes > 0 && (
+          {state === 'saved' && <p>{t('tunnel.doneNow')}</p>}
+          {state === 'confirmed' && <p>{t('tunnel.confirmed')}</p>}
+          {state === 'rolledBack' && (
+            <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              {t('tunnel.rolledBack')}
+            </p>
+          )}
+          {state !== 'rolledBack' && result.item.affected_nodes > 0 && (
             <p className="text-gray-600 dark:text-gray-300">
               {t('tunnel.affected', { count: result.item.affected_nodes })} {t('tunnel.redownload')}
             </p>
@@ -257,8 +296,10 @@ export const NodeTunnel = ({ node }: { node: Node }) => {
   const setTunnel = useSetNodeTunnel()
   const [value, setValue] = useState<NodeOverride | null>(null)
   const [result, setResult] = useState<TunnelChange | null>(null)
+  const [requested, setRequested] = useState<NodeOverride>('')
   const current = toOverride(node.tunnel_override)
   const shown = value ?? current
+  const state = useTunnelResult(result, current, requested)
   const networkMode = effectiveTunnel('', network?.tunnel_mode)
   const block = fullTunnelBlock({
     isAdmin,
@@ -303,7 +344,10 @@ export const NodeTunnel = ({ node }: { node: Node }) => {
                 {
                   onSuccess: (r) => {
                     setResult(r)
-                    setValue(null)
+                    setRequested(shown)
+                    // While it waits for confirmation the choice stays shown;
+                    // the stored value only changes on confirm.
+                    if (!r.pending) setValue(null)
                   },
                 }
               )
@@ -313,12 +357,18 @@ export const NodeTunnel = ({ node }: { node: Node }) => {
           </Button>
         </div>
       )}
-      {result && (
-        <p className="text-xs text-gray-600 dark:text-gray-300">
-          {t(result.pending ? 'nodes:tunnel.pending' : 'nodes:tunnel.saved')}
+      {state && (
+        <p className="text-xs text-gray-600 dark:text-gray-300" aria-live="polite">
+          {t(
+            state === 'pending'
+              ? 'nodes:tunnel.pending'
+              : state === 'rolledBack'
+                ? 'nodes:tunnel.rolledBack'
+                : 'nodes:tunnel.saved'
+          )}
         </p>
       )}
-      {result?.pending && <FirewallPendingNotice />}
+      {state === 'pending' && <FirewallPendingNotice />}
     </div>
   )
 }

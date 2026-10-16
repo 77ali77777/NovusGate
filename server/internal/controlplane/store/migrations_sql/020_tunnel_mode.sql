@@ -9,5 +9,12 @@ ALTER TABLE networks ADD COLUMN IF NOT EXISTS tunnel_mode TEXT NOT NULL DEFAULT 
     CHECK (tunnel_mode IN ('split', 'full'));
 ALTER TABLE nodes ADD COLUMN IF NOT EXISTS tunnel_override TEXT
     CHECK (tunnel_override IN ('split', 'full'));
-UPDATE nodes SET tunnel_override = 'full' WHERE id IN (SELECT node_id FROM fw_egress);
+-- Safe to run again (the schema_migrations row is written separately):
+-- without fw_egress there is nothing left to convert.
+DO $$
+BEGIN
+    IF to_regclass('fw_egress') IS NOT NULL THEN
+        UPDATE nodes SET tunnel_override = 'full' WHERE id IN (SELECT node_id FROM fw_egress);
+    END IF;
+END $$;
 DROP TABLE IF EXISTS fw_egress;

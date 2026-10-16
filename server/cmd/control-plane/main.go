@@ -23,6 +23,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/controlplane/traffic"
+	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -288,6 +289,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 	fwMode, err := firewall.ParseMode(os.Getenv("FIREWALL_ENGINE"))
 	if err != nil {
 		return err
+	}
+	if fwMode != firewall.ModeNft {
+		// iptables enforces (iptables and shadow mode): the DOCKER-USER
+		// ACCEPTs of an earlier nftables hand-over would skip its VPN rules.
+		if n, err := firewall.RemoveVPNThroughDocker(nft.NsenterRunner{}); err != nil {
+			slog.Warn(fmt.Sprintf("[Firewall] could not remove the nftables DOCKER-USER rules: %v", err))
+		} else if n > 0 {
+			slog.Info(fmt.Sprintf("[Firewall] removed %d DOCKER-USER rules of the nftables engine", n))
+		}
 	}
 	if fwMode != firewall.ModeIptables {
 		fw := firewall.NewHostEngine(fwMode, db)

@@ -90,6 +90,8 @@
     "donePending": "The firewall change is waiting for confirmation: press “Confirm” in the bar above.",
     "doneNow": "Saved.",
     "redownload": "Download the config again on the affected devices (device page → Config / QR).",
-    "formHint": "You can change this later; devices then need their configs downloaded again."
+    "formHint": "You can change this later; devices then need their configs downloaded again.",
+    "confirmed": "Confirmed: the tunnel mode has changed.",
+    "rolledBack": "Not confirmed in time: the firewall went back to its previous state and the tunnel mode did not change."
   }
 }

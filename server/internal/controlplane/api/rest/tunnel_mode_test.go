@@ -2,7 +2,9 @@ package rest
 
 import (
 	"context"
+	"database/sql"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -171,4 +173,81 @@ func tunnelNetworkIface(t *testing.T, s *Server, iface string, port int, cidr st
 		t.Fatal(err)
 	}
 	return nw, n, nil
+}
+
+// Shadow mode only checks rulesets (iptables enforces): a tunnel change is
+// stored at once like in iptables mode, and the admin VPN cannot go full.
+func TestNetworkTunnelModeInShadowMode(t *testing.T) {
+	s, _ := newEngineServer(t, firewall.ModeShadow)
+	nw, _, _ := tunnelNetwork(t, s, "wg93", 51993)
+	t.Cleanup(func() { s.store.DeleteNetwork(context.Background(), nw.ID) })
+	rec := call(t, s, "PUT", "/api/v1/networks/"+nw.ID+"/tunnel", `{"tunnel_mode":"full"}`)
+	if rec.Code != 200 || strings.Contains(rec.Body.String(), `"pending":{`) {
+		t.Fatalf("shadow mode set full = %d %s, want 200 without a pending change", rec.Code, rec.Body)
+	}
+	if got, _ := s.store.GetNetwork(context.Background(), nw.ID); got.TunnelMode != models.TunnelFull {
+		t.Fatalf("stored mode = %q", got.TunnelMode)
+	}
+}
+
+// Asking for the mode a network or node already has changes nothing (no
+// empty firewall change waiting for confirmation).
+func TestTunnelModeUnchangedIsNoChange(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	nw, a, _ := tunnelNetwork(t, s, "wg92", 51992)
+	t.Cleanup(func() { s.store.DeleteNetwork(context.Background(), nw.ID) })
+	applied := len(r.applied)
+	for path, body := range map[string]string{
+		"/api/v1/networks/" + nw.ID + "/tunnel": `{"tunnel_mode":"split"}`,
+		"/api/v1/nodes/" + a.ID + "/tunnel":     `{"tunnel_override":""}`,
+	} {
+		rec := call(t, s, "PUT", path, body)
+		if rec.Code != 200 || strings.Contains(rec.Body.String(), `"pending":{`) || !strings.Contains(rec.Body.String(), `"affected_nodes":0`) {
+			t.Errorf("%s unchanged = %d %s", path, rec.Code, rec.Body)
+		}
+	}
+	if len(r.applied) != applied {
+		t.Fatal("an unchanged mode must not touch the firewall")
+	}
+}
+
+// Restoring a firewall snapshot taken before a network went full keeps the
+// network full and its nodes in the internet exit set: tunnel modes are not
+// part of what History restores.
+func TestHistoryRestoreKeepsTunnelModes(t *testing.T) {
+	s, r := newEngineServer(t, firewall.ModeNft)
+	db, err := sql.Open("postgres", os.Getenv("TEST_DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec("DELETE FROM fw_history"); err != nil {
+		t.Fatal(err)
+	}
+	s.firewall.History = s.store
+	nw, _, _ := tunnelNetwork(t, s, "wg91", 51991)
+	t.Cleanup(func() { s.store.DeleteNetwork(context.Background(), nw.ID) })
+
+	if rec := call(t, s, "POST", "/api/v1/firewall/v2/services?confirm=false", `{"protocol":"tcp","port_from":9300}`); rec.Code != 200 {
+		t.Fatalf("open 9300 = %d %s", rec.Code, rec.Body)
+	}
+	before := historyEntries(t, s)[0] // the state with 9300, network split
+	if rec := call(t, s, "PUT", "/api/v1/networks/"+nw.ID+"/tunnel?confirm=false", `{"tunnel_mode":"full"}`); rec.Code != 200 {
+		t.Fatalf("set full = %d %s", rec.Code, rec.Body)
+	}
+	if rec := call(t, s, "POST", "/api/v1/firewall/v2/history/"+before.ID+"/restore?confirm=false", ""); rec.Code != 200 {
+		t.Fatalf("restore = %d %s", rec.Code, rec.Body)
+	}
+	if set := egressSet(r.last()); !strings.Contains(set, "10.24.0.5") || !strings.Contains(set, "10.24.0.6") {
+		t.Fatalf("the full network's nodes must keep the exit after a restore: %q", set)
+	}
+	if got, _ := s.store.GetNetwork(context.Background(), nw.ID); got.TunnelMode != models.TunnelFull {
+		t.Fatalf("network mode after restore = %q", got.TunnelMode)
+	}
+	nodes, _ := s.store.ListNodes(context.Background(), nw.ID)
+	for _, n := range nodes {
+		if n.TunnelOverride != "" {
+			t.Fatalf("restore must not pin %s to %q", n.Name, n.TunnelOverride)
+		}
+	}
 }

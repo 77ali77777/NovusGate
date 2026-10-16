@@ -580,3 +580,32 @@ func TestNotReadyIsNotRetried(t *testing.T) {
 		t.Fatalf("no retry may be scheduled while not ready, got %d", len(h.timers))
 	}
 }
+
+// A reconcile asked for while a change waits for confirmation (e.g. a node
+// created in a full-tunnel network) must still run after the confirm: the
+// confirmed state was read when the change was proposed, so it lacks what
+// changed meanwhile.
+func TestReconcileDuringPendingSurvivesConfirm(t *testing.T) {
+	h := newHarness(ModeNft)
+	ctx := context.Background()
+	commits := 0
+	res, err := h.e.Propose(ctx, openPort(h, 443, &commits), true, nil)
+	if err != nil || res.Pending == nil {
+		t.Fatalf("propose = %+v, %v", res, err)
+	}
+	if _, err := h.e.ReconcileOrRetry(ctx); err == nil {
+		t.Fatal("a reconcile must wait while a change is pending")
+	}
+	if h.e.stopRetry == nil {
+		t.Fatal("the reconcile must be retried")
+	}
+	if err := h.e.Confirm(ctx, res.Pending.ID); err != nil {
+		t.Fatal(err)
+	}
+	if h.e.stopRetry == nil {
+		t.Fatal("the retry must survive the confirm, or the meanwhile change is lost")
+	}
+	if commits != 1 {
+		t.Fatalf("commits = %d", commits)
+	}
+}

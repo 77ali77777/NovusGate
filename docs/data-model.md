@@ -128,5 +128,5 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `networks.tunnel_mode` TEXT NOT NULL DEFAULT `'split'`, CHECK `split`/`full`: şəbəkənin cihazları hub-dan nəyi keçirir — `split` yalnız VPN şəbəkələrini, `full` bütün IPv4 trafiki (hub onların internet çıxışıdır).
 - `nodes.tunnel_override` TEXT NULL, CHECK `split`/`full`: yalnız bu cihaz üçün; NULL = şəbəkənin rejimi.
 - Hub-un internet çıxışı olan cihazlar (`ListEgressNodeIDs`, firewall state-də `egress_node_ids`) indi hesablanır: `COALESCE(n.tunnel_override, w.tunnel_mode) = 'full'`.
-- `fw_egress` cədvəli silindi; onun sətirləri `tunnel_override = 'full'` oldu. History bərpası dəqiq həmin dəsti qurur: yalnız rejimi fərqli olan cihazlara override yazılır (şəbəkə ilə uyğun gələndə NULL).
+- `fw_egress` cədvəli silindi; onun sətirləri `tunnel_override = 'full'` oldu. History bərpası tunel ayarlarına toxunmur (snapshot şəbəkələrin rejimini və sonradan yaradılan cihazları bilmir). Migration təkrar işə düşsə də xəta vermir (`fw_egress` yoxdursa çevirmə atlanır).
 - Rollback: `migrations_rollback/020_tunnel_mode.down.sql` — `fw_egress` yenidən yaradılır və effektiv tam tunel cihazları ilə doldurulur, sonra iki sütun silinir.

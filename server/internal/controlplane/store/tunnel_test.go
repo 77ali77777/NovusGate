@@ -118,25 +118,27 @@ func TestSetNodeEgressMapsToOverride(t *testing.T) {
 	}
 }
 
-// History restore sets exactly the stored exit set, changing only the nodes
-// that differ, so overrides that already agree stay as they are.
-func TestReplaceFirewallStateRestoresEgressSet(t *testing.T) {
+// History restore brings back services, IP rules and forwards only. Tunnel
+// modes are network and device settings: a snapshot does not know the
+// networks' modes nor the nodes made after it, so restoring it must not pin
+// them (a full network's newer nodes would lose the internet).
+func TestReplaceFirewallStateKeepsTunnelSettings(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	n, a, b := tunnelNet(t, s, "tunnel-restore", "10.81.0.0/24", 52904)
 	s.SetNetworkTunnelMode(ctx, n.ID, models.TunnelFull)
-	s.SetNodeTunnelOverride(ctx, a.ID, models.TunnelFull) // agrees with the snapshot: kept
-	if err := s.ReplaceFirewallState(ctx, nil, nil, nil, []string{a.ID}); err != nil {
+	s.SetNodeTunnelOverride(ctx, b.ID, models.TunnelSplit)
+	if err := s.ReplaceFirewallState(ctx, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if !egressHas(t, s, a.ID) || egressHas(t, s, b.ID) {
-		t.Fatal("the restored exit set must be exactly the snapshot's")
+		t.Fatal("the exit set must stay as it was")
 	}
-	if node, _ := s.GetNode(ctx, a.ID); node.TunnelOverride != models.TunnelFull {
-		t.Fatalf("an override that agrees must stay, got %q", node.TunnelOverride)
+	if node, _ := s.GetNode(ctx, a.ID); node.TunnelOverride != "" {
+		t.Fatalf("a follows its network, got override %q", node.TunnelOverride)
 	}
-	if node, _ := s.GetNode(ctx, b.ID); node.TunnelOverride != models.TunnelSplit {
-		t.Fatalf("b left the exit by a split override, got %q", node.TunnelOverride)
+	if got, _ := s.GetNetwork(ctx, n.ID); got.TunnelMode != models.TunnelFull {
+		t.Fatalf("network mode = %q", got.TunnelMode)
 	}
 }
 
@@ -173,6 +175,11 @@ func TestTunnelMigrationRollbackKeepsExitSet(t *testing.T) {
 	// Up again (restores the schema the other tests use).
 	if _, err := s.db.ExecContext(ctx, string(up)); err != nil {
 		t.Fatalf("up: %v", err)
+	}
+	// Run again (its schema_migrations row may not have been written): it
+	// must not fail now that fw_egress is gone.
+	if _, err := s.db.ExecContext(ctx, string(up)); err != nil {
+		t.Fatalf("up a second time: %v", err)
 	}
 	s.db.ExecContext(ctx, `INSERT INTO schema_migrations (version) VALUES ('020_tunnel_mode.sql') ON CONFLICT DO NOTHING`)
 	if len(rows) != 1 || rows[0] != a.ID {

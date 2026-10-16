@@ -242,7 +242,7 @@ func (e *Engine) Propose(ctx context.Context, ch Change, confirm bool, protect [
 		e.pending = &pendingCommit{id: p.ID, commit: ch.Commit, script: script, state: st, record: record}
 		return Result{Pending: &p, Warnings: warnings}, nil
 	}
-	extra, err := e.finish(ctx, ch.Commit, script, st, record)
+	extra, err := e.finish(ctx, ch.Commit, script, st, record, true)
 	return Result{Warnings: append(warnings, extra...)}, err
 }
 
@@ -307,7 +307,7 @@ func (e *Engine) Confirm(ctx context.Context, id string) error {
 	if pc == nil || pc.id != id {
 		return nil
 	}
-	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state, pc.record)
+	extra, err := e.finish(ctx, pc.commit, pc.script, pc.state, pc.record, false)
 	for _, w := range extra {
 		slog.Warn(fmt.Sprintf("firewall: %v", w))
 	}
@@ -322,14 +322,20 @@ func (e *Engine) PendingChange() (nft.Pending, bool) {
 // finish runs after the host took a change: it stores it (detached from the
 // request, so a disconnecting client cannot leave it unsaved), schedules the
 // next expiry and writes the boot-time ruleset. It returns warnings and an
-// error.
-func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State, record func(context.Context)) ([]error, error) {
-	// The stored state is live: a pending retry is no longer needed.
-	if e.stopRetry != nil {
-		e.stopRetry()
-		e.stopRetry = nil
+// error. fresh says st was read just now (an immediate change); a confirmed
+// change carries the state read when it was proposed.
+func (e *Engine) finish(ctx context.Context, commit func(context.Context) error, script string, st State, record func(context.Context), fresh bool) ([]error, error) {
+	// A fresh stored state is live: a pending retry is no longer needed. A
+	// confirmed one may lack what changed while it waited (a reconcile asked
+	// for meanwhile, e.g. a node created in a full-tunnel network), so its
+	// retry stays and re-applies the stored state.
+	if fresh {
+		if e.stopRetry != nil {
+			e.stopRetry()
+			e.stopRetry = nil
+		}
+		e.retryDelay = 0
 	}
-	e.retryDelay = 0
 	if commit != nil {
 		if err := commit(context.WithoutCancel(ctx)); err != nil {
 			// The host runs a change the database does not have; the

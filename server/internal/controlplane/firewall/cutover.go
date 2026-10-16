@@ -107,30 +107,110 @@ func CutoverIptables(r nft.Runner) (int, error) {
 // dockerUserComment marks the DOCKER-USER rules the hand-over adds.
 const dockerUserComment = "novusgate-docker-user"
 
-// allowVPNThroughDocker lets VPN interfaces pass Docker's filter FORWARD
-// chain, whose policy is DROP. In nftables a packet must be accepted by every
-// base chain on the hook, so without this, traffic table inet novusgate
-// allows (full tunnel to the internet, the admin VPN wg0, which has no
-// wg-quick PostUp ACCEPT) is still dropped there. DOCKER-USER is the chain
-// Docker leaves to the administrator. The forward chain of table inet
-// novusgate runs first (priority filter - 10) and drops everything the VPN
-// rules do not allow, so these ACCEPTs only pass what it already let through.
-// Without DOCKER-USER (Docker not managing iptables) nothing is added.
+// dockerUserRules are the matches and targets of the DOCKER-USER rules, in
+// order. Traffic between VPN interfaces and Docker's bridges returns to
+// Docker's own chains, so its isolation of containers stays; all other VPN
+// traffic is accepted.
+var dockerUserRules = [][]string{
+	{"-i", "wg+", "-o", "docker0", "RETURN"},
+	{"-i", "wg+", "-o", "br-+", "RETURN"},
+	{"-i", "docker0", "-o", "wg+", "RETURN"},
+	{"-i", "br-+", "-o", "wg+", "RETURN"},
+	{"-i", "wg+", "ACCEPT"},
+	{"-o", "wg+", "ACCEPT"},
+}
+
+// dockerUserArgs is a rule's spec as iptables -S prints it (without -A chain).
+func dockerUserArgs(rule []string) []string {
+	match, target := rule[:len(rule)-1], rule[len(rule)-1]
+	return append(append(append([]string{}, match...), "-m", "comment", "--comment", dockerUserComment), "-j", target)
+}
+
+// ourDockerUserRules reads DOCKER-USER and returns the specs of the rules
+// marked as ours, in order. ok is false when the chain does not exist
+// (Docker not managing iptables); any other failure is an error.
+func ourDockerUserRules(r nft.Runner) (rules [][]string, ok bool, err error) {
+	out, err := r.Run("", "iptables", "-S", "DOCKER-USER")
+	if err != nil {
+		if msg := err.Error() + out; strings.Contains(msg, "No chain") || strings.Contains(msg, "does not exist") {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("read DOCKER-USER: %w", err)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "-A DOCKER-USER ") && strings.Contains(line, dockerUserComment) {
+			rules = append(rules, splitIptablesArgs(strings.TrimPrefix(line, "-A DOCKER-USER ")))
+		}
+	}
+	return rules, true, nil
+}
+
+// allowVPNThroughDocker lets VPN traffic pass Docker's filter FORWARD chain,
+// whose policy is DROP. In nftables a packet must be accepted by every base
+// chain on the hook, so without this, traffic table inet novusgate allows
+// (full tunnel to the internet, the admin VPN wg0, which has no wg-quick
+// PostUp ACCEPT) is still dropped there. DOCKER-USER is the chain Docker
+// leaves to the administrator. The forward chain of table inet novusgate runs
+// first (priority filter - 10) and drops everything the VPN rules do not
+// allow, so the ACCEPTs only pass what it already let through. Rules already
+// in place and in order are left alone; otherwise ours are replaced.
 func allowVPNThroughDocker(r nft.Runner) error {
-	if _, err := r.Run("", "iptables", "-S", "DOCKER-USER"); err != nil {
+	have, ok, err := ourDockerUserRules(r)
+	if err != nil {
+		return err
+	}
+	if !ok {
 		slog.Info("firewall: no DOCKER-USER chain; Docker's FORWARD chain is left as it is")
 		return nil
 	}
-	for _, dir := range []string{"-i", "-o"} {
-		spec := []string{"DOCKER-USER", dir, "wg+", "-m", "comment", "--comment", dockerUserComment, "-j", "ACCEPT"}
-		if _, err := r.Run("", "iptables", append([]string{"-C"}, spec...)...); err == nil {
-			continue
+	want := make([]string, len(dockerUserRules))
+	for i, rule := range dockerUserRules {
+		want[i] = strings.Join(dockerUserArgs(rule), " ")
+	}
+	got := make([]string, len(have))
+	for i, args := range have {
+		got[i] = strings.Join(args, " ")
+	}
+	if strings.Join(got, "\n") == strings.Join(want, "\n") {
+		return nil
+	}
+	for _, args := range have {
+		if _, err := r.Run("", "iptables", append([]string{"-D", "DOCKER-USER"}, args...)...); err != nil {
+			return fmt.Errorf("remove an old DOCKER-USER rule: %w", err)
 		}
-		if _, err := r.Run("", "iptables", append([]string{"-I"}, spec...)...); err != nil {
-			return fmt.Errorf("let VPN traffic through DOCKER-USER (%s): %w", dir, err)
+	}
+	for i, rule := range dockerUserRules {
+		args := append([]string{"-I", "DOCKER-USER", strconv.Itoa(i + 1)}, dockerUserArgs(rule)...)
+		if _, err := r.Run("", "iptables", args...); err != nil {
+			return fmt.Errorf("let VPN traffic through DOCKER-USER: %w", err)
 		}
 	}
 	return nil
+}
+
+// RemoveVPNThroughDocker removes the DOCKER-USER rules of the nftables
+// hand-over; it runs outside nftables mode. There VPN traffic is filtered in
+// iptables' NOVUSGATE-VPN, and Docker puts its DOCKER-USER jump first in
+// FORWARD, so an ACCEPT left in DOCKER-USER would skip every VPN rule. The
+// result is saved for boot when something was removed. It returns the
+// number of removed rules.
+func RemoveVPNThroughDocker(r nft.Runner) (int, error) {
+	have, ok, err := ourDockerUserRules(r)
+	if err != nil || !ok {
+		return 0, err
+	}
+	for i, args := range have {
+		if _, err := r.Run("", "iptables", append([]string{"-D", "DOCKER-USER"}, args...)...); err != nil {
+			return i, fmt.Errorf("remove a DOCKER-USER rule: %w", err)
+		}
+	}
+	if len(have) > 0 {
+		if _, err := r.Run("", "netfilter-persistent", "save"); err != nil {
+			slog.Error(fmt.Sprintf("firewall: netfilter-persistent save failed (the next start removes them again): %v", err))
+		}
+	}
+	return len(have), nil
 }
 
 // ruleTarget returns the -j target of a rule spec.

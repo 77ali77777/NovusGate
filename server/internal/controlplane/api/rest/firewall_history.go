@@ -119,21 +119,21 @@ func (s *Server) handleFirewallV2Restore(w http.ResponseWriter, r *http.Request)
 		}
 	}
 	snap.IPRules = rules
-	egress := []string{}
-	for _, nodeID := range snap.EgressNodeIDs {
-		if n, err := s.store.GetNode(r.Context(), nodeID); err == nil && n != nil {
-			egress = append(egress, nodeID)
-		}
-	}
-	snap.EgressNodeIDs = egress
 
 	actor := firewall.ActorFrom(r.Context())
 	actor.Label = "restore " + entry.CreatedAt.UTC().Format("2006-01-02 15:04:05") + " UTC"
 	r = r.WithContext(firewall.WithActor(r.Context(), actor))
 	s.proposeV2(w, r, IDItem{ID: id}, firewall.Change{
-		Mutate: func(st *firewall.State) error { *st = snap; return nil },
+		// Tunnel modes are network and device settings, not restored: the
+		// internet exit set stays the current one.
+		Mutate: func(st *firewall.State) error {
+			egress := st.EgressNodeIDs
+			*st = snap
+			st.EgressNodeIDs = egress
+			return nil
+		},
 		Commit: func(ctx context.Context) error {
-			return s.store.ReplaceFirewallState(ctx, snap.Services, snap.IPRules, snap.Forwards, snap.EgressNodeIDs)
+			return s.store.ReplaceFirewallState(ctx, snap.Services, snap.IPRules, snap.Forwards)
 		},
 	})
 }

@@ -90,6 +90,8 @@
     "donePending": "Firewall dəyişikliyi təsdiq gözləyir: yuxarıdakı zolaqda «Təsdiq et» düyməsini basın.",
     "doneNow": "Saxlandı.",
     "redownload": "Təsirlənən cihazlarda konfiqurasiyanı yenidən yükləyin (cihaz səhifəsi → Konfiqurasiya / QR).",
-    "formHint": "Bunu sonra da dəyişə bilərsiniz; o zaman cihazların konfiqurasiyası yenidən yüklənməlidir."
+    "formHint": "Bunu sonra da dəyişə bilərsiniz; o zaman cihazların konfiqurasiyası yenidən yüklənməlidir.",
+    "confirmed": "Təsdiqləndi: tunel rejimi dəyişdi.",
+    "rolledBack": "Vaxtında təsdiq edilmədi: firewall əvvəlki vəziyyətinə qayıtdı, tunel rejimi dəyişmədi."
   }
 }

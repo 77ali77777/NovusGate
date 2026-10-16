@@ -42,3 +42,24 @@ export function fullTunnelBlock(p: {
   if (p.adminNetwork && p.engine !== 'nft') return 'engine'
   return null
 }
+
+export type TunnelResult = 'saved' | 'pending' | 'confirmed' | 'rolledBack'
+
+// tunnelResultState is where a tunnel change stands after Apply: saved at
+// once (no firewall confirmation), waiting for confirmation, confirmed (the
+// stored mode is the requested one) or rolled back (the deadline passed
+// without it). Right after Confirm the list may not be refreshed yet: that
+// is still "pending", never "rolled back". An empty stored value (no
+// override) matches "".
+export function tunnelResultState(p: {
+  hadPending: boolean
+  stillPending: boolean
+  stored: string | null | undefined
+  requested: string
+  deadlinePassed: boolean
+}): TunnelResult {
+  if (!p.hadPending) return 'saved'
+  if (p.stillPending) return 'pending'
+  if ((p.stored ?? '') === p.requested) return 'confirmed'
+  return p.deadlinePassed ? 'rolledBack' : 'pending'
+}

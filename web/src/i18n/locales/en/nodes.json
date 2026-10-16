@@ -196,6 +196,7 @@
     "follow": "Follow the network ({{mode}})",
     "own": "For this device",
     "saved": "Saved. Download this device’s config again so it takes effect.",
-    "pending": "Waiting for confirmation in the firewall bar; then download this device’s config again."
+    "pending": "Waiting for confirmation in the firewall bar; then download this device’s config again.",
+    "rolledBack": "Not confirmed in time: the change was rolled back; this device keeps its previous mode."
   }
 }

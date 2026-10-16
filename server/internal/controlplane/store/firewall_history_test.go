@@ -59,8 +59,8 @@ func TestFirewallHistory(t *testing.T) {
 	}
 }
 
-// ReplaceFirewallState swaps all four parts in one transaction; egress for
-// a node that no longer exists is skipped.
+// ReplaceFirewallState swaps services, IP rules and forwards in one
+// transaction; tunnel settings (who uses the hub as internet exit) stay.
 func TestReplaceFirewallState(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
@@ -68,7 +68,6 @@ func TestReplaceFirewallState(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.db.ExecContext(ctx, "DELETE FROM fw_forwards")
-	s.db.ExecContext(ctx, "DELETE FROM fw_egress")
 	netw := &models.Network{Name: "replace-net", CIDR: "10.78.0.0/24", InterfaceName: "wg78", ListenPort: 51878}
 	if err := s.CreateNetwork(ctx, netw); err != nil {
 		t.Fatal(err)
@@ -86,9 +85,8 @@ func TestReplaceFirewallState(t *testing.T) {
 	svc := &models.FirewallService{ID: "11111111-0000-0000-0000-000000000001", Protocol: "udp", PortFrom: 53, PortTo: 53, Sources: []string{"10.0.0.0/8"}, Comment: "dns"}
 	rule := &models.FirewallIPRule{ID: "11111111-0000-0000-0000-000000000002", Action: "block", Prefix: "198.51.100.0/24", Origin: "fail2ban"}
 	fwd := &models.FirewallForward{ID: "11111111-0000-0000-0000-000000000003", Protocol: "tcp", PublicPort: 8081, TargetIP: "10.78.0.2", TargetPort: 80}
-	gone := "11111111-0000-0000-0000-0000000000ff"
 	if err := s.ReplaceFirewallState(ctx, []*models.FirewallService{svc}, []*models.FirewallIPRule{rule},
-		[]*models.FirewallForward{fwd}, []string{node.ID, gone}); err != nil {
+		[]*models.FirewallForward{fwd}); err != nil {
 		t.Fatal(err)
 	}
 	svcs, _ := s.ListFirewallServices(ctx)
@@ -97,7 +95,7 @@ func TestReplaceFirewallState(t *testing.T) {
 	egress, _ := s.ListEgressNodeIDs(ctx)
 	if len(svcs) != 1 || svcs[0].ID != svc.ID || svcs[0].Comment != "dns" || len(svcs[0].Sources) != 1 ||
 		len(rules) != 1 || rules[0].Origin != "fail2ban" || len(fwds) != 1 || fwds[0].TargetIP != "10.78.0.2" ||
-		len(egress) != 1 || egress[0] != node.ID {
+		len(egress) != 0 {
 		t.Fatalf("after replace: %+v %+v %+v %v", svcs, rules, fwds, egress)
 	}
 }

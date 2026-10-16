@@ -82,11 +82,12 @@ func (s *Store) GetFirewallHistory(ctx context.Context, id string) (*models.Fire
 	return e, err
 }
 
-// ReplaceFirewallState replaces every service, IP rule, forward and egress
-// node in one transaction (History restore). Rows keep their IDs; egress for
-// nodes that no longer exist is skipped.
+// ReplaceFirewallState replaces every service, IP rule and forward in one
+// transaction (History restore). Rows keep their IDs. Tunnel modes (who uses
+// the hub as internet exit) are network and node settings and stay as they
+// are: a snapshot knows neither the networks' modes nor newer nodes.
 func (s *Store) ReplaceFirewallState(ctx context.Context, services []*models.FirewallService, rules []*models.FirewallIPRule,
-	forwards []*models.FirewallForward, egress []string) error {
+	forwards []*models.FirewallForward) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -131,21 +132,6 @@ func (s *Store) ReplaceFirewallState(ctx context.Context, services []*models.Fir
 			f.ID, f.Protocol, f.PublicPort, f.TargetIP, f.TargetPort, nullString(f.Comment), createdOr(f.CreatedAt, now)); err != nil {
 			return err
 		}
-	}
-	// The exit set becomes exactly egress: only nodes whose current mode
-	// differs get an override, so overrides that already agree stay.
-	if egress == nil {
-		egress = []string{}
-	}
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE nodes n SET tunnel_override = CASE
-			WHEN (n.id::text = ANY($1)) = (w.tunnel_mode = 'full') THEN NULL
-			WHEN n.id::text = ANY($1) THEN 'full' ELSE 'split' END
-		FROM networks w
-		WHERE w.id = n.network_id
-		  AND (COALESCE(n.tunnel_override, w.tunnel_mode) = 'full') <> (n.id::text = ANY($1))`,
-		pq.Array(egress)); err != nil {
-		return err
 	}
 	return tx.Commit()
 }

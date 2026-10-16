@@ -22,7 +22,7 @@ Dəyişiklik edən sorğular **default olaraq təsdiq gözləyir**: cavabda `pen
 | POST | `/firewall/v2/confirm/{id}` | — | `{"status":"confirmed"}` |
 | GET | `/firewall/v2/live` | — | `mode`, `table_loaded`, `counters[]` (`chain`, `rule`, `comment`, `packets`, `bytes`), `dropped[]` (`address`, `seconds_ago`), `conntrack` (`available`, `count`, `max`, `by_protocol`, `tcp_states`, `truncated`), `error`. Bütün rejimlərdə 200 qaytarır; nft cədvəli yoxdursa yalnız conntrack doldurulur (P3c, 2026-10-15) |
 | GET | `/firewall/v2/history?limit=50` | — | `entries[]`: `id`, `created_at`, `username`, `action` (`METHOD path`, `baseline` və ya `restore …`), `added[]`, `removed[]` (oxunaqlı sətirlər, əvvəlki yazı ilə müqayisədə). Ən yenisi birinci, `limit` ən çox 200. nft engine olmadan 409 `firewall_disabled` |
-| POST | `/firewall/v2/history/{id}/restore` | — | adi dəyişiklik kimi işləyir: `item` (`{"id"}`), `pending`, `warnings`, `?confirm=false` də keçərlidir. Müddəti bitmiş IP qaydaları və silinmiş node-ların egress-i geri qaytarılmır. Tapılmayan və ya səhv ID üçün 404 |
+| POST | `/firewall/v2/history/{id}/restore` | — | adi dəyişiklik kimi işləyir: `item` (`{"id"}`), `pending`, `warnings`, `?confirm=false` də keçərlidir. Servislər, IP qaydaları və forward-lar qaytarılır; müddəti bitmiş IP qaydaları qaytarılmır. Tunel rejimləri (şəbəkə və cihaz ayarları) bərpa olunmur: internet çıxışı olan cihazlar hazırkı kimi qalır. Tapılmayan və ya səhv ID üçün 404 |
 
 **Status kodları:**
 - **400** — yanlış giriş və ya rədd edilmiş dəyişiklik (`firewall change rejected`). Səbəblər:
@@ -321,3 +321,5 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - nftables rejimində dəyişiklik firewall-dan keçir (`?confirm=false` də işləyir, default təsdiq gözləyir). iptables rejimində yalnız konfiqlər dəyişir (hər şəbəkənin wg-quick PostUp-ı NAT edir); Admin VPN (`wg0`) üçün `full` → 409 `full_tunnel_needs_nft`.
 - Tam tunel şəbəkəsində yaradılan cihaz firewall-un çıxış dəstinə dərhal düşür (yaradılandan sonra reconcile).
 - `PUT/DELETE /firewall/v2/egress/{nodeId}` işləməyə davam edir: açıq = `full` override; bağlı = split şəbəkədə override yox, full şəbəkədə `split` override.
+- nftables rejimində: təsdiq gözləyən dəyişiklik zamanı istənən reconcile (məsələn tam tunel şəbəkəsində yeni cihaz) təsdiqdən sonra da işləyir. Eyni rejim yenidən göndəriləndə dəyişiklik yaranmır (200, `affected_nodes: 0`). Shadow rejimi iptables kimi davranır.
+- DOCKER-USER (yalnız nft rejimində, `CutoverIptables`): wg ↔ Docker körpüləri (`docker0`, `br-+`) arası trafik `RETURN` (Docker özü qərar verir), qalan wg trafiki `ACCEPT`. iptables/shadow rejimində start zamanı bu qaydalar silinir.

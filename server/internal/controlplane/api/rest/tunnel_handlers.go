@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
 
@@ -82,9 +83,9 @@ func (s *Server) tunnelChange(w http.ResponseWriter, r *http.Request, item Tunne
 			item.AffectedNodes++
 		}
 	}
-	after := exitSet(nodes)
 
-	if s.firewall == nil {
+	// Shadow mode only checks rulesets; iptables enforces, like iptables mode.
+	if !s.engineEnforces() {
 		if needsNft {
 			errorWithCode(w, http.StatusConflict, "full_tunnel_needs_nft",
 				"full tunnel on the admin VPN (wg0) needs the nftables firewall engine")
@@ -97,8 +98,19 @@ func (s *Server) tunnelChange(w http.ResponseWriter, r *http.Request, item Tunne
 		jsonResponse(w, http.StatusOK, V2ChangeResponse{Item: item, Warnings: []string{}})
 		return
 	}
+	ctx := r.Context()
 	s.proposeV2(w, r, item, firewall.Change{
-		Mutate: func(st *firewall.State) error { st.EgressNodeIDs = after; return nil },
+		// Under the engine lock, from the stored nodes as they are now (a node
+		// created or deleted since the request began is counted right).
+		Mutate: func(st *firewall.State) error {
+			now, err := s.store.ListTunnelNodes(ctx)
+			if err != nil {
+				return fmt.Errorf("read tunnel settings: %w", err)
+			}
+			change(now)
+			st.EgressNodeIDs = exitSet(now)
+			return nil
+		},
 		Commit: commit,
 	})
 }
@@ -124,6 +136,10 @@ func (s *Server) handleSetNetworkTunnel(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	item := TunnelChangeItem{NetworkID: id, TunnelMode: req.TunnelMode}
+	if network.TunnelMode == req.TunnelMode {
+		jsonResponse(w, http.StatusOK, V2ChangeResponse{Item: item, Warnings: []string{}}) // nothing to change
+		return
+	}
 	needsNft := network.InterfaceName == nft.AdminInterface && req.TunnelMode == models.TunnelFull
 	s.tunnelChange(w, r, item, needsNft,
 		func(nodes []store.TunnelNode) {
@@ -134,7 +150,10 @@ func (s *Server) handleSetNetworkTunnel(w http.ResponseWriter, r *http.Request) 
 			}
 		},
 		func(ctx context.Context) error {
-			_, err := s.store.SetNetworkTunnelMode(ctx, id, req.TunnelMode)
+			found, err := s.store.SetNetworkTunnelMode(ctx, id, req.TunnelMode)
+			if err == nil && !found {
+				err = fmt.Errorf("network %s no longer exists", id)
+			}
 			return err
 		})
 }
@@ -160,6 +179,10 @@ func (s *Server) handleSetNodeTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item := TunnelChangeItem{NodeID: id, TunnelOverride: req.TunnelOverride}
+	if node.TunnelOverride == req.TunnelOverride {
+		jsonResponse(w, http.StatusOK, V2ChangeResponse{Item: item, Warnings: []string{}}) // nothing to change
+		return
+	}
 	network, err := s.store.GetNetwork(r.Context(), node.NetworkID)
 	if err != nil || network == nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to read the node's network")

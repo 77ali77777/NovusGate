@@ -33,3 +33,21 @@ test('fullTunnelBlock says why full tunnel is not available', () => {
   assert.equal(fullTunnelBlock({ isAdmin: true, adminNetwork: true, engine: 'nft' }), null)
   assert.equal(fullTunnelBlock({ isAdmin: true, adminNetwork: false, engine: 'iptables' }), null)
 })
+
+// After Apply: saved at once (iptables), waiting, confirmed (the stored mode
+// is the requested one) or rolled back (the deadline passed without it).
+// Between Confirm and the refreshed list it still says "waiting", never
+// "rolled back".
+test('tunnelResultState follows the pending change to its end', async () => {
+  const { tunnelResultState } = await import('../src/lib/tunnelMode.ts')
+  const base = { requested: 'full', deadlinePassed: false }
+  assert.equal(tunnelResultState({ ...base, hadPending: false, stillPending: false, stored: 'split' }), 'saved')
+  assert.equal(tunnelResultState({ ...base, hadPending: true, stillPending: true, stored: 'split' }), 'pending')
+  assert.equal(tunnelResultState({ ...base, hadPending: true, stillPending: false, stored: 'full' }), 'confirmed')
+  assert.equal(tunnelResultState({ ...base, hadPending: true, stillPending: false, stored: 'split' }), 'pending')
+  assert.equal(
+    tunnelResultState({ ...base, hadPending: true, stillPending: false, stored: 'split', deadlinePassed: true }),
+    'rolledBack'
+  )
+  assert.equal(tunnelResultState({ requested: '', deadlinePassed: false, hadPending: true, stillPending: false, stored: undefined }), 'confirmed', 'no override is ""')
+})
