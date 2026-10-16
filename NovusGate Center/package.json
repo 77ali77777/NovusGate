@@ -1,6 +1,6 @@
 {
     "name": "novusgate-installer",
-    "version": "1.0.0",
+    "version": "0.7.0",
     "description": "Web-based installer for novusgate Server",
     "main": "server.js",
     "scripts": {

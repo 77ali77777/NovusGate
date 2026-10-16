@@ -758,7 +758,7 @@
       <button class="add-server-btn" onclick="showAddServerModal()">+ New Server</button>
       
       <div class="footer">
-        <p>NovusGate Center v1.1</p>
+        <p>NovusGate Center <span id="appVersion"></span></p>
         <p>Developed by <a href="https://github.com/Ali7Zeynalli" target="_blank">Ali Zeynalli</a></p>
         <div style="margin-top: 8px; display: flex; gap: 12px; justify-content: center;">
           <a href="https://github.com/Ali7Zeynalli" target="_blank">GitHub</a>
@@ -2750,9 +2750,20 @@
       }
     }
 
+    // The release number in the footer, from /api/health (package.json); the
+    // footer keeps just the name if it cannot be read.
+    function showVersion() {
+      const el = document.getElementById('appVersion');
+      fetch('/api/health')
+        .then((res) => (res.ok ? res.json() : {}))
+        .then((h) => { el.textContent = h.version ? 'v' + h.version : ''; })
+        .catch(() => { el.textContent = ''; });
+    }
+
     // Initialize
     loadServers();
     checkCenterStatus();
+    showVersion();
   </script>
 </body>
 </html>

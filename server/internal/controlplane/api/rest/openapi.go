@@ -15,6 +15,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/hostadmin"
 	"github.com/novusgate/novusgate/internal/shared/models"
+	"github.com/novusgate/novusgate/internal/shared/version"
 )
 
 // freeform documents a JSON object whose shape is not modelled yet
@@ -382,7 +383,7 @@ func openAPIDocument() map[string]any {
 	}
 	return map[string]any{
 		"openapi":  "3.0.3",
-		"info":     map[string]any{"title": "NovusGate Control Plane API", "version": "0.1.0"},
+		"info":     map[string]any{"title": "NovusGate Control Plane API", "version": version.Version},
 		"servers":  []any{map[string]any{"url": "/"}},
 		"security": []any{map[string]any{"bearer": []any{}, "apiKey": []any{}}},
 		"components": map[string]any{

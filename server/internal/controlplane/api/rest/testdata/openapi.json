@@ -3266,7 +3266,7 @@
   },
   "info": {
     "title": "NovusGate Control Plane API",
-    "version": "0.1.0"
+    "version": "0.7.0"
   },
   "openapi": "3.0.3",
   "paths": {

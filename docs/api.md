@@ -79,10 +79,10 @@ Allow qaydası admin (3007, 5432) və API (8080, 8443) portlarını heç vaxt a�
 ## `GET /health` (P2b)
 Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `status` sahəsindədir, səbəbi `checks` göstərir. Xəta mətni qaytarılmır.
 
-**2026-10-14-dən (istifadəçi qərarı):** `checks` yalnız iki halda görünür: düzgün `X-API-Key` və ya etibarlı panel sessiyası (`Authorization: Bearer`). Digər çağırışlar yalnız `{"status":"…","version":"0.1.0"}` alır. `status` yenə bütün yoxlamalara əsasən hesablanır, ona görə monitorinq dəyişmir. Panelin nginx-i `/health`-ə API açarını əlavə etmir.
+**2026-10-14-dən (istifadəçi qərarı):** `checks` yalnız iki halda görünür: düzgün `X-API-Key` və ya etibarlı panel sessiyası (`Authorization: Bearer`). Digər çağırışlar yalnız `{"status":"…","version":"0.7.0"}` alır. `status` yenə bütün yoxlamalara əsasən hesablanır, ona görə monitorinq dəyişmir. Panelin nginx-i `/health`-ə API açarını əlavə etmir.
 
 ```json
-{"status":"healthy","version":"0.1.0","checks":{
+{"status":"healthy","version":"0.7.0","checks":{
   "database":{"ok":true},
   "wireguard":{"ok":true,"interfaces":{"wg0":"up","wg1":"up"}},
   "firewall":{"ok":true,"mode":"nft","ready":true,"pending":false}}}

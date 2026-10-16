@@ -26,6 +26,7 @@ import (
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
 	"github.com/novusgate/novusgate/internal/controlplane/store"
 	"github.com/novusgate/novusgate/internal/shared/models"
+	"github.com/novusgate/novusgate/internal/shared/version"
 	"github.com/novusgate/novusgate/internal/wireguard"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -1202,7 +1203,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	healthy := true
-	resp := HealthResponse{Status: "healthy", Version: "0.1.0",
+	resp := HealthResponse{Status: "healthy", Version: version.Version,
 		Checks: &HealthChecks{Firewall: FirewallCheck{OK: true, Mode: string(firewall.ModeIptables)}}}
 
 	if s.store.Ping(ctx) != nil {

@@ -853,9 +853,11 @@ function uploadFile(conn, localPath, remotePath) {
   });
 }
 
-// Health check
+// Health check; version is the NovusGate release (package.json), shown in
+// the page footer.
+const CENTER_VERSION = require('./package.json').version;
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: '2.0.0' });
+  res.json({ status: 'ok', version: CENTER_VERSION });
 });
 
 // Register Fail2ban routes

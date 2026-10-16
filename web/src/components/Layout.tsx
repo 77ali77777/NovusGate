@@ -203,7 +203,7 @@ export const Layout = () => {
 
         {/* Version */}
         <div className="px-4 pb-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">NovusGate v0.1.0</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">NovusGate v{__APP_VERSION__}</p>
         </div>
       </aside>
 

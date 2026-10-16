@@ -9,6 +9,7 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/reconciler"
+	"github.com/novusgate/novusgate/internal/shared/version"
 	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
@@ -50,7 +51,7 @@ func TestHealthReportsInterfaces(t *testing.T) {
 	seedContract(t, st)
 	interfaceUp = func(name string) bool { return name == "wg66" }
 	h := getHealth(t, s)
-	if h.Version != "0.1.0" || !h.Checks.Database.OK || h.Checks.Firewall.Mode != "iptables" || !h.Checks.Firewall.OK {
+	if h.Version != version.Version || !h.Checks.Database.OK || h.Checks.Firewall.Mode != "iptables" || !h.Checks.Firewall.OK {
 		t.Fatalf("health = %+v", h)
 	}
 	if h.Checks.WireGuard.OK || h.Checks.WireGuard.Interfaces["wg66"] != "up" || h.Checks.WireGuard.Interfaces["wg68"] != "down" || h.Status != "degraded" {
@@ -156,7 +157,7 @@ func TestHealthDetailsNeedAuth(t *testing.T) {
 	}
 	anon := callAs(t, s, "GET", "/health", "", false)
 	m := keys(anon.Body)
-	if anon.Code != 200 || len(m) != 2 || string(m["status"]) != `"degraded"` || string(m["version"]) != `"0.1.0"` {
+	if anon.Code != 200 || len(m) != 2 || string(m["status"]) != `"degraded"` || string(m["version"]) != `"`+version.Version+`"` {
 		t.Fatalf("anonymous /health = %d %s, want only status (still degraded) and version", anon.Code, anon.Body)
 	}
 

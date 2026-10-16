@@ -26,6 +26,7 @@ import (
 	"github.com/novusgate/novusgate/internal/netctl/nft"
 	"github.com/novusgate/novusgate/internal/shared/logging"
 	"github.com/novusgate/novusgate/internal/shared/models"
+	release "github.com/novusgate/novusgate/internal/shared/version"
 	"github.com/novusgate/novusgate/internal/wireguard"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,7 +35,7 @@ import (
 
 var (
 	cfgFile string
-	version = "0.1.0"
+	version = release.Version
 )
 
 func main() {
