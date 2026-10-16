@@ -2,7 +2,7 @@ import { Gauge, Grid3x3, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useFirewallPolicyMatrix, useNetworks } from '@/api/client'
 import { Card } from '@/components/ui'
-import { matrixReason, matrixShortReason } from '@/lib/matrixReason'
+import { matrixCellLabel, matrixReason, matrixShortReason } from '@/lib/matrixReason'
 import { networkLabelById } from '@/lib/networkDisplay'
 import { present } from '@/lib/present'
 
@@ -90,7 +90,13 @@ export const PolicyMatrix = ({ onCreateRule }: PolicyMatrixProps) => {
                       <button
                         type="button"
                         title={title}
-                        aria-label={title}
+                        aria-label={matrixCellLabel(
+                          t,
+                          from.name,
+                          to.name,
+                          c,
+                          cellLabel[c.verdict] ?? c.verdict
+                        )}
                         onClick={() => onCreateRule(from, to)}
                         className={`flex w-full flex-col items-center rounded px-2 py-2 text-xs ${cellStyle[c.verdict]}`}
                       >

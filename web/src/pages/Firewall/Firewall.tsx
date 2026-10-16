@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
   Download,
@@ -55,6 +56,7 @@ export const Firewall: React.FC = () => {
   // Host firewall changes are admin-only, VPN rules operator (P9a).
   const isAdmin = useCan('admin')
   const isOperator = useCan('operator')
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<FirewallTab>('overview')
   const [advancedSection, setAdvancedSection] = useState<AdvancedSection>('nft')
   const [selectedChain, setSelectedChain] = useState<string>('INPUT')
@@ -106,9 +108,11 @@ export const Firewall: React.FC = () => {
   const deleteVPNRuleMutation = useDeleteVPNFirewallRule()
   const applyVPNRulesMutation = useApplyVPNFirewallRules()
 
+  // Refresh reloads what every tab shows, the policy matrix included.
   const handleRefresh = () => {
     refetchRules()
     refetchVPN()
+    queryClient.invalidateQueries({ queryKey: ['firewall', 'vpn', 'matrix'] })
   }
 
   // Get chains data
@@ -411,6 +415,7 @@ export const Firewall: React.FC = () => {
             openPorts={openPorts}
             vpnRuleCount={vpnRuleCount}
             engine={engine}
+            isAdmin={isAdmin}
             onGo={setActiveTab}
             onOpenPort={() => setShowOpenPortModal(true)}
             onBlockIP={() => setShowBlockIPModal(true)}

@@ -38,3 +38,15 @@ export function matrixShortReason(t: T, cell: Cell): string {
   }
   return clip(t(`firewall:matrix.short.${cell.reason_key}`))
 }
+
+// matrixCellLabel is a cell's accessible name: the pair, the verdict and why,
+// so a screen reader hears what the colour shows.
+export function matrixCellLabel(
+  t: T,
+  from: string,
+  to: string,
+  cell: Cell,
+  verdict: string
+): string {
+  return `${from} → ${to}: ${verdict} — ${matrixReason(t, cell)}`
+}

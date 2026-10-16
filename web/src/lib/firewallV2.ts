@@ -87,11 +87,14 @@ export type EngineMode = 'nft' | 'iptables' | 'starting' | 'unknown'
 // engineMode is the firewall engine as the GET /firewall/v2/state query sees
 // it: an answer means nftables runs; an off engine means iptables; a starting
 // engine is nftables on its way. Loading or any other failure is unknown.
+// The latest error wins over cached data: React Query keeps the last answer
+// after a refetch fails, and that answer may predate a switch to iptables.
 export function engineMode(q: { data: unknown; error: unknown }): EngineMode {
+  if (q.error) {
+    const s = engineState(q.error)
+    if (s === 'disabled') return 'iptables'
+    if (s === 'not_ready') return 'starting'
+  }
   if (q.data) return 'nft'
-  if (!q.error) return 'unknown'
-  const s = engineState(q.error)
-  if (s === 'disabled') return 'iptables'
-  if (s === 'not_ready') return 'starting'
   return 'unknown'
 }

@@ -14,6 +14,7 @@ import {
   describeAudit,
   matchesAuditQuery,
 } from '@/lib/auditText'
+import { networkLabel } from '@/lib/networkDisplay'
 
 const resultVariant: Record<AuditResult, 'success' | 'warning' | 'danger' | 'default'> = {
   ok: 'success',
@@ -61,13 +62,15 @@ export const AuditPage = () => {
 
   const names = useMemo<AuditNames>(
     () => ({
-      network: byId(networks),
+      // Shown names: wg0 is "Admin VPN" (lib/networkDisplay), so the
+      // sentence and the search use it too.
+      network: byId(networks.map((n) => ({ id: n.id, name: networkLabel(n, t).name }))),
       group: byId(groups?.groups),
       limit: byId(limits?.profiles),
       user: byId(users?.map((u) => ({ id: u.id, name: u.username }))),
       node: byId(allNodes),
     }),
-    [networks, groups, limits, users, allNodes]
+    [networks, groups, limits, users, allNodes, t]
   )
 
   const [user, setUser] = useState('')
@@ -93,12 +96,12 @@ export const AuditPage = () => {
     [data, names, tx]
   )
   const actors = useMemo(
-    () => [...new Set(rows.map((r) => r.desc.actor).filter(Boolean))].sort(),
+    () => [...new Set(rows.map((r) => r.desc.filterUser).filter(Boolean))].sort(),
     [rows]
   )
   const shown = rows.filter(
     (r) =>
-      (!user || r.desc.actor === user) &&
+      (!user || r.desc.filterUser === user) &&
       (!kind || r.desc.kind === kind) &&
       matchesAuditQuery(
         [r.text, r.desc.actor, r.entry.user_ip ?? '', r.entry.action, r.desc.path],

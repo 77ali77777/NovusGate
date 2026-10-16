@@ -57,8 +57,9 @@ export const ServerTab = (p: ServerTabProps) => {
                 size="sm"
                 onClick={p.onExport}
                 title={t('actions.exportRules')}
+                aria-label={t('actions.exportRules')}
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
             <Button
@@ -66,8 +67,9 @@ export const ServerTab = (p: ServerTabProps) => {
               size="sm"
               onClick={p.onRefresh}
               title={t('common:actions.refresh')}
+              aria-label={t('common:actions.refresh')}
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

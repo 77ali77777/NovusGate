@@ -206,7 +206,7 @@
       "allow": "traffic passes",
       "deny": "traffic is dropped",
       "partial": "only some ports, protocols or devices pass",
-      "click": "To lift a deny, click the cell — a rule is created for that pair."
+      "click": "To lift a deny, click the cell — a rule form opens, filled in for that pair."
     }
   }
 }

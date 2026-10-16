@@ -167,6 +167,22 @@ export const NodesPage: React.FC = () => {
         <div className="min-w-[8rem] max-w-[14rem] break-normal">
           <p className="font-medium text-gray-900 dark:text-white">{node.name}</p>
           <p className="text-xs text-gray-500">{node.id.slice(0, 8)}...</p>
+          {/* Public IP and labels stay scannable here; the detail page has them in full. */}
+          {node.public_ip && (
+            <p className="text-xs text-gray-500">
+              <span className="sr-only">{t('detail.publicEndpoint')}: </span>
+              <code className="font-mono">{node.public_ip}</code>
+            </p>
+          )}
+          {Object.keys(node.labels ?? {}).length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {Object.entries(node.labels ?? {}).map(([key, value]) => (
+                <Badge key={key} size="sm">
+                  {key}={value}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       ),
     },

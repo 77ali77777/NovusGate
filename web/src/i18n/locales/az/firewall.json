@@ -206,7 +206,7 @@
       "allow": "trafik keçir",
       "deny": "trafik atılır",
       "partial": "yalnız bəzi portlar, protokollar və ya cihazlar keçir",
-      "click": "Qadağanı açmaq üçün xanaya klikləyin — həmin cüt üçün qayda yaradılır."
+      "click": "Qadağanı açmaq üçün xanaya klikləyin — həmin cüt üçün doldurulmuş qayda forması açılır."
     }
   }
 }

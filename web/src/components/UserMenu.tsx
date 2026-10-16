@@ -41,6 +41,10 @@ export const UserMenu = () => {
     const onPointerDown = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
     }
+    // Tab out of the last item (or Shift+Tab out of the button) closes it.
+    const onFocusIn = (e: FocusEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false)
@@ -49,9 +53,11 @@ export const UserMenu = () => {
     }
     document.addEventListener('mousedown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     return () => {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
     }
   }, [open])
 
@@ -60,19 +66,25 @@ export const UserMenu = () => {
   const role = roleKey ? t(roleKey) : (me?.role ?? '')
 
   return (
+    // A disclosure (button + list of buttons), not an ARIA menu: Tab moves
+    // through the items, and focus leaving the whole thing closes it.
     <div ref={rootRef} className="relative">
       <button
         ref={buttonRef}
         type="button"
-        aria-haspopup="true"
         aria-expanded={open}
-        aria-controls={menuId}
-        aria-label={t('userMenu.open')}
+        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-700"
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-          <User className="h-4 w-4" />
+          <User className="h-4 w-4" aria-hidden="true" />
+        </span>
+        {/* The accessible name keeps the user and role; on phones they are
+            only hidden visually. */}
+        <span className="sr-only">{t('userMenu.open')}</span>
+        <span className="sr-only sm:hidden">
+          {username} {role}
         </span>
         <span className="hidden sm:block leading-tight">
           <span className="block text-sm font-medium text-gray-900 dark:text-white">
@@ -80,7 +92,7 @@ export const UserMenu = () => {
           </span>
           <span className="block text-xs text-gray-500 dark:text-gray-400">{role}</span>
         </span>
-        <ChevronDown className="h-4 w-4 text-gray-500" />
+        <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
       </button>
 
       {open && (

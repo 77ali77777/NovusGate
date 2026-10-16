@@ -148,6 +148,9 @@ export interface AuditDescription {
   key: string // sentence key under "sentence."
   kind: AuditKind
   actor: string // who: the session user, or the username a login tried ('' unknown)
+  // filterUser: whose action this is for the user filter. A failed login only
+  // names the account someone tried, so it belongs to nobody ('').
+  filterUser: string
   params: Record<string, string>
   result: AuditResult
   method: string
@@ -206,6 +209,7 @@ export function describeAudit(entry: AuditEntryLike, names: AuditNames): AuditDe
       key: ok ? 'login.ok' : 'login.fail',
       kind: 'login',
       actor,
+      filterUser: ok ? actor : '',
       params: { user: actor || '—' },
       result: auditResult(status),
       method,
@@ -220,6 +224,7 @@ export function describeAudit(entry: AuditEntryLike, names: AuditNames): AuditDe
       key: method ? 'fallback.http' : 'fallback.action',
       kind: 'other',
       actor: user,
+      filterUser: user,
       params: { user, method, path: shownPath, action: entry.action },
       result: auditResult(status),
       method,
@@ -250,6 +255,7 @@ export function describeAudit(entry: AuditEntryLike, names: AuditNames): AuditDe
     key,
     kind: route.kind,
     actor: user,
+    filterUser: user,
     params,
     result: method ? auditResult(status) : 'ok',
     method,

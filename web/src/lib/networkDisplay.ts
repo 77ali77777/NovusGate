@@ -42,3 +42,20 @@ export function networkLabelById(
   const net = networks?.find((n) => n.id === id)
   return net ? networkLabel({ name, interface_name: net.interface_name }, t).name : name
 }
+
+// networkMatches: does a search find this network? It looks at the stored
+// name, the shown name ("Admin VPN"), the CIDR and the interface.
+export function networkMatches(
+  network: { name: string; cidr: string; interface_name?: string | null },
+  query: string,
+  t: Translate
+): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return [
+    network.name,
+    networkLabel(network, t).name,
+    network.cidr,
+    network.interface_name ?? '',
+  ].some((s) => s.toLowerCase().includes(q))
+}

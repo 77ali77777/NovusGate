@@ -9,7 +9,7 @@ import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { dateFnsLocale } from '@/i18n'
-import { networkLabel } from '@/lib/networkDisplay'
+import { networkLabel, networkMatches } from '@/lib/networkDisplay'
 import type { CreateNetworkForm } from '@/types'
 
 export const Networks = () => {
@@ -24,12 +24,7 @@ export const Networks = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const filteredNetworks = networks?.filter(
-    (n) =>
-      n.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.cidr.includes(searchQuery) ||
-      n.interface_name?.includes(searchQuery)
-  )
+  const filteredNetworks = networks?.filter((n) => networkMatches(n, searchQuery, t))
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
