@@ -5,27 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NovusGate Center</title>
   <style>
+    /* The panel's palette (web/: Tailwind gray + blue-600). Light by default;
+       dark follows the system setting, like the panel's default theme. */
     :root {
-      --bg: #0a0f1a;
-      --bg-card: #131b2e;
-      --bg-hover: #1e293b;
-      --bg-input: #0d1321;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-glow: rgba(59, 130, 246, 0.3);
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.3);
-      --warning: #f59e0b;
-      --warning-glow: rgba(245, 158, 11, 0.3);
-      --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.3);
-      --text: #f1f5f9;
-      --text-muted: #64748b;
-      --border: #1e293b;
-      --gradient-1: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      --gradient-2: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+      color-scheme: light;
+      --bg: #f9fafb;            /* gray-50 */
+      --bg-card: #ffffff;
+      --bg-hover: #f3f4f6;      /* gray-100 */
+      --bg-input: #ffffff;
+      --bg-panel: #f9fafb;      /* inset boxes (install progress, credentials) */
+      --accent: #2563eb;        /* blue-600 */
+      --accent-hover: #1d4ed8;  /* blue-700 */
+      --accent-soft: #eff6ff;   /* blue-50: the selected item */
+      --accent-glow: rgba(37, 99, 235, 0.2);
+      --success: #16a34a;       /* green-600 */
+      --success-glow: rgba(22, 163, 74, 0.15);
+      --warning: #d97706;       /* amber-600 */
+      --warning-glow: rgba(217, 119, 6, 0.15);
+      --danger: #dc2626;        /* red-600 */
+      --danger-glow: rgba(220, 38, 38, 0.15);
+      --danger-soft: #fee2e2;   /* red-100 */
+      --text: #111827;          /* gray-900 */
+      --text-muted: #6b7280;    /* gray-500 */
+      --border: #e5e7eb;        /* gray-200 */
+      --gradient-1: linear-gradient(var(--accent), var(--accent));
+      --gradient-2: linear-gradient(var(--success), var(--success));
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #111827;          /* gray-900 */
+        --bg-card: #1f2937;     /* gray-800 */
+        --bg-hover: #374151;    /* gray-700 */
+        --bg-input: #374151;
+        --bg-panel: #111827;
+        --accent-soft: rgba(37, 99, 235, 0.2);
+        --danger-soft: rgba(220, 38, 38, 0.25);
+        --text: #f9fafb;
+        --text-muted: #9ca3af;  /* gray-400 */
+        --border: #374151;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+      }
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -60,10 +83,7 @@
       font-size: 1.5rem;
       font-weight: 700;
       border-bottom: 1px solid var(--border);
-      background: var(--gradient-1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
       letter-spacing: -0.5px;
     }
     
@@ -96,9 +116,10 @@
       border-color: var(--border);
       transform: translateX(4px);
     }
-    .server-item.active { 
-      background: var(--accent);
-      box-shadow: 0 0 20px var(--accent-glow);
+    /* Like the panel's selected menu item: blue-50 with blue-600 text. */
+    .server-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
     }
     .server-info {
       flex: 1;
@@ -117,7 +138,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .server-item.active .server-host { color: rgba(255,255,255,0.7); }
+    .server-item.active .server-host { color: var(--text-muted); }
     
     .server-status {
       width: 10px;
@@ -153,9 +174,8 @@
       transition: all 0.2s ease;
       box-shadow: var(--shadow);
     }
-    .add-server-btn:hover { 
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg), 0 0 20px var(--accent-glow);
+    .add-server-btn:hover {
+      background: var(--accent-hover);
     }
     
     /* Main Content */
@@ -333,12 +353,14 @@
     .btn-danger:hover {
       box-shadow: 0 0 15px var(--danger-glow);
     }
+    /* The panel's secondary button (gray-100 / gray-700 in dark). */
     .btn-info {
-      background: #8b5cf6;
-      color: white;
+      background: var(--bg-hover);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
     .btn-info:hover {
-      box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+      background: var(--border);
     }
     .btn:hover { 
       transform: translateY(-2px);
@@ -403,8 +425,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -1008,7 +1029,7 @@
         <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
           
           <!-- Progress Steps -->
-          <div id="installProgress" style="display: none; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+          <div id="installProgress" style="display: none; background: var(--bg-panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
             <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 10px;">📊 Progress</div>
             <div class="progress-steps">
               <div class="progress-step" id="step-connect">
@@ -1043,7 +1064,7 @@
           </div>
           
           <!-- Credentials Section -->
-          <div id="installCredentials" style="display: none; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid var(--accent);">
+          <div id="installCredentials" style="display: none; background: var(--bg-panel); padding: 12px; border-radius: 8px; border: 1px solid var(--accent);">
             <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; color: var(--accent);">🔑 Credentials</div>
             <div style="display: flex; flex-direction: column; gap: 6px; font-family: monospace; font-size: 0.8rem;">
               <div style="display: flex; justify-content: space-between;">
@@ -1061,18 +1082,18 @@
               <div style="border-top: 1px solid #333; margin: 4px 0;"></div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: var(--text-muted)">DB Pass:</span>
-                <span id="credDbPass" style="color: #a855f7; font-size: 0.7rem;">-</span>
+                <span id="credDbPass" style="color: var(--accent); font-size: 0.7rem;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: var(--text-muted)">JWT:</span>
-                <span id="credJwt" style="color: #a855f7; font-size: 0.65rem;">-</span>
+                <span id="credJwt" style="color: var(--accent); font-size: 0.65rem;">-</span>
               </div>
             </div>
             <div style="margin-top: 8px; font-size: 0.7rem; color: var(--text-muted); text-align: center;">Save these credentials!</div>
           </div>
 
           <!-- VPN Config Section -->
-          <div id="vpnConfigSection" style="display: none; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid var(--accent);">
+          <div id="vpnConfigSection" style="display: none; background: var(--bg-panel); padding: 12px; border-radius: 8px; border: 1px solid var(--accent);">
             <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--accent);">🔒 Admin VPN</div>
             <p style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 10px;">
               Connect to VPN to access Admin Panel
@@ -1416,7 +1437,7 @@
                     <span style="color: var(--text-muted);">💾 Disk</span>
                     <span>${status.usedDisk || 'N/A'} / ${status.totalDisk || 'N/A'}</span>
                   </div>
-                  <div style="background: #1e293b; border-radius: 4px; height: 6px; overflow: hidden;">
+                  <div style="background: var(--bg-hover); border-radius: 4px; height: 6px; overflow: hidden;">
                     <div style="background: ${parseInt(status.diskPercent) > 80 ? 'var(--danger)' : 'var(--accent)'}; height: 100%; width: ${status.diskPercent || '0%'};"></div>
                   </div>
                 </div>
@@ -1426,7 +1447,7 @@
                     <span style="color: var(--text-muted);">🧠 RAM</span>
                     <span>${status.usedMemory || 'N/A'} / ${status.totalMemory || 'N/A'}</span>
                   </div>
-                  <div style="background: #1e293b; border-radius: 4px; height: 6px; overflow: hidden;">
+                  <div style="background: var(--bg-hover); border-radius: 4px; height: 6px; overflow: hidden;">
                     <div style="background: var(--success); height: 100%; width: ${calculateMemPercent(status.usedMemory, status.totalMemory)}%;"></div>
                   </div>
                 </div>
@@ -2255,7 +2276,7 @@
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">🔒 ${jail.jail}</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
                   ${jail.ips.slice(0, 4).map(ip => `
-                    <span style="background: #7f1d1d; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px;">
+                    <span style="background: var(--danger-soft); color: var(--danger); padding: 2px 6px; border-radius: 3px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px;">
                       ${ip}
                       <button onclick="unbanIP('${jail.jail}', '${ip}')" style="background: none; border: none; color: var(--success); cursor: pointer; padding: 0; font-size: 0.75rem;">✓</button>
                     </span>
@@ -2330,7 +2351,7 @@
               // Store temporarily for download
               window._tempVpnConfig = vpnData.config;
               vpnSection = `
-                <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--success); margin-top: 12px;">
+                <div style="background: var(--bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--success); margin-top: 12px;">
                   <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; color: var(--success);">🔒 Admin VPN Config</div>
                   <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Connect to VPN to access Admin Panel</p>
                   <button class="btn btn-success btn-sm" onclick="downloadServerVpnConfig()" style="width: 100%;">📥 Download admin-vpn.conf</button>
@@ -2343,7 +2364,7 @@
         }
         
         document.getElementById('credentialsContent').innerHTML = `
-          <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="background: var(--bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
             <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--accent);">👤 Admin Access</div>
             <div style="display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.85rem;">
               <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--bg); border-radius: 4px;">
@@ -2365,8 +2386,8 @@
             </div>
           </div>
           
-          <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-top: 12px;">
-            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #a855f7;">🗄️ Database</div>
+          <div style="background: var(--bg-panel); padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-top: 12px;">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--accent);">🗄️ Database</div>
             <div style="display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.85rem;">
               <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--bg); border-radius: 4px;">
                 <span style="color: var(--text-muted);">DB Name:</span>
@@ -2378,11 +2399,11 @@
               </div>
               <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--bg); border-radius: 4px;">
                 <span style="color: var(--text-muted);">DB Password:</span>
-                <span style="color: #a855f7; font-size: 0.75rem;">${creds.dbPass || '-'}</span>
+                <span style="color: var(--accent); font-size: 0.75rem;">${creds.dbPass || '-'}</span>
               </div>
               <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--bg); border-radius: 4px;">
                 <span style="color: var(--text-muted);">JWT Secret:</span>
-                <span style="color: #a855f7; font-size: 0.6rem; word-break: break-all;">${creds.jwtSecret || '-'}</span>
+                <span style="color: var(--accent); font-size: 0.6rem; word-break: break-all;">${creds.jwtSecret || '-'}</span>
               </div>
             </div>
           </div>
