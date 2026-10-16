@@ -83,6 +83,9 @@ func TestCutoverAcceptsFirstThenDeletesPanelRules(t *testing.T) {
 		"iptables -D INPUT -i lo -j ACCEPT",
 		`iptables -D INPUT -p tcp -m tcp --dport 443 -m comment --comment panel "web" port -j ACCEPT`,
 		"iptables -D INPUT -s 198.51.100.9/32 -j DROP",
+		"iptables -S DOCKER-USER",
+		"iptables -C DOCKER-USER -i wg+ -m comment --comment novusgate-docker-user -j ACCEPT",
+		"iptables -C DOCKER-USER -o wg+ -m comment --comment novusgate-docker-user -j ACCEPT",
 		"netfilter-persistent save",
 	}
 	if strings.Join(h.calls, "\n") != strings.Join(want, "\n") {
@@ -124,5 +127,57 @@ func TestCutoverToleratesMissingPersistence(t *testing.T) {
 		fail: map[string]bool{"netfilter-persistent save": true}}
 	if _, err := CutoverIptables(h); err != nil {
 		t.Fatalf("the next start repeats the hand-over; save failure is only logged: %v", err)
+	}
+}
+
+// Docker's filter FORWARD chain drops by default (Docker 28+), and in
+// nftables a packet must pass every base chain on the hook: without an
+// ACCEPT there, VPN traffic table inet novusgate allows (full tunnel to the
+// internet, the admin VPN wg0 which has no wg-quick PostUp) is still
+// dropped. The hand-over lets VPN interfaces through DOCKER-USER; the
+// forward chain of table inet novusgate runs first and decides.
+func TestCutoverLetsVPNTrafficThroughDocker(t *testing.T) {
+	in := "iptables -C DOCKER-USER -i wg+ -m comment --comment novusgate-docker-user -j ACCEPT"
+	out := "iptables -C DOCKER-USER -o wg+ -m comment --comment novusgate-docker-user -j ACCEPT"
+	h := &hostTable{out: map[string]string{"iptables -S INPUT": "-P INPUT ACCEPT\n"},
+		fail: map[string]bool{in: true, out: true}}
+	if _, err := CutoverIptables(h); err != nil {
+		t.Fatal(err)
+	}
+	calls := strings.Join(h.calls, "\n")
+	for _, want := range []string{
+		"iptables -I DOCKER-USER -i wg+ -m comment --comment novusgate-docker-user -j ACCEPT",
+		"iptables -I DOCKER-USER -o wg+ -m comment --comment novusgate-docker-user -j ACCEPT",
+	} {
+		if !strings.Contains(calls, want) {
+			t.Errorf("missing %q in:\n%s", want, calls)
+		}
+	}
+	if !strings.HasSuffix(calls, "netfilter-persistent save") {
+		t.Errorf("the rules must be saved for boot:\n%s", calls)
+	}
+}
+
+// Without Docker's chain (Docker not managing iptables) nothing is added.
+func TestCutoverWithoutDockerUserChain(t *testing.T) {
+	h := &hostTable{out: map[string]string{"iptables -S INPUT": "-P INPUT ACCEPT\n"},
+		fail: map[string]bool{"iptables -S DOCKER-USER": true}}
+	if _, err := CutoverIptables(h); err != nil {
+		t.Fatalf("a host without DOCKER-USER is not an error: %v", err)
+	}
+	for _, c := range h.calls {
+		if strings.Contains(c, "-I DOCKER-USER") {
+			t.Fatalf("no rule may be added without the chain: %s", c)
+		}
+	}
+}
+
+// A failed insert is an error, so the hand-over retries.
+func TestCutoverRetriesWhenDockerRuleFails(t *testing.T) {
+	in := "iptables -C DOCKER-USER -i wg+ -m comment --comment novusgate-docker-user -j ACCEPT"
+	h := &hostTable{out: map[string]string{"iptables -S INPUT": "-P INPUT ACCEPT\n"},
+		fail: map[string]bool{in: true, "iptables -I DOCKER-USER -i wg+ -m comment --comment novusgate-docker-user -j ACCEPT": true}}
+	if _, err := CutoverIptables(h); err == nil {
+		t.Fatal("a failed DOCKER-USER insert must be reported")
 	}
 }

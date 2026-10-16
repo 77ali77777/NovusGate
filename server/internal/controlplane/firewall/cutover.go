@@ -95,10 +95,42 @@ func CutoverIptables(r nft.Runner) (int, error) {
 		}
 		deleted++
 	}
+	if err := allowVPNThroughDocker(r); err != nil {
+		return deleted, err
+	}
 	if _, err := r.Run("", "netfilter-persistent", "save"); err != nil {
 		slog.Error(fmt.Sprintf("firewall: netfilter-persistent save failed (the next start repeats the hand-over): %v", err))
 	}
 	return deleted, nil
+}
+
+// dockerUserComment marks the DOCKER-USER rules the hand-over adds.
+const dockerUserComment = "novusgate-docker-user"
+
+// allowVPNThroughDocker lets VPN interfaces pass Docker's filter FORWARD
+// chain, whose policy is DROP. In nftables a packet must be accepted by every
+// base chain on the hook, so without this, traffic table inet novusgate
+// allows (full tunnel to the internet, the admin VPN wg0, which has no
+// wg-quick PostUp ACCEPT) is still dropped there. DOCKER-USER is the chain
+// Docker leaves to the administrator. The forward chain of table inet
+// novusgate runs first (priority filter - 10) and drops everything the VPN
+// rules do not allow, so these ACCEPTs only pass what it already let through.
+// Without DOCKER-USER (Docker not managing iptables) nothing is added.
+func allowVPNThroughDocker(r nft.Runner) error {
+	if _, err := r.Run("", "iptables", "-S", "DOCKER-USER"); err != nil {
+		slog.Info("firewall: no DOCKER-USER chain; Docker's FORWARD chain is left as it is")
+		return nil
+	}
+	for _, dir := range []string{"-i", "-o"} {
+		spec := []string{"DOCKER-USER", dir, "wg+", "-m", "comment", "--comment", dockerUserComment, "-j", "ACCEPT"}
+		if _, err := r.Run("", "iptables", append([]string{"-C"}, spec...)...); err == nil {
+			continue
+		}
+		if _, err := r.Run("", "iptables", append([]string{"-I"}, spec...)...); err != nil {
+			return fmt.Errorf("let VPN traffic through DOCKER-USER (%s): %w", dir, err)
+		}
+	}
+	return nil
 }
 
 // ruleTarget returns the -j target of a rule spec.
