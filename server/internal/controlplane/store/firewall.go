@@ -160,9 +160,15 @@ func (s *Store) DeleteFirewallForward(ctx context.Context, id string) error {
 	return err
 }
 
+// egressNodesSQL selects the nodes that use the hub as internet exit: their
+// override, or else their network's tunnel mode, is full.
+const egressNodesSQL = `
+	SELECT n.id FROM nodes n JOIN networks w ON w.id = n.network_id
+	WHERE COALESCE(n.tunnel_override, w.tunnel_mode) = 'full'`
+
 // ListEgressNodeIDs returns the nodes allowed to use the server as internet exit.
 func (s *Store) ListEgressNodeIDs(ctx context.Context) ([]string, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT node_id FROM fw_egress ORDER BY node_id`)
+	rows, err := s.db.QueryContext(ctx, egressNodesSQL+` ORDER BY n.id`)
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +184,67 @@ func (s *Store) ListEgressNodeIDs(ctx context.Context) ([]string, error) {
 	return out, rows.Err()
 }
 
-// SetNodeEgress allows or forbids a node to reach the internet through the server.
+// SetNodeEgress allows or forbids a node to reach the internet through the
+// server (the per-node toggle): on is a full override; off follows a split
+// network or, in a full network, is a split override.
 func (s *Store) SetNodeEgress(ctx context.Context, nodeID string, enabled bool) error {
 	if enabled {
-		_, err := s.db.ExecContext(ctx, `INSERT INTO fw_egress (node_id) VALUES ($1) ON CONFLICT (node_id) DO NOTHING`, nodeID)
-		return err
+		return s.SetNodeTunnelOverride(ctx, nodeID, models.TunnelFull)
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM fw_egress WHERE node_id = $1`, nodeID)
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE nodes n SET tunnel_override = CASE WHEN w.tunnel_mode = 'full' THEN 'split' END
+		FROM networks w WHERE w.id = n.network_id AND n.id = $1`, nodeID)
 	return err
+}
+
+// SetNodeTunnelOverride sets a node's tunnel mode (TunnelSplit, TunnelFull)
+// or, with "", makes it follow its network again.
+func (s *Store) SetNodeTunnelOverride(ctx context.Context, nodeID, mode string) error {
+	if mode != "" && !models.ValidTunnelMode(mode) {
+		return fmt.Errorf("invalid tunnel mode %q", mode)
+	}
+	_, err := s.db.ExecContext(ctx, `UPDATE nodes SET tunnel_override = NULLIF($2, '') WHERE id = $1`, nodeID, mode)
+	return err
+}
+
+// SetNetworkTunnelMode sets what a network's nodes route through the hub.
+// It reports whether the network exists.
+func (s *Store) SetNetworkTunnelMode(ctx context.Context, networkID, mode string) (bool, error) {
+	if !models.ValidTunnelMode(mode) {
+		return false, fmt.Errorf("invalid tunnel mode %q", mode)
+	}
+	res, err := s.db.ExecContext(ctx, `UPDATE networks SET tunnel_mode = $2, updated_at = NOW() WHERE id = $1`, networkID, mode)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n == 1, err
+}
+
+// TunnelNode is what decides a node's tunnel mode.
+type TunnelNode struct {
+	ID, NetworkID, Override, NetworkMode string
+}
+
+// ListTunnelNodes returns every node with its override and its network's
+// tunnel mode, so a change can be previewed before it is stored.
+func (s *Store) ListTunnelNodes(ctx context.Context) ([]TunnelNode, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT n.id, n.network_id, COALESCE(n.tunnel_override, ''), w.tunnel_mode
+		FROM nodes n JOIN networks w ON w.id = n.network_id ORDER BY n.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []TunnelNode{}
+	for rows.Next() {
+		var t TunnelNode
+		if err := rows.Scan(&t.ID, &t.NetworkID, &t.Override, &t.NetworkMode); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
 }
 
 // ResetFirewallHostRules removes every service and IP rule in one transaction

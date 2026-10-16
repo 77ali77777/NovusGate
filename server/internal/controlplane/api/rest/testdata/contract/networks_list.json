@@ -10,6 +10,7 @@
       "name": "contract-net",
       "server_endpoint": "203.0.113.1",
       "server_public_key": "<key>",
+      "tunnel_mode": "split",
       "updated_at": "<time>"
     },
     {
@@ -21,6 +22,7 @@
       "listen_port": 51868,
       "name": "contract-zempty",
       "server_public_key": "<key>",
+      "tunnel_mode": "split",
       "updated_at": "<time>"
     }
   ],

@@ -372,6 +372,10 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	response := CreateServerResponse{Node: node, Config: config}
 
 	s.triggerReconcile()
+	// A full-tunnel network's new node joins the hub's internet exit set.
+	if network.TunnelMode == models.TunnelFull && node.TunnelOverride == "" {
+		s.reconcileFirewall(r.Context())
+	}
 	jsonResponse(w, http.StatusCreated, response)
 }
 

@@ -27,9 +27,20 @@ type Network struct {
 	ListenPort       int       `json:"listen_port"`                 // UDP port (e.g., 51820)
 	InterfaceName    string    `json:"interface_name"`              // Interface name (e.g., wg0)
 	ClientDNS        string    `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
+	TunnelMode       string    `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
+
+// Tunnel modes. Split: a node's config routes the VPN networks through the
+// hub; full: all IPv4 traffic, the hub being its internet exit.
+const (
+	TunnelSplit = "split"
+	TunnelFull  = "full"
+)
+
+// ValidTunnelMode reports whether m is a tunnel mode.
+func ValidTunnelMode(m string) bool { return m == TunnelSplit || m == TunnelFull }
 
 // Node represents a peer (spoke) in the VPN network
 type Node struct {
@@ -48,7 +59,10 @@ type Node struct {
 	NodeInfo   *NodeInfo         `json:"node_info,omitempty"`
 	Endpoints  []string          `json:"endpoints"`
 	HasConfig  bool              `json:"has_config"` // the server holds its private key: config, QR and install script work
-	CreatedAt  time.Time         `json:"created_at"`
+	// TunnelOverride is TunnelSplit or TunnelFull for this node only; empty:
+	// the node follows its network's TunnelMode.
+	TunnelOverride string    `json:"tunnel_override"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // Active reports whether the node may hold a WireGuard peer at time now: it

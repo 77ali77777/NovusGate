@@ -313,3 +313,11 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `POST /networks` da `client_dns` qəbul edir (eyni yoxlama).
 - `Network` cavablarında yeni `client_dns` sahəsi.
 - Konfiqlər: DNS varsa split və tam tunel konfiqlərinə yazılır; yoxdursa tam tunel `1.1.1.1`, split DNS-siz. Cihazlarda olan konfiqlər yenidən endirilənə qədər dəyişmir.
+
+## Şəbəkənin tunel rejimi (2026-10-16)
+- `Network` cavablarında `tunnel_mode` (`split`/`full`), `Node` cavablarında `tunnel_override` (`split`/`full`/`""` = şəbəkəyə uyğun). Yeni sahələrdir; mövcud sahələr dəyişməyib.
+- `POST /networks` `tunnel_mode` qəbul edir (boş = `split`; başqa dəyər → 400 `invalid_tunnel_mode`). `full` yalnız admin üçündür (operator → 403 `forbidden`).
+- `PUT /networks/{id}/tunnel` `{tunnel_mode}` və `PUT /nodes/{id}/tunnel` `{tunnel_override}` → 200 v2 dəyişiklik cavabı: `item` = `{network_id|node_id, tunnel_mode, tunnel_override, affected_nodes}`, `pending`, `warnings`. `affected_nodes` rejimi split↔full dəyişən cihazların sayıdır: onların konfiqi yenidən endirilməlidir. Rol: admin. Səhv dəyər → 400 `invalid_tunnel_mode`, naməlum id → 404.
+- nftables rejimində dəyişiklik firewall-dan keçir (`?confirm=false` də işləyir, default təsdiq gözləyir). iptables rejimində yalnız konfiqlər dəyişir (hər şəbəkənin wg-quick PostUp-ı NAT edir); Admin VPN (`wg0`) üçün `full` → 409 `full_tunnel_needs_nft`.
+- Tam tunel şəbəkəsində yaradılan cihaz firewall-un çıxış dəstinə dərhal düşür (yaradılandan sonra reconcile).
+- `PUT/DELETE /firewall/v2/egress/{nodeId}` işləməyə davam edir: açıq = `full` override; bağlı = split şəbəkədə override yox, full şəbəkədə `split` override.

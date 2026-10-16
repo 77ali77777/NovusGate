@@ -92,7 +92,7 @@ func (s *Store) ReplaceFirewallState(ctx context.Context, services []*models.Fir
 		return err
 	}
 	defer tx.Rollback()
-	for _, q := range []string{`DELETE FROM fw_services`, `DELETE FROM fw_ip_rules`, `DELETE FROM fw_forwards`, `DELETE FROM fw_egress`} {
+	for _, q := range []string{`DELETE FROM fw_services`, `DELETE FROM fw_ip_rules`, `DELETE FROM fw_forwards`} {
 		if _, err := tx.ExecContext(ctx, q); err != nil {
 			return err
 		}
@@ -132,11 +132,20 @@ func (s *Store) ReplaceFirewallState(ctx context.Context, services []*models.Fir
 			return err
 		}
 	}
-	for _, id := range egress {
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO fw_egress (node_id) SELECT id FROM nodes WHERE id::text = $1 ON CONFLICT (node_id) DO NOTHING`, id); err != nil {
-			return err
-		}
+	// The exit set becomes exactly egress: only nodes whose current mode
+	// differs get an override, so overrides that already agree stay.
+	if egress == nil {
+		egress = []string{}
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE nodes n SET tunnel_override = CASE
+			WHEN (n.id::text = ANY($1)) = (w.tunnel_mode = 'full') THEN NULL
+			WHEN n.id::text = ANY($1) THEN 'full' ELSE 'split' END
+		FROM networks w
+		WHERE w.id = n.network_id
+		  AND (COALESCE(n.tunnel_override, w.tunnel_mode) = 'full') <> (n.id::text = ANY($1))`,
+		pq.Array(egress)); err != nil {
+		return err
 	}
 	return tx.Commit()
 }

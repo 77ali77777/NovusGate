@@ -293,6 +293,7 @@ func (s *Server) setupRoutes() {
 	s.registerLimitRoutes(api)
 	s.registerServerAdminRoutes(api)
 	s.registerRoleRoutes(api)
+	s.registerTunnelRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
 	// Health check
@@ -641,6 +642,19 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 	if network.ClientDNS, err = normalizeClientDNS(network.ClientDNS); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_dns", err.Error())
+		return
+	}
+	if network.TunnelMode == "" {
+		network.TunnelMode = models.TunnelSplit
+	}
+	if !models.ValidTunnelMode(network.TunnelMode) {
+		errorWithCode(w, http.StatusBadRequest, "invalid_tunnel_mode", `tunnel_mode must be "split" or "full"`)
+		return
+	}
+	// A full network makes the hub its nodes' internet exit, like every
+	// tunnel change (PUT .../tunnel): that needs an admin.
+	if user, _ := sessionFrom(r); network.TunnelMode == models.TunnelFull && user != nil && roleRank[user.Role] < roleRank["admin"] {
+		errorWithCode(w, http.StatusForbidden, "forbidden", "your role ("+user.Role+") cannot create a full-tunnel network; it needs admin")
 		return
 	}
 	// The hub takes the first address; a /31 or /32 leaves no room for a peer.

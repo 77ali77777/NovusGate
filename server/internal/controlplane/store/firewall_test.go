@@ -26,8 +26,14 @@ func newTestStore(t *testing.T) *Store {
 	if err := s.Migrate(ctx); err != nil {
 		t.Fatal(err)
 	}
-	for _, table := range []string{"fw_services", "fw_ip_rules", "fw_forwards", "fw_egress", "fw_meta"} {
+	for _, table := range []string{"fw_services", "fw_ip_rules", "fw_forwards", "fw_meta"} {
 		if _, err := s.db.ExecContext(ctx, "DELETE FROM "+table); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// No node uses the hub as internet exit (the exit set comes from these).
+	for _, q := range []string{`UPDATE nodes SET tunnel_override = NULL`, `UPDATE networks SET tunnel_mode = 'split'`} {
+		if _, err := s.db.ExecContext(ctx, q); err != nil {
 			t.Fatal(err)
 		}
 	}

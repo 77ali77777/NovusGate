@@ -53,11 +53,14 @@ func (s *Store) CreateNetwork(ctx context.Context, network *models.Network) erro
 	}
 	network.CreatedAt = time.Now()
 	network.UpdatedAt = time.Now()
-	
+	if network.TunnelMode == "" {
+		network.TunnelMode = models.TunnelSplit
+	}
+
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO networks (id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, network.ID, network.Name, network.CIDR, network.ServerPrivateKey, network.ServerPublicKey, network.ServerEndpoint, network.ListenPort, network.InterfaceName, network.ClientDNS, network.CreatedAt, network.UpdatedAt)
+		INSERT INTO networks (id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, network.ID, network.Name, network.CIDR, network.ServerPrivateKey, network.ServerPublicKey, network.ServerEndpoint, network.ListenPort, network.InterfaceName, network.ClientDNS, network.TunnelMode, network.CreatedAt, network.UpdatedAt)
 	
 	return err
 }
@@ -67,9 +70,9 @@ func (s *Store) GetNetwork(ctx context.Context, id string) (*models.Network, err
 	var network models.Network
 	var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
 		FROM networks WHERE id = $1
-	`, id).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.CreatedAt, &network.UpdatedAt)
+	`, id).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -85,9 +88,9 @@ func (s *Store) GetNetworkByName(ctx context.Context, name string) (*models.Netw
 	var network models.Network
 	var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
 		FROM networks WHERE name = $1
-	`, name).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.CreatedAt, &network.UpdatedAt)
+	`, name).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -101,7 +104,7 @@ func (s *Store) GetNetworkByName(ctx context.Context, name string) (*models.Netw
 // ListNetworks lists all networks
 func (s *Store) ListNetworks(ctx context.Context) ([]*models.Network, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
 		FROM networks ORDER BY name
 	`)
 	if err != nil {
@@ -113,7 +116,7 @@ func (s *Store) ListNetworks(ctx context.Context) ([]*models.Network, error) {
 	for rows.Next() {
 		var network models.Network
 		var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
-		if err := rows.Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.CreatedAt, &network.UpdatedAt); err != nil {
+		if err := rows.Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt); err != nil {
 			return nil, err
 		}
 		network.ServerPrivateKey = serverPrivateKey.String
@@ -179,10 +182,10 @@ func (s *Store) insertNode(ctx context.Context, node *models.Node, sealedKey *st
 	nodeInfoJSON, _ := json.Marshal(node.NodeInfo)
 
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO nodes (id, network_id, name, virtual_ip, public_key, labels, status, node_info, expires_at, created_at, private_key_enc)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO nodes (id, network_id, name, virtual_ip, public_key, labels, status, node_info, expires_at, created_at, private_key_enc, tunnel_override)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULLIF($12, ''))
 	`, node.ID, node.NetworkID, node.Name, node.VirtualIP.String(), node.PublicKey,
-		labelsJSON, node.Status, nodeInfoJSON, node.ExpiresAt, node.CreatedAt, sealedKey)
+		labelsJSON, node.Status, nodeInfoJSON, node.ExpiresAt, node.CreatedAt, sealedKey, node.TunnelOverride)
 
 	return err
 }
@@ -195,10 +198,10 @@ func (s *Store) GetNode(ctx context.Context, id string) (*models.Node, error) {
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
 		FROM nodes WHERE id = $1
 	`, id).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -225,10 +228,10 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
 		FROM nodes WHERE network_id = $1 AND name = $2
 	`, networkID, name).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -250,7 +253,7 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 // ListNodes lists all nodes in a network
 func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
 		FROM nodes WHERE network_id = $1 ORDER BY name
 	`, networkID)
 	if err != nil {
@@ -266,7 +269,7 @@ func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node
 		var lastSeen sql.NullTime
 		
 		if err := rows.Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig); err != nil {
+			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride); err != nil {
 			return nil, err
 		}
 		

@@ -12,6 +12,7 @@
       "network_id": "<uuid-2>",
       "public_key": "<key>",
       "status": "online",
+      "tunnel_override": "",
       "virtual_ip": "10.66.0.4"
     }
   },

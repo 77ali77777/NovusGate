@@ -123,3 +123,10 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `sessions.elevated_until` TIMESTAMPTZ NULL: step-up-ın bitmə vaxtı (5 dəqiqə).
 - `networks.client_dns` TEXT NOT NULL DEFAULT `''`: klient konfiqlərinin DNS serverləri (`"a, b"`, ən çox 3 IP); boş = default.
 - Rollback: `migrations_rollback/019_server_admin.down.sql`.
+
+## 020: şəbəkənin tunel rejimi (2026-10-16)
+- `networks.tunnel_mode` TEXT NOT NULL DEFAULT `'split'`, CHECK `split`/`full`: şəbəkənin cihazları hub-dan nəyi keçirir — `split` yalnız VPN şəbəkələrini, `full` bütün IPv4 trafiki (hub onların internet çıxışıdır).
+- `nodes.tunnel_override` TEXT NULL, CHECK `split`/`full`: yalnız bu cihaz üçün; NULL = şəbəkənin rejimi.
+- Hub-un internet çıxışı olan cihazlar (`ListEgressNodeIDs`, firewall state-də `egress_node_ids`) indi hesablanır: `COALESCE(n.tunnel_override, w.tunnel_mode) = 'full'`.
+- `fw_egress` cədvəli silindi; onun sətirləri `tunnel_override = 'full'` oldu. History bərpası dəqiq həmin dəsti qurur: yalnız rejimi fərqli olan cihazlara override yazılır (şəbəkə ilə uyğun gələndə NULL).
+- Rollback: `migrations_rollback/020_tunnel_mode.down.sql` — `fw_egress` yenidən yaradılır və effektiv tam tunel cihazları ilə doldurulur, sonra iki sütun silinir.

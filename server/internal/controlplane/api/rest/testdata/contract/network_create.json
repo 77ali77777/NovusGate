@@ -9,6 +9,7 @@
     "name": "contract-new",
     "server_endpoint": "127.0.0.1:51820",
     "server_public_key": "<key>",
+    "tunnel_mode": "split",
     "updated_at": "<time>"
   },
   "content_type": "application/json",

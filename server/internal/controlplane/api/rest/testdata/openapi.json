@@ -1443,6 +1443,9 @@
           "server_public_key": {
             "type": "string"
           },
+          "tunnel_mode": {
+            "type": "string"
+          },
           "updated_at": {
             "format": "date-time",
             "type": "string"
@@ -1456,6 +1459,7 @@
           "interface_name",
           "listen_port",
           "name",
+          "tunnel_mode",
           "updated_at"
         ],
         "type": "object"
@@ -1488,6 +1492,9 @@
             "type": "string"
           },
           "server_public_key": {
+            "type": "string"
+          },
+          "tunnel_mode": {
             "type": "string"
           },
           "updated_at": {
@@ -1546,6 +1553,14 @@
           "transfer_rx",
           "transfer_tx"
         ],
+        "type": "object"
+      },
+      "NetworkTunnelRequest": {
+        "properties": {
+          "tunnel_mode": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "NetworkView": {
@@ -1653,6 +1668,9 @@
           "transfer_tx": {
             "type": "integer"
           },
+          "tunnel_override": {
+            "type": "string"
+          },
           "virtual_ip": {
             "description": "IP address",
             "type": "string"
@@ -1669,6 +1687,7 @@
           "network_id",
           "public_key",
           "status",
+          "tunnel_override",
           "virtual_ip"
         ],
         "type": "object"
@@ -1910,6 +1929,14 @@
           "points",
           "range"
         ],
+        "type": "object"
+      },
+      "NodeTunnelRequest": {
+        "properties": {
+          "tunnel_override": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "NotificationSettings": {
@@ -5519,6 +5546,66 @@
         ]
       }
     },
+    "/api/v1/networks/{id}/tunnel": {
+      "put": {
+        "operationId": "put_networks_by_id_tunnel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NetworkTunnelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Set what the network's nodes route through the hub: split (VPN networks) or full (all IPv4; the hub is their internet exit). Admin; a firewall change in nftables mode",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
     "/api/v1/networks/{networkId}/nodes": {
       "get": {
         "operationId": "get_networks_by_networkId_nodes",
@@ -6097,6 +6184,66 @@
           }
         },
         "summary": "Traffic history of the node (bytes per interval)",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
+    "/api/v1/nodes/{id}/tunnel": {
+      "put": {
+        "operationId": "put_nodes_by_id_tunnel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "false applies at once; otherwise the change rolls back unless confirmed",
+            "in": "query",
+            "name": "confirm",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeTunnelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Set one node's tunnel mode (split, full, or empty to follow its network). Admin; a firewall change in nftables mode",
         "tags": [
           "nodes"
         ]
