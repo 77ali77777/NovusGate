@@ -738,6 +738,8 @@
     .help-tip-panel > span { display: block; }
     .help-tip-panel > span + span { margin-top: 6px; }
     .help-tip-panel b { color: var(--accent); font-weight: 600; }
+      .center-stale { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--warning); border-radius: 10px; background: var(--warning-glow); font-size: 0.9rem; line-height: 1.5; }
+    .center-stale code { padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.25); font-size: 0.85rem; }
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
@@ -767,6 +769,7 @@
     
     <!-- Main Content -->
     <main class="main">
+      <div id="centerStale" class="center-stale" hidden></div>
       <header class="header">
         <h1 id="serverTitle">Select Server</h1>
         <div class="header-actions">
@@ -2724,8 +2727,32 @@
       window.addEventListener('resize', () => { if (current) hide(); });
     })();
 
+    // Warn when this Center runs older files than its folder (git pull
+    // without rebuilding the Center): Install and Update would use old scripts.
+    async function checkCenterStatus() {
+      try {
+        const res = await fetch('/api/center/status');
+        if (!res.ok) return;
+        const st = await res.json();
+        const box = document.getElementById('centerStale');
+        if (!st.stale) { box.hidden = true; return; }
+        box.textContent = '';
+        const title = document.createElement('strong');
+        title.textContent = '⚠️ NovusGate Center is out of date. ';
+        const text = document.createElement('span');
+        text.textContent = 'Its folder has newer files (' + st.files.slice(0, 3).join(', ') + (st.files.length > 3 ? ', …' : '') + '), so Install and Update would use the old scripts. Rebuild it on this computer: ';
+        const cmd = document.createElement('code');
+        cmd.textContent = st.rebuild;
+        box.append(title, text, cmd);
+        box.hidden = false;
+      } catch (e) {
+        // Status is advisory; the page works without it.
+      }
+    }
+
     // Initialize
     loadServers();
+    checkCenterStatus();
   </script>
 </body>
 </html>

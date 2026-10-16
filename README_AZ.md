@@ -291,7 +291,12 @@ curl -sk -o /dev/null -w '%{http_code}\n' https://10.99.0.1:3007
 Quraşdırma defolt olaraq **iptables** rejimində işləyir. **Limit profilləri, trafik kvotası, Advanced tab (port yönləndirmə və s.), Live və History** üçün nftables mühərrikini açmaq lazımdır. Addımlar, yoxlamalar və geri qayıdış: [`docs/runbooks/p3b2-firewall-cutover.md`](./docs/runbooks/p3b2-firewall-cutover.md). Qısaca: Center → Update → `server/deployments/docker/.env`-ə `FIREWALL_ENGINE=nft` → `docker compose up -d control-plane` → Center → Update bir daha.
 
 ### Yeniləmə
-Center → **Update**: kodu yeniləyir, `.env`, verilənlər bazası və VPN konfiqləri saxlanılır, əvvəlcə ehtiyat nüsxə alınır (`/var/backups/novusgate/`), uğursuz olsa əvvəlki versiya avtomatik bərpa olunur. Verilənlər bazası miqrasiyaları control plane başlayanda öz-özünə tətbiq olunur.
+Düzgün sıra:
+1. Yeniliyi kompüterinizə çəkin: `git checkout main && git pull`
+2. Center-in özünü yenidən qurun: `cd "NovusGate Center" && docker compose up -d --build` (Center-in skriptləri onun image-inin içindədir; köhnə qalıbsa Center səhifədə və Update log-unda xəbərdarlıq göstərir).
+3. Center → serveri seçin → **Update**.
+
+Center → **Update**: kodu yeniləyir, `.env`, verilənlər bazası və VPN konfiqləri saxlanılır, əvvəlcə ehtiyat nüsxə alınır (`/var/backups/novusgate/`), uğursuz olsa əvvəlki versiya avtomatik bərpa olunur. Verilənlər bazası miqrasiyaları control plane başlayanda öz-özünə tətbiq olunur. Yeni image-lər köhnə konteynerlər işləyərkən qurulur, panel yalnız dəyişdirilmə anında bir neçə saniyə dayanır. Heç nə dəyişməyibsə Update dayanır ("up to date").
 
 **Köhnə versiyadan yeniləyənlər üçün:** rollar əvvəl yox idi, ona görə mövcud istifadəçilərin hamısı **Admin** olur — yeniləmədən sonra Parametrlər → İstifadəçilər-də rolları yoxlayın.
 

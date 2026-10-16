@@ -1,0 +1,6 @@
+# data/ holds the saved servers (SSH passwords and keys) and job logs: it is
+# mounted at run time and must never be copied into the image (the running
+# Center also creates data/jobs as root 0700, which the build cannot read).
+data
+node_modules
+*.log

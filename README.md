@@ -291,7 +291,12 @@ curl -sk -o /dev/null -w '%{http_code}\n' https://10.99.0.1:3007
 An installation runs in **iptables** mode by default. **Limit profiles, the traffic quota, the Advanced tab (port forwarding etc.), Live and History** need the nftables engine. Steps, checks and the way back: [`docs/runbooks/p3b2-firewall-cutover.md`](./docs/runbooks/p3b2-firewall-cutover.md). In short: Center → Update → add `FIREWALL_ENGINE=nft` to `server/deployments/docker/.env` → `docker compose up -d control-plane` → Center → Update once more.
 
 ### Updating
-Center → **Update**: updates the code and keeps `.env`, the database and the VPN configs; a backup is taken first (`/var/backups/novusgate/`) and the previous version is restored automatically if the update fails. Database migrations run by themselves when the control plane starts.
+The right order:
+1. Get the new version onto your computer: `git checkout main && git pull`
+2. Rebuild the Center itself: `cd "NovusGate Center" && docker compose up -d --build` (the Center's scripts live inside its image; when it is out of date the Center warns on its page and in the Update log).
+3. Center → select the server → **Update**.
+
+Center → **Update**: updates the code and keeps `.env`, the database and the VPN configs; a backup is taken first (`/var/backups/novusgate/`) and the previous version is restored automatically if the update fails. Database migrations run by themselves when the control plane starts. New images are built while the old containers keep running; the panel is down only for the few seconds of the swap. If nothing changed, Update stops ("up to date").
 
 **Upgrading from an old version:** roles did not exist before, so all existing users become **Admin** — check the roles under Settings → Users after the upgrade.
 

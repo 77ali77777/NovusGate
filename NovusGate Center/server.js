@@ -23,6 +23,7 @@ const { createJobLock } = require('./lib/jobs');
 const { createProjectArchive } = require('./lib/archive');
 const { connect: connectSSH, sshConfig, ptyWindow, uploadText } = require('./lib/ssh');
 const { validateJoinScript, normalizeScript, joinCommand } = require('./lib/join');
+const { centerStale } = require('./lib/selfcheck');
 
 const app = express();
 // Only the Center's own page may call the API: another site open in the
@@ -36,6 +37,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Project paths
 const PROJECT_ROOT = '/project_root';
+// The Center's own folder inside the mounted project: newer files there mean
+// this running Center is out of date (see lib/selfcheck.js).
+const CENTER_LIVE_DIR = path.join(PROJECT_ROOT, 'NovusGate Center');
+const CENTER_REBUILD = 'cd "NovusGate Center" && docker compose up -d --build';
 const DATA_DIR = path.join(__dirname, 'data');
 const SERVERS_FILE = path.join(DATA_DIR, 'servers.json');
 
@@ -110,6 +115,12 @@ function execSSH(conn, command) {
 // ============ API ENDPOINTS ============
 
 // GET /api/servers - List all servers
+// GET /api/center/status - is this running Center older than its folder?
+app.get('/api/center/status', (req, res) => {
+  const files = centerStale(__dirname, CENTER_LIVE_DIR);
+  res.json({ stale: files.length > 0, files: files.slice(0, 20), rebuild: CENTER_REBUILD });
+});
+
 app.get('/api/servers', (req, res) => {
   const data = loadServers();
   // Don't send passwords
@@ -656,6 +667,13 @@ app.post('/api/servers/:id/install', async (req, res) => {
   let conn = null;
   try {
     sendLog('[INFO] Initializing installation...');
+    // Install/Update run the scripts of this running Center: say so when the
+    // folder has newer ones (after a git pull without rebuilding the Center).
+    const stale = centerStale(__dirname, CENTER_LIVE_DIR);
+    if (stale.length > 0) {
+      sendLog(`[WARN] NovusGate Center is older than its folder (${stale.length} file(s) changed, e.g. ${stale.slice(0, 3).join(', ')}).`, true);
+      sendLog(`[WARN] This run uses the old Center scripts. Rebuild the Center first: ${CENTER_REBUILD}`, true);
+    }
 
     // 1. Create Archive (Local only)
     if (source === 'local') {
