@@ -18,5 +18,10 @@
     "what": "Bu şəbəkənin cihaz konfiqlərinə yazılan DNS serverləri: vergüllə ayrılmış ən çox 3 IPv4 ünvanı.",
     "who": "Cihazları adları müəyyən serverdən (məsələn VPN üzərindən çatılan daxili DNS-dən) həll etməli olan şəbəkələr.",
     "effect": "Boş olanda tam tunel cihazları 1.1.1.1 işlədir, split tunel cihazları öz DNS-lərini saxlayır. Dəyər yazılanda şəbəkənin bütün cihazları onu işlədir. Yalnız yeni və ya yenidən endirilən konfiqlər dəyişir; cihazlarda olan konfiqlər yenidən göndərilənə qədər olduğu kimi qalır."
+  },
+  "tunnelMode": {
+    "what": "Bu şəbəkənin cihazları serverdən nəyi keçirir: VPN (split) yalnız VPN şəbəkələrinə gedən trafiki, tam tunel isə bütün internet trafikini keçirir, yəni server onların internetə çıxış yolu olur.",
+    "who": "Əksər şəbəkələr üçün split uyğundur. Tam tunel serverdən internetə çıxmalı olan cihazlar üçündür, məsələn ictimai Wi-Fi-da və ya serverin IP ünvanı ilə görünmək üçün.",
+    "effect": "Öz rejimi olmayan bütün cihazlara aiddir. Cihazlar yalnız konfiqurasiyası yenidən yükləndikdən sonra keçir. Tam tunel serverin trafikini artırır; admin tələb edir, Admin VPN-də isə nftables mühərriki."
   }
 }

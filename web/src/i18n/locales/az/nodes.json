@@ -190,5 +190,12 @@
     "reset": "İndi sıfırla",
     "resetConfirm": "Bu cihazın kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür.",
     "notEnforced": "(tətbiq olunmur: iptables rejimi)"
+  },
+  "tunnel": {
+    "label": "Tunel",
+    "follow": "Şəbəkəyə uyğun ({{mode}})",
+    "own": "Bu cihaz üçün",
+    "saved": "Saxlandı. Qüvvəyə minməsi üçün bu cihazın konfiqurasiyasını yenidən yükləyin.",
+    "pending": "Firewall zolağında təsdiq gözləyir; sonra bu cihazın konfiqurasiyasını yenidən yükləyin."
   }
 }

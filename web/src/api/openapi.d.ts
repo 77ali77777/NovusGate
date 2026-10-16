@@ -797,6 +797,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/networks/{id}/tunnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set what the network's nodes route through the hub: split (VPN networks) or full (all IPv4; the hub is their internet exit). Admin; a firewall change in nftables mode */
+        put: operations["put_networks_by_id_tunnel"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/networks/{networkId}/nodes": {
         parameters: {
             query?: never;
@@ -963,6 +980,23 @@ export interface paths {
         /** Traffic history of the node (bytes per interval) */
         get: operations["get_nodes_by_id_traffic"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nodes/{id}/tunnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set one node's tunnel mode (split, full, or empty to follow its network). Admin; a firewall change in nftables mode */
+        put: operations["put_nodes_by_id_tunnel"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1891,6 +1925,7 @@ export interface components {
             name: string;
             server_endpoint?: string;
             server_public_key?: string;
+            tunnel_mode: string;
             /** Format: date-time */
             updated_at: string;
         };
@@ -1905,6 +1940,7 @@ export interface components {
             name?: string;
             server_endpoint?: string;
             server_public_key?: string;
+            tunnel_mode?: string;
             /** Format: date-time */
             updated_at?: string;
         };
@@ -1920,6 +1956,9 @@ export interface components {
             total_nodes: number;
             transfer_rx: number;
             transfer_tx: number;
+        };
+        NetworkTunnelRequest: {
+            tunnel_mode?: string;
         };
         NetworkView: {
             addresses: {
@@ -1954,6 +1993,7 @@ export interface components {
             status: "pending" | "online" | "offline" | "expired";
             transfer_rx?: number;
             transfer_tx?: number;
+            tunnel_override: string;
             /** @description IP address */
             virtual_ip: string;
         };
@@ -2020,6 +2060,9 @@ export interface components {
             node_id: string;
             points: components["schemas"]["Point"][] | null;
             range: string;
+        };
+        NodeTunnelRequest: {
+            tunnel_override?: string;
         };
         NotificationSettings: {
             chat_id: string;
@@ -4183,6 +4226,44 @@ export interface operations {
             };
         };
     };
+    put_networks_by_id_tunnel: {
+        parameters: {
+            query?: {
+                /** @description false applies at once; otherwise the change rolls back unless confirmed */
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkTunnelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["V2ChangeResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     get_networks_by_networkId_nodes: {
         parameters: {
             query?: never;
@@ -4590,6 +4671,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeTrafficResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_nodes_by_id_tunnel: {
+        parameters: {
+            query?: {
+                /** @description false applies at once; otherwise the change rolls back unless confirmed */
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeTunnelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["V2ChangeResponse"];
                 };
             };
             /** @description Error */

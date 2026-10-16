@@ -66,5 +66,10 @@
       "who": "Operators with many devices sorted into groups.",
       "effect": "Only changes what this list shows; nothing is saved or changed on the server. Groups are managed on the Groups page."
     }
+  },
+  "tunnel": {
+    "what": "This device’s tunnel mode: follow its network, or its own VPN (split) or full tunnel.",
+    "who": "Admins who want one device to differ from its network, e.g. a single laptop browsing through the server.",
+    "effect": "The server applies it at once (with confirmation in nftables mode), but the device switches only after its config is downloaded again."
   }
 }

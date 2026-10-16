@@ -38,11 +38,13 @@ import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { type ConfigTab, ServerConfigModal } from '@/components/ServerConfigModal'
 import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
+import { NodeTunnel, TunnelBadge } from '@/components/Tunnel'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
 import { dateFnsLocale, formatDateTime } from '@/i18n'
 import { detailActions, rowActions } from '@/lib/deviceActions'
 import { groupsByNode } from '@/lib/groups'
 import { formatBytes as formatQuotaBytes, type QuotaUsage, quotaFor } from '@/lib/quota'
+import { effectiveTunnel } from '@/lib/tunnelMode'
 import { useCurrentNetworkId } from '@/store'
 import type { Node } from '@/types'
 
@@ -167,6 +169,12 @@ export const NodesPage: React.FC = () => {
         <div className="min-w-[8rem] max-w-[14rem] break-normal">
           <p className="font-medium text-gray-900 dark:text-white">{node.name}</p>
           <p className="text-xs text-gray-500">{node.id.slice(0, 8)}...</p>
+          {/* Full tunnel stands out: the hub is this device's internet exit. */}
+          {effectiveTunnel(node.tunnel_override, currentNetwork?.tunnel_mode) === 'full' && (
+            <div className="mt-1">
+              <TunnelBadge mode="full" />
+            </div>
+          )}
           {/* Public IP and labels stay scannable here; the detail page has them in full. */}
           {node.public_ip && (
             <p className="text-xs text-gray-500">
@@ -837,6 +845,7 @@ export const NodeDetailPage: React.FC = () => {
               <span className="text-gray-500">{t('detail.publicEndpoint')}</span>
               <code className="font-mono">{node.public_ip || t('common:status.unknown')}</code>
             </div>
+            <NodeTunnel node={node} />
             <div className="flex justify-between gap-3 text-sm py-2 border-b dark:border-gray-700">
               <span className="text-gray-500">{t('list.columns.labels')}</span>
               <span className="flex flex-wrap justify-end gap-1">

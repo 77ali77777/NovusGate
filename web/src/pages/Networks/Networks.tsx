@@ -8,6 +8,7 @@ import { useCan, useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/c
 import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
+import { FirewallPendingNotice, NetworkTunnel, TunnelChoice } from '@/components/Tunnel'
 import { dateFnsLocale } from '@/i18n'
 import { networkLabel, networkMatches } from '@/lib/networkDisplay'
 import type { CreateNetworkForm } from '@/types'
@@ -16,6 +17,7 @@ export const Networks = () => {
   const { t } = useTranslation('networks')
   // Networks are changed by operators and admins (P9a).
   const canEdit = useCan('operator')
+  const isAdmin = useCan('admin') // full tunnel (the hub as internet exit) is admin only
   const { data: networks, isLoading } = useNetworks()
   const createMutation = useCreateNetwork()
   const deleteMutation = useDeleteNetwork()
@@ -77,6 +79,8 @@ export const Networks = () => {
           )
         }
       />
+
+      <FirewallPendingNotice className="mb-4" />
 
       {/* Search */}
       <div className="mb-6">
@@ -178,6 +182,12 @@ export const Networks = () => {
                         {network.server_endpoint || t('card.autoDetected')}
                       </span>
                     </div>
+                    <div className="col-span-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('tunnel.label')}
+                      </span>
+                      <NetworkTunnel network={network} />
+                    </div>
                   </div>
 
                   {/* Status Bar - Mock for now but could be real if backend returned it */}
@@ -265,6 +275,16 @@ export const Networks = () => {
                     title={t('form.cidrTitle')}
                   />
                   <p className="mt-1 text-xs text-gray-500">{t('form.cidrHint')}</p>
+                </div>
+
+                <div>
+                  <TunnelChoice
+                    name="new-network-tunnel"
+                    value={formData.tunnel_mode ?? 'split'}
+                    onChange={(mode) => setFormData({ ...formData, tunnel_mode: mode })}
+                    fullBlocked={isAdmin ? null : t('tunnel.blockRole')}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('tunnel.formHint')}</p>
                 </div>
 
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex gap-3 text-sm text-blue-800 dark:text-blue-200">

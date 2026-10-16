@@ -190,5 +190,12 @@
     "reset": "Reset now",
     "resetConfirm": "Start this device’s quota count again? A block or slow-down is lifted at once.",
     "notEnforced": "(not enforced: iptables mode)"
+  },
+  "tunnel": {
+    "label": "Tunnel",
+    "follow": "Follow the network ({{mode}})",
+    "own": "For this device",
+    "saved": "Saved. Download this device’s config again so it takes effect.",
+    "pending": "Waiting for confirmation in the firewall bar; then download this device’s config again."
   }
 }

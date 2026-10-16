@@ -67,5 +67,29 @@
   "admin": {
     "name": "Admin VPN",
     "note": "Sizin idarə cihazınız buradan qoşulur; panel yalnız bu şəbəkədən açılır."
+  },
+  "tunnel": {
+    "label": "Tunel",
+    "split": "VPN (split)",
+    "full": "Tam tunel",
+    "splitDesc": "Serverdən yalnız VPN şəbəkələrinə gedən trafik keçir; internet cihazın öz bağlantısından gedir.",
+    "fullDesc": "Cihazın bütün internet trafiki serverdən keçir; saytlar cihazı serverin IP ünvanı ilə görür.",
+    "change": "Dəyiş",
+    "changeLabel": "{{name}} şəbəkəsinin tunel rejimini dəyiş",
+    "dialogTitle": "Tunel rejimi: {{name}}",
+    "choose": "Bu şəbəkənin cihazları serverdən nəyi keçirsin?",
+    "affected_one": "{{count}} cihazın rejimi dəyişir; onun konfiqurasiyası yenidən yüklənməlidir.",
+    "affected_other": "{{count}} cihazın rejimi dəyişir; onların konfiqurasiyası yenidən yüklənməlidir.",
+    "affectedNone": "Heç bir cihazın rejimi dəyişmir: öz rejimi olan cihazlar onu saxlayır.",
+    "fullWarn": "Tam tunel bu cihazların bütün internet trafikini serverdən keçirir: serverin trafiki və yükü artır.",
+    "engineNft": "nftables mühərriki: dəyişiklik dərhal tətbiq olunur və 60 saniyə ərzində təsdiq etməsəniz geri qayıdır.",
+    "engineIptables": "iptables mühərriki: yalnız cihaz konfiqurasiyaları dəyişir.",
+    "blockRole": "Tam tuneli yalnız admin seçə bilər.",
+    "blockEngine": "Admin VPN-də tam tunel nftables firewall mühərriki tələb edir.",
+    "apply": "Tətbiq et",
+    "donePending": "Firewall dəyişikliyi təsdiq gözləyir: yuxarıdakı zolaqda «Təsdiq et» düyməsini basın.",
+    "doneNow": "Saxlandı.",
+    "redownload": "Təsirlənən cihazlarda konfiqurasiyanı yenidən yükləyin (cihaz səhifəsi → Konfiqurasiya / QR).",
+    "formHint": "Bunu sonra da dəyişə bilərsiniz; o zaman cihazların konfiqurasiyası yenidən yüklənməlidir."
   }
 }

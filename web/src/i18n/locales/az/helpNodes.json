@@ -66,5 +66,10 @@
       "who": "Çox cihazı qruplara bölən operatorlar.",
       "effect": "Yalnız bu siyahıda görünəni dəyişir; serverdə heç nə saxlanmır və dəyişmir. Qruplar Qruplar səhifəsində idarə olunur."
     }
+  },
+  "tunnel": {
+    "what": "Bu cihazın tunel rejimi: şəbəkəsinə uyğun, yaxud öz VPN (split) və ya tam tunel rejimi.",
+    "who": "Bir cihazın şəbəkəsindən fərqli işləməsini istəyən adminlər, məsələn serverdən internetə çıxan tək noutbuk.",
+    "effect": "Server bunu dərhal tətbiq edir (nftables rejimində təsdiqlə), amma cihaz yalnız konfiqurasiyası yenidən yükləndikdən sonra keçir."
   }
 }

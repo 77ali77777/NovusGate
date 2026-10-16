@@ -18,5 +18,10 @@
     "what": "The DNS servers written into this network's device configs: up to 3 IPv4 addresses, comma separated.",
     "who": "Networks whose devices should resolve names through a particular server, for example an internal DNS reachable over the VPN.",
     "effect": "Empty: full-tunnel devices use 1.1.1.1 and split-tunnel devices keep their own DNS. With a value, every device of the network uses it. Only new or re-downloaded configs change; configs already on devices stay as they are until you send them again."
+  },
+  "tunnelMode": {
+    "what": "What this network’s devices send through the server: VPN (split) sends only traffic to the VPN networks; full tunnel sends all internet traffic, so the server is their way to the internet.",
+    "who": "Split suits most networks. Full tunnel suits devices that must browse through the server, e.g. on public Wi-Fi or to appear with the server’s IP address.",
+    "effect": "It applies to every device of the network that has no own mode. Devices only switch after their config is downloaded again. Full tunnel raises the server’s traffic; it needs an admin, and on the Admin VPN the nftables engine."
   }
 }

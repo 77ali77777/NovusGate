@@ -88,5 +88,6 @@
   "failedToReboot": "Server yenidən başladılmadı",
   "rebootStarted": "Server yenidən başlayır",
   "failedToStartUpgrade": "Yeniləmə başladılmadı",
-  "upgradeStarted": "Paket yeniləməsi başladı"
+  "upgradeStarted": "Paket yeniləməsi başladı",
+  "failedToChangeTunnel": "Tunel rejimi dəyişdirilmədi"
 }

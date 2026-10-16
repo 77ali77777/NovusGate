@@ -48,6 +48,7 @@ import type {
   StatsOverview,
   StatusMessage,
   SystemInfo,
+  TunnelChange,
   UserRole,
   VPNFirewallRule,
   VPNFirewallRuleRequest,
@@ -550,6 +551,23 @@ class ApiClient {
   async setNetworkDNS(id: string, clientDNS: string): Promise<Network> {
     const { data } = await this.client.put<Network>(`/networks/${id}/dns`, {
       client_dns: clientDNS,
+    })
+    return data
+  }
+
+  // Tunnel mode of a network or one node. In nftables mode the server
+  // answers with a pending firewall change to confirm; in iptables mode it is
+  // stored at once (pending absent).
+  async setNetworkTunnel(id: string, mode: 'split' | 'full'): Promise<TunnelChange> {
+    const { data } = await this.client.put<TunnelChange>(`/networks/${id}/tunnel`, {
+      tunnel_mode: mode,
+    })
+    return data
+  }
+
+  async setNodeTunnel(id: string, override: '' | 'split' | 'full'): Promise<TunnelChange> {
+    const { data } = await this.client.put<TunnelChange>(`/nodes/${id}/tunnel`, {
+      tunnel_override: override,
     })
     return data
   }
@@ -1391,8 +1409,42 @@ export const useSetFirewallV2Egress = () =>
     (v: { nodeId: string; enabled: boolean }) => api.setFirewallV2Egress(v.nodeId, v.enabled),
     'toasts:failedToChangeFullTunnel'
   )
-export const useConfirmFirewallV2 = () =>
-  useFirewallV2Mutation((id: string) => api.confirmFirewallV2(id), 'toasts:failedToConfirmChange')
+// A confirmed change is stored only now; a tunnel change also changes what
+// the network and node lists show.
+export const useConfirmFirewallV2 = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToConfirmChange' },
+    mutationFn: (id: string) => api.confirmFirewallV2(id),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['firewall'] })
+      queryClient.invalidateQueries({ queryKey: ['networks'] })
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+    },
+  })
+}
+
+// Tunnel mode of a network or a node (admin).
+function useTunnelMutation<T>(fn: (vars: T) => Promise<TunnelChange>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToChangeTunnel' },
+    mutationFn: fn,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['firewall'] })
+      queryClient.invalidateQueries({ queryKey: ['networks'] })
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+    },
+  })
+}
+export const useSetNetworkTunnel = () =>
+  useTunnelMutation((v: { id: string; mode: 'split' | 'full' }) =>
+    api.setNetworkTunnel(v.id, v.mode)
+  )
+export const useSetNodeTunnel = () =>
+  useTunnelMutation((v: { id: string; override: '' | 'split' | 'full' }) =>
+    api.setNodeTunnel(v.id, v.override)
+  )
 export const useRestoreFirewallV2History = () =>
   useFirewallV2Mutation(
     (id: string) => api.restoreFirewallV2History(id),

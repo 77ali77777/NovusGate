@@ -12,6 +12,7 @@ import {
   useVPNFirewallRules,
 } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
+import { FirewallPendingNotice, NetworkTunnel } from '@/components/Tunnel'
 import { Badge, Button, Card, Input } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
 import { networkLabel } from '@/lib/networkDisplay'
@@ -106,6 +107,7 @@ export const NetworkDetailPage = () => {
           {label.note}
         </p>
       )}
+      <FirewallPendingNotice />
 
       <Card padding="lg">
         <div className="mb-4 flex items-center gap-2">
@@ -117,6 +119,10 @@ export const NetworkDetailPage = () => {
           <Field label={t('common:fields.interface')} value={network.interface_name} />
           <Field label={t('detail.listenPortUdp')} value={network.listen_port} />
           <Field label={t('detail.endpoint')} value={network.server_endpoint} />
+          <div>
+            <p className="text-xs uppercase text-gray-500">{t('tunnel.label')}</p>
+            <NetworkTunnel network={network} />
+          </div>
           <div className="md:col-span-2">
             <Field label={t('detail.serverPublicKey')} value={network.server_public_key} />
           </div>

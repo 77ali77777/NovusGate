@@ -67,5 +67,29 @@
   "admin": {
     "name": "Admin VPN",
     "note": "Your management device connects here; the panel opens only from this network."
+  },
+  "tunnel": {
+    "label": "Tunnel",
+    "split": "VPN (split)",
+    "full": "Full tunnel",
+    "splitDesc": "Only traffic to the VPN networks goes through the server; the internet goes over the device’s own connection.",
+    "fullDesc": "All of the device’s internet traffic goes through the server; websites see the server’s IP address.",
+    "change": "Change",
+    "changeLabel": "Change the tunnel mode of {{name}}",
+    "dialogTitle": "Tunnel mode: {{name}}",
+    "choose": "What should the devices of this network send through the server?",
+    "affected_one": "{{count}} device switches and needs its config downloaded again.",
+    "affected_other": "{{count}} devices switch and need their configs downloaded again.",
+    "affectedNone": "No device switches: devices with their own mode keep it.",
+    "fullWarn": "Full tunnel sends all internet traffic of these devices through the server: its traffic and load grow.",
+    "engineNft": "nftables engine: the change applies at once and is rolled back unless you confirm it within 60 seconds.",
+    "engineIptables": "iptables engine: only the device configs change.",
+    "blockRole": "Only an admin can choose full tunnel.",
+    "blockEngine": "Full tunnel on the Admin VPN needs the nftables firewall engine.",
+    "apply": "Apply",
+    "donePending": "The firewall change is waiting for confirmation: press “Confirm” in the bar above.",
+    "doneNow": "Saved.",
+    "redownload": "Download the config again on the affected devices (device page → Config / QR).",
+    "formHint": "You can change this later; devices then need their configs downloaded again."
   }
 }

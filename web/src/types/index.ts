@@ -76,7 +76,20 @@ export interface NodeStatusEvent {
 export interface CreateNetworkForm {
   name: string
   cidr: string
+  tunnel_mode?: 'split' | 'full'
 }
+
+// The item of a tunnel change (PUT /networks/{id}/tunnel, /nodes/{id}/tunnel).
+// affected_nodes: nodes that switch between split and full; each needs its
+// config downloaded again.
+export interface TunnelChangeItem {
+  network_id?: string
+  node_id?: string
+  tunnel_mode?: string
+  tunnel_override: string
+  affected_nodes: number
+}
+export type TunnelChange = Omit<FirewallV2Change, 'item'> & { item: TunnelChangeItem }
 
 export interface CreateNodeForm {
   name: string
