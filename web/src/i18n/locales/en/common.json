@@ -61,7 +61,7 @@
     "interface": "Interface",
     "created": "Created",
     "network": "Network",
-    "node": "Node",
+    "node": "Device",
     "ipAddress": "IP address",
     "time": "Time",
     "user": "User",

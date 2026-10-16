@@ -1,4 +1,4 @@
 {
   "title": "Topology",
-  "description": "The hub, its VPN networks and peers. Green arrows: allowed between networks; amber: partly allowed."
+  "description": "The hub, its VPN networks and devices. Green arrows: allowed between networks; amber: partly allowed."
 }

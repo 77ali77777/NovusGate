@@ -16,9 +16,9 @@
       "effect": "Only stored and shown; it has no effect on traffic."
     },
     "endpointType": {
-      "what": "What the source (where traffic comes from) or the destination (where it goes) is: any address, a whole VPN network, one device (node), a group of devices, or your own IPv4 address or range.",
+      "what": "What the source (where traffic comes from) or the destination (where it goes) is: any address, a whole VPN network, one device (device), a group of devices, or your own IPv4 address or range.",
       "who": "Everyone writing a rule: this is how you say whose traffic it is about.",
-      "effect": "Any matches every address. Changing the type clears the network, node, group or IP chosen before for this side."
+      "effect": "Any matches every address. Changing the type clears the network, device, group or IP chosen before for this side."
     },
     "network": {
       "what": "The VPN network whose whole address range (CIDR) is the source or destination of the rule.",
@@ -31,9 +31,9 @@
       "effect": "It only narrows the device list; the rule matches the one device you choose below. Changing it clears the chosen device."
     },
     "node": {
-      "what": "One device (node); the rule matches its VPN address only.",
+      "what": "One device (device); the rule matches its VPN address only.",
       "who": "Operators who allow or block a single device, for example one server or one laptop.",
-      "effect": "Required for the node type. The rule follows the device's VPN IP; other devices of the same network are not affected."
+      "effect": "Required for the device type. The rule follows the device's VPN IP; other devices of the same network are not affected."
     },
     "group": {
       "what": "A device group (from the Groups page); the rule matches the VPN addresses of its members.",
@@ -42,7 +42,7 @@
     },
     "customIp": {
       "what": "Your own address or range: one IPv4 address (for example 10.10.0.5) or an IPv4 CIDR (for example 10.10.0.0/24).",
-      "who": "Operators who need a range that is not a whole network, node or group, for example a LAN behind a gateway device.",
+      "who": "Operators who need a range that is not a whole network, device or group, for example a LAN behind a gateway device.",
       "effect": "Required for the custom type. Only IPv4 is accepted; the server refuses IPv6 and invalid values. A single address means exactly that address (/32)."
     },
     "protocol": {
@@ -203,6 +203,13 @@
       "what": "An optional note, for example the name of the service.",
       "who": "Anyone who reads the list later.",
       "effect": "Only stored and shown; it has no effect on traffic."
+    }
+  },
+  "vpnRules": {
+    "reapply": {
+      "what": "Sends every enabled VPN rule to the server firewall again (a full re-sync). Saving, changing or deleting a rule already applies it, so this is not a step you need after editing.",
+      "who": "Admins and operators whose VPN rules on the server were changed by hand (for example on the shell), or when the rules did not come back after a server restart.",
+      "effect": "The rules for traffic between networks are rebuilt from the list in the panel; manual changes to them on the server are replaced. The list itself does not change. The action is written to the audit log."
     }
   }
 }

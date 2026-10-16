@@ -5,8 +5,144 @@
   "empty": "Hələ heç nə qeydə alınmayıb.",
   "columns": {
     "result": "Nəticə",
-    "address": "Ünvan"
+    "address": "Ünvan",
+    "event": "Hadisə"
   },
   "loadOlder": "Köhnə qeydləri yüklə",
-  "triedUser": "cəhd: {{name}}"
+  "filters": {
+    "user": "İstifadəçi",
+    "allUsers": "Bütün istifadəçilər",
+    "kind": "Əməliyyat növü",
+    "allKinds": "Bütün əməliyyatlar",
+    "search": "Axtarış",
+    "searchPlaceholder": "Ad, ünvan, yol…",
+    "noMatch": "Yüklənmiş qeydlərdən heç biri filtrlərə uyğun gəlmir.",
+    "shown": "Yüklənmiş {{total}} qeyddən {{shown}}"
+  },
+  "kinds": {
+    "login": "Giriş",
+    "network": "Şəbəkə",
+    "node": "Cihaz",
+    "firewall": "Firewall",
+    "user": "İstifadəçi",
+    "server": "Server",
+    "other": "Digər"
+  },
+  "result": {
+    "ok": "Uğurlu",
+    "denied": "Rədd edildi",
+    "error": "Xəta",
+    "code": "HTTP {{code}}"
+  },
+  "raw": {
+    "show": "Xam qeydi göstər",
+    "hide": "Xam qeydi gizlət",
+    "action": "Qeydə alınan əməliyyat",
+    "method": "Metod",
+    "path": "Yol",
+    "status": "Status",
+    "ip": "IP ünvanı",
+    "details": "Qeydə alınan bütün məlumatlar"
+  },
+  "actor": {
+    "unknown": "naməlum istifadəçi"
+  },
+  "sentence": {
+    "login": {
+      "ok": "Giriş cəhdi: {{user}} — uğurlu",
+      "fail": "Giriş cəhdi: {{user}} — uğursuz"
+    },
+    "auth": {
+      "logout": "{{user}} paneldən çıxdı",
+      "stepUp": "{{user}} həssas əməliyyat üçün parolunu təsdiqlədi",
+      "password": "{{user}} parolunu dəyişdi",
+      "sessionEnd": "{{user}} {{target}} giriş sessiyasını bitirdi"
+    },
+    "network": {
+      "create": "{{user}} şəbəkə yaratdı",
+      "delete": "{{user}} {{target}} şəbəkəsini sildi",
+      "dns": "{{user}} {{target}} şəbəkəsinin DNS ayarlarını dəyişdi",
+      "sync": "{{user}} {{target}} şəbəkəsinin cihazlarını WireGuard ilə yenidən sinxronlaşdırdı"
+    },
+    "node": {
+      "create": "{{user}} {{target}} şəbəkəsində cihaz yaratdı",
+      "update": "{{user}} {{target}} cihazını dəyişdi",
+      "delete": "{{user}} {{target}} cihazını sildi",
+      "quotaReset": "{{user}} {{target}} cihazının trafik kvotasını sıfırladı"
+    },
+    "group": {
+      "create": "{{user}} cihaz qrupu yaratdı",
+      "update": "{{user}} {{target}} qrupunu dəyişdi",
+      "delete": "{{user}} {{target}} qrupunu sildi",
+      "members": "{{user}} {{target}} qrupunun üzvlərini dəyişdi"
+    },
+    "limit": {
+      "create": "{{user}} limit profili yaratdı",
+      "update": "{{user}} {{target}} limit profilini dəyişdi",
+      "delete": "{{user}} {{target}} limit profilini sildi",
+      "bindings": "{{user}} {{target}} limit profilinin tətbiq olunduğu cihazları dəyişdi"
+    },
+    "firewall": {
+      "import": "{{user}} firewall qaydalarını idxal etdi",
+      "ipAllow": "{{user}} firewall-da IP ünvanına icazə verdi",
+      "ipBlock": "{{user}} firewall-da IP ünvanını blokladı",
+      "portOpen": "{{user}} firewall-da port açdı",
+      "portClose": "{{user}} firewall-da port bağladı",
+      "reset": "{{user}} firewall-u standart NovusGate qaydalarına sıfırladı",
+      "ruleDelete": "{{user}} firewall qaydasını sildi",
+      "confirm": "{{user}} firewall dəyişikliyini təsdiqlədi",
+      "egressOn": "{{user}} {{target}} cihazı üçün tam tuneli (internet server üzərindən) açdı",
+      "egressOff": "{{user}} {{target}} cihazı üçün tam tuneli bağladı",
+      "forwardCreate": "{{user}} port yönləndirməsi yaratdı",
+      "forwardDelete": "{{user}} port yönləndirməsini sildi",
+      "restore": "{{user}} firewall-un əvvəlki vəziyyətini bərpa etdi",
+      "ipRuleCreate": "{{user}} firewall-a IP qaydası əlavə etdi",
+      "ipRuleDelete": "{{user}} firewall-dan IP qaydasını sildi",
+      "serviceDelete": "{{user}} firewall-da açıq portu bağladı"
+    },
+    "vpn": {
+      "created": "{{user}} {{target}} VPN qaydasını yaratdı",
+      "updated": "{{user}} {{target}} VPN qaydasını dəyişdi",
+      "deleted": "{{user}} {{target}} VPN qaydasını sildi",
+      "createdNoName": "{{user}} VPN qaydası yaratdı",
+      "updatedNoName": "{{user}} VPN qaydasını dəyişdi",
+      "deletedNoName": "{{user}} VPN qaydasını sildi",
+      "applied": "{{user}} VPN qaydalarını firewall-a yenidən tətbiq etdi"
+    },
+    "fail2ban": {
+      "ban": "{{user}} Fail2Ban ilə IP ünvanını blokladı",
+      "unban": "{{user}} Fail2Ban-da IP ünvanının blokunu götürdü",
+      "jailControl": "{{user}} Fail2Ban jail-ini işə saldı və ya dayandırdı",
+      "jailSettings": "{{user}} Fail2Ban jail ayarlarını dəyişdi",
+      "reload": "{{user}} Fail2Ban-ı yenidən yüklədi",
+      "permanentRemove": "{{user}} IP ünvanını Fail2Ban-ın daimi blok siyahısından çıxardı",
+      "whitelist": "{{user}} Fail2Ban ağ siyahısını dəyişdi"
+    },
+    "user": {
+      "create": "{{user}} panel istifadəçisi yaratdı",
+      "delete": "{{user}} {{target}} istifadəçisini sildi",
+      "role": "{{user}} {{target}} istifadəçisinin rolunu dəyişdi"
+    },
+    "backup": {
+      "create": "{{user}} ehtiyat nüsxə yaratdı",
+      "delete": "{{user}} {{target}} ehtiyat nüsxəsini sildi"
+    },
+    "server": {
+      "upgrade": "{{user}} server paketlərinin yenilənməsini başlatdı",
+      "reboot": "{{user}} serveri yenidən başlatdı",
+      "serviceRestart": "{{user}} {{target}} xidmətini yenidən başlatdı",
+      "sysctl": "{{user}} serverin kernel (sysctl) ayarlarını dəyişdi",
+      "sysctlConfirm": "{{user}} sysctl dəyişikliyini təsdiqlədi",
+      "hostname": "{{user}} serverin adını (hostname) dəyişdi",
+      "timezone": "{{user}} serverin saat qurşağını dəyişdi"
+    },
+    "notify": {
+      "settings": "{{user}} bildiriş (Telegram) ayarlarını dəyişdi",
+      "test": "{{user}} test bildirişi göndərdi"
+    },
+    "fallback": {
+      "http": "{{user}} {{method}} {{path}}",
+      "action": "{{user}}: {{action}}"
+    }
+  }
 }

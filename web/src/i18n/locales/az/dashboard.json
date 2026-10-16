@@ -18,7 +18,7 @@
   },
   "stats": {
     "networks": "Şəbəkələr",
-    "totalNodes": "Cəmi node",
+    "totalNodes": "Cəmi cihaz",
     "totalDownload": "Cəmi endirilən",
     "totalUpload": "Cəmi göndərilən",
     "acrossNetworks": "Bütün şəbəkələr üzrə"
@@ -26,8 +26,8 @@
   "networks": {
     "title": "Şəbəkələr",
     "viewAll": "Hamısına bax",
-    "nodes_one": "{{count}} node",
-    "nodes_other": "{{count}} node",
+    "nodes_one": "{{count}} cihaz",
+    "nodes_other": "{{count}} cihaz",
     "online": "{{n}} onlayn",
     "offline": "{{n}} oflayn",
     "statOnline": "Onlayn: {{n}}",
@@ -39,9 +39,9 @@
     "create": "Şəbəkə yarat"
   },
   "expired": {
-    "title_one": "{{count}} node-un müddəti bitib",
-    "title_other": "{{count}} node-un müddəti bitib",
-    "description": "Bu node-lar diqqət tələb edir — onların giriş müddəti bitib",
-    "manage": "Node-ları idarə et"
+    "title_one": "{{count}} cihazın müddəti bitib",
+    "title_other": "{{count}} cihazın müddəti bitib",
+    "description": "Bu cihazlar diqqət tələb edir — onların giriş müddəti bitib",
+    "manage": "Cihazları idarə et"
   }
 }

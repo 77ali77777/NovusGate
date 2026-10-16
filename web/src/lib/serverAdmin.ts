@@ -123,3 +123,13 @@ const sysctlFields: Record<string, SysctlField> = {
 export function sysctlField(key: string): SysctlField | undefined {
   return sysctlFields[key]
 }
+
+// retryServerQuery is the retry rule of the Server page queries: a 4xx
+// (refused, not found, bad request) will not change on its own, so it is not
+// retried; a 5xx or a network error is retried once, so a failing host
+// command shows its error quickly instead of after three retries.
+export function retryServerQuery(failures: number, err: unknown): boolean {
+  const status = (err as { response?: { status?: unknown } } | undefined)?.response?.status
+  if (typeof status === 'number' && status >= 400 && status < 500) return false
+  return failures < 1
+}

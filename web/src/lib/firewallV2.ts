@@ -81,3 +81,17 @@ export function engineState(err: unknown): EngineState {
 export function retryFirewallV2(failures: number, err: unknown): boolean {
   return engineState(err) !== 'disabled' && failures < 2
 }
+
+export type EngineMode = 'nft' | 'iptables' | 'starting' | 'unknown'
+
+// engineMode is the firewall engine as the GET /firewall/v2/state query sees
+// it: an answer means nftables runs; an off engine means iptables; a starting
+// engine is nftables on its way. Loading or any other failure is unknown.
+export function engineMode(q: { data: unknown; error: unknown }): EngineMode {
+  if (q.data) return 'nft'
+  if (!q.error) return 'unknown'
+  const s = engineState(q.error)
+  if (s === 'disabled') return 'iptables'
+  if (s === 'not_ready') return 'starting'
+  return 'unknown'
+}

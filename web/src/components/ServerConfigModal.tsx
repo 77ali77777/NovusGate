@@ -12,7 +12,12 @@ interface ServerConfigModalProps {
   onClose: () => void
   nodeId: string
   nodeName: string
+  // The tab shown when the modal opens; the device page opens it on the
+  // QR code or on the Linux install script (C3).
+  initialTab?: ConfigTab
 }
+
+export type ConfigTab = 'general' | 'windows' | 'mac' | 'linux' | 'docker'
 
 const InstallTab: React.FC<{
   icon: React.ReactNode
@@ -39,11 +44,10 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   onClose,
   nodeId,
   nodeName,
+  initialTab = 'general',
 }) => {
   const { t } = useTranslation('nodes')
-  const [activeTab, setActiveTab] = useState<'general' | 'windows' | 'mac' | 'linux' | 'docker'>(
-    'general'
-  )
+  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab)
   const [config, setConfig] = useState<string>('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -109,11 +113,11 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   useEffect(() => {
     if (isOpen && nodeId) {
       loadConfig()
-      setActiveTab('general')
+      setActiveTab(initialTab)
       setInstallScript('') // a script belongs to one node and expires
       setScriptError('')
     }
-  }, [isOpen, nodeId, loadConfig])
+  }, [isOpen, nodeId, loadConfig, initialTab])
 
   const handleDownload = () => {
     const element = document.createElement('a')

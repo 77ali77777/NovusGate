@@ -18,7 +18,7 @@
   },
   "stats": {
     "networks": "Networks",
-    "totalNodes": "Total Nodes",
+    "totalNodes": "Total devices",
     "totalDownload": "Total Download",
     "totalUpload": "Total Upload",
     "acrossNetworks": "Across all networks"
@@ -26,8 +26,8 @@
   "networks": {
     "title": "Networks",
     "viewAll": "View all",
-    "nodes_one": "{{count}} node",
-    "nodes_other": "{{count}} nodes",
+    "nodes_one": "{{count}} device",
+    "nodes_other": "{{count}} devices",
     "online": "{{n}} online",
     "offline": "{{n}} offline",
     "statOnline": "Online: {{n}}",
@@ -39,9 +39,9 @@
     "create": "Create Network"
   },
   "expired": {
-    "title_one": "{{count}} node expired",
-    "title_other": "{{count}} nodes expired",
-    "description": "These nodes need attention - their access has expired",
-    "manage": "Manage Nodes"
+    "title_one": "{{count}} device expired",
+    "title_other": "{{count}} devices expired",
+    "description": "These devices need attention - their access has expired",
+    "manage": "Manage devices"
   }
 }

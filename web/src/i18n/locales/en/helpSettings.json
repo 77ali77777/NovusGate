@@ -35,7 +35,7 @@
     "newRole": {
       "what": "What the new user may do: Admin, Operator or Viewer.",
       "who": "Admins giving each person only the access they need.",
-      "effect": "Admin can do everything, including users, Fail2Ban, the host firewall, backups, notifications and the Server page. Operator can change networks, nodes, groups, limits and VPN rules. Viewer can look at networks, nodes, the firewall and Fail2Ban and change their own password; viewers cannot change anything else or download device configs."
+      "effect": "Admin can do everything, including users, Fail2Ban, the host firewall, backups, notifications and the Server page. Operator can change networks, devices, groups, limits and VPN rules. Viewer can look at networks, devices, the firewall and Fail2Ban and change their own password; viewers cannot change anything else or download device configs."
     },
     "role": {
       "what": "The role selector beside each user changes that user's role.",
@@ -60,9 +60,9 @@
       "effect": "The server checks the format, stores it encrypted and never sends it back to the panel. An empty field keeps the stored token. The test message works only after a token and a chat ID are saved."
     },
     "events": {
-      "what": "The events that send a message: a node going offline or coming back, a node's access expiring, a Fail2Ban ban, a firewall change and a node using 80% or all of its traffic quota.",
+      "what": "The events that send a message: a device going offline or coming back, a device's access expiring, a Fail2Ban ban, a firewall change and a device using 80% or all of its traffic quota.",
       "who": "Admins who want to hear about some events and not others.",
-      "effect": "Only checked events are sent, and only while notifications are on. Repeats of an identical event within 30 minutes are sent once; every change made on the Firewall page is sent (Fail2Ban permanent bans are not). A node counts as offline after 5 minutes without a WireGuard handshake."
+      "effect": "Only checked events are sent, and only while notifications are on. Repeats of an identical event within 30 minutes are sent once; every change made on the Firewall page is sent (Fail2Ban permanent bans are not). A device counts as offline after 5 minutes without a WireGuard handshake."
     }
   }
 }

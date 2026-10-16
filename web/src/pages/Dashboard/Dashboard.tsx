@@ -21,6 +21,7 @@ import { useStatsOverview, useSystemInfo } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { ProgressBar } from '@/components/ProgressBar'
 import { Badge, Button, Card, EmptyState } from '@/components/ui'
+import { networkLabel } from '@/lib/networkDisplay'
 
 // Format bytes to human readable
 const formatBytes = (bytes: number = 0): string => {
@@ -269,84 +270,90 @@ export const DashboardPage: React.FC = () => {
 
         {stats?.networks && stats.networks.length > 0 ? (
           <div className="space-y-3">
-            {stats.networks.map((network) => (
-              <button
-                key={network.id}
-                type="button"
-                className="block w-full text-left p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                onClick={() => navigate('/nodes')}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <Network className="w-5 h-5 text-blue-600" />
+            {stats.networks.map((network) => {
+              const label = networkLabel(network, t)
+              return (
+                <button
+                  key={network.id}
+                  type="button"
+                  className="block w-full text-left p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                  onClick={() => navigate('/nodes')}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Network className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {label.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 font-mono">
+                          {network.cidr} • {network.interface}
+                        </p>
+                        {label.note && (
+                          <p className="text-xs text-blue-700 dark:text-blue-300">{label.note}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {network.name}
-                      </h3>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {network.cidr} • {network.interface}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {t('networks.nodes', { count: network.total_nodes })}
                       </p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-green-600">
+                          {t('networks.online', { n: network.online_nodes })}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-500">
+                          {t('networks.offline', { n: network.offline_nodes })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {t('networks.nodes', { count: network.total_nodes })}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-green-600">
-                        {t('networks.online', { n: network.online_nodes })}
+
+                  {/* Network Stats Bar */}
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('networks.statOnline', { n: network.online_nodes })}
                       </span>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-500">
-                        {t('networks.offline', { n: network.offline_nodes })}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full" />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('networks.statOffline', { n: network.offline_nodes })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('networks.statPending', { n: network.pending_nodes })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-red-500 rounded-full" />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t('networks.statExpired', { n: network.expired_nodes })}
                       </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Network Stats Bar */}
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {t('networks.statOnline', { n: network.online_nodes })}
-                    </span>
+                  {/* Traffic */}
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 text-xs">
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <ArrowDownToLine className="w-3 h-3" />
+                      <span>{formatBytes(network.transfer_rx)}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-green-600">
+                      <ArrowUpFromLine className="w-3 h-3" />
+                      <span>{formatBytes(network.transfer_tx)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {t('networks.statOffline', { n: network.offline_nodes })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {t('networks.statPending', { n: network.pending_nodes })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 bg-red-500 rounded-full" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {t('networks.statExpired', { n: network.expired_nodes })}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Traffic */}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 text-xs">
-                  <div className="flex items-center gap-1 text-blue-600">
-                    <ArrowDownToLine className="w-3 h-3" />
-                    <span>{formatBytes(network.transfer_rx)}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600">
-                    <ArrowUpFromLine className="w-3 h-3" />
-                    <span>{formatBytes(network.transfer_tx)}</span>
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         ) : (
           <EmptyState

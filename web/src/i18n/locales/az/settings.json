@@ -14,7 +14,7 @@
     "submit": "Parolu yenilə"
   },
   "users": {
-    "title": "Admin istifadəçilər",
+    "title": "İstifadəçilər",
     "add": "İstifadəçi əlavə et",
     "newDetails": "Yeni istifadəçinin məlumatları",
     "usernamePlaceholder": "İstifadəçi adı",
@@ -35,7 +35,7 @@
     },
     "roleHints": {
       "admin": "Hər şey, o cümlədən istifadəçilər, ehtiyat nüsxələr və host firewall.",
-      "operator": "Şəbəkələr, node-lar, qruplar və VPN qaydaları; istifadəçilər və host firewall yox.",
+      "operator": "Şəbəkələr, cihazlar, qruplar və VPN qaydaları; istifadəçilər və host firewall yox.",
       "viewer": "Yalnız baxış; yalnız öz parolunu dəyişə bilər."
     }
   },
@@ -59,11 +59,11 @@
     "tokenStored": "Saxlanılıb — saxlamaq üçün boş buraxın",
     "notifyWhen": "Nə zaman bildirilsin",
     "events": {
-      "node_offline": "Node oflayn olur və ya geri qayıdır",
-      "node_expired": "Node-un giriş müddəti bitir",
+      "node_offline": "Cihaz oflayn olur və ya geri qayıdır",
+      "node_expired": "Cihazın giriş müddəti bitir",
       "fail2ban_ban": "Fail2Ban ünvanı bloklayır",
       "firewall_change": "Firewall dəyişdirilir",
-      "quota_exceeded": "Node trafik kvotasının 80%-ni və ya hamısını istifadə edir"
+      "quota_exceeded": "Cihaz trafik kvotasının 80%-ni və ya hamısını istifadə edir"
     },
     "errors": {
       "chatIdRequired": "Bildirişləri aktivləşdirmək üçün chat ID-ni daxil edin.",

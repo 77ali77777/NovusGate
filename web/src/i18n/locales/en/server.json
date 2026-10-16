@@ -3,6 +3,7 @@
   "description": "The host the hub runs on: services, network, kernel settings and system. Changes ask for your password again.",
   "adminOnly": "Server administration is for admins.",
   "loadError": "Could not read this from the server.",
+  "loadErrorReason": "Reason: {{reason}}",
   "tabs": {
     "services": "Services",
     "network": "Network",

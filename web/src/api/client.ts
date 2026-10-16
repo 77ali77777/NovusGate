@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios'
+import type { components } from '@/api/openapi'
 import type {
   AllowIPRequest,
   AuditEntry,
@@ -108,6 +109,14 @@ class ApiClient {
 
   async deleteNetwork(id: string): Promise<void> {
     await this.client.delete(`/networks/${id}`)
+  }
+
+  // Re-adds the WireGuard peers of the network's active nodes that the hub lost.
+  async syncPeers(networkId: string): Promise<components['schemas']['SyncPeersResponse']> {
+    const { data } = await this.client.post<components['schemas']['SyncPeersResponse']>(
+      `/networks/${networkId}/sync`
+    )
+    return data
   }
 
   // Nodes
@@ -729,6 +738,7 @@ import { type AuditCursor, nextBefore } from '@/lib/audit'
 import { engineState, retryFirewallV2 } from '@/lib/firewallV2'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
 import { roleAtLeast } from '@/lib/roles'
+import { retryServerQuery } from '@/lib/serverAdmin'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 import type {
   BackupInfo,
@@ -1407,21 +1417,31 @@ export function useServerServices() {
     queryKey: ['server', 'services'],
     queryFn: () => api.getServerServices(),
     refetchInterval: 15000,
+    retry: retryServerQuery,
   })
 }
 
 export function useSysctl() {
-  return useQuery({ queryKey: ['server', 'sysctl'], queryFn: () => api.getSysctl() })
+  return useQuery({
+    queryKey: ['server', 'sysctl'],
+    queryFn: () => api.getSysctl(),
+    retry: retryServerQuery,
+  })
 }
 
 export function useHostSystem() {
-  return useQuery({ queryKey: ['server', 'system'], queryFn: () => api.getHostSystem() })
+  return useQuery({
+    queryKey: ['server', 'system'],
+    queryFn: () => api.getHostSystem(),
+    retry: retryServerQuery,
+  })
 }
 
 export function useUpgradablePackages() {
   return useQuery({
     queryKey: ['server', 'packages'],
     queryFn: () => api.getUpgradablePackages(),
+    retry: retryServerQuery,
   })
 }
 
@@ -1435,7 +1455,11 @@ export function useUpgradeJob() {
 }
 
 export function useHostNetwork() {
-  return useQuery({ queryKey: ['server', 'network'], queryFn: () => api.getHostNetwork() })
+  return useQuery({
+    queryKey: ['server', 'network'],
+    queryFn: () => api.getHostNetwork(),
+    retry: retryServerQuery,
+  })
 }
 
 export function useServerChange<T>(errorTitle: string, successTitle?: string) {

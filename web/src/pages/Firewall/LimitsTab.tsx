@@ -1,4 +1,4 @@
-import { AlertTriangle, Gauge, Link2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Gauge, Link2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -17,6 +17,7 @@ import { Badge, Button, Card, EmptyState, Input, Modal } from '@/components/ui'
 import { formatRate, kbpsToMbps, mbpsToKbps, scheduleSummary } from '@/lib/limits'
 import { formatBytes, gbToMb, mbToGb } from '@/lib/quota'
 import type { LimitProfile, LimitProfileRequest, NodeLimit, ScheduleWindow } from '@/types'
+import { EngineDisabled } from './EngineOff'
 
 const weekOrder = [1, 2, 3, 4, 5, 6, 0] // Monday first
 
@@ -47,10 +48,7 @@ export const LimitsTab = () => {
   return (
     <div className="space-y-4">
       {data && !data.enforcing && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>{t('notEnforcing')}</p>
-        </div>
+        <EngineDisabled compact why={t('firewallv2:engineOff.limitsWhy')} />
       )}
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">

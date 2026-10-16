@@ -14,7 +14,7 @@
     "submit": "Update Password"
   },
   "users": {
-    "title": "Admin Users",
+    "title": "Users",
     "add": "Add User",
     "newDetails": "New User Details",
     "usernamePlaceholder": "Username",
@@ -35,7 +35,7 @@
     },
     "roleHints": {
       "admin": "Everything, including users, backups and the host firewall.",
-      "operator": "Networks, nodes, groups and VPN rules; no users or host firewall.",
+      "operator": "Networks, devices, groups and VPN rules; no users or host firewall.",
       "viewer": "Read-only; can change only their own password."
     }
   },
@@ -59,11 +59,11 @@
     "tokenStored": "Stored — leave empty to keep it",
     "notifyWhen": "Notify when",
     "events": {
-      "node_offline": "A node goes offline or comes back",
-      "node_expired": "A node's access expires",
+      "node_offline": "A device goes offline or comes back",
+      "node_expired": "A device's access expires",
       "fail2ban_ban": "Fail2Ban bans an address",
       "firewall_change": "The firewall is changed",
-      "quota_exceeded": "A node uses 80% or all of its traffic quota"
+      "quota_exceeded": "A device uses 80% or all of its traffic quota"
     },
     "errors": {
       "chatIdRequired": "Enter the chat ID to enable notifications.",

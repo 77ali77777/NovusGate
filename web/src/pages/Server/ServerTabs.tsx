@@ -12,6 +12,7 @@ import {
   useUpgradablePackages,
   useUpgradeJob,
 } from '@/api/client'
+import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card, Input, Select } from '@/components/ui'
 import { dateFnsLocale } from '@/i18n'
@@ -24,22 +25,40 @@ const stateVariant = (state: string) =>
 const when = (iso: string | null | undefined) =>
   iso ? format(new Date(iso), 'PPpp', { locale: dateFnsLocale() }) : '—'
 
-const Loading = ({ isLoading, isError }: { isLoading: boolean; isError: boolean }) => {
+// Loading shows the loading line, or the failure with the server's reason
+// (for example the host command's error) when it sent one.
+const Loading = ({
+  isLoading,
+  isError,
+  error,
+}: {
+  isLoading: boolean
+  isError: boolean
+  error?: unknown
+}) => {
   const { t } = useTranslation('server')
   if (isLoading) return <p className="p-6 text-sm text-gray-500">{t('common:state.loading')}</p>
-  if (isError) return <p className="p-6 text-sm text-red-600">{t('loadError')}</p>
+  if (isError) {
+    const reason = apiErrorMessage(error, '')
+    return (
+      <div className="p-6 text-sm text-red-600">
+        <p>{t('loadError')}</p>
+        {reason && <p className="mt-1 text-xs break-words">{t('loadErrorReason', { reason })}</p>}
+      </div>
+    )
+  }
   return null
 }
 
 // ServicesTab: docker, fail2ban and the wg-quick units, with restart.
 export const ServicesTab = ({ step }: { step: Step }) => {
   const { t } = useTranslation('server')
-  const { data, isLoading, isError } = useServerServices()
+  const { data, isLoading, isError, error } = useServerServices()
   const restart = useServerChange<void>('toasts:failedToRestartService', 'toasts:serviceRestarted')
   const [restarting, setRestarting] = useState('')
   return (
     <Card padding="none">
-      <Loading isLoading={isLoading} isError={isError} />
+      <Loading isLoading={isLoading} isError={isError} error={error} />
       {data && (
         <ul className="divide-y divide-gray-100 dark:divide-gray-700">
           {data.map((s) => (
@@ -76,14 +95,14 @@ export const ServicesTab = ({ step }: { step: Step }) => {
 // NetworkTab: the host's interfaces and routes, read-only.
 export const NetworkTab = () => {
   const { t } = useTranslation('server')
-  const { data, isLoading, isError } = useHostNetwork()
+  const { data, isLoading, isError, error } = useHostNetwork()
   const links = addressRows(data?.addresses)
   const routes = routeRows(data?.routes)
   const th = 'px-4 py-2 text-left text-xs font-medium uppercase text-gray-500'
   const td = 'px-4 py-2 font-mono text-sm text-gray-900 dark:text-white'
   return (
     <div className="space-y-6">
-      <Loading isLoading={isLoading} isError={isError} />
+      <Loading isLoading={isLoading} isError={isError} error={error} />
       {data && (
         <>
           <Card padding="none">
@@ -141,7 +160,7 @@ export const NetworkTab = () => {
 // undone by the host unless it is kept within confirm_within seconds.
 export const KernelTab = ({ step }: { step: Step }) => {
   const { t } = useTranslation('server')
-  const { data, isLoading, isError, refetch } = useSysctl()
+  const { data, isLoading, isError, error, refetch } = useSysctl()
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [left, setLeft] = useState(0)
   // The server knows whether a change waits (its rollback timer), so the
@@ -174,7 +193,7 @@ export const KernelTab = ({ step }: { step: Step }) => {
 
   return (
     <Card>
-      <Loading isLoading={isLoading} isError={isError} />
+      <Loading isLoading={isLoading} isError={isError} error={error} />
       {data && (
         <div className="space-y-4">
           {pending && (
@@ -290,7 +309,7 @@ const timeZones: string[] =
 // SystemTab: host name, clock, packages and reboot.
 export const SystemTab = ({ step }: { step: Step }) => {
   const { t } = useTranslation('server')
-  const { data, isLoading, isError } = useHostSystem()
+  const { data, isLoading, isError, error } = useHostSystem()
   const [hostname, setHostname] = useState('')
   const [timezone, setTimezone] = useState('')
   const [ntp, setNtp] = useState<boolean | null>(null)
@@ -302,7 +321,7 @@ export const SystemTab = ({ step }: { step: Step }) => {
   return (
     <div className="space-y-6">
       <Card>
-        <Loading isLoading={isLoading} isError={isError} />
+        <Loading isLoading={isLoading} isError={isError} error={error} />
         {data && (
           <div className="space-y-6">
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -432,7 +451,7 @@ export const SystemTab = ({ step }: { step: Step }) => {
 // PackagesCard: upgradable packages and the last apt-get upgrade.
 const PackagesCard = ({ step }: { step: Step }) => {
   const { t } = useTranslation('server')
-  const { data, isLoading, isError, refetch, isFetching } = useUpgradablePackages()
+  const { data, isLoading, isError, error, refetch, isFetching } = useUpgradablePackages()
   const { data: job } = useUpgradeJob()
   const [open, setOpen] = useState(false)
   const upgrade = useServerChange<void>('toasts:failedToStartUpgrade', 'toasts:upgradeStarted')
@@ -472,7 +491,7 @@ const PackagesCard = ({ step }: { step: Step }) => {
           </Button>
         </div>
       </div>
-      <Loading isLoading={isLoading} isError={isError} />
+      <Loading isLoading={isLoading} isError={isError} error={error} />
       {data && data.length > 0 && (
         <ul className="max-h-64 divide-y divide-gray-100 overflow-y-auto text-sm dark:divide-gray-700">
           {data.map((p) => (

@@ -4,6 +4,7 @@ import { errorBodyCode } from '../src/api/errors.ts'
 import {
   addressRows,
   createPasswordGate,
+  retryServerQuery,
   routeRows,
   StepUpCancelled,
   sysctlField,
@@ -132,4 +133,19 @@ test('passwordGate settles every waiting change, not only the last', async () =>
   gate.rejectAll(new StepUpCancelled())
   await assert.rejects(c, StepUpCancelled)
   assert.deepEqual(changes, [true, false, true, false])
+})
+
+test('retryServerQuery: no retry for 4xx, one retry for 5xx and network errors', () => {
+  const status = (s) => ({ response: { status: s, data: {} } })
+  assert.equal(retryServerQuery(0, status(400)), false)
+  assert.equal(retryServerQuery(0, status(403)), false)
+  assert.equal(retryServerQuery(0, status(404)), false)
+  assert.equal(retryServerQuery(0, status(499)), false)
+  assert.equal(retryServerQuery(0, status(500)), true)
+  assert.equal(retryServerQuery(0, status(502)), true)
+  assert.equal(retryServerQuery(1, status(500)), false)
+  assert.equal(retryServerQuery(0, new Error('Network Error')), true)
+  assert.equal(retryServerQuery(1, new Error('Network Error')), false)
+  assert.equal(retryServerQuery(0, undefined), true)
+  assert.equal(retryServerQuery(5, undefined), false)
 })

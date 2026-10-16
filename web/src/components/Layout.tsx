@@ -19,13 +19,15 @@ import type React from 'react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { api, useCan, useNetworks } from '@/api/client'
+import { useCan, useNetworks } from '@/api/client'
 import { LANGUAGES, setLanguage } from '@/i18n'
+import { networkLabel } from '@/lib/networkDisplay'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HelpTip } from './HelpTip'
 import { Toaster } from './Toaster'
+import { UserMenu, useLogout } from './UserMenu'
 
 interface NavItem {
   labelKey: string // layout:nav.*
@@ -56,9 +58,12 @@ export const Layout = () => {
   const { t, i18n } = useTranslation('layout')
   const location = useLocation()
   const sidebarOpen = useSidebarOpen()
-  const { toggleSidebar, currentNetworkId, setCurrentNetworkId } = useAppStore()
+  const { toggleSidebar, setSidebarOpen, currentNetworkId, setCurrentNetworkId } = useAppStore()
   const { data: networks } = useNetworks()
   const isAdmin = useCan('admin')
+  const logout = useLogout()
+  // The mobile drawer closes once a page is chosen; on lg it is always shown.
+  const closeDrawer = () => setSidebarOpen(false)
 
   // Auto-select first network if none selected
   useEffect(() => {
@@ -97,7 +102,12 @@ export const Layout = () => {
             </div>
             <span className="text-lg font-semibold text-gray-900 dark:text-white">NovusGate</span>
           </Link>
-          <button type="button" onClick={toggleSidebar} className="lg:hidden text-gray-500">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label={t('closeMenu')}
+            className="lg:hidden text-gray-500"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -122,7 +132,7 @@ export const Layout = () => {
               <option value="">{t('selectNetwork')}</option>
               {networks?.map((network) => (
                 <option key={network.id} value={network.id}>
-                  {network.name}
+                  {networkLabel(network, t).name}
                 </option>
               ))}
             </select>
@@ -145,6 +155,7 @@ export const Layout = () => {
                 <Link
                   key={item.href}
                   to={item.href}
+                  onClick={closeDrawer}
                   className={clsx(
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                     isActive
@@ -182,19 +193,7 @@ export const Layout = () => {
           </label>
           <button
             type="button"
-            onClick={() => {
-              if (confirm(t('logoutConfirm'))) {
-                // Revoke the session on the server; leave locally even if that fails.
-                api
-                  .logout()
-                  .catch(() => undefined)
-                  .finally(() => {
-                    localStorage.removeItem('auth_token')
-                    localStorage.removeItem('auth_username')
-                    window.location.href = '/login'
-                  })
-              }
-            }}
+            onClick={logout}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -208,20 +207,22 @@ export const Layout = () => {
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className={clsx('transition-all duration-200', sidebarOpen ? 'lg:ml-64' : '')}>
+      {/* Main content: the sidebar is always shown on lg, so the offset is too */}
+      <div className="lg:ml-64">
         {/* Top bar */}
         <header className="sticky top-0 z-30 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between h-full px-4">
             <button
               type="button"
               onClick={toggleSidebar}
+              aria-expanded={sidebarOpen}
+              aria-label={t('openMenu')}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="flex items-center gap-4">
+            <div className="ml-auto flex items-center gap-4">
               {/* VPN Status Indicator */}
               {(() => {
                 const isVpnSecure = window.location.hostname === '10.99.0.1'
@@ -255,9 +256,7 @@ export const Layout = () => {
                 }
               })()}
 
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
-              </div>
+              <UserMenu />
             </div>
           </div>
         </header>
@@ -283,14 +282,14 @@ interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, actions }) => {
   return (
-    <div className="mb-6 flex items-center justify-between">
-      <div>
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
         {description && (
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-3">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   )
 }

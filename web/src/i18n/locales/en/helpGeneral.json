@@ -13,7 +13,7 @@
   },
   "layout": {
     "network": {
-      "what": "Chooses the VPN network whose devices the Nodes page and the firewall's full tunnel section show.",
+      "what": "Chooses the VPN network whose devices the Devices page and the firewall's full tunnel section show.",
       "who": "Operators with more than one network.",
       "effect": "New devices are created in the selected network. The choice is saved in this browser only; nothing changes on the server."
     },

@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/components/Layout'
 import { Badge, Button, Card, Input } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
+import { networkLabel } from '@/lib/networkDisplay'
 
 const verdictVariant: Record<string, 'success' | 'danger' | 'warning'> = {
   allow: 'success',
@@ -86,6 +87,7 @@ export const NetworkDetailPage = () => {
   const online = nodes.filter((n) => n.status === 'online').length
   const others = networks.filter((n) => n.id !== id)
   const myRules = rules.filter((r) => r.source_network_id === id || r.dest_network_id === id)
+  const label = networkLabel(network, t)
 
   return (
     <div className="space-y-6">
@@ -96,9 +98,14 @@ export const NetworkDetailPage = () => {
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
       <PageHeader
-        title={network.name}
+        title={label.name}
         description={t('detail.summary', { cidr: network.cidr, online, count: nodes.length })}
       />
+      {label.note && (
+        <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+          {label.note}
+        </p>
+      )}
 
       <Card padding="lg">
         <div className="mb-4 flex items-center gap-2">
@@ -159,6 +166,7 @@ export const NetworkDetailPage = () => {
             {others.map((o) => {
               const out = matrix.cells?.[id]?.[o.id]
               const into = matrix.cells?.[o.id]?.[id]
+              const otherName = networkLabel(o, t).name
               return (
                 <div
                   key={o.id}
@@ -168,12 +176,14 @@ export const NetworkDetailPage = () => {
                     to={`/networks/${o.id}`}
                     className="font-medium text-blue-600 hover:underline"
                   >
-                    {o.name}
+                    {otherName}
                   </Link>
-                  <span className="flex items-center gap-3">
+                  {/* Directions spelled out (C12): from this network to the
+                      other one, and from the other one into this network. */}
+                  <span className="flex flex-wrap items-center gap-3">
                     {out && (
                       <span title={matrixReason(t, out)}>
-                        {t('detail.toIt')}{' '}
+                        {t('detail.toIt', { name: otherName })}{' '}
                         <Badge variant={verdictVariant[out.verdict]}>
                           {t(`verdict.${out.verdict}`, { defaultValue: out.verdict })}
                         </Badge>
@@ -181,7 +191,7 @@ export const NetworkDetailPage = () => {
                     )}
                     {into && (
                       <span title={matrixReason(t, into)}>
-                        {t('detail.fromIt')}{' '}
+                        {t('detail.fromIt', { name: otherName })}{' '}
                         <Badge variant={verdictVariant[into.verdict]}>
                           {t(`verdict.${into.verdict}`, { defaultValue: into.verdict })}
                         </Badge>

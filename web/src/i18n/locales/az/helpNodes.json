@@ -1,19 +1,24 @@
 {
   "create": {
     "name": {
-      "what": "Yeni cihazın (peer-in) adı, məsələn \"Telefonum\". Node siyahısında və node-un səhifəsində görünür.",
+      "what": "Yeni cihazın adı, məsələn \"Telefonum\". Cihazlar siyahısında və cihazın səhifəsində görünür.",
       "who": "Hər yeni cihaz üçün lazımdır ki, operatorlar cihazları bir-birindən ayıra bilsin.",
-      "effect": "Şəbəkə daxilində unikal olmalıdır; artıq istifadə olunan adı server rədd edir. Cihaz yan paneldə seçilmiş şəbəkənin növbəti boş ünvanını alır."
+      "effect": "Şəbəkə daxilində unikal olmalıdır; artıq istifadə olunan adı server rədd edir."
     },
     "expiry": {
       "what": "Bu cihazın VPN-dən nə qədər istifadə edə biləcəyi: həmişəlik, indidən 1 saat, 1 gün, 1 həftə və ya seçdiyiniz tarixə qədər.",
       "who": "Müvəqqəti giriş verən operatorlar, məsələn qonaq və ya podratçı üçün.",
-      "effect": "Müddət bitəndə node-un statusu \"expired\" olur və WireGuard peer-i silinir, cihaz daha qoşula bilmir. Node silinmir; sonradan Redaktə ilə müddəti uzadıla bilər."
+      "effect": "Müddət bitəndə cihazın statusu \"expired\" olur və WireGuard bağlantısı silinir, cihaz daha qoşula bilmir. Cihaz silinmir; sonradan Redaktə ilə müddəti uzadıla bilər."
     },
     "customDate": {
       "what": "Bu cihazın girişinin bitdiyi tarix və saat (sizin yerli vaxtınızla).",
       "who": "Yalnız sabit müddət əvəzinə tarix seçəndə lazımdır.",
-      "effect": "Gələcəkdə bir vaxt seçin. Bu vaxt keçəndə node \"expired\" olur və cihaz daha qoşula bilmir."
+      "effect": "Gələcəkdə bir vaxt seçin. Bu vaxt keçəndə cihaz \"expired\" olur və daha qoşula bilmir."
+    },
+    "network": {
+      "what": "Yeni cihazın qoşulacağı VPN şəbəkəsi. Əvvəlcədən yan paneldə seçilmiş şəbəkə seçilir.",
+      "who": "Cihazı yan paneldəkindən başqa şəbəkəyə əlavə etmək istəyən operatorlar.",
+      "effect": "Cihaz bu şəbəkənin növbəti boş ünvanını alır və yalnız bu şəbəkəyə aid olur; konfiqurasiyası bu şəbəkənin serverinə və portuna qoşulur. Sonradan başqa şəbəkəyə köçürmək olmur: bunun üçün cihazı silib yenidən yaratmaq lazımdır. Admin VPN (wg0) şəbəkəsindəki cihazlar idarə panelinə çıxış alır."
     }
   },
   "edit": {
@@ -25,7 +30,7 @@
     "expiry": {
       "what": "Bu cihazın girişinin nə vaxt bitdiyini dəyişir: hazırkı limiti saxla, limiti götür, 1 saat, 1 gün və ya 1 həftə uzat, ya da dəqiq tarix seç.",
       "who": "Müvəqqəti cihazın girişini uzadan və ya bitirən operatorlar.",
-      "effect": "Uzatma seçimləri hazırkı bitmə vaxtı hələ qabaqdadırsa ona, əks halda indiki vaxta əlavə olunur. Yeni bitmə vaxtı müddəti bitmiş cihazı yenidən aktivləşdirir və peer-ini geri əlavə edir; təkcə limiti götürmək bunu etmir, statusu da Aktiv edin. Vaxt keçəndə cihaz \"expired\" olur və bağlantısı kəsilir."
+      "effect": "Uzatma seçimləri hazırkı bitmə vaxtı hələ qabaqdadırsa ona, əks halda indiki vaxta əlavə olunur. Yeni bitmə vaxtı müddəti bitmiş cihazı yenidən aktivləşdirir və WireGuard bağlantısını geri əlavə edir; təkcə limiti götürmək bunu etmir, statusu da Aktiv edin. Vaxt keçəndə cihaz \"expired\" olur və bağlantısı kəsilir."
     },
     "customDate": {
       "what": "Bu cihazın girişinin bitdiyi dəqiq tarix və saat (sizin yerli vaxtınızla).",
@@ -44,7 +49,7 @@
     },
     "hostname": {
       "what": "Cihazın öz host adı, sərbəst mətn qeydi kimi, məsələn server-01.",
-      "who": "Node-u işlədiyi maşınla uyğunlaşdırmaq istəyən operatorlar.",
+      "who": "Cihazı işlədiyi maşınla uyğunlaşdırmaq istəyən operatorlar.",
       "effect": "Yalnız paneldə göstərilir; heç bir konfiqurasiyanı və qaydanı dəyişmir. Linux quraşdırma skripti onu maşının host adı ilə doldurur. Sahəni boşaltmaq saxlanmış dəyəri silmir."
     }
   },

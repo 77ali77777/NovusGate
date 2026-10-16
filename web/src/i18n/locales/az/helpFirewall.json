@@ -16,9 +16,9 @@
       "effect": "Yalnız saxlanır və göstərilir; trafikə təsiri yoxdur."
     },
     "endpointType": {
-      "what": "Mənbənin (trafikin gəldiyi yer) və ya təyinatın (getdiyi yer) nə olduğu: istənilən ünvan, bütöv VPN şəbəkəsi, bir cihaz (node), cihaz qrupu və ya öz IPv4 ünvanınız/aralığınız.",
+      "what": "Mənbənin (trafikin gəldiyi yer) və ya təyinatın (getdiyi yer) nə olduğu: istənilən ünvan, bütöv VPN şəbəkəsi, bir cihaz (cihaz), cihaz qrupu və ya öz IPv4 ünvanınız/aralığınız.",
       "who": "Qayda yazan hər kəs: qaydanın kimin trafikinə aid olduğunu bununla bildirirsiniz.",
-      "effect": "\"İstənilən\" bütün ünvanlara uyğun gəlir. Növü dəyişəndə bu tərəf üçün əvvəl seçilmiş şəbəkə, node, qrup və ya IP silinir."
+      "effect": "\"İstənilən\" bütün ünvanlara uyğun gəlir. Növü dəyişəndə bu tərəf üçün əvvəl seçilmiş şəbəkə, cihaz, qrup və ya IP silinir."
     },
     "network": {
       "what": "Bütöv ünvan aralığı (CIDR) qaydanın mənbəyi və ya təyinatı olan VPN şəbəkəsi.",
@@ -31,9 +31,9 @@
       "effect": "Yalnız cihaz siyahısını daraldır; qayda aşağıda seçdiyiniz tək cihaza uyğun gəlir. Dəyişəndə seçilmiş cihaz silinir."
     },
     "node": {
-      "what": "Bir cihaz (node); qayda yalnız onun VPN ünvanına uyğun gəlir.",
+      "what": "Bir cihaz (cihaz); qayda yalnız onun VPN ünvanına uyğun gəlir.",
       "who": "Tək cihaza icazə verən və ya onu bloklayan operatorlar, məsələn bir server və ya bir noutbuk.",
-      "effect": "Node növü üçün məcburidir. Qayda cihazın VPN IP-sinə tətbiq olunur; eyni şəbəkənin digər cihazlarına təsir etmir."
+      "effect": "Cihaz növü üçün məcburidir. Qayda cihazın VPN IP-sinə tətbiq olunur; eyni şəbəkənin digər cihazlarına təsir etmir."
     },
     "group": {
       "what": "Cihaz qrupu (Qruplar səhifəsindən); qayda üzvlərinin VPN ünvanlarına uyğun gəlir.",
@@ -42,7 +42,7 @@
     },
     "customIp": {
       "what": "Öz ünvanınız və ya aralığınız: bir IPv4 ünvanı (məs., 10.10.0.5) və ya IPv4 CIDR (məs., 10.10.0.0/24).",
-      "who": "Bütöv şəbəkə, node və ya qrup olmayan aralığa ehtiyacı olan operatorlar, məsələn şlüz cihazının arxasındakı LAN.",
+      "who": "Bütöv şəbəkə, cihaz və ya qrup olmayan aralığa ehtiyacı olan operatorlar, məsələn şlüz cihazının arxasındakı LAN.",
       "effect": "Xüsusi IP növü üçün məcburidir. Yalnız IPv4 qəbul olunur; IPv6-nı və yanlış dəyərləri server rədd edir. Tək ünvan məhz həmin ünvan deməkdir (/32)."
     },
     "protocol": {
@@ -203,6 +203,13 @@
       "what": "İstəyə bağlı qeyd, məsələn servisin adı.",
       "who": "Siyahını sonradan oxuyan hər kəs.",
       "effect": "Yalnız saxlanır və göstərilir; trafikə təsiri yoxdur."
+    }
+  },
+  "vpnRules": {
+    "reapply": {
+      "what": "Bütün aktiv VPN qaydalarını server firewall-una yenidən göndərir (tam sinxronizasiya). Qayda yadda saxlananda, dəyişdiriləndə və ya silinəndə onsuz da dərhal tətbiq olunur, ona görə redaktədən sonra bu addım lazım deyil.",
+      "who": "Serverdəki VPN qaydaları əl ilə (məsələn, terminalda) dəyişdirilmiş admin və operatorlar, ya da server yenidən başladıqdan sonra qaydalar geri qayıtmayıbsa.",
+      "effect": "Şəbəkələr arası trafik qaydaları paneldəki siyahıdan yenidən qurulur; serverdə onlara əl ilə edilən dəyişikliklər əvəz olunur. Siyahının özü dəyişmir. Əməliyyat audit jurnalına yazılır."
     }
   }
 }

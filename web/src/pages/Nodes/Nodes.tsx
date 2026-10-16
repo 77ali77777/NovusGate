@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Activity,
@@ -8,8 +8,11 @@ import {
   Download,
   Laptop,
   Pencil,
+  QrCode,
+  RefreshCw,
   Server,
   ShieldAlert,
+  Terminal,
   Trash2,
 } from 'lucide-react'
 import type React from 'react'
@@ -17,6 +20,7 @@ import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  api,
   useCan,
   useCreateServerWithConfig,
   useDeleteNode,
@@ -32,10 +36,11 @@ import { CreateNodeModal } from '@/components/CreateNodeModal'
 import { EditNodeModal } from '@/components/EditNodeModal'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
-import { ServerConfigModal } from '@/components/ServerConfigModal'
+import { type ConfigTab, ServerConfigModal } from '@/components/ServerConfigModal'
 import { TrafficHistoryCard } from '@/components/TrafficHistoryCard'
 import { Badge, Button, Card, EmptyState, Modal, StatusIndicator, Table } from '@/components/ui'
 import { dateFnsLocale, formatDateTime } from '@/i18n'
+import { detailActions, rowActions } from '@/lib/deviceActions'
 import { groupsByNode } from '@/lib/groups'
 import { formatBytes as formatQuotaBytes, type QuotaUsage, quotaFor } from '@/lib/quota'
 import { useCurrentNetworkId } from '@/store'
@@ -125,10 +130,15 @@ export const NodesPage: React.FC = () => {
     }
   }
 
-  const handleCreatePeer = async (data: { name: string; expires_at?: string }) => {
+  const handleCreatePeer = async (data: {
+    name: string
+    expires_at?: string
+    network_id: string
+  }) => {
     createServer.mutate(
       {
-        networkId: networkId || '',
+        // The network picked in the form (C2), by default the sidebar's one.
+        networkId: data.network_id,
         data: {
           name: data.name,
           expires_at: data.expires_at,
@@ -152,15 +162,11 @@ export const NodesPage: React.FC = () => {
     {
       key: 'name',
       header: t('common:fields.name'),
+      // Names wrap only between words, never inside one (B6).
       render: (node: Node) => (
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            <Server className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </div>
-          <div>
-            <p className="font-medium text-gray-900 dark:text-white">{node.name}</p>
-            <p className="text-xs text-gray-500">{node.id.slice(0, 8)}...</p>
-          </div>
+        <div className="min-w-[8rem] max-w-[14rem] break-normal">
+          <p className="font-medium text-gray-900 dark:text-white">{node.name}</p>
+          <p className="text-xs text-gray-500">{node.id.slice(0, 8)}...</p>
         </div>
       ),
     },
@@ -173,45 +179,18 @@ export const NodesPage: React.FC = () => {
       key: 'virtual_ip',
       header: t('fields.virtualIp'),
       render: (node: Node) => (
-        <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+        <code className="whitespace-nowrap text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
           {node.virtual_ip}
         </code>
-      ),
-    },
-    {
-      key: 'public_ip',
-      header: t('fields.publicIp'),
-      render: (node: Node) => (
-        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">
-          {node.public_ip || '-'}
-        </span>
       ),
     },
     {
       key: 'transfer',
       header: t('list.columns.transfer'),
       render: (node: Node) => (
-        <div className="text-xs space-y-0.5">
+        <div className="whitespace-nowrap text-xs space-y-0.5">
           <p className="text-green-600">↓ {formatBytes(node.transfer_rx)}</p>
           <p className="text-blue-600">↑ {formatBytes(node.transfer_tx)}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'labels',
-      header: t('list.columns.labels'),
-      render: (node: Node) => (
-        <div className="flex flex-wrap gap-1">
-          {Object.entries(node.labels || {})
-            .slice(0, 2)
-            .map(([key, value]) => (
-              <Badge key={key} size="sm">
-                {key}={value}
-              </Badge>
-            ))}
-          {Object.keys(node.labels || {}).length > 2 && (
-            <Badge size="sm">+{Object.keys(node.labels || {}).length - 2}</Badge>
-          )}
         </div>
       ),
     },
@@ -268,72 +247,77 @@ export const NodesPage: React.FC = () => {
       },
     },
     {
-      key: 'config',
-      header: t('list.columns.config'),
-      className: 'w-10',
+      // Row actions in one compact column that stays visible at the right
+      // edge, even when the table scrolls sideways (B6).
+      key: 'actions',
+      header: '',
+      className: 'sticky right-0 w-px whitespace-nowrap bg-white dark:bg-gray-800',
       render: (node: Node) => {
-        // Hide download button for imported nodes (they don't have private keys)
-        if (!node.has_config) {
-          return (
-            <span className="text-xs text-gray-400" title={t('list.configUnavailable')}>
-              -
-            </span>
-          )
-        }
+        const actions = rowActions(node, canEdit)
         return (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedNode(node)
-              setShowConfigModal(true)
-            }}
-            className="p-1 text-primary-600 hover:text-primary-700"
-            title={t('list.downloadConfig')}
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {actions.includes('config') && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedNode(node)
+                  setShowConfigModal(true)
+                }}
+                className="p-1 text-primary-600 hover:text-primary-700"
+                title={t('list.downloadConfig')}
+                aria-label={t('list.downloadConfig')}
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
+            {!node.has_config && (
+              <span
+                className="p-1 text-xs text-gray-400"
+                title={t('list.configUnavailable')}
+                role="img"
+                aria-label={t('list.configUnavailable')}
+              >
+                -
+              </span>
+            )}
+            {actions.includes('edit') && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedNode(node)
+                  setShowEditModal(true)
+                }}
+                className="p-1 text-gray-400 hover:text-blue-600"
+                title={t('common:actions.edit')}
+                aria-label={t('common:actions.edit')}
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {actions.includes('delete') && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedNode(node)
+                  setShowDeleteModal(true)
+                }}
+                className="p-1 text-gray-400 hover:text-red-600"
+                title={t('common:actions.delete')}
+                aria-label={t('common:actions.delete')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         )
       },
     },
-    {
-      key: 'actions',
-      header: '',
-      className: 'w-20',
-      render: (node: Node) => (
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedNode(node)
-              setShowEditModal(true)
-            }}
-            className="p-1 text-gray-400 hover:text-blue-600"
-            title={t('common:actions.edit')}
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedNode(node)
-              setShowDeleteModal(true)
-            }}
-            className="p-1 text-gray-400 hover:text-red-600"
-            title={t('common:actions.delete')}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
   ]
 
-  const visibleColumns = canEdit
-    ? columns
-    : columns.filter((c) => c.key !== 'config' && c.key !== 'actions')
+  const visibleColumns = canEdit ? columns : columns.filter((c) => c.key !== 'actions')
 
   const onlineCount = allNodes?.filter((n) => n.status === 'online').length || 0
   const pendingCount = allNodes?.filter((n) => n.status === 'pending').length || 0
@@ -545,6 +529,31 @@ export const NodeDetailPage: React.FC = () => {
   // Update node mutation
   const queryClient = useQueryClient()
   const updateNode = useUpdateNode()
+  // Config, QR code and Linux script (C3): the same modal the list opens,
+  // started on the tab the button names; null while it is closed.
+  const [configTab, setConfigTab] = useState<ConfigTab | null>(null)
+  const downloadConfig = useMutation({
+    meta: { errorTitle: 'nodes:detail.downloadFailed' },
+    mutationFn: async (target: { id: string; name: string }) => ({
+      name: target.name,
+      text: await api.getNodeConfig(target.id),
+    }),
+    onSuccess: ({ name, text }) => {
+      const element = document.createElement('a')
+      element.href = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`
+      element.download = `${name.replace(/\s+/g, '-').toLowerCase()}.conf`
+      document.body.appendChild(element)
+      element.click()
+      document.body.removeChild(element)
+    },
+  })
+  // "Restore connection": the hub re-adds the WireGuard peers its network
+  // lost (POST /networks/{id}/sync); expired and disabled devices stay out.
+  const syncPeers = useMutation({
+    meta: { errorTitle: 'nodes:detail.syncFailed', successTitle: 'nodes:detail.synced' },
+    mutationFn: (networkId: string) => api.syncPeers(networkId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['nodes'] }),
+  })
 
   const handleEditSubmit = (data: {
     name: string
@@ -596,6 +605,8 @@ export const NodeDetailPage: React.FC = () => {
     )
   }
 
+  const actions = detailActions(node, canEdit)
+
   const copyToClipboard = async (text: string) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -636,10 +647,41 @@ export const NodeDetailPage: React.FC = () => {
           </div>
           <p className="mt-1 text-sm text-gray-500 font-mono">ID: {node.id}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={() => navigate('/nodes')}>
             {t('common:actions.back')}
           </Button>
+          {actions.includes('download') && (
+            <Button
+              variant="secondary"
+              loading={downloadConfig.isPending}
+              onClick={() => downloadConfig.mutate({ id: node.id, name: node.name })}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              {t('detail.actions.download')}
+            </Button>
+          )}
+          {actions.includes('qr') && (
+            <Button
+              variant="secondary"
+              onClick={() => setConfigTab('general')}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="w-4 h-4" />
+              {t('detail.actions.qr')}
+            </Button>
+          )}
+          {actions.includes('script') && (
+            <Button
+              variant="secondary"
+              onClick={() => setConfigTab('linux')}
+              className="flex items-center gap-2"
+            >
+              <Terminal className="w-4 h-4" />
+              {t('detail.actions.script')}
+            </Button>
+          )}
           {canEdit && (
             <Button onClick={() => setShowEditModal(true)} className="flex items-center gap-2">
               <Pencil className="w-4 h-4" />
@@ -672,8 +714,37 @@ export const NodeDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
-              {t('detail.reconnectHint')}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+              <span className="flex-1 min-w-[12rem]">
+                {actions.includes('sync')
+                  ? t('detail.reconnectHint')
+                  : t('detail.reconnectHintViewer')}
+              </span>
+              {actions.includes('sync') && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={syncPeers.isPending}
+                  onClick={() => syncPeers.mutate(node.network_id)}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {t('detail.actions.sync')}
+                </Button>
+              )}
+              {syncPeers.data && (
+                <p className="w-full">
+                  {t('detail.syncResult', {
+                    added: syncPeers.data.added,
+                    skipped: syncPeers.data.skipped,
+                  })}
+                  {(syncPeers.data.errors ?? []).length > 0 && (
+                    <span className="block text-red-600 dark:text-red-400">
+                      {(syncPeers.data.errors ?? []).join('; ')}
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -749,6 +820,18 @@ export const NodeDetailPage: React.FC = () => {
             <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
               <span className="text-gray-500">{t('detail.publicEndpoint')}</span>
               <code className="font-mono">{node.public_ip || t('common:status.unknown')}</code>
+            </div>
+            <div className="flex justify-between gap-3 text-sm py-2 border-b dark:border-gray-700">
+              <span className="text-gray-500">{t('list.columns.labels')}</span>
+              <span className="flex flex-wrap justify-end gap-1">
+                {Object.keys(node.labels ?? {}).length === 0
+                  ? '—'
+                  : Object.entries(node.labels ?? {}).map(([key, value]) => (
+                      <Badge key={key} size="sm">
+                        {key}={value}
+                      </Badge>
+                    ))}
+              </span>
             </div>
             <div className="flex justify-between text-sm py-2 border-b dark:border-gray-700">
               <span className="text-gray-500">{t('detail.limitProfile')}</span>
@@ -843,6 +926,14 @@ export const NodeDetailPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      <ServerConfigModal
+        isOpen={configTab !== null}
+        onClose={() => setConfigTab(null)}
+        nodeId={node.id}
+        nodeName={node.name}
+        initialTab={configTab ?? 'general'}
+      />
 
       <EditNodeModal
         isOpen={showEditModal}

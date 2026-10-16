@@ -1,110 +1,89 @@
-import { Ban, CheckCircle, Globe, Lock, Network, Plus, Shield } from 'lucide-react'
+import { ArrowRight, Ban, CheckCircle, Cpu, Network, Plus, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Badge, Card } from '@/components/ui'
-import type { ChainInfo } from '@/types'
+import { Card } from '@/components/ui'
+import type { FirewallTab } from '@/lib/firewallTabs'
+import type { EngineMode } from '@/lib/firewallV2'
 
 interface OverviewTabProps {
-  chains: ChainInfo[]
-  totalRules: number
   blockedIPs: number
   openPorts: number
   vpnRuleCount: number
+  engine: EngineMode
+  onGo: (tab: FirewallTab) => void
   onOpenPort: () => void
   onBlockIP: () => void
   onAllowIP: () => void
 }
 
+// OverviewTab: the firewall in plain words (what the server lets in, what
+// passes between networks, which engine runs) and the common actions.
 export const OverviewTab = ({
-  chains,
-  totalRules,
   blockedIPs,
   openPorts,
   vpnRuleCount,
+  engine,
+  onGo,
   onOpenPort,
   onBlockIP,
   onAllowIP,
 }: OverviewTabProps) => {
   const { t } = useTranslation('firewall')
+  const summary = [
+    {
+      tab: 'server' as const,
+      icon: Shield,
+      tone: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+      title: t('overview.serverTitle'),
+      line: `${t('overview.openPortsCount', { count: openPorts })}, ${t('overview.blockedIpsCount', { count: blockedIPs })}`,
+      hint: t('overview.serverHint'),
+    },
+    {
+      tab: 'networks' as const,
+      icon: Network,
+      tone: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+      title: t('overview.networksTitle'),
+      line: t('overview.vpnRulesCount', { count: vpnRuleCount }),
+      hint: t('overview.networksHint'),
+    },
+    {
+      tab: 'advanced' as const,
+      icon: Cpu,
+      tone:
+        engine === 'iptables'
+          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+          : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+      title: t('overview.engineTitle'),
+      line: t(`overview.engine.${engine}`),
+      hint: t(`overview.engineHint.${engine}`),
+    },
+  ]
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('overview.totalRules')}</p>
-              <p className="text-2xl font-bold text-blue-600">{totalRules}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <Ban className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('overview.blockedIps')}</p>
-              <p className="text-2xl font-bold text-red-600">{blockedIPs}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <Globe className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('overview.openPorts')}</p>
-              <p className="text-2xl font-bold text-green-600">{openPorts}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Network className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('overview.vpnRules')}</p>
-              <p className="text-2xl font-bold text-purple-600">{vpnRuleCount}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Chain Policies */}
-      <Card padding="none">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold">{t('overview.chainPolicies')}</h3>
-          <p className="text-sm text-gray-500">{t('overview.chainPoliciesHint')}</p>
-        </div>
-        <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {chains.map((chain: ChainInfo) => (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {summary.map((s) => (
+          <Card key={s.tab} className="p-4">
+            <div className="flex items-start gap-3">
               <div
-                key={chain.name}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${s.tone}`}
               >
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">{chain.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={chain.policy === 'ACCEPT' ? 'success' : 'danger'}>
-                    {chain.policy}
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    {t('overview.rulesCount', { count: chain.rules?.length || 0 })}
-                  </span>
-                </div>
+                <s.icon className="h-5 w-5" />
               </div>
-            ))}
-          </div>
-        </div>
-      </Card>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-gray-500">{s.title}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{s.line}</p>
+                <p className="mt-1 text-sm text-gray-500">{s.hint}</p>
+                <button
+                  type="button"
+                  onClick={() => onGo(s.tab)}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  {t('overview.view')} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       {/* Quick Actions */}
       <Card padding="none">

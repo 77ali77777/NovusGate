@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { restoreAppState } from '@/lib/appStorage'
 import type { WebSocketEvent } from '@/types'
 
 interface AppState {
@@ -11,7 +12,7 @@ interface AppState {
   selectedNodeId: string | null
   setSelectedNodeId: (id: string | null) => void
 
-  // UI state
+  // UI state: the mobile drawer (the sidebar is always shown on lg screens)
   sidebarOpen: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
@@ -51,8 +52,8 @@ export const useAppStore = create<AppState>()(
       selectedNodeId: null,
       setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
-      // UI state
-      sidebarOpen: true,
+      // UI state: the drawer starts closed and is not saved
+      sidebarOpen: false,
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
@@ -99,8 +100,9 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         currentNetworkId: state.currentNetworkId,
         theme: state.theme,
-        sidebarOpen: state.sidebarOpen,
       }),
+      // Older copies saved sidebarOpen; restore only the fields above.
+      merge: (persisted, current) => ({ ...current, ...restoreAppState(persisted) }),
     }
   )
 )

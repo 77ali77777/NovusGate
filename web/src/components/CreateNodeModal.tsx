@@ -1,13 +1,17 @@
-import { Clock } from 'lucide-react'
+import { Clock, ShieldAlert } from 'lucide-react'
 import type React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNetworks } from '@/api/client'
 import { Button, Input, Modal, Select } from '@/components/ui'
+import { defaultNetworkId } from '@/lib/deviceActions'
+import { networkLabel } from '@/lib/networkDisplay'
+import { useCurrentNetworkId } from '@/store'
 
 interface CreateNodeModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: { name: string; expires_at?: string }) => void
+  onSubmit: (data: { name: string; expires_at?: string; network_id: string }) => void
   isLoading?: boolean
 }
 
@@ -25,6 +29,26 @@ export const CreateNodeModal = ({ isOpen, onClose, onSubmit, isLoading }: Create
   const [name, setName] = useState('')
   const [expiryType, setExpiryType] = useState<ExpiryValueProp>('forever')
   const [customDate, setCustomDate] = useState('')
+  // The network the device joins (C2): the sidebar's network until the
+  // person picks another one in the form.
+  const currentNetworkId = useCurrentNetworkId()
+  const { data: networks } = useNetworks()
+  const [chosenNetwork, setChosenNetwork] = useState<string | null>(null)
+  const networkId =
+    chosenNetwork && networks?.some((n) => n.id === chosenNetwork)
+      ? chosenNetwork
+      : defaultNetworkId(currentNetworkId, networks)
+  const networkOptions = (networks ?? []).map((n) => ({
+    value: n.id,
+    label: `${networkLabel(n, t).name} (${n.cidr})`,
+  }))
+  const selectedNetwork = networks?.find((n) => n.id === networkId)
+  const adminSelected = selectedNetwork ? networkLabel(selectedNetwork, t).admin : false
+
+  // Every opening starts from the sidebar's network again.
+  useEffect(() => {
+    if (!isOpen) setChosenNetwork(null)
+  }, [isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,12 +66,29 @@ export const CreateNodeModal = ({ isOpen, onClose, onSubmit, isLoading }: Create
       expiresAt = new Date(customDate).toISOString()
     }
 
-    onSubmit({ name, expires_at: expiresAt })
+    onSubmit({ name, expires_at: expiresAt, network_id: networkId })
   }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('create.title')}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <Select
+          id="create-node-network"
+          label={t('create.network')}
+          help="helpNodes:create.network"
+          options={networkOptions}
+          value={networkId}
+          onChange={(e) => setChosenNetwork(e.target.value)}
+          required
+        />
+
+        {adminSelected && (
+          <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span>{t('create.adminNetworkHint')}</span>
+          </div>
+        )}
+
         <Input
           help="helpNodes:create.name"
           label={t('fields.peerName')}
@@ -89,7 +130,7 @@ export const CreateNodeModal = ({ isOpen, onClose, onSubmit, isLoading }: Create
           <Button variant="secondary" type="button" onClick={onClose}>
             {t('common:actions.cancel')}
           </Button>
-          <Button type="submit" loading={isLoading} disabled={!name}>
+          <Button type="submit" loading={isLoading} disabled={!name || !networkId}>
             {t('create.submit')}
           </Button>
         </div>

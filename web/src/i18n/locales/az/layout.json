@@ -2,7 +2,7 @@
   "nav": {
     "overview": "İcmal",
     "networks": "Şəbəkələr",
-    "nodes": "Node-lar",
+    "nodes": "Cihazlar",
     "topology": "Topologiya",
     "firewall": "Firewall",
     "fail2ban": "Fail2Ban",
@@ -17,6 +17,12 @@
   "language": "Dil",
   "logout": "Çıxış",
   "logoutConfirm": "Çıxmaq istədiyinizə əminsiniz?",
+  "openMenu": "Menyunu aç",
+  "closeMenu": "Menyunu bağla",
+  "userMenu": {
+    "open": "Hesab menyusu",
+    "changePassword": "Parolu dəyiş"
+  },
   "connection": {
     "vpn": "VPN ilə qoşulub",
     "dev": "Developer rejimi",

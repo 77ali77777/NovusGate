@@ -1,9 +1,9 @@
 {
   "group": {
     "name": {
-      "what": "The name of the node group, shown in this list, in VPN rules that use the group and when binding limit profiles.",
-      "who": "Operators and admins who write VPN rules or limits for a set of nodes instead of one node at a time.",
-      "effect": "Required, 1–100 characters, and unique: the server refuses a name another group already has. VPN rules refer to the group itself, so renaming does not break them. When a node is in several groups with limit profiles, the first group by name decides its profile, so a rename can change it; limits are re-applied on save."
+      "what": "The name of the device group, shown in this list, in VPN rules that use the group and when binding limit profiles.",
+      "who": "Operators and admins who write VPN rules or limits for a set of devices instead of one device at a time.",
+      "effect": "Required, 1–100 characters, and unique: the server refuses a name another group already has. VPN rules refer to the group itself, so renaming does not break them. When a device is in several groups with limit profiles, the first group by name decides its profile, so a rename can change it; limits are re-applied on save."
     },
     "description": {
       "what": "A free note about the group, shown under its name in this list.",
@@ -13,14 +13,14 @@
   },
   "members": {
     "network": {
-      "what": "Chooses which network's nodes are listed below.",
-      "who": "Needed to find nodes, because the list shows one network at a time. A group can hold nodes from several networks.",
-      "effect": "Only changes the list; nodes ticked in other networks stay selected. Nothing is saved until you press Save."
+      "what": "Chooses which network's devices are listed below.",
+      "who": "Needed to find devices, because the list shows one network at a time. A group can hold devices from several networks.",
+      "effect": "Only changes the list; devices ticked in other networks stay selected. Nothing is saved until you press Save."
     },
     "nodes": {
-      "what": "The nodes that belong to this group. A node can be in several groups.",
-      "who": "Needed before the group is useful: VPN rules and limit profiles that use the group apply to these nodes.",
-      "effect": "Saving replaces the whole member list and re-applies the VPN rules at once, so a node added or removed here gains or loses the access those rules give, and the group's limit profile."
+      "what": "The devices that belong to this group. A device can be in several groups.",
+      "who": "Needed before the group is useful: VPN rules and limit profiles that use the group apply to these devices.",
+      "effect": "Saving replaces the whole member list and re-applies the VPN rules at once, so a device added or removed here gains or loses the access those rules give, and the group's limit profile."
     }
   }
 }

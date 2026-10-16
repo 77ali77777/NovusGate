@@ -5,8 +5,144 @@
   "empty": "Nothing recorded yet.",
   "columns": {
     "result": "Result",
-    "address": "Address"
+    "address": "Address",
+    "event": "Event"
   },
   "loadOlder": "Load older entries",
-  "triedUser": "tried: {{name}}"
+  "filters": {
+    "user": "User",
+    "allUsers": "All users",
+    "kind": "Action kind",
+    "allKinds": "All actions",
+    "search": "Search",
+    "searchPlaceholder": "Name, address, path…",
+    "noMatch": "No loaded entry matches the filters.",
+    "shown": "{{shown}} of {{total}} loaded entries"
+  },
+  "kinds": {
+    "login": "Login",
+    "network": "Network",
+    "node": "Device",
+    "firewall": "Firewall",
+    "user": "User",
+    "server": "Server",
+    "other": "Other"
+  },
+  "result": {
+    "ok": "Succeeded",
+    "denied": "Refused",
+    "error": "Error",
+    "code": "HTTP {{code}}"
+  },
+  "raw": {
+    "show": "Show the raw entry",
+    "hide": "Hide the raw entry",
+    "action": "Recorded action",
+    "method": "Method",
+    "path": "Path",
+    "status": "Status",
+    "ip": "IP address",
+    "details": "All recorded details"
+  },
+  "actor": {
+    "unknown": "unknown user"
+  },
+  "sentence": {
+    "login": {
+      "ok": "Login attempt: {{user}} — succeeded",
+      "fail": "Login attempt: {{user}} — failed"
+    },
+    "auth": {
+      "logout": "{{user}} logged out",
+      "stepUp": "{{user}} confirmed their password for a sensitive action",
+      "password": "{{user}} changed their password",
+      "sessionEnd": "{{user}} ended login session {{target}}"
+    },
+    "network": {
+      "create": "{{user}} created a network",
+      "delete": "{{user}} deleted network {{target}}",
+      "dns": "{{user}} changed the DNS settings of network {{target}}",
+      "sync": "{{user}} re-synced the devices of network {{target}} with WireGuard"
+    },
+    "node": {
+      "create": "{{user}} created a device in network {{target}}",
+      "update": "{{user}} changed device {{target}}",
+      "delete": "{{user}} deleted device {{target}}",
+      "quotaReset": "{{user}} reset the traffic quota of device {{target}}"
+    },
+    "group": {
+      "create": "{{user}} created a device group",
+      "update": "{{user}} changed group {{target}}",
+      "delete": "{{user}} deleted group {{target}}",
+      "members": "{{user}} changed the members of group {{target}}"
+    },
+    "limit": {
+      "create": "{{user}} created a limit profile",
+      "update": "{{user}} changed limit profile {{target}}",
+      "delete": "{{user}} deleted limit profile {{target}}",
+      "bindings": "{{user}} changed which devices limit profile {{target}} applies to"
+    },
+    "firewall": {
+      "import": "{{user}} imported firewall rules",
+      "ipAllow": "{{user}} allowed an IP address in the firewall",
+      "ipBlock": "{{user}} blocked an IP address in the firewall",
+      "portOpen": "{{user}} opened a port in the firewall",
+      "portClose": "{{user}} closed a port in the firewall",
+      "reset": "{{user}} reset the firewall to the default NovusGate rules",
+      "ruleDelete": "{{user}} deleted a firewall rule",
+      "confirm": "{{user}} confirmed a firewall change",
+      "egressOn": "{{user}} turned on full tunnel (internet through the server) for device {{target}}",
+      "egressOff": "{{user}} turned off full tunnel for device {{target}}",
+      "forwardCreate": "{{user}} created a port forward",
+      "forwardDelete": "{{user}} deleted a port forward",
+      "restore": "{{user}} restored an earlier firewall state",
+      "ipRuleCreate": "{{user}} added an IP rule to the firewall",
+      "ipRuleDelete": "{{user}} deleted an IP rule from the firewall",
+      "serviceDelete": "{{user}} closed an open port in the firewall"
+    },
+    "vpn": {
+      "created": "{{user}} created VPN rule {{target}}",
+      "updated": "{{user}} changed VPN rule {{target}}",
+      "deleted": "{{user}} deleted VPN rule {{target}}",
+      "createdNoName": "{{user}} created a VPN rule",
+      "updatedNoName": "{{user}} changed a VPN rule",
+      "deletedNoName": "{{user}} deleted a VPN rule",
+      "applied": "{{user}} applied the VPN rules to the firewall again"
+    },
+    "fail2ban": {
+      "ban": "{{user}} banned an IP address with Fail2Ban",
+      "unban": "{{user}} lifted a Fail2Ban ban on an IP address",
+      "jailControl": "{{user}} started or stopped a Fail2Ban jail",
+      "jailSettings": "{{user}} changed the Fail2Ban jail settings",
+      "reload": "{{user}} reloaded Fail2Ban",
+      "permanentRemove": "{{user}} removed an IP address from the Fail2Ban permanent bans",
+      "whitelist": "{{user}} changed the Fail2Ban whitelist"
+    },
+    "user": {
+      "create": "{{user}} created a panel user",
+      "delete": "{{user}} deleted user {{target}}",
+      "role": "{{user}} changed the role of user {{target}}"
+    },
+    "backup": {
+      "create": "{{user}} created a backup",
+      "delete": "{{user}} deleted backup {{target}}"
+    },
+    "server": {
+      "upgrade": "{{user}} started a server package upgrade",
+      "reboot": "{{user}} rebooted the server",
+      "serviceRestart": "{{user}} restarted service {{target}}",
+      "sysctl": "{{user}} changed the server kernel (sysctl) settings",
+      "sysctlConfirm": "{{user}} confirmed a sysctl change",
+      "hostname": "{{user}} changed the server name (hostname)",
+      "timezone": "{{user}} changed the server time zone"
+    },
+    "notify": {
+      "settings": "{{user}} changed the notification (Telegram) settings",
+      "test": "{{user}} sent a test notification"
+    },
+    "fallback": {
+      "http": "{{user}} {{method}} {{path}}",
+      "action": "{{user}}: {{action}}"
+    }
+  }
 }

@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { defaultNetworkId, detailActions, rowActions } from '../src/lib/deviceActions.ts'
+
+test('viewers get no row or detail actions', () => {
+  assert.deepEqual(rowActions({ has_config: true }, false), [])
+  assert.deepEqual(detailActions({ has_config: true }, false), [])
+})
+
+test('operators get config, edit and delete in the row', () => {
+  assert.deepEqual(rowActions({ has_config: true }, true), ['config', 'edit', 'delete'])
+})
+
+test('imported devices (no private key) have no config action', () => {
+  assert.deepEqual(rowActions({ has_config: false }, true), ['edit', 'delete'])
+  assert.deepEqual(detailActions({ has_config: false }, true), ['sync'])
+})
+
+test('the detail page offers config, QR, Linux script and reconnect', () => {
+  assert.deepEqual(detailActions({ has_config: true }, true), ['download', 'qr', 'script', 'sync'])
+})
+
+test('the create form defaults to the current network when it exists', () => {
+  const nets = [{ id: 'a' }, { id: 'b' }]
+  assert.equal(defaultNetworkId('b', nets), 'b')
+  assert.equal(defaultNetworkId('gone', nets), 'a')
+  assert.equal(defaultNetworkId(null, nets), 'a')
+  assert.equal(defaultNetworkId('b', undefined), 'b')
+  assert.equal(defaultNetworkId(null, []), '')
+})

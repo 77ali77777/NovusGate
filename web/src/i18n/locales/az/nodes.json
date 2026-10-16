@@ -1,6 +1,6 @@
 {
   "fields": {
-    "peerName": "Peer adı",
+    "peerName": "Cihazın adı",
     "peerNamePlaceholder": "məs. Telefonum, Ofis noutbuku",
     "virtualIp": "Virtual IP",
     "publicIp": "Açıq IP",
@@ -17,19 +17,19 @@
     "publicKey": "Açıq açar"
   },
   "list": {
-    "title": "Node-lar",
-    "description": "Mesh şəbəkənizdəki node-ları idarə edin",
-    "createPeer": "Peer yarat",
+    "title": "Cihazlar",
+    "description": "VPN şəbəkələrinizə qoşulan cihazları idarə edin",
+    "createPeer": "Cihaz yarat",
     "noNetwork": {
       "title": "Şəbəkə seçilməyib",
-      "description": "Node-lara baxmaq üçün yan paneldən şəbəkə seçin"
+      "description": "Cihazlara baxmaq üçün yan paneldən şəbəkə seçin"
     },
     "adminWarning": {
       "title": "Admin şəbəkəsi üzrə təhlükəsizlik xəbərdarlığı",
-      "body": "Siz <strong>Admin idarəetmə şəbəkəsinə (wg0)</strong> baxırsınız. Bu şəbəkədə yaradılan node-lar Admin panelinə və daxili idarəetmə xidmətlərinə çıxış əldə edəcək. Burada peer-ləri yalnız etibarlı administratorlar üçün yaradın. Bu konfiqurasiyaları adi istifadəçilərlə paylaşmayın."
+      "body": "Siz <strong>Admin VPN şəbəkəsinə (wg0)</strong> baxırsınız. Bu şəbəkədə yaradılan cihazlar Admin panelinə və daxili idarəetmə xidmətlərinə çıxış əldə edəcək. Burada cihazları yalnız etibarlı administratorlar üçün yaradın. Bu konfiqurasiyaları adi istifadəçilərlə paylaşmayın."
     },
     "summary": {
-      "total": "Cəmi node"
+      "total": "Cəmi cihaz"
     },
     "columns": {
       "transfer": "Trafik",
@@ -39,27 +39,27 @@
       "groups": "Qruplar",
       "quota": "Kvota"
     },
-    "configUnavailable": "İdxal edilmiş node-lar üçün konfiqurasiya mövcud deyil",
+    "configUnavailable": "İdxal edilmiş cihazlar üçün konfiqurasiya mövcud deyil",
     "downloadConfig": "Konfiqurasiyanı yüklə",
-    "empty": "Bu şəbəkədə node yoxdur. Node əlavə etmək üçün qeydiyyat tokeni yaradın.",
+    "empty": "Bu şəbəkədə cihaz yoxdur. Əlavə etmək üçün «Cihaz yarat» düyməsini basın.",
     "delete": {
-      "title": "Node-u sil",
-      "body": "<strong>{{name}}</strong> node-unu şəbəkədən silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.",
-      "confirm": "Node-u sil"
+      "title": "Cihazı sil",
+      "body": "<strong>{{name}}</strong> cihazını şəbəkədən silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.",
+      "confirm": "Cihazı sil"
     },
     "groupFilter": "Qrup",
     "allGroups": "Bütün qruplar"
   },
   "detail": {
     "notFound": {
-      "title": "Node tapılmadı",
-      "body": "Sorğulanan node tapılmadı və ya silinib.",
-      "back": "Node-lara qayıt"
+      "title": "Cihaz tapılmadı",
+      "body": "Sorğulanan cihaz tapılmadı və ya silinib.",
+      "back": "Cihazlara qayıt"
     },
-    "editNode": "Node-u redaktə et",
+    "editNode": "Cihazı redaktə et",
     "statusExpiration": "Status və müddət",
     "connectionStatus": "Bağlantı statusu",
-    "reconnectHint": "Node qoşulmursa, belə yoxlayın: Redaktə et → Deaktiv → Yadda saxla, sonra Redaktə et → Aktiv → Yadda saxla.",
+    "reconnectHint": "Cihaz qoşulmursa, əvvəlcə «Bağlantını bərpa et» düyməsini basın: server bu şəbəkənin itmiş WireGuard bağlantılarını yenidən əlavə edir. Kömək etməsə, konfiqurasiyanı yenidən yükləyib cihaza köçürün.",
     "unlimited": "Limitsiz (həmişəlik)",
     "expiresIn": "Müddət bitir: {{time}}",
     "networkActivity": "Şəbəkə aktivliyi",
@@ -69,10 +69,21 @@
     "limitProfile": "Limit profili",
     "limitViaGroup": "{{profile}} ({{group}} qrupundan)",
     "noLimit": "Yoxdur",
-    "limitNotEnforced": "(tətbiq olunmur: iptables rejimi)"
+    "limitNotEnforced": "(tətbiq olunmur: iptables rejimi)",
+    "reconnectHintViewer": "Cihaz qoşulmursa, operator və ya admindən bağlantını bərpa etməsini xahiş edin.",
+    "actions": {
+      "download": "Konfiqi yüklə",
+      "qr": "QR kod",
+      "script": "Linux skripti",
+      "sync": "Bağlantını bərpa et"
+    },
+    "downloadFailed": "Konfiqurasiyanı yükləmək alınmadı",
+    "syncFailed": "Bağlantını bərpa etmək alınmadı",
+    "synced": "Bağlantılar yoxlanıldı",
+    "syncResult": "Yenidən əlavə edildi: {{added}}; əlavə edilmədi (müddəti bitmiş, deaktiv və ya artıq qoşulu): {{skipped}}."
   },
   "create": {
-    "title": "Yeni peer yarat",
+    "title": "Yeni cihaz yarat",
     "expiryLabel": "Müddət (giriş müddəti)",
     "expiry": {
       "forever": "Həmişəlik (limitsiz)",
@@ -82,12 +93,14 @@
       "custom": "Tarix seç"
     },
     "customDate": "Müddətin bitmə tarixi",
-    "autoDisableHint": "Bu peer göstərilən müddətdən sonra avtomatik deaktiv ediləcək.",
-    "submit": "Yarat və konfiqurasiyanı yüklə"
+    "autoDisableHint": "Bu cihaz göstərilən müddətdən sonra avtomatik deaktiv ediləcək.",
+    "submit": "Yarat və konfiqurasiyanı yüklə",
+    "network": "Şəbəkə",
+    "adminNetworkHint": "Bu, Admin VPN şəbəkəsidir: burada yaradılan cihaz idarə panelinə çıxış alır. Yalnız etibarlı administratorlar üçün yaradın."
   },
   "edit": {
     "title": "Redaktə: {{name}}",
-    "fallbackName": "Node",
+    "fallbackName": "Cihaz",
     "expiry": {
       "keep": "Hazırkını saxla",
       "foreverNoLimit": "Həmişəlik (limitsiz)",
@@ -98,9 +111,9 @@
       "custom": "Tarix seç"
     },
     "dateTime": "Bitmə tarixi və saatı",
-    "pastExpiryKept": "Hazırkı müddət artıq keçib. Onu uzadın, əks halda node yenidən deaktiv ediləcək.",
+    "pastExpiryKept": "Hazırkı müddət artıq keçib. Onu uzadın, əks halda cihaz yenidən deaktiv ediləcək.",
     "extendHint": "Bu, hazırkı müddəti uzadacaq.",
-    "reactivateHint": "Node yenidən aktivləşdiriləcək və WireGuard-a geri əlavə ediləcək.",
+    "reactivateHint": "Cihaz yenidən aktivləşdiriləcək və WireGuard-a geri əlavə ediləcək.",
     "deviceInfo": "Cihaz məlumatı (istəyə bağlı)",
     "osPlaceholder": "məs. Linux, Android",
     "archPlaceholder": "məs. amd64, arm64",
@@ -175,7 +188,7 @@
     "blocked": "bloklanıb",
     "throttled": "sürəti azaldılıb",
     "reset": "İndi sıfırla",
-    "resetConfirm": "Bu node-un kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür.",
+    "resetConfirm": "Bu cihazın kvota sayğacı yenidən başlasın? Blok və ya sürət azaldılması dərhal götürülür.",
     "notEnforced": "(tətbiq olunmur: iptables rejimi)"
   }
 }

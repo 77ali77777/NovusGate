@@ -35,7 +35,7 @@
     "newRole": {
       "what": "Yeni istifadəçinin nə edə biləcəyi: Admin, Operator və ya İzləyici.",
       "who": "Hər kəsə yalnız ehtiyac duyduğu girişi verən adminlər.",
-      "effect": "Admin hər şeyi edə bilər, o cümlədən istifadəçilər, Fail2Ban, host firewall, ehtiyat nüsxələr, bildirişlər və Server səhifəsi. Operator şəbəkələri, node-ları, qrupları, limitləri və VPN qaydalarını dəyişə bilər. İzləyici şəbəkələrə, node-lara, firewall-a və Fail2Ban-a baxa və öz parolunu dəyişə bilər; başqa heç nəyi dəyişə və cihaz konfiqurasiyalarını yükləyə bilməz."
+      "effect": "Admin hər şeyi edə bilər, o cümlədən istifadəçilər, Fail2Ban, host firewall, ehtiyat nüsxələr, bildirişlər və Server səhifəsi. Operator şəbəkələri, cihazları, qrupları, limitləri və VPN qaydalarını dəyişə bilər. İzləyici şəbəkələrə, cihazlara, firewall-a və Fail2Ban-a baxa və öz parolunu dəyişə bilər; başqa heç nəyi dəyişə və cihaz konfiqurasiyalarını yükləyə bilməz."
     },
     "role": {
       "what": "Hər istifadəçinin yanındakı rol seçimi həmin istifadəçinin rolunu dəyişir.",
@@ -60,9 +60,9 @@
       "effect": "Server formatı yoxlayır, tokeni şifrələnmiş saxlayır və heç vaxt panelə geri göndərmir. Boş sahə saxlanılmış tokeni saxlayır. Test mesajı yalnız token və chat ID yadda saxlanıldıqdan sonra işləyir."
     },
     "events": {
-      "what": "Mesaj göndərən hadisələr: node-un oflayn olması və ya geri qayıtması, node-un giriş müddətinin bitməsi, Fail2Ban ban-ı, firewall dəyişikliyi və node-un trafik kvotasının 80%-ni və ya hamısını istifadə etməsi.",
+      "what": "Mesaj göndərən hadisələr: cihazın oflayn olması və ya geri qayıtması, cihazın giriş müddətinin bitməsi, Fail2Ban ban-ı, firewall dəyişikliyi və cihazın trafik kvotasının 80%-ni və ya hamısını istifadə etməsi.",
       "who": "Bəzi hadisələrdən xəbər tutmaq, digərlərindən isə yox istəyən adminlər.",
-      "effect": "Yalnız işarələnmiş hadisələr və yalnız bildirişlər aktiv olanda göndərilir. Eyni hadisənin 30 dəqiqə ərzindəki təkrarı bir dəfə göndərilir; Firewall səhifəsində edilən hər dəyişiklik göndərilir (Fail2Ban daimi ban-ları yox). Node 5 dəqiqə WireGuard handshake olmadıqda oflayn sayılır."
+      "effect": "Yalnız işarələnmiş hadisələr və yalnız bildirişlər aktiv olanda göndərilir. Eyni hadisənin 30 dəqiqə ərzindəki təkrarı bir dəfə göndərilir; Firewall səhifəsində edilən hər dəyişiklik göndərilir (Fail2Ban daimi ban-ları yox). Cihaz 5 dəqiqə WireGuard handshake olmadıqda oflayn sayılır."
     }
   }
 }

@@ -47,10 +47,10 @@
   },
   "forwards": {
     "title": "Port forwarding",
-    "intro": "Publish a VPN node's port on the server's public address.",
+    "intro": "Publish a VPN device's port on the server's public address.",
     "publicPort": "Public port",
-    "targetIp": "Node VPN IP",
-    "targetPort": "Node port",
+    "targetIp": "Device VPN IP",
+    "targetPort": "Device port",
     "targetPortPlaceholder": "same as public",
     "submit": "Add forward",
     "empty": "No port forwards",
@@ -60,8 +60,8 @@
   },
   "egress": {
     "title": "Full tunnel (internet through the server)",
-    "intro": "Nodes of the network selected in the sidebar. Enabling it changes the node's config (all IPv4 traffic, DNS 1.1.1.1): download the config again on the device.",
-    "noNodes": "No nodes in the selected network."
+    "intro": "Devices of the network selected in the sidebar. Enabling it changes the device's config (all IPv4 traffic, DNS 1.1.1.1): download the config again on the device.",
+    "noNodes": "No devices in the selected network."
   },
   "preview": {
     "title": "Ruleset preview",
@@ -128,15 +128,15 @@
       "adminVpnPostgres": "The admin VPN keeps access to the database Docker publishes.",
       "dockerPostgres": "Docker publishes the database on all addresses; other interfaces cannot reach it.",
       "vpnPolicy": "Traffic from VPN clients goes through the VPN rules and network policies.",
-      "forwardsToNodes": "Port forwards to VPN nodes.",
+      "forwardsToNodes": "Port forwards to VPN devices.",
       "vpnInboundDrop": "Other traffic into the VPN networks is dropped.",
-      "sameNetwork": "Peers of the same network can reach each other.",
-      "egressAccept": "Full-tunnel nodes may reach the internet through the server.",
+      "sameNetwork": "Devices of the same network can reach each other.",
+      "egressAccept": "Full-tunnel devices may reach the internet through the server.",
       "egressMasquerade": "Full-tunnel traffic leaves with the server address (NAT).",
       "vpnDefaultDrop": "Traffic between VPN networks without an allowing rule is dropped.",
       "limits": "Limit profiles are checked first, so they also cover connections that already exist.",
-      "limitSchedule": "Nodes of a limit profile with a schedule go through its time windows.",
-      "limitWindow": "An allowed time window of a limit profile (UTC); outside the windows the node is cut off."
+      "limitSchedule": "Devices of a limit profile with a schedule go through its time windows.",
+      "limitWindow": "An allowed time window of a limit profile (UTC); outside the windows the device is cut off."
     }
   },
   "engineOff": {
@@ -149,6 +149,8 @@
     "step4": "NovusGate Center → Update once more (it sets up the host side for nftables).",
     "more": "Checks before and after, and the way back to iptables:",
     "startingTitle": "The firewall engine is starting",
-    "starting": "The nftables engine is taking over the current iptables rules. This takes a moment; the tab loads by itself when it is ready."
+    "starting": "The nftables engine is taking over the current iptables rules. This takes a moment; the tab loads by itself when it is ready.",
+    "limitsWhy": "You can create and bind limit profiles now, but the iptables engine does not enforce them. Speed, connection and time limits and the traffic quota work only with the nftables engine.",
+    "howShow": "How to turn on nftables"
   }
 }

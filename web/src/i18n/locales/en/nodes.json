@@ -1,6 +1,6 @@
 {
   "fields": {
-    "peerName": "Peer Name",
+    "peerName": "Device name",
     "peerNamePlaceholder": "e.g. My Phone, Office Laptop",
     "virtualIp": "Virtual IP",
     "publicIp": "Public IP",
@@ -17,19 +17,19 @@
     "publicKey": "Public Key"
   },
   "list": {
-    "title": "Nodes",
-    "description": "Manage nodes in your mesh network",
-    "createPeer": "Create Peer",
+    "title": "Devices",
+    "description": "Manage the devices that connect to your VPN networks",
+    "createPeer": "Create device",
     "noNetwork": {
       "title": "No network selected",
-      "description": "Select a network from the sidebar to view nodes"
+      "description": "Select a network from the sidebar to view its devices"
     },
     "adminWarning": {
       "title": "Admin Network Security Warning",
-      "body": "You are viewing the <strong>Admin Management Network (wg0)</strong>. Nodes created in this network will have access to the Admin Panel and internal management services. Only create peers here for trusted administrators. Do not share these configs with regular users."
+      "body": "You are viewing the <strong>Admin VPN network (wg0)</strong>. Devices created in this network will have access to the Admin Panel and internal management services. Only create devices here for trusted administrators. Do not share these configs with regular users."
     },
     "summary": {
-      "total": "Total Nodes"
+      "total": "Total devices"
     },
     "columns": {
       "transfer": "Transfer",
@@ -39,27 +39,27 @@
       "groups": "Groups",
       "quota": "Quota"
     },
-    "configUnavailable": "Config not available for imported nodes",
+    "configUnavailable": "Config not available for imported devices",
     "downloadConfig": "Download Config",
-    "empty": "No nodes in this network. Create an enrollment token to add nodes.",
+    "empty": "No devices in this network. Click \"Create device\" to add one.",
     "delete": {
-      "title": "Delete Node",
+      "title": "Delete device",
       "body": "Are you sure you want to remove <strong>{{name}}</strong> from the network? This action cannot be undone.",
-      "confirm": "Delete Node"
+      "confirm": "Delete device"
     },
     "groupFilter": "Group",
     "allGroups": "All groups"
   },
   "detail": {
     "notFound": {
-      "title": "Node not found",
-      "body": "The requested node could not be found or has been deleted.",
-      "back": "Back to Nodes"
+      "title": "Device not found",
+      "body": "The requested device could not be found or has been deleted.",
+      "back": "Back to devices"
     },
-    "editNode": "Edit Node",
+    "editNode": "Edit device",
     "statusExpiration": "Status & Expiration",
     "connectionStatus": "Connection Status",
-    "reconnectHint": "If node is not connecting, try: Edit → Disabled → Save, then Edit → Active → Save.",
+    "reconnectHint": "If the device does not connect, first click \"Restore connection\": the server adds back the WireGuard connections this network lost. If that does not help, download the config again and copy it to the device.",
     "unlimited": "Unlimited (Forever)",
     "expiresIn": "Expires {{time}}",
     "networkActivity": "Network Activity",
@@ -69,10 +69,21 @@
     "limitProfile": "Limit profile",
     "limitViaGroup": "{{profile}} (from group {{group}})",
     "noLimit": "None",
-    "limitNotEnforced": "(not enforced: iptables mode)"
+    "limitNotEnforced": "(not enforced: iptables mode)",
+    "reconnectHintViewer": "If the device does not connect, ask an operator or admin to restore its connection.",
+    "actions": {
+      "download": "Download config",
+      "qr": "QR code",
+      "script": "Linux script",
+      "sync": "Restore connection"
+    },
+    "downloadFailed": "Could not download the config",
+    "syncFailed": "Could not restore the connection",
+    "synced": "Connections checked",
+    "syncResult": "Added back: {{added}}; not added (expired, disabled or already connected): {{skipped}}."
   },
   "create": {
-    "title": "Create New Peer",
+    "title": "Create new device",
     "expiryLabel": "Expiration (Access Duration)",
     "expiry": {
       "forever": "Forever (No limit)",
@@ -82,12 +93,14 @@
       "custom": "Custom Date"
     },
     "customDate": "Custom Expiration Date",
-    "autoDisableHint": "This peer will be automatically disabled after specified time.",
-    "submit": "Create & Download Config"
+    "autoDisableHint": "This device will be disabled automatically after the chosen time.",
+    "submit": "Create & Download Config",
+    "network": "Network",
+    "adminNetworkHint": "This is the Admin VPN network: a device created here gets access to the management panel. Create one only for trusted administrators."
   },
   "edit": {
     "title": "Edit: {{name}}",
-    "fallbackName": "Node",
+    "fallbackName": "Device",
     "expiry": {
       "keep": "Keep Current",
       "foreverNoLimit": "Forever (No limit)",
@@ -98,9 +111,9 @@
       "custom": "Set Custom Date"
     },
     "dateTime": "Expiration Date & Time",
-    "pastExpiryKept": "The current expiration is in the past. Extend it, or the node is disabled again.",
+    "pastExpiryKept": "The current expiration is in the past. Extend it, or the device is disabled again.",
     "extendHint": "This will extend the current expiration time.",
-    "reactivateHint": "Node will be reactivated and added back to WireGuard.",
+    "reactivateHint": "The device will be reactivated and added back to WireGuard.",
     "deviceInfo": "Device Information (Optional)",
     "osPlaceholder": "e.g. Linux, Android",
     "archPlaceholder": "e.g. amd64, arm64",
@@ -175,7 +188,7 @@
     "blocked": "blocked",
     "throttled": "slowed down",
     "reset": "Reset now",
-    "resetConfirm": "Start this node’s quota count again? A block or slow-down is lifted at once.",
+    "resetConfirm": "Start this device’s quota count again? A block or slow-down is lifted at once.",
     "notEnforced": "(not enforced: iptables mode)"
   }
 }

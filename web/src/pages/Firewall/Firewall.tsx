@@ -1,12 +1,8 @@
 import {
   Activity,
-  Ban,
-  CheckCircle,
   Download,
   Gauge,
-  Globe,
   History,
-  Lock,
   Network,
   Plus,
   RefreshCw,
@@ -28,6 +24,7 @@ import {
   useDeleteFirewallRule,
   useDeleteVPNFirewallRule,
   useFirewallRules,
+  useFirewallV2State,
   useNetworks,
   useOpenPort,
   useResetFirewall,
@@ -36,40 +33,30 @@ import {
 } from '@/api/client'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
-import { Button, Card, Modal } from '@/components/ui'
+import { Button, Modal } from '@/components/ui'
+import { type AdvancedSection, advancedLocked, type FirewallTab } from '@/lib/firewallTabs'
+import { engineMode } from '@/lib/firewallV2'
 import { pairRulePriority } from '@/lib/policyMatrix'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
 import { AdvancedTab } from './AdvancedTab'
-import { BlockedIPsTab } from './BlockedIPsTab'
 import { HistoryTab } from './HistoryTab'
-import { HostRulesTab } from './HostRulesTab'
 import { LimitsTab } from './LimitsTab'
 import { LiveTab } from './LiveTab'
-import { OpenPortsTab } from './OpenPortsTab'
 import { OverviewTab } from './OverviewTab'
 import { PolicyMatrix } from './PolicyMatrix'
+import { ServerTab } from './ServerTab'
 import { SystemRulesTab } from './SystemRulesTab'
+import { TabBar, type TabItem, TabPanel } from './TabBar'
 import { VPNRuleModal } from './VPNRuleModal'
 import { VPNRulesTab } from './VPNRulesTab'
-
-type TabId =
-  | 'overview'
-  | 'host-rules'
-  | 'open-ports'
-  | 'vpn-rules'
-  | 'limits'
-  | 'blocked-ips'
-  | 'advanced'
-  | 'live'
-  | 'history'
-  | 'system-rules'
 
 export const Firewall: React.FC = () => {
   const { t } = useTranslation('firewall')
   // Host firewall changes are admin-only, VPN rules operator (P9a).
   const isAdmin = useCan('admin')
   const isOperator = useCan('operator')
-  const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [activeTab, setActiveTab] = useState<FirewallTab>('overview')
+  const [advancedSection, setAdvancedSection] = useState<AdvancedSection>('nft')
   const [selectedChain, setSelectedChain] = useState<string>('INPUT')
 
   // Modals
@@ -103,6 +90,9 @@ export const Firewall: React.FC = () => {
   } = useFirewallRules()
   const { data: vpnRules, isLoading: vpnLoading, refetch: refetchVPN } = useVPNFirewallRules()
   const { data: networks } = useNetworks()
+  // The engine (nftables or iptables) decides the Advanced tab's lock badge.
+  const v2State = useFirewallV2State()
+  const engine = engineMode({ data: v2State.data, error: v2State.error })
 
   // Mutations
   const openPortMutation = useOpenPort()
@@ -126,7 +116,6 @@ export const Firewall: React.FC = () => {
   const currentChain = chains.find((c: ChainInfo) => c.name === selectedChain)
 
   // Calculate stats
-  const totalRules = firewallStatus?.total_rules || 0
   const blockedIPs = firewallStatus?.blocked_ips || 0
   const openPorts = firewallStatus?.open_ports || 0
   const vpnRuleCount = vpnRules?.length || 0
@@ -351,74 +340,24 @@ export const Firewall: React.FC = () => {
     })
   }
 
-  const tabs = [
-    { id: 'overview' as TabId, label: t('tabs.overview'), icon: Shield },
-    { id: 'host-rules' as TabId, label: t('tabs.hostRules'), icon: Lock },
-    { id: 'open-ports' as TabId, label: t('tabs.openPorts'), icon: Globe, count: openPorts },
-    { id: 'vpn-rules' as TabId, label: t('tabs.vpnRules'), icon: Network, count: vpnRuleCount },
-    { id: 'limits' as TabId, label: t('tabs.limits'), icon: Gauge },
-    { id: 'blocked-ips' as TabId, label: t('tabs.blockedIps'), icon: Ban, count: blockedIPs },
-    { id: 'advanced' as TabId, label: t('tabs.advanced'), icon: SlidersHorizontal },
-    { id: 'live' as TabId, label: t('tabs.live'), icon: Activity },
-    { id: 'history' as TabId, label: t('tabs.history'), icon: History },
-    { id: 'system-rules' as TabId, label: t('tabs.systemRules'), icon: ShieldCheck },
+  const tabs: TabItem<FirewallTab>[] = [
+    { id: 'overview', label: t('tabs.overview'), icon: Shield },
+    { id: 'server', label: t('tabs.server'), icon: ShieldCheck },
+    { id: 'networks', label: t('tabs.networks'), icon: Network, count: vpnRuleCount },
+    { id: 'limits', label: t('tabs.limits'), icon: Gauge },
+    {
+      id: 'advanced',
+      label: t('tabs.advancedTop'),
+      icon: SlidersHorizontal,
+      locked: advancedLocked(engine) ? t('tabs.locked') : undefined,
+    },
   ]
-
-  // Quick Actions Component - shown in all tabs
-  const QuickActionsBar = () => (
-    <Card className="p-4 mb-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          {isAdmin && (
-            <>
-              <Button variant="primary" size="sm" onClick={() => setShowOpenPortModal(true)}>
-                <Plus className="w-4 h-4 mr-1" /> {t('actions.openPort')}
-              </Button>
-              <Button variant="danger" size="sm" onClick={() => setShowBlockIPModal(true)}>
-                <Ban className="w-4 h-4 mr-1" /> {t('actions.blockIp')}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowAllowIPModal(true)}>
-                <CheckCircle className="w-4 h-4 mr-1" /> {t('actions.allowIp')}
-              </Button>
-            </>
-          )}
-          {activeTab === 'vpn-rules' && isOperator && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                resetVPNRuleForm()
-                setEditingVPNRule(null)
-                setShowVPNRuleModal(true)
-              }}
-            >
-              <Plus className="w-4 h-4 mr-1" /> {t('actions.vpnRule')}
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExportRules}
-              title={t('actions.exportRules')}
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            title={t('common:actions.refresh')}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </Card>
-  )
+  const advancedTabs: TabItem<AdvancedSection>[] = [
+    { id: 'nft', label: t('tabs.nft'), icon: SlidersHorizontal },
+    { id: 'live', label: t('tabs.live'), icon: Activity },
+    { id: 'history', label: t('tabs.history'), icon: History },
+    { id: 'system-rules', label: t('tabs.systemRules'), icon: ShieldCheck },
+  ]
 
   if (rulesLoading) {
     return (
@@ -457,101 +396,105 @@ export const Firewall: React.FC = () => {
         }
       />
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
-              <span className="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full">
-                {tab.count}
-              </span>
+      <TabBar
+        tabs={tabs}
+        active={activeTab}
+        onChange={setActiveTab}
+        label={t('tabs.sections')}
+        idPrefix="fw"
+      />
+
+      <TabPanel idPrefix="fw" id={activeTab}>
+        {activeTab === 'overview' && (
+          <OverviewTab
+            blockedIPs={blockedIPs}
+            openPorts={openPorts}
+            vpnRuleCount={vpnRuleCount}
+            engine={engine}
+            onGo={setActiveTab}
+            onOpenPort={() => setShowOpenPortModal(true)}
+            onBlockIP={() => setShowBlockIPModal(true)}
+            onAllowIP={() => setShowAllowIPModal(true)}
+          />
+        )}
+
+        {/* Server protection: open ports, blocked/allowed IPs, host rules */}
+        {activeTab === 'server' && (
+          <ServerTab
+            isAdmin={isAdmin}
+            chains={chains}
+            selectedChain={selectedChain}
+            onChainChange={setSelectedChain}
+            currentChain={currentChain}
+            openPorts={getOpenPorts()}
+            blockedIPs={getBlockedIPs()}
+            onOpenPort={() => setShowOpenPortModal(true)}
+            onBlockIP={() => setShowBlockIPModal(true)}
+            onAllowIP={() => setShowAllowIPModal(true)}
+            onClosePort={handleClosePort}
+            closeLoading={closePortMutation.isPending}
+            onUnblock={handleUnblockIP}
+            onDeleteRule={handleDeleteRule}
+            deleteLoading={deleteRuleMutation.isPending}
+            onExport={handleExportRules}
+            onRefresh={handleRefresh}
+          />
+        )}
+
+        {/* Between networks: policy matrix and VPN rules */}
+        {activeTab === 'networks' && (
+          <>
+            {isOperator && (
+              <div className="flex justify-end">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    resetVPNRuleForm()
+                    setEditingVPNRule(null)
+                    setShowVPNRuleModal(true)
+                  }}
+                >
+                  <Plus className="mr-1 h-4 w-4" /> {t('actions.vpnRule')}
+                </Button>
+              </div>
             )}
-          </button>
-        ))}
-      </div>
+            <PolicyMatrix onCreateRule={handleCreateRuleForPair} />
+            <VPNRulesTab
+              rules={vpnRules || []}
+              loading={vpnLoading}
+              onEditRule={handleEditVPNRule}
+              onDeleteRule={handleDeleteVPNRule}
+              onApplyRules={() => applyVPNRulesMutation.mutate()}
+              applyLoading={applyVPNRulesMutation.isPending}
+              deleteLoading={deleteVPNRuleMutation.isPending}
+            />
+          </>
+        )}
 
-      {/* Quick Actions Bar - shown in the iptables-era tabs only */}
-      {!['overview', 'advanced', 'live', 'history', 'system-rules'].includes(activeTab) && (
-        <QuickActionsBar />
-      )}
+        {activeTab === 'limits' && <LimitsTab />}
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <OverviewTab
-          chains={chains}
-          totalRules={totalRules}
-          blockedIPs={blockedIPs}
-          openPorts={openPorts}
-          vpnRuleCount={vpnRuleCount}
-          onOpenPort={() => setShowOpenPortModal(true)}
-          onBlockIP={() => setShowBlockIPModal(true)}
-          onAllowIP={() => setShowAllowIPModal(true)}
-        />
-      )}
-
-      {/* Host Rules Tab */}
-      {activeTab === 'host-rules' && (
-        <HostRulesTab
-          chains={chains}
-          selectedChain={selectedChain}
-          onChainChange={setSelectedChain}
-          currentChain={currentChain}
-          onDeleteRule={handleDeleteRule}
-          deleteLoading={deleteRuleMutation.isPending}
-        />
-      )}
-
-      {/* Open Ports Tab */}
-      {activeTab === 'open-ports' && (
-        <OpenPortsTab
-          openPorts={getOpenPorts()}
-          onClosePort={handleClosePort}
-          closeLoading={closePortMutation.isPending}
-        />
-      )}
-
-      {/* VPN Rules Tab */}
-      {activeTab === 'vpn-rules' && <PolicyMatrix onCreateRule={handleCreateRuleForPair} />}
-      {activeTab === 'vpn-rules' && (
-        <VPNRulesTab
-          rules={vpnRules || []}
-          loading={vpnLoading}
-          onEditRule={handleEditVPNRule}
-          onDeleteRule={handleDeleteVPNRule}
-          onApplyRules={() => applyVPNRulesMutation.mutate()}
-          applyLoading={applyVPNRulesMutation.isPending}
-          deleteLoading={deleteVPNRuleMutation.isPending}
-        />
-      )}
-
-      {/* Blocked IPs Tab */}
-      {activeTab === 'limits' && <LimitsTab />}
-      {activeTab === 'blocked-ips' && (
-        <BlockedIPsTab
-          blockedIPs={getBlockedIPs()}
-          onUnblock={handleUnblockIP}
-          unblockLoading={deleteRuleMutation.isPending}
-        />
-      )}
-
-      {/* nftables engine (firewall v2): services, IP rules, forwards, full tunnel */}
-      {activeTab === 'advanced' && <AdvancedTab />}
-
-      {/* Live counters, dropped sources, conntrack; change history with restore */}
-      {activeTab === 'live' && <LiveTab />}
-      {activeTab === 'history' && <HistoryTab />}
-      {activeTab === 'system-rules' && <SystemRulesTab />}
+        {/* nftables engine (firewall v2): services, IP rules, forwards, full
+            tunnel; live counters; change history; generated system rules */}
+        {activeTab === 'advanced' && (
+          <>
+            <TabBar
+              tabs={advancedTabs}
+              active={advancedSection}
+              onChange={setAdvancedSection}
+              label={t('tabs.advancedSections')}
+              idPrefix="fw-adv"
+              size="sm"
+            />
+            <TabPanel idPrefix="fw-adv" id={advancedSection}>
+              {advancedSection === 'nft' && <AdvancedTab />}
+              {advancedSection === 'live' && <LiveTab />}
+              {advancedSection === 'history' && <HistoryTab />}
+              {advancedSection === 'system-rules' && <SystemRulesTab />}
+            </TabPanel>
+          </>
+        )}
+      </TabPanel>
 
       {/* Open Port Modal */}
       <Modal

@@ -1,0 +1,19 @@
+{
+  "filters": {
+    "user": {
+      "what": "Yalnız bir panel istifadəçisinin qeydlərini göstərir; giriş cəhdlərində isə yoxlanılan istifadəçi adını.",
+      "who": "Müəyyən hesabın nə etdiyini yoxlayan hər kəs, məsələn heç kimin xatırlamadığı bir dəyişiklikdən sonra.",
+      "effect": "Yalnız bu brauzerdə artıq yüklənmiş qeydləri süzür; daha əvvələ baxmaq üçün köhnə qeydləri yükləyin. Serverdə heç nə dəyişmir."
+    },
+    "kind": {
+      "what": "Yalnız bir növ əməliyyatı göstərir: girişlər, şəbəkələr, cihazlar (və cihaz qrupları), firewall (VPN qaydaları və Fail2Ban daxil), istifadəçilər, server (ehtiyat nüsxələr daxil) və ya digər əməliyyatlar (limit profilləri, bildirişlər və tanınmayan sorğular).",
+      "who": "Müəyyən dəyişikliyi axtaran hər kəs, məsələn portu kimin açdığını və ya cihazı kimin sildiyini.",
+      "effect": "Yalnız bu brauzerdə artıq yüklənmiş qeydləri süzür. Serverdə heç nə dəyişmir."
+    },
+    "search": {
+      "what": "Cümləsində, istifadəçisində, IP ünvanında, qeydə alınan əməliyyatında və ya yolunda yazdığınız bütün sözlər olan qeydləri tapır.",
+      "who": "Ad (şəbəkə, cihaz, qayda), IP ünvanı və ya yol axtaran hər kəs.",
+      "effect": "Böyük-kiçik hərf fərqi nəzərə alınmır. Yalnız artıq yüklənmiş qeydlərdə axtarılır; daha əvvələ baxmaq üçün köhnə qeydləri yükləyin. Serverdə heç nə dəyişmir."
+    }
+  }
+}

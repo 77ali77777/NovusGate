@@ -4,16 +4,21 @@
     "description": "Host firewall qaydalarını və VPN şəbəkələri arasında trafikə nəzarəti idarə edin"
   },
   "tabs": {
-    "overview": "İcmal",
+    "overview": "Xülasə",
     "hostRules": "Host qaydaları",
     "openPorts": "Açıq portlar",
-    "vpnRules": "VPN qaydaları",
     "blockedIps": "Bloklanmış IP-lər",
-    "advanced": "Təkmil (nftables)",
     "live": "Canlı",
     "history": "Tarixçə",
     "systemRules": "Sistem qaydaları",
-    "limits": "Limitlər"
+    "limits": "Limitlər",
+    "server": "Server qorunması",
+    "networks": "Şəbəkələr arası",
+    "advancedTop": "Təkmil",
+    "nft": "Servislər və yönləndirmə",
+    "locked": "nftables mühərriki tələb olunur",
+    "sections": "Firewall bölmələri",
+    "advancedSections": "Təkmil bölmələr"
   },
   "actions": {
     "openPort": "Port aç",
@@ -24,7 +29,7 @@
     "exportRules": "Qaydaları ixrac et",
     "reset": "Sıfırla",
     "unblock": "Blokdan çıxar",
-    "applyRules": "Qaydaları tətbiq et",
+    "applyRules": "Hamısını yenidən tətbiq et",
     "createRule": "Qayda yarat",
     "updateRule": "Qaydanı yenilə"
   },
@@ -54,10 +59,6 @@
     "allowIpTitle": "IP ünvanına icazə ver"
   },
   "overview": {
-    "totalRules": "Ümumi qaydalar",
-    "blockedIps": "Bloklanmış IP-lər",
-    "openPorts": "Açıq portlar",
-    "vpnRules": "VPN qaydaları",
     "chainPolicies": "Zəncir siyasətləri",
     "chainPoliciesHint": "Hər iptables zənciri üçün standart əməliyyat",
     "rulesCount_one": "{{count}} qayda",
@@ -66,7 +67,33 @@
     "quickActionsHint": "Tez-tez istifadə olunan firewall əməliyyatları",
     "openPortHint": "Gələn trafikə icazə ver",
     "blockIpHint": "IP-dən gələn trafiki at (drop)",
-    "allowIpHint": "IP-dən gələn trafiki qəbul et"
+    "allowIpHint": "IP-dən gələn trafiki qəbul et",
+    "serverTitle": "Server qorunması",
+    "serverHint": "Serverin internetə açdığı portlar və blokladığı ünvanlar.",
+    "openPortsCount_one": "{{count}} açıq port",
+    "openPortsCount_other": "{{count}} açıq port",
+    "blockedIpsCount_one": "{{count}} bloklanmış IP",
+    "blockedIpsCount_other": "{{count}} bloklanmış IP",
+    "networksTitle": "Şəbəkələr arası",
+    "networksHint": "Hansı VPN şəbəkəsi hansına çata bilər.",
+    "vpnRulesCount_one": "{{count}} qayda",
+    "vpnRulesCount_other": "{{count}} qayda",
+    "engineTitle": "Mühərrik",
+    "engine": {
+      "nft": "nftables",
+      "iptables": "iptables",
+      "starting": "nftables (başlayır)",
+      "unknown": "məlum deyil"
+    },
+    "engineHint": {
+      "nft": "Şəbəkələr bir-birindən ayrıdır; aralarında trafikə yalnız qaydalar icazə verir.",
+      "iptables": "Şəbəkələr arasında hər şey açıqdır, qaydalar yalnız bloklayır. Təkmil imkanlar nftables tələb edir.",
+      "starting": "nftables mühərriki mövcud qaydaları götürür.",
+      "unknown": "Mühərriki oxumaq mümkün olmadı."
+    },
+    "view": "Bax",
+    "techDetails": "Texniki detallar",
+    "techDetailsHint": "Serverin xam iptables zəncirləri və qaydaları — problem araşdırmaq üçün."
   },
   "hostRules": {
     "chain": "Zəncir:",
@@ -92,9 +119,9 @@
     "emptyHint": "Yuxarıdakı \"IP-ni blokla\" düyməsindən istifadə edin"
   },
   "vpnRules": {
-    "intro": "VPN şəbəkələri arasında trafikə nəzarət (FORWARD zənciri)",
+    "intro": "VPN şəbəkələri arasında hansı trafikin keçə biləcəyini müəyyən edən qaydalar",
     "unknownNetwork": "Naməlum şəbəkə",
-    "unknownNode": "Naməlum node",
+    "unknownNode": "Naməlum cihaz",
     "allPorts": "hamısı",
     "empty": {
       "title": "VPN şəbəkələrarası qaydalar",
@@ -103,23 +130,23 @@
       "whatBody": "VPN qaydaları serverin <code>FORWARD</code> zəncirini idarə edir. Bu qaydalar trafikin müxtəlif VPN şəbəkələri arasında keçib-keçə bilməyəcəyini müəyyən edir. Bütün VPN trafiki serverdən keçdiyi üçün bu qaydalar şəbəkələrarası əlaqə üzərində tam nəzarət verir.",
       "allowTitle": "Trafikə icazə ver",
       "allow1": "Ofis şəbəkəsindən admin panelə giriş",
-      "allow2": "Müəyyən node-ların digər şəbəkələrə çıxışına icazə ver",
+      "allow2": "Müəyyən cihazların digər şəbəkələrə çıxışına icazə ver",
       "allow3": "Yalnız müəyyən portlara icazə ver (HTTP, SSH)",
       "blockTitle": "Trafiki blokla",
       "block1": "Şəbəkələr arasında tam izolyasiya",
       "block2": "Həssas resurslara girişi məhdudlaşdır",
       "block3": "Müəyyən protokolları blokla",
       "howTitle": "Necə işləyir",
-      "sourceNode": "Mənbə node",
+      "sourceNode": "Mənbə cihaz",
       "vpnServer": "VPN server",
       "forwardRules": "FORWARD qaydaları",
-      "destNode": "Təyinat node",
+      "destNode": "Təyinat cihaz",
       "howBody": "Bütün VPN trafiki serverdən keçir. VPN qaydaları serverdə tətbiq olunur və hansı trafikin ötürülə biləcəyini müəyyən edir.",
       "noteTitle": "Vacib qeyd",
-      "noteBody": "VPN qaydası yaratdığınız zaman mənbə node-un <code>AllowedIPs</code> konfiqurasiyası avtomatik yenilənir. Lakin artıq qoşulmuş cihazların konfiqurasiyanı yenidən yükləməsi lazım ola bilər.",
+      "noteBody": "VPN qaydası yaratdığınız zaman mənbə cihazın <code>AllowedIPs</code> konfiqurasiyası avtomatik yenilənir. Lakin artıq qoşulmuş cihazların konfiqurasiyanı yenidən yükləməsi lazım ola bilər.",
       "startTitle": "Başlanğıc",
       "step1": "Yuxarıdakı <strong>\"VPN qaydası\"</strong> düyməsini klikləyin",
-      "step2": "Mənbə və təyinat şəbəkəsini/node-unu seçin",
+      "step2": "Mənbə və təyinat şəbəkəsini/cihazını seçin",
       "step3": "Protokol və portu seçin (istəyə bağlı)",
       "step4": "Əməliyyatı seçin: <accept>Qəbul et</accept> (icazə ver) və ya <drop>At</drop> (blokla)"
     },
@@ -134,7 +161,7 @@
     "descriptionPlaceholder": "Bu qaydanın qısa təsviri",
     "customIp": "Xüsusi IP",
     "selectNetwork": "Şəbəkə seçin",
-    "selectNode": "Node seçin",
+    "selectNode": "Cihaz seçin",
     "cidrPlaceholder": "məs., 10.10.0.0/24",
     "portOptional": "Port (istəyə bağlı)",
     "portPlaceholder": "məs., 80 və ya 8000-9000",
@@ -145,17 +172,17 @@
     "enabled": "Qayda aktivdir",
     "group": "Qrup",
     "selectGroup": "Qrup seçin…",
-    "groupMembers_one": "{{count}} node",
-    "groupMembers_other": "{{count}} node"
+    "groupMembers_one": "{{count}} cihaz",
+    "groupMembers_other": "{{count}} cihaz"
   },
   "matrix": {
     "loading": "Şəbəkə siyasətləri yüklənir…",
     "loadError": "Şəbəkə siyasətləri yüklənə bilmədi.",
     "title": "Şəbəkə siyasətləri",
-    "help": "Sətirlər mənbə şəbəkəsini, sütunlar isə təyinatı göstərir. Qismən: bəzi portlar, protokollar və ya hostlar fərqli işlənir. Həmin cüt üçün qayda əlavə etmək üçün xanaya klikləyin.",
-    "helpNft": "Qayda olmadıqda şəbəkələr bir-birindən təcrid olunur.",
-    "helpIptables": "iptables rejimində VPN trafiki, onu atan qayda olmadıqca, qəbul edilir.",
-    "fromTo": "haradan \\ haraya",
+    "help": "Sətirlər: trafikin haradan gəldiyi. Sütunlar: hara getdiyi.",
+    "helpNft": "nftables: şəbəkələr bir-birindən ayrıdır, yalnız qayda icazə verir.",
+    "helpIptables": "Hazırkı rejim iptables: şəbəkələr arasında hər şey açıqdır, qaydalar yalnız bloklayır.",
+    "fromTo": "Haradan ↓ / Haraya →",
     "allow": "İcazə",
     "deny": "Qadağa",
     "partial": "Qismən",
@@ -168,6 +195,18 @@
       "iptables_default": "standart (iptables rejimi heç bir qaydanın atmadığı VPN trafikini qəbul edir)",
       "partial": "bəzi trafik bundan fərqlənir: {{reason}}"
     },
-    "cellLimited": "Buradakı bəzi node-ların limit profili var."
+    "cellLimited": "Buradakı bəzi cihazların limit profili var.",
+    "short": {
+      "rule": "qayda",
+      "same_network": "eyni şəbəkə",
+      "isolated": "ayrıdır",
+      "iptables_default": "iptables defoltu"
+    },
+    "legend": {
+      "allow": "trafik keçir",
+      "deny": "trafik atılır",
+      "partial": "yalnız bəzi portlar, protokollar və ya cihazlar keçir",
+      "click": "Qadağanı açmaq üçün xanaya klikləyin — həmin cüt üçün qayda yaradılır."
+    }
   }
 }

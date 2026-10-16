@@ -2,7 +2,7 @@
   "nav": {
     "overview": "Overview",
     "networks": "Networks",
-    "nodes": "Nodes",
+    "nodes": "Devices",
     "topology": "Topology",
     "firewall": "Firewall",
     "fail2ban": "Fail2Ban",
@@ -17,6 +17,12 @@
   "language": "Language",
   "logout": "Log Out",
   "logoutConfirm": "Are you sure you want to log out?",
+  "openMenu": "Open the menu",
+  "closeMenu": "Close the menu",
+  "userMenu": {
+    "open": "Account menu",
+    "changePassword": "Change password"
+  },
   "connection": {
     "vpn": "VPN Connected",
     "dev": "Dev Mode",

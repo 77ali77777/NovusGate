@@ -47,10 +47,10 @@
   },
   "forwards": {
     "title": "Port yönləndirmə",
-    "intro": "VPN node-unun portunu serverin ictimai ünvanında dərc edin.",
+    "intro": "VPN cihazının portunu serverin ictimai ünvanında dərc edin.",
     "publicPort": "İctimai port",
-    "targetIp": "Node-un VPN IP-si",
-    "targetPort": "Node portu",
+    "targetIp": "Cihazın VPN IP-si",
+    "targetPort": "Cihaz portu",
     "targetPortPlaceholder": "ictimai portla eyni",
     "submit": "Yönləndirmə əlavə et",
     "empty": "Port yönləndirmə yoxdur",
@@ -60,8 +60,8 @@
   },
   "egress": {
     "title": "Tam tunel (internet server üzərindən)",
-    "intro": "Yan paneldə seçilmiş şəbəkənin node-ları. Aktivləşdirmək node-un konfiqurasiyasını dəyişir (bütün IPv4 trafiki, DNS 1.1.1.1): konfiqurasiyanı cihazda yenidən yükləyin.",
-    "noNodes": "Seçilmiş şəbəkədə node yoxdur."
+    "intro": "Yan paneldə seçilmiş şəbəkənin cihazları. Aktivləşdirmək cihazın konfiqurasiyasını dəyişir (bütün IPv4 trafiki, DNS 1.1.1.1): konfiqurasiyanı cihazda yenidən yükləyin.",
+    "noNodes": "Seçilmiş şəbəkədə cihaz yoxdur."
   },
   "preview": {
     "title": "Qaydalar dəstinin önizləməsi",
@@ -128,15 +128,15 @@
       "adminVpnPostgres": "Admin VPN Docker-in dərc etdiyi verilənlər bazasına girişi saxlayır.",
       "dockerPostgres": "Docker verilənlər bazasını bütün ünvanlarda dərc edir; digər interfeyslər ona çata bilmir.",
       "vpnPolicy": "VPN müştərilərinin trafiki VPN qaydalarından və şəbəkə siyasətlərindən keçir.",
-      "forwardsToNodes": "VPN node-larına port yönləndirmələri.",
+      "forwardsToNodes": "VPN cihazlarına port yönləndirmələri.",
       "vpnInboundDrop": "VPN şəbəkələrinə gedən digər trafik atılır.",
       "sameNetwork": "Eyni şəbəkənin üzvləri bir-birinə çata bilir.",
-      "egressAccept": "Tam tunel node-ları server üzərindən internetə çıxa bilər.",
+      "egressAccept": "Tam tunel cihazları server üzərindən internetə çıxa bilər.",
       "egressMasquerade": "Tam tunel trafiki serverin ünvanı ilə çıxır (NAT).",
       "vpnDefaultDrop": "İcazə verən qayda olmadan VPN şəbəkələri arasındakı trafik atılır.",
       "limits": "Limit profilləri əvvəlcə yoxlanılır, ona görə mövcud bağlantılara da tətbiq olunur.",
-      "limitSchedule": "Cədvəli olan limit profilinin node-ları onun vaxt pəncərələrindən keçir.",
-      "limitWindow": "Limit profilinin icazə verilən vaxt pəncərəsi (UTC); pəncərələrdən kənarda node-un trafiki kəsilir."
+      "limitSchedule": "Cədvəli olan limit profilinin cihazları onun vaxt pəncərələrindən keçir.",
+      "limitWindow": "Limit profilinin icazə verilən vaxt pəncərəsi (UTC); pəncərələrdən kənarda cihazın trafiki kəsilir."
     }
   },
   "engineOff": {
@@ -149,6 +149,8 @@
     "step4": "NovusGate Center → Update bir daha (host tərəfini nftables üçün qurur).",
     "more": "Əvvəl və sonra yoxlamalar, iptables-ə geri qayıdış:",
     "startingTitle": "Firewall mühərriki başlayır",
-    "starting": "nftables mühərriki mövcud iptables qaydalarını götürür. Bu bir az çəkir; hazır olanda tab özü yüklənir."
+    "starting": "nftables mühərriki mövcud iptables qaydalarını götürür. Bu bir az çəkir; hazır olanda tab özü yüklənir.",
+    "limitsWhy": "Limit profillərini indi yarada və bağlaya bilərsiniz, amma iptables mühərriki onları tətbiq etmir. Sürət, bağlantı və vaxt limitləri, eləcə də trafik kvotası yalnız nftables mühərriki ilə işləyir.",
+    "howShow": "nftables-i necə açmaq olar"
   }
 }

@@ -3,6 +3,7 @@
   "description": "Hub-ın işlədiyi host: servislər, şəbəkə, kernel parametrləri və sistem. Dəyişikliklər parolunuzu yenidən soruşur.",
   "adminOnly": "Server idarəetməsi yalnız adminlər üçündür.",
   "loadError": "Bu məlumat serverdən oxunmadı.",
+  "loadErrorReason": "Səbəb: {{reason}}",
   "tabs": {
     "services": "Servislər",
     "network": "Şəbəkə",

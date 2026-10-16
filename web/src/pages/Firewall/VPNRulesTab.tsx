@@ -14,8 +14,10 @@ import {
 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 
-import { useCan } from '@/api/client'
+import { useCan, useNetworks } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card } from '@/components/ui'
+import { networkLabelById } from '@/lib/networkDisplay'
 import type { VPNFirewallRule } from '@/types'
 
 // VPN Rules Tab Component
@@ -40,12 +42,15 @@ export const VPNRulesTab = ({
 }: VPNRulesTabProps) => {
   const { t } = useTranslation('firewall')
   const canEdit = useCan('operator')
+  const { data: allNets } = useNetworks()
   // Markup for the <accept> and <drop> tags of the step 4 translation.
   const acceptTag = <strong className="text-green-600" />
   const dropTag = <strong className="text-red-600" />
   const getEndpointDisplay = (rule: VPNFirewallRule, type: 'source' | 'dest') => {
     const endpointType = type === 'source' ? rule.source_type : rule.dest_type
-    const networkName = type === 'source' ? rule.source_network_name : rule.dest_network_name
+    const networkId = type === 'source' ? rule.source_network_id : rule.dest_network_id
+    const rawNetworkName = type === 'source' ? rule.source_network_name : rule.dest_network_name
+    const networkName = networkLabelById(allNets, networkId, rawNetworkName ?? '', t)
     const nodeName = type === 'source' ? rule.source_node_name : rule.dest_node_name
     const ip = type === 'source' ? rule.source_ip : rule.dest_ip
     const groupName = type === 'source' ? rule.source_group_name : rule.dest_group_name
@@ -91,16 +96,19 @@ export const VPNRulesTab = ({
 
   return (
     <div className="space-y-4">
-      {/* Apply Rules Button */}
+      {/* Re-apply all: saving a rule already applies it; this is a full re-sync */}
       <Card className="p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-gray-500">{t('vpnRules.intro')}</p>
           </div>
           {canEdit && (
-            <Button variant="secondary" size="sm" onClick={onApplyRules} loading={applyLoading}>
-              <RefreshCw className="w-4 h-4 mr-1" /> {t('actions.applyRules')}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="secondary" size="sm" onClick={onApplyRules} loading={applyLoading}>
+                <RefreshCw className="w-4 h-4 mr-1" /> {t('actions.applyRules')}
+              </Button>
+              <HelpTip k="helpFirewall:vpnRules.reapply" />
+            </div>
           )}
         </div>
       </Card>

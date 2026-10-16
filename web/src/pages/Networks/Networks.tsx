@@ -9,6 +9,7 @@ import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { dateFnsLocale } from '@/i18n'
+import { networkLabel } from '@/lib/networkDisplay'
 import type { CreateNetworkForm } from '@/types'
 
 export const Networks = () => {
@@ -100,101 +101,107 @@ export const Networks = () => {
 
       {/* Networks List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredNetworks?.map((network) => (
-          <div
-            key={network.id}
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                    <Network className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      <Link to={`/networks/${network.id}`} className="hover:underline">
-                        {network.name}
-                      </Link>
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t('card.created', {
-                        date: format(new Date(network.created_at), 'MMM d, yyyy', {
-                          locale: dateFnsLocale(),
-                        }),
-                      })}
-                    </p>
-                  </div>
-                </div>
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(network.id, network.name)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    title={t('card.delete')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                {/* Network Details */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      {t('card.cidrRange')}
-                    </span>
-                    <span className="font-medium text-gray-900 dark:text-gray-200">
-                      {network.cidr}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      {t('common:fields.interface')}
-                    </span>
-                    <div className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-gray-200">
-                      <Shield className="w-3.5 h-3.5 text-green-500" />
-                      {network.interface_name || 'wg0'}
+        {filteredNetworks?.map((network) => {
+          const label = networkLabel(network, t)
+          return (
+            <div
+              key={network.id}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                      <Network className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        <Link to={`/networks/${network.id}`} className="hover:underline">
+                          {label.name}
+                        </Link>
+                      </h3>
+                      {label.note && (
+                        <p className="text-xs text-blue-700 dark:text-blue-300">{label.note}</p>
+                      )}
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {t('card.created', {
+                          date: format(new Date(network.created_at), 'MMM d, yyyy', {
+                            locale: dateFnsLocale(),
+                          }),
+                        })}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      {t('card.listenPort')}
-                    </span>
-                    <span className="font-mono text-gray-900 dark:text-gray-200">
-                      {network.listen_port || 51820}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
-                      {t('card.serverEndpoint')}
-                    </span>
-                    <span
-                      className="font-mono text-xs text-gray-900 dark:text-gray-200 truncate block"
-                      title={network.server_endpoint}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(network.id, label.name)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      title={t('card.delete')}
                     >
-                      {network.server_endpoint || t('card.autoDetected')}
-                    </span>
-                  </div>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
-                {/* Status Bar - Mock for now but could be real if backend returned it */}
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                      <Activity className="w-4 h-4" />
-                      {t('common:fields.status')}
-                    </span>
-                    <span className="text-green-600 dark:text-green-400 font-medium">
-                      {t('common:status.active')}
-                    </span>
+                <div className="space-y-4">
+                  {/* Network Details */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('card.cidrRange')}
+                      </span>
+                      <span className="font-medium text-gray-900 dark:text-gray-200">
+                        {network.cidr}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('common:fields.interface')}
+                      </span>
+                      <div className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-gray-200">
+                        <Shield className="w-3.5 h-3.5 text-green-500" />
+                        {network.interface_name || 'wg0'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('card.listenPort')}
+                      </span>
+                      <span className="font-mono text-gray-900 dark:text-gray-200">
+                        {network.listen_port || 51820}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('card.serverEndpoint')}
+                      </span>
+                      <span
+                        className="font-mono text-xs text-gray-900 dark:text-gray-200 truncate block"
+                        title={network.server_endpoint}
+                      >
+                        {network.server_endpoint || t('card.autoDetected')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status Bar - Mock for now but could be real if backend returned it */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        {t('common:fields.status')}
+                      </span>
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        {t('common:status.active')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Add New Card (Empty State or Last Item) */}
         {canEdit && (

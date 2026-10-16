@@ -4,7 +4,7 @@
   "create": "Şəbəkə yarat",
   "creating": "Yaradılır...",
   "searchPlaceholder": "Şəbəkələri ada, CIDR-ə və ya interfeysə görə axtarın...",
-  "deleteConfirm": "\"{{name}}\" şəbəkəsini silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz və bütün node-ların bağlantısını kəsəcək.",
+  "deleteConfirm": "\"{{name}}\" şəbəkəsini silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz və bütün cihazların bağlantısını kəsəcək.",
   "createFailed": "Şəbəkə yaradıla bilmədi",
   "error": "Xəta:",
   "card": {
@@ -30,18 +30,18 @@
   },
   "detail": {
     "notFound": "Şəbəkə tapılmadı.",
-    "summary_one": "{{cidr}} · {{count}} peer-dən {{online}} onlayn",
-    "summary_other": "{{cidr}} · {{count}} peer-dən {{online}} onlayn",
+    "summary_one": "{{cidr}} · {{count}} cihazdan {{online}} onlayn",
+    "summary_other": "{{cidr}} · {{count}} cihazdan {{online}} onlayn",
     "hub": "Hub",
     "addressRange": "Ünvan diapazonu",
     "listenPortUdp": "Dinləmə portu (UDP)",
     "endpoint": "Endpoint",
     "serverPublicKey": "Serverin açıq açarı",
-    "peers": "Peer-lər",
-    "noPeers": "Bu şəbəkədə peer yoxdur.",
+    "peers": "Cihazlar",
+    "noPeers": "Bu şəbəkədə cihaz yoxdur.",
     "policies": "Siyasətlər",
-    "toIt": "ona",
-    "fromIt": "ondan",
+    "toIt": "Bu şəbəkədən → {{name}}:",
+    "fromIt": "{{name}} → bu şəbəkəyə:",
     "rules": "Bu şəbəkəni göstərən VPN qaydaları",
     "noRules": "Yoxdur.",
     "clientDns": "Klient DNS serverləri",
@@ -61,7 +61,11 @@
   "ruleEndpoint": {
     "any": "istənilən",
     "network": "şəbəkə",
-    "node": "node",
+    "node": "cihaz",
     "custom": "xüsusi"
+  },
+  "admin": {
+    "name": "Admin VPN",
+    "note": "Sizin idarə cihazınız buradan qoşulur; panel yalnız bu şəbəkədən açılır."
   }
 }

@@ -4,7 +4,7 @@
   "create": "Create Network",
   "creating": "Creating...",
   "searchPlaceholder": "Search networks by name, CIDR, or interface...",
-  "deleteConfirm": "Are you sure you want to delete network \"{{name}}\"? This action cannot be undone and will disconnect all nodes.",
+  "deleteConfirm": "Are you sure you want to delete network \"{{name}}\"? This action cannot be undone and will disconnect all devices.",
   "createFailed": "Failed to create network",
   "error": "Error:",
   "card": {
@@ -30,18 +30,18 @@
   },
   "detail": {
     "notFound": "Network not found.",
-    "summary_one": "{{cidr}} · {{online}} of {{count}} peer online",
-    "summary_other": "{{cidr}} · {{online}} of {{count}} peers online",
+    "summary_one": "{{cidr}} · {{online}} of {{count}} device online",
+    "summary_other": "{{cidr}} · {{online}} of {{count}} devices online",
     "hub": "Hub",
     "addressRange": "Address range",
     "listenPortUdp": "Listen port (UDP)",
     "endpoint": "Endpoint",
     "serverPublicKey": "Server public key",
-    "peers": "Peers",
-    "noPeers": "No peers in this network.",
+    "peers": "Devices",
+    "noPeers": "No devices in this network.",
     "policies": "Policies",
-    "toIt": "to it",
-    "fromIt": "from it",
+    "toIt": "This network → {{name}}:",
+    "fromIt": "{{name}} → this network:",
     "rules": "VPN rules naming this network",
     "noRules": "None.",
     "clientDns": "Client DNS servers",
@@ -61,7 +61,11 @@
   "ruleEndpoint": {
     "any": "any",
     "network": "network",
-    "node": "node",
+    "node": "device",
     "custom": "custom"
+  },
+  "admin": {
+    "name": "Admin VPN",
+    "note": "Your management device connects here; the panel opens only from this network."
   }
 }

@@ -1,0 +1,19 @@
+{
+  "filters": {
+    "user": {
+      "what": "Shows only the entries of one panel user; for login attempts, the username that was tried.",
+      "who": "Anyone reviewing what a particular account did, for example after a change nobody remembers making.",
+      "effect": "Filters only the entries already loaded in this browser; load older entries to look further back. Nothing changes on the server."
+    },
+    "kind": {
+      "what": "Shows only one kind of action: logins, networks, devices (and device groups), firewall (including VPN rules and Fail2Ban), users, the server (including backups) or other actions (limit profiles, notifications and unrecognised requests).",
+      "who": "Anyone looking for a certain change, for example who opened a port or deleted a device.",
+      "effect": "Filters only the entries already loaded in this browser. Nothing changes on the server."
+    },
+    "search": {
+      "what": "Finds entries whose sentence, user, IP address, recorded action or path contain all the words you type.",
+      "who": "Anyone looking for a name (a network, a device, a rule), an IP address or a path.",
+      "effect": "Case is ignored. Only the entries already loaded are searched; load older entries to search further back. Nothing changes on the server."
+    }
+  }
+}

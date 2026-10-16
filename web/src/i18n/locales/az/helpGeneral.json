@@ -13,7 +13,7 @@
   },
   "layout": {
     "network": {
-      "what": "Node-lar səhifəsinin və firewall-un tam tunel bölməsinin hansı VPN şəbəkəsinin cihazlarını göstərəcəyini seçir.",
+      "what": "Cihazlar səhifəsinin və firewall-un tam tunel bölməsinin hansı VPN şəbəkəsinin cihazlarını göstərəcəyini seçir.",
       "who": "Birdən çox şəbəkəsi olan operatorlar.",
       "effect": "Yeni cihazlar seçilmiş şəbəkədə yaradılır. Seçim yalnız bu brauzerdə saxlanır; serverdə heç nə dəyişmir."
     },

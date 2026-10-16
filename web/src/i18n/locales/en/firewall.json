@@ -7,13 +7,18 @@
     "overview": "Overview",
     "hostRules": "Host Rules",
     "openPorts": "Open Ports",
-    "vpnRules": "VPN Rules",
     "blockedIps": "Blocked IPs",
-    "advanced": "Advanced (nftables)",
     "live": "Live",
     "history": "History",
     "systemRules": "System Rules",
-    "limits": "Limits"
+    "limits": "Limits",
+    "server": "Server protection",
+    "networks": "Between networks",
+    "advancedTop": "Advanced",
+    "nft": "Services and forwards",
+    "locked": "Needs the nftables engine",
+    "sections": "Firewall sections",
+    "advancedSections": "Advanced sections"
   },
   "actions": {
     "openPort": "Open Port",
@@ -24,7 +29,7 @@
     "exportRules": "Export Rules",
     "reset": "Reset",
     "unblock": "Unblock",
-    "applyRules": "Apply Rules",
+    "applyRules": "Re-apply all",
     "createRule": "Create Rule",
     "updateRule": "Update Rule"
   },
@@ -54,10 +59,6 @@
     "allowIpTitle": "Allow IP Address"
   },
   "overview": {
-    "totalRules": "Total Rules",
-    "blockedIps": "Blocked IPs",
-    "openPorts": "Open Ports",
-    "vpnRules": "VPN Rules",
     "chainPolicies": "Chain Policies",
     "chainPoliciesHint": "Default action for each iptables chain",
     "rulesCount_one": "{{count}} rule",
@@ -66,7 +67,33 @@
     "quickActionsHint": "Common firewall operations",
     "openPortHint": "Allow incoming traffic",
     "blockIpHint": "Drop traffic from IP",
-    "allowIpHint": "Accept traffic from IP"
+    "allowIpHint": "Accept traffic from IP",
+    "serverTitle": "Server protection",
+    "serverHint": "Ports the server opens to the internet and addresses it blocks.",
+    "openPortsCount_one": "{{count}} open port",
+    "openPortsCount_other": "{{count}} open ports",
+    "blockedIpsCount_one": "{{count}} blocked IP",
+    "blockedIpsCount_other": "{{count}} blocked IPs",
+    "networksTitle": "Between networks",
+    "networksHint": "Which VPN network may reach which.",
+    "vpnRulesCount_one": "{{count}} rule",
+    "vpnRulesCount_other": "{{count}} rules",
+    "engineTitle": "Engine",
+    "engine": {
+      "nft": "nftables",
+      "iptables": "iptables",
+      "starting": "nftables (starting)",
+      "unknown": "unknown"
+    },
+    "engineHint": {
+      "nft": "Networks are kept apart; only rules allow traffic between them.",
+      "iptables": "Everything between networks is open; rules only block. Advanced features need nftables.",
+      "starting": "The nftables engine is taking over the current rules.",
+      "unknown": "The engine could not be read."
+    },
+    "view": "Open",
+    "techDetails": "Technical details",
+    "techDetailsHint": "The raw iptables chains and rules of the server, for troubleshooting."
   },
   "hostRules": {
     "chain": "Chain:",
@@ -92,9 +119,9 @@
     "emptyHint": "Use the \"Block IP\" button above"
   },
   "vpnRules": {
-    "intro": "Traffic control between VPN networks (FORWARD chain)",
+    "intro": "Rules that decide which traffic may pass between VPN networks",
     "unknownNetwork": "Unknown Network",
-    "unknownNode": "Unknown Node",
+    "unknownNode": "Unknown Device",
     "allPorts": "all",
     "empty": {
       "title": "VPN Inter-Network Rules",
@@ -103,23 +130,23 @@
       "whatBody": "VPN rules control the server's <code>FORWARD</code> chain. These rules determine whether traffic can pass between different VPN networks. Since all VPN traffic flows through the server, these rules provide complete control over inter-network communication.",
       "allowTitle": "Allow Traffic",
       "allow1": "Access admin panel from office network",
-      "allow2": "Allow specific nodes to reach other networks",
+      "allow2": "Allow specific devices to reach other networks",
       "allow3": "Permit only certain ports (HTTP, SSH)",
       "blockTitle": "Block Traffic",
       "block1": "Complete isolation between networks",
       "block2": "Restrict access to sensitive resources",
       "block3": "Block specific protocols",
       "howTitle": "How It Works",
-      "sourceNode": "Source Node",
+      "sourceNode": "Source Device",
       "vpnServer": "VPN Server",
       "forwardRules": "FORWARD rules",
-      "destNode": "Destination Node",
+      "destNode": "Destination Device",
       "howBody": "All VPN traffic flows through the server. VPN rules are applied on the server and determine which traffic can be forwarded.",
       "noteTitle": "Important Note",
-      "noteBody": "When you create a VPN rule, the source node's <code>AllowedIPs</code> configuration is automatically updated. However, existing connected devices may need to reload their configuration.",
+      "noteBody": "When you create a VPN rule, the source device's <code>AllowedIPs</code> configuration is automatically updated. However, existing connected devices may need to reload their configuration.",
       "startTitle": "Getting Started",
       "step1": "Click the <strong>\"VPN Rule\"</strong> button above",
-      "step2": "Select source and destination network/node",
+      "step2": "Select source and destination network/device",
       "step3": "Choose protocol and port (optional)",
       "step4": "Select action: <accept>Accept</accept> (allow) or <drop>Drop</drop> (block)"
     },
@@ -134,7 +161,7 @@
     "descriptionPlaceholder": "Brief description of this rule",
     "customIp": "Custom IP",
     "selectNetwork": "Select Network",
-    "selectNode": "Select Node",
+    "selectNode": "Select Device",
     "cidrPlaceholder": "e.g., 10.10.0.0/24",
     "portOptional": "Port (Optional)",
     "portPlaceholder": "e.g., 80 or 8000-9000",
@@ -145,17 +172,17 @@
     "enabled": "Rule is enabled",
     "group": "Group",
     "selectGroup": "Select a group…",
-    "groupMembers_one": "{{count}} node",
-    "groupMembers_other": "{{count}} nodes"
+    "groupMembers_one": "{{count}} device",
+    "groupMembers_other": "{{count}} devices"
   },
   "matrix": {
     "loading": "Loading network policies…",
     "loadError": "Network policies could not be loaded.",
     "title": "Network policies",
-    "help": "Rows are the source network, columns the destination. Partial: some ports, protocols or hosts are treated differently. Click a cell to add a rule for that pair.",
-    "helpNft": "Without a rule, networks are isolated from each other.",
-    "helpIptables": "In iptables mode VPN traffic is accepted unless a rule drops it.",
-    "fromTo": "from \\ to",
+    "help": "Rows: where traffic comes from. Columns: where it goes.",
+    "helpNft": "nftables: networks are separated from each other; only a rule allows traffic.",
+    "helpIptables": "Current mode iptables: everything between networks is open, rules only block.",
+    "fromTo": "From ↓ / To →",
     "allow": "Allow",
     "deny": "Deny",
     "partial": "Partial",
@@ -168,6 +195,18 @@
       "iptables_default": "default (iptables mode accepts VPN traffic no rule drops)",
       "partial": "some traffic differs from {{reason}}"
     },
-    "cellLimited": "Some nodes here have limit profiles."
+    "cellLimited": "Some devices here have limit profiles.",
+    "short": {
+      "rule": "rule",
+      "same_network": "same network",
+      "isolated": "isolated",
+      "iptables_default": "iptables default"
+    },
+    "legend": {
+      "allow": "traffic passes",
+      "deny": "traffic is dropped",
+      "partial": "only some ports, protocols or devices pass",
+      "click": "To lift a deny, click the cell — a rule is created for that pair."
+    }
   }
 }
