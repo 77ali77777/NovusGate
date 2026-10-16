@@ -7,49 +7,48 @@
 
 🚀 **Öz şəxsi VPN şəbəkənizi qurun — SaaS asılılığı və ya ağrılı konfiqurasiyalar olmadan.**
 
-**NovusGate** — **WireGuard®** protokolu üzərində qurulmuş, müasir, tamamı ilə özünü idarə edən (self-hosted) **VPN idarəetmə panelidir**.
-Bu sistem, tək bir veb paneldən idarə olunan təmiz **Hub-and-Spoke (Mərkəz və Budaq) arxitekturası** vasitəsilə serverləri, bulud instansiyalarını və şəxsi cihazları təhlükəsiz şəkildə birləşdirməyə imkan verir.
+**NovusGate** — **WireGuard®** protokolu üzərində qurulmuş, müasir, tamamilə özünüzün idarə etdiyi (self-hosted) **VPN idarəetmə panelidir**.
+Tək bir veb paneldən idarə olunan **Hub-and-Spoke (Mərkəz və Budaq) arxitekturası** ilə serverləri, bulud instansiyalarını və şəxsi cihazları təhlükəsiz şəkildə birləşdirir.
 
-İstər istehsalat (production) infrastrukturunu idarə edin, istərsə də sadəcə şəxsi şəbəkənizə tam sahib olmaq istəyin — **NovusGate sizə aydınlıq, təhlükəsizlik və nəzarət bəxş edir**.
+İstər istehsalat (production) infrastrukturunu idarə edin, istərsə də sadəcə şəxsi şəbəkənizə tam sahib olmaq istəyin — **NovusGate sizə aydınlıq, təhlükəsizlik və nəzarət verir**.
 
 ![NovusGate Dashboard](web/public/novusgate_banner.png)
+
+> 🇺🇸 **English:** [README.md](./README.md)
 
 ---
 
 ## ⚠️ Vacib: NovusGate Nədir (və Nə Deyil)
 
-**NovusGate "IP-ni gizlət" və ya "geo-məhdudiyyətləri keç" tipli VPN DEYİL.**
+**NovusGate "IP-ni gizlət" və ya "geo-məhdudiyyətləri keç" tipli kommersiya VPN xidməti DEYİL.**
 
-Bu, aşağıdakılar üçün nəzərdə tutulmuş **şəxsi şəbəkə infrastruktur alətidir**:
-- ✅ Serverlər arası təhlükəsiz kommunikasiya
+Bu, aşağıdakılar üçün **şəxsi şəbəkə infrastruktur alətidir**:
+- ✅ Serverlər arası təhlükəsiz əlaqə
 - ✅ Daxili xidmətlərə uzaqdan giriş
 - ✅ Paylanmış infrastrukturu birləşdirmək
 - ✅ Etibarlı şəxsi şəbəkələr qurmaq
 
-**Trafik Yönləndirməsi:**
-- Yalnız VPN subnet-lərinə (məs., `10.x.x.x`) gedən trafik tuneldən keçir
-- Adi internet trafikiniz (YouTube, Google və s.) birbaşa ISP-nizdən keçir
-- Buna **Split Tunneling** deyilir — səmərəli və məqsədyönlü
-
-Əgər bütün trafikinizi gizlətmək üçün "full tunnel" VPN lazımdırsa, NovusGate sizin üçün uyğun alət deyil. Bu məqsəd üçün kommersiya VPN xidmətlərindən istifadə edin.
+**Trafik yönləndirməsi:**
+- **Defolt — Split Tunnel:** yalnız VPN şəbəkələrinə (məs. `10.x.x.x`) gedən trafik tuneldən keçir; adi internet trafikiniz birbaşa öz provayderinizdən gedir.
+- **İstəyə görə — Full Tunnel:** istədiyiniz node üçün paneldə tam tuneli açsanız, onun bütün internet trafiki sizin serveriniz üzərindən çıxır (DNS də tuneldən keçir).
 
 ---
 
 ## 🎯 NovusGate Hansı Problemi Həll Edir?
 
-**Ssenari:** Bir yerdə serveriniz var (cloud, ev, ofis) amma:
+**Ssenari:** Bir yerdə serveriniz var (cloud, ev, ofis), amma:
 - ❌ Ona qoşulmaq üçün statik IP-niz yoxdur
-- ❌ Serverin IP-sini birbaşa internetə açmaq istəmirsiniz
-- ❌ NAT/Firewall birbaşa əlaqəni qeyri-mümkün edir
+- ❌ Serverin portlarını birbaşa internetə açmaq istəmirsiniz
+- ❌ NAT/Firewall birbaşa əlaqəni mümkünsüz edir
 
-**NovusGate ilə Həll:**
+**NovusGate ilə həll:**
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Sizin Server  │     │  NovusGate Hub  │     │ Sizin Komputer  │
+│   Sizin Server  │     │  NovusGate Hub  │     │ Sizin Kompüter  │
 │ (Statik IP yox) │     │   (Cloud VPS)   │     │   (Ev/Ofis)     │
 │                 │     │                 │     │                 │
-│   10.10.10.2    │────▶│   10.10.10.1    │◀────│   10.10.10.3    │
+│   10.10.10.3    │────▶│   10.10.10.1    │◀────│   10.10.10.4    │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
          │                     ▲                     │
          └──────── Hər ikisi Hub-a qoşulur ─────────┘
@@ -57,190 +56,135 @@ Bu, aşağıdakılar üçün nəzərdə tutulmuş **şəxsi şəbəkə infrastru
 
 Hər iki cihaz NovusGate-ə qoşulduqdan sonra:
 - ✅ Onlar bir-birini **eyni lokal şəbəkədə** kimi görür
-- ✅ Serveriniz `10.10.10.2` olur — həmişə əlçatan
-- ✅ Komputeriniz `10.10.10.3` olur — SSH, RDP və ya istənilən xidmətə qoşula bilər
-- ✅ Port yönləndirmə lazım deyil
-- ✅ Statik IP tələb olunmur
-- ✅ NAT, firewall arxıasında, harədə olsa işləyir
+- ✅ Serveriniz `10.10.10.3` olur — həmişə əlçatan
+- ✅ Kompüteriniz `10.10.10.4` olur — SSH, RDP və ya istənilən xidmətə qoşula bilər
+- ✅ Port yönləndirmə və statik IP lazım deyil
+- ✅ NAT və firewall arxasında da işləyir
+
+(Hub şəbəkənin ilk ünvanını götürür, ikinci ünvan ehtiyatda saxlanılır; cihazlar üçüncüdən başlayır.)
 
 **Real nümunə:**
 ```bash
-# Komputeriniizdən (10.10.10.3), serverə qoşulun:
-ssh user@10.10.10.2
+# Kompüterinizdən (10.10.10.4) serverə qoşulun:
+ssh user@10.10.10.3
 
 # Serverdə işləyən veb xidmətə daxil olun:
-curl http://10.10.10.2:8080
+curl http://10.10.10.3:8080
 ```
-
-Bu, bütün cihazlarınızın eyni LAN-da olması kimidir — fiziki olaraq harada olmalarından asılı olmayaraq.
 
 ---
 
 ## ✨ Niyə NovusGate?
 
-Bu gün mövcud olan şəxsi şəbəkə həllərinin əksəriyyəti ya:
+Bu gün mövcud olan şəxsi şəbəkə həllərinin çoxu ya:
 - ❌ "Qara qutu" kimi işləyən SaaS həlləridir
-- ❌ Böyük miqyasda idarə edilməsi çətindir
-- ❌ Kiçik komandalar üçün həddindən artıq mürəkkəbdir
+- ❌ Böyük miqyasda idarə etmək çətindir
+- ❌ Kiçik komandalar üçün həddən artıq mürəkkəbdir
 - ❌ Ya da öz serverində qurmaq (self-host) çox ağrılıdır
 
-**NovusGate fərqli olmaq üçün yaradılıb.**
+**NovusGate fərqli olmaq üçün yaradılıb:** rahatlıqdan öncə sahiblik, mürəkkəblikdən öncə sadəlik, mücərrədlikdən öncə şəffaflıq.
 
-O, diqqəti bunlara yönəldir:
-- **Rahatlıqdan öncə Sahiblik**
-- **Mürəkkəblikdən öncə Sadəlik**
-- **Mücərrədlikdən öncə Şəffaflıq**
-
-Onu siz işlədirsiniz.
-Siz idarə edirsiniz.
-Sizin şəbəkəniz — sizin qaydalarınız.
+Onu siz işlədirsiniz. Siz idarə edirsiniz. Sizin şəbəkəniz — sizin qaydalarınız.
 
 ---
 
 ## 🚀 Əsas Xüsusiyyətlər
 
-- **Çoxlu Şəbəkə Arxitekturası**
-  Hər birinin öz WireGuard interfeysi, subnet-i və portu olan çoxlu izolyasiya edilmiş VPN şəbəkələri yaradın.
+**Şəbəkə və cihazlar**
+- **Çoxlu şəbəkə** — hər birinin öz WireGuard interfeysi (wg0, wg1…), subnet-i və UDP portu var.
+- **Cihaz (node) idarəsi** — mobil üçün QR kod, desktop üçün `.conf`, Linux üçün bir sətirlik quraşdırma skripti (birdəfəlik, 15 dəqiqəlik token ilə). Giriş müddəti (expiry) qoyula bilər.
+- **Full tunnel** — seçilmiş node-un bütün internet trafiki hub üzərindən.
+- **Şəbəkə üzrə klient DNS** — cihaz konfiqlərinə yazılan DNS serverləri.
+- **Topologiya xəritəsi**, şəbəkə detalları və hər node üçün **trafik tarixçəsi**.
 
-- **Hub-and-Spoke Arxitekturası**
-  Qovşaqlar arasında trafikin mərkəzi server vasitəsilə təhlükəsiz yönləndirilməsi.
+**Firewall və nəzarət**
+- **VPN qaydaları** — şəbəkələr, node-lar, qruplar və IP-lər arasında icazə/blok, protokol və port ilə, prioritet sırası ilə; **şəbəkə siyasətləri matrisi** kimin kimə çata bildiyini göstərir.
+- **Node qrupları** — qaydaları və limitləri bir neçə node-a birlikdə tətbiq etmək üçün.
+- **Host firewall** — port açmaq, IP bloklamaq/icazə vermək; idarə portları (3007, 5432, 8080, 8443) həmişə yalnız VPN-dən əlçatandır.
+- **nftables mühərriki** (istəyə görə, aşağıya baxın) — Advanced tab (servislər, IP qaydaları, port yönləndirmə), dəyişikliklərin 60 saniyəlik təsdiqi ilə avtomatik geri qaytarma, **Live** (sayğaclar, conntrack) və **History** (dəyişiklik tarixçəsi, bərpa).
+- **Limit profilləri** (nftables mühərriki ilə) — sürət limiti, eyni anda bağlantı limiti, vaxt cədvəli və **aylıq trafik kvotası** (blok və ya yavaşlatma, 80%/100% bildirişi).
+- **Fail2Ban** — SSH qoruması, jail ayarları, ağ siyahı, əl ilə və daimi ban, ban tarixçəsi, loglar.
 
-- **Müasir Veb Dashboard**
-  Şəbəkələri, qovşaqları idarə etmək, trafiki izləmək və VPN-ə nəzarət etmək üçün React əsaslı gözəl interfeys.
+**İdarə və təhlükəsizlik**
+- **Rollar** — Admin, Operator, İzləyici (viewer); hər rol yalnız icazəli işləri görür.
+- **Sessiyalar** — giriş 24 saat keçərlidir; aktiv sessiyalara baxmaq və bitirmək olar; səhv parol cəhdləri məhdudlaşdırılır.
+- **Audit jurnalı** — API ilə edilən dəyişikliklər və giriş cəhdləri.
+- **Server səhifəsi** (yalnız admin, parol yenidən soruşulur) — servislər (docker, fail2ban, WireGuard), host şəbəkəsi, kernel parametrləri (90 saniyə ərzində saxlanmasa geri qayıdır), host adı, saat qurşağı/NTP, paket yeniləmələri və reboot.
+- **Ehtiyat nüsxələr** (backup) və **Telegram bildirişləri**.
+- **Panel iki dildə** (Azərbaycan / English) və **hər sahənin yanında "?"** — sahənin nə olduğunu, kimə lazım olduğunu və dəyişdirəndə nə olacağını izah edir.
 
-- **Bir Kliklə Quraşdırıcı**
-  Xüsusi Docker əsaslı quraşdırıcı (installer) ilə NovusGate-i asanlıqla yerləşdirin və yeniləyin.
-
-- **Təhlükəsiz və Ağıllı Yeniləmələr**
-  Konfiqurasiyanı və ya şəbəkə vəziyyətini itirmədən sisteminizi yeniləyin.
-
-- **Defolt Olaraq Təhlükəsiz**
-  WireGuard kriptoqrafiyası, JWT autentifikasiyası və daxili kommunikasiya üçün API açarları.
-
-- **Çox Platformalı Client Dəstəyi**
-  Mobil üçün QR kodlar, desktop üçün konfiq yükləmələri, Linux üçün bir sətirlik quraşdırma skriptləri.
-
-- **Server Monitorinq Paneli**
-  Əsas dashboard-da real vaxt rejimində CPU, RAM, Disk istifadəsi və sistem uptime göstəricisi.
-
-- **Fail2Ban İnteqrasiyası**
-  SSH brute-force hücumlarından qorunma, jail idarəetməsi, bloklanmış IP-lərin görüntülənməsi və bir kliklə blokdan çıxarma.
-
-- **Firewall İdarəetməsi**
-  Hərtərəfli host firewall (iptables) və VPN şəbəkələrarası firewall ilə VPN şəbəkələri arasında trafik nəzarəti.
-
-- **Vahid Şəbəkə İcmalı**
-  Dashboard bütün şəbəkələri birləşdirilmiş ümumi statistika ilə, həmçinin hər şəbəkə üzrə ayrıca göstəricilərlə göstərir.
+**NovusGate Center**
+- SSH ilə serverə **quraşdırma, yeniləmə** (ehtiyat nüsxə + xətada avtomatik geri qaytarma), reinstall, uninstall, **Join VPN** (başqa serveri node kimi qoşmaq), veb terminal, server monitorinqi və iş logları.
 
 ---
 
 ## 📡 VPN Tipi
 
-**NovusGate Client-əsaslı Arxitektura ilə Uzaqdan Giriş VPN-dir (Remote Access VPN).**
+**NovusGate client əsaslı uzaqdan giriş VPN-dir (Remote Access VPN).**
 
 | VPN Tipi | NovusGate? | Təsvir |
 |----------|------------|--------|
-| ☁️ Cloud VPN | ⚠️ | AWS/Azure VPN Gateway kimi idarə olunan xidmət deyil. NovusGate istənilən cloud və ya yerli serverdə quraşdırıla bilər |
-| 🔐 IPsec VPN | ❌ | IPsec əvəzinə WireGuard protokolu istifadə edir |
-| 🌐 SSL VPN | ❌ | Browser-əsaslı deyil, WireGuard client tələb edir |
-| 💻 **Client-əsaslı VPN** | ✅ | WireGuard client proqramı tələb edir |
-| 🏢 Site-to-Site VPN | ⚠️ | Node-lar arası əlaqə ilə mümkündür |
+| ☁️ Cloud VPN | ⚠️ | AWS/Azure VPN Gateway kimi idarə olunan xidmət deyil; istənilən cloud və ya yerli serverdə qurulur |
+| 🔐 IPsec VPN | ❌ | IPsec əvəzinə WireGuard işlədir |
+| 🌐 SSL VPN | ❌ | Brauzer əsaslı deyil, WireGuard client lazımdır |
+| 💻 **Client əsaslı VPN** | ✅ | WireGuard client proqramı ilə |
+| 🏢 Site-to-Site VPN | ⚠️ | Linux serveri node kimi qoşmaqla mümkündür |
 | 📡 **Uzaqdan Giriş VPN** | ✅ | Əsas istifadə halı |
 
-**Əsas Xüsusiyyətlər:**
-- **Protokol:** WireGuard (müasir, sürətli, təhlükəsiz)
-- **Arxitektura:** Hub-and-Spoke (mərkəzləşdirilmiş idarəetmə)
-- **Tunelleme:** Şifrlənmiş etibarlı tunel, Split Tunneling ilə
-- **Yerləşdirmə:** Cloud-da (istənilən provider) və ya yerli serverdə
-- **Client-lər:** Mobil (QR), Desktop (.conf), Linux (skriptlər)
+- **Protokol:** WireGuard · **Arxitektura:** Hub-and-Spoke · **Tunel:** defolt split, istəyə görə full
+- **Client-lər:** mobil (QR), desktop (.conf), Linux (skript)
 
 ---
 
 ## 👥 NovusGate Kimlər Üçündür?
 
-- **Sistem Adminləri** — serverlər və məlumat mərkəzləri arasında təhlükəsiz giriş təmin edənlər
-- **DevOps Mühəndisləri** — infrastrukturu müxtəlif mühitlər (environments) arasında birləşdirənlər
-- **Proqramçılar** — daxili və ya self-hosted platformalar quranlar
-- **Məxfilik sevənlər** — öz VPN quruluşuna tam nəzarət etmək istəyənlər
-
-Əgər **self-hosting, təhlükəsizlik və sadəliyə** dəyər verirsinizsə, NovusGate sizin üçündür.
+- **Sistem adminləri** — serverlər və məlumat mərkəzləri arasında təhlükəsiz giriş üçün
+- **DevOps mühəndisləri** — infrastrukturu müxtəlif mühitlər arasında birləşdirmək üçün
+- **Proqramçılar** — daxili və ya self-hosted platformalar üçün
+- **Məxfiliyə önəm verənlər** — öz VPN quruluşuna tam nəzarət üçün
 
 ---
 
-## 🧠 Necə İşləyir? (Qısa İzah)
+## 🧠 Necə İşləyir? (Qısa)
 
-1. **Mərkəzi server** idarəetmə paneli (control plane) rolunu oynayır.
-2. Unikal subnet-lərlə (10.x.x.0/24) **izolyasiya edilmiş şəbəkələr** yaradın.
-3. Cihazlar qeydiyyatdan keçir və təhlükəsiz şəkildə autentifikasiya olunur.
-4. WireGuard tunelləri avtomatik olaraq qurulur.
-5. Trafik mərkəzi server üzərindən təhlükəsiz şəkildə yönləndirilir.
-
-Gizli sehir yoxdur.
-Vendor asılılığı (lock-in) yoxdur.
-Sadəcə təmiz şəbəkəçilik.
+1. **Mərkəzi server (hub)** idarəetmə rolunu oynayır (control plane + panel + PostgreSQL, Docker-də).
+2. Öz subnet-i (məs. `10.20.0.0/24`) olan **ayrı şəbəkələr** yaradırsınız.
+3. Cihazlar üçün konfiq yaradılır (QR, `.conf` və ya Linux skripti).
+4. WireGuard tunelləri qurulur; trafik hub üzərindən, firewall qaydalarına görə yönləndirilir.
 
 ---
 
 ## 📂 Sistem Memarlığı
 
-NovusGate maksimum çeviklik və dayanıqlılıq üçün idarəetmə, interfeys və yerləşdirməni ayıran **modul sistem** kimi dizayn edilib.
-
 ```
 +-------------------------------------------------------------+
-|                     NovusGate Server                        |
+|                     NovusGate Server (hub)                  |
 |  +-------------+  +-------------+  +-------------+          |
 |  |  Şəbəkə 1   |  |  Şəbəkə 2   |  |  Şəbəkə N   |          |
 |  |  wg0:51820  |  |  wg1:51821  |  |  wgN:518XX  |          |
-|  | 10.10.0.0/24|  | 10.20.0.0/24|  | 10.XX.0.0/24|          |
+|  | 10.99.0.0/24|  | 10.20.0.0/24|  | 10.XX.0.0/24|          |
 |  +------+------+  +------+------+  +------+------+          |
 |         |                |                |                 |
 |  +------+----------------+----------------+------+          |
-|  |              REST API (Go Backend)            |          |
-|  |                 PostgreSQL DB                 |          |
+|  |  Control plane (Go, REST API) · PostgreSQL    |          |
+|  |  Panel (React, nginx, HTTPS :3007)            |          |
 |  +-----------------------------------------------+          |
 +-------------------------------------------------------------+
                             |
               +-------------+-------------+
               |             |             |
-         +----+----+  +----+----+  +----+----+
-         | Client  |  | Client  |  | Client  |
-         | (Telefon)|  |(Notebook)|  | (Server)|
-         +---------+  +---------+  +---------+
+         +----+----+   +----+----+   +----+----+
+         | Telefon |   |Noutbuk  |   | Server  |
+         +---------+   +---------+   +---------+
 ```
 
-### 1. Server (Backend)
-📁 `./server`
+| Hissə | Qovluq | Təlimatlar |
+|-------|--------|-----------|
+| **Server (backend)** — Go; WireGuard, firewall, PostgreSQL, REST API | `./server` | [Developer](./server/DEVELOPER_GUIDE_AZ.md) · [User](./server/USER_GUIDE_AZ.md) |
+| **Veb panel (frontend)** — React, TypeScript, Tailwind | `./web` | [Developer](./web/DEVELOPER_GUIDE_AZ.md) |
+| **NovusGate Center** — SSH ilə quraşdırma və idarə, Node.js | `./NovusGate Center` | [Developer](./NovusGate%20Center/DEVELOPER_GUIDE_AZ.md) · [User](./NovusGate%20Center/USER_GUIDE_AZ.md) |
 
-**Go** dilində yazılmış əsas məntiq.
-WireGuard interfeyslərini, PostgreSQL verilənlər bazasını idarə edir və REST API təqdim edir.
-
-- **Developer Guide:** `./server/DEVELOPER_GUIDE_AZ.md`
-- **User Guide:** `./server/USER_GUIDE_AZ.md`
-
----
-
-### 2. Web Dashboard (Frontend)
-📁 `./web`
-
-**React**, **TypeScript** və **Tailwind CSS** ilə qurulmuş inzibatçı interfeysi.
-
-- **Developer Guide:** `./web/DEVELOPER_GUIDE_AZ.md`
-- **User Guide:** `./web/USER_GUIDE_AZ.md`
-
----
-
-### 3. NovusGate Center (İdarəetmə Mərkəzi)
-📁 `./installer`
-
-Linux serverlərində SSH vasitəsilə yerləşdirməni sadələşdirmək üçün müstəqil **Node.js** aləti.
-
-- **Developer Guide:** `./installer/DEVELOPER_GUIDE_AZ.md`
-- **User Guide:** `./installer/USER_GUIDE_AZ.md`
-
----
-
-> 🇺🇸 **English Documentation**
-> Refer to [README.md](./README.md) for the English version.
+Texniki sənədlər: [`docs/`](./docs) (API, data modeli, təhlükəsizlik, deployment, runbook-lar).
 
 ---
 
@@ -248,313 +192,216 @@ Linux serverlərində SSH vasitəsilə yerləşdirməni sadələşdirmək üçü
 
 ### Tələblər
 
-**Yerli kompüterinizdə:**
-- Docker və Docker Compose quraşdırılmış olmalıdır
+**Öz kompüterinizdə (Center üçün):**
+- Docker və Docker Compose
 
-**Uzaq serverinizdə:**
-- Linux server (Ubuntu 20.04 / 22.04 tövsiyə olunur)
-- Root və ya sudo səlahiyyətli SSH girişi
-- Açıq portlar: 22 (SSH), 51820+ (WireGuard üçün UDP), 8080 (API)
+**Server (hub):**
+- **Ubuntu 22.04 və ya daha yeni** (24.04, 26.04 yoxlanılıb) və ya **Debian 12 və ya daha yeni** (13 yoxlanılıb)
+- x86_64 və ya aarch64; ən azı 1 GB RAM (2 GB tövsiyə olunur), 3 GB boş disk
+- Root və ya parolsuz `sudo` ilə SSH girişi
+- İnternetdən açıq olmalı portlar: **22/tcp** (SSH) və **51820/udp** (hər yeni şəbəkə üçün növbəti port: 51821, 51822…)
+- 3007 (panel), 5432 (DB), 8080 (API), 8443 portlarını internetə **açmayın** — NovusGate onları özü yalnız VPN-ə açır.
+
+Center quraşdırmadan əvvəl serveri yoxlayır (OS versiyası, CPU, RAM, disk, portlar) və uyğun deyilsə dayanır.
 
 ---
 
-### Quraşdırma Prosesi (Addım-Addım)
+### Quraşdırma (addım-addım)
 
-> **Qeyd:** Bu proses **NovusGate Center** (İdarəetmə Paneli) -ni işə salır. Bu panel vasitəsilə siz serveri, məlumat bazasını və VPN şəbəkəsini asanlıqla quraşdıra bilərsiniz.
-
-#### Addım 1: Repozitoriyanı Klonlayın
-
+#### 1. Repozitoriyanı klonlayın
 ```bash
 git clone https://github.com/Ali7Zeynalli/NovusGate.git
 cd NovusGate
 ```
 
-#### Addım 2: NovusGate Center-i Başladın
-
+#### 2. NovusGate Center-i başladın
 ```bash
 cd "NovusGate Center"
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-#### Addım 3: NovusGate Center Veb İnterfeysini Açın
+#### 3. Center-i açın
+Brauzerdə: `http://localhost:3017`
 
-Brauzerdə bu ünvanı açın:
-```
-http://localhost:3017
-```
-
-#### Addım 4: Uzaq Serverə Qoşulun
-
-Installer interfeysində server məlumatlarınızı daxil edin:
-
+#### 4. Serveri əlavə edin
 | Sahə | Təsvir |
 |------|--------|
-| **Host** | Serverinizin IP ünvanı (məs., `203.0.113.50`) |
-| **Port** | SSH portu (defolt: `22`) |
-| **Username** | SSH istifadəçi adı (məs., `root` və ya `ubuntu`) |
-| **Password** | SSH şifrəsi və ya SSH açarı istifadə edin |
+| **Server Name** | İstədiyiniz ad |
+| **Host** | Serverin IP ünvanı (məs. `203.0.113.50`) |
+| **SSH Port** | Defolt `22` |
+| **Username** | `root` və ya parolsuz `sudo`-su olan istifadəçi |
+| **Password / Private Key** | SSH parolu və ya PEM açarı (passphrase ilə də olar) |
 
-SSH bağlantısı qurmaq üçün **Connect** düyməsini sıxın.
-
-#### Addım 5: Quraşdırmanı Konfiqurasiya Edin
-
-Qoşulduqdan sonra quraşdırma parametrlərini təyin edin:
-
+#### 5. Quraşdırma parametrləri
 | Parametr | Təsvir |
 |----------|--------|
-| **Admin Username** | Dashboard giriş istifadəçi adı (defolt: `admin`) |
-| **Admin Password** | Dashboard giriş şifrəsi (avtomatik yaradılır və ya özünüz təyin edin) |
-| **Server Endpoint** | VPN bağlantıları üçün serverinizin açıq IP-si |
-| **Admin CIDR** | Admin şəbəkə subnet-i (defolt: `10.99.0.0/24`) |
-| **API Key** | Daxili API təhlükəsizlik açarı (avtomatik yaradılır) |
+| **Admin Username** | Panelin ilk admin istifadəçisi (defolt `admin`) |
+| **Admin Password** | Boş buraxsanız təsadüfi parol yaradılır |
+| **Admin VPN Gateway IP** | Hub-ın admin VPN-dəki ünvanı (defolt `10.99.0.1`, şəbəkə `10.99.0.0/24`) |
+| **Database Name / User / Password** | PostgreSQL üçün; parol boşdursa təsadüfi yaradılır |
 
-#### Addım 6: Quraşdırmanı Başladın
+Hər sahənin yanındakı **"?"** onun nə etdiyini izah edir.
 
-**Install NovusGate Server** düyməsini sıxın.
+#### 6. Install
+Center: sistemi yeniləyir, Docker, WireGuard və Fail2Ban quraşdırır, NovusGate fayllarını `/opt/NovusGate`-ə yükləyir, gizli açarları (DB parolu, API key, master key) yaradır, konteynerləri qurub başladır və **admin VPN**-i (`wg0`) yaradır.
 
-Installer aşağıdakıları edəcək:
-1. ✅ Sistem paketlərini yeniləyəcək
-2. ✅ Docker və Docker Compose quraşdıracaq
-3. ✅ WireGuard quraşdıracaq
-4. ✅ Fail2Ban quraşdıracaq (SSH qorunması)
-5. ✅ NovusGate repozitoriyasını klonlayacaq
-6. ✅ Environment dəyişənlərini konfiqurasiya edəcək
-7. ✅ Docker konteynerləri build edib başladacaq
-8. ✅ Admin VPN şəbəkəsi yaradacaq
-9. ✅ Admin VPN konfiqurasiyası generasiya edəcək
+#### 7. Admin VPN konfiqini götürün
+Install bitəndə Center **admin VPN konfiqurasiyasını** göstərir: **📥 Download admin-vpn.conf**. Konfiq serverdə də saxlanılır: `/opt/NovusGate/admin-vpn.conf`.
 
-#### Addım 7: Giriş Məlumatlarınızı Saxlayın
+#### 8. VPN-ə qoşulun
+1. WireGuard client-i quraşdırın (Windows, macOS, Linux, Android, iOS).
+2. `admin-vpn.conf`-u import edin və aktivləşdirin.
+3. Sizin VPN ünvanınız `10.99.0.2` olacaq; `ping 10.99.0.1` cavab verməlidir.
 
-Quraşdırma bitdikdən sonra installer göstərəcək:
-
-```
-╔════════════════════════════════════════════╗
-║         QURAŞDIRMA TAMAMLANDI!             ║
-╠════════════════════════════════════════════╣
-║  Admin Username: admin                     ║
-║  Admin Password: xxxxxxxxxxxxxxxx          ║
-║                                            ║
-║  Dashboard URL: https://10.99.0.1:3007     ║
-║  (Yalnız VPN vasitəsilə əlçatandır)        ║
-╚════════════════════════════════════════════╝
-```
-
-⚠️ **VACİB:** Bu məlumatları dərhal saxlayın! Bir daha göstərilməyəcək.
-
-#### Addım 8: Admin VPN Konfiqini Yükləyin
-
-Installer sizə admin VPN konfiqurasiyasını təqdim edir:
-- **QR Kod** - WireGuard mobil tətbiqi ilə skan edin
-- **Download .conf** - Desktop WireGuard client üçün
-- **Copy Config** - Manual konfiqurasiya
-
-#### Addım 9: Admin VPN-ə Qoşulun
-
-1. Cihazınıza WireGuard client quraşdırın
-2. Admin konfiqurasiyasını import edin
-3. VPN bağlantısını aktivləşdirin
-4. Bağlantını yoxlayın (IP `10.99.0.2` kimi olmalıdır)
-
-#### Addım 10: Dashboard-a Daxil Olun
-
-VPN-ə qoşulduqdan sonra açın:
+#### 9. Panelə daxil olun
 ```
 https://10.99.0.1:3007
 ```
+(Gateway IP-ni dəyişmisinizsə, o IP-ni yazın.)
 
-Addım 7-dəki admin məlumatları ilə daxil olun.
+- **`https://`** yazın — `http://` işləmir.
+- Brauzer sertifikat xəbərdarlığı göstərəcək (panel öz imzalı sertifikat işlədir): **Advanced → Proceed / Davam et**.
+- **İstifadəçi adı və parol:** Center-də serveri seçin → **Server Credentials** (istənilən vaxt yenidən baxmaq olar), və ya install log-unun sonunda `ADMIN USER` / `ADMIN PASS`.
 
-🎉 **Təbrik edirik!** NovusGate quraşdırıldı və istifadəyə hazırdır.
+🎉 Hazırdır.
 
----
+#### Panel açılmırsa
+| Əlamət | Nə etməli |
+|--------|-----------|
+| Səhifə açılmır | WireGuard-da "Latest handshake" yoxlayın; `ping 10.99.0.1` |
+| Server public IP-si ilə açırsınız | İşləməz: panel yalnız VPN-dən açılır |
+| Parol qəbul olunmur | 15 dəqiqədə 10 səhv cəhddən sonra müvəqqəti blok; gözləyin və parolu Center → Server Credentials-dən götürün |
 
-### Quraşdırmadan Sonra
-
-Dashboard-a daxil olduqdan sonra edə bilərsiniz:
-- Əlavə VPN şəbəkələri yaratmaq
-- Şəbəkələrə node/client əlavə etmək
-- Server resurslarını izləmək
-- Fail2Ban təhlükəsizliyini idarə etmək
-- Trafik statistikasını görmək
-
----
-
-### Texniki Detallar: NovusGate Center Nə Edir?
-
-NovusGate Center uzaq Linux serverinizdə quraşdırmanı avtomatlaşdırır. Arxa planda baş verən proseslər bunlardır:
-
-1.  **Sistem Yeniləmələri**: Paketlərin təzə olduğundan əmin olmaq üçün `apt-get update` icra edir.
-2.  **Asılılıqlar**: `docker`, `docker-compose`, `wireguard` və `fail2ban` quraşdırır.
-3.  **Fayl Yerləşimi**:
-    -   Quraşdırma Qovluğu: `/opt/NovusGate`
-    -   Admin VPN Konfiqurasiyası: `/opt/NovusGate/admin-vpn.conf`
-4.  **Təhlükəsizlik Quraşdırması**:
-    -   Verilənlər bazası, JWT və API açarları üçün təhlükəsiz təsadüfi sirrlər (secrets) yaradır.
-    -   SSH qorunması üçün `fail2ban` jail-ini konfiqurasiya edir.
-    -   Admin Şəbəkəsi üçün `wg0` WireGuard interfeysini qurur.
-5.  **Xidmətlərin Başladılması**:
-    -   `/opt/NovusGate/server/deployments/docker/` və `/opt/NovusGate/web/` qovluqlarında `.env` faylları yaradır.
-    -   `docker-compose up -d` istifadə edərək xidmətləri işə salır.
-
-Bu, əl ilə konfiqurasiya olmadan standartlaşdırılmış, təhlükəsiz və istehsalata hazır (production-ready) bir mühit təmin edir.
+Serverdə yoxlama:
+```bash
+docker ps --format '{{.Names}} {{.Status}}'
+sudo wg show wg0 | head -12
+curl -sk -o /dev/null -w '%{http_code}\n' https://10.99.0.1:3007
+```
 
 ---
 
-### Lokal İnkişaf / Manual İşə Salma
+### Quraşdırmadan sonra
+- Yeni VPN şəbəkələri yaradın, cihaz əlavə edin (QR, `.conf`, Linux skripti).
+- **Parametrlər → İstifadəçilər**: hər kəsə lazım olan rolu verin (Admin / Operator / İzləyici).
+- Telegram bildirişlərini və ehtiyat nüsxələri qurun.
+- Başqa Linux serveri node kimi qoşmaq üçün: panel → Nodes → Connect → Linux → install script; sonra Center → **Join VPN** (hub-ın özündə işləmir — orada hub-ın `wg0`-ını əvəz edərdi).
 
-Əgər NovusGate-i quraşdırıcı ("installer wizard") olmadan, inkişaf (development) və ya test məqsədilə lokal kompüterinizdə işə salmaq istəyirsinizsə:
+### nftables firewall mühərriki (limitlər, kvota, Advanced tab üçün)
+Quraşdırma defolt olaraq **iptables** rejimində işləyir. **Limit profilləri, trafik kvotası, Advanced tab (port yönləndirmə və s.), Live və History** üçün nftables mühərrikini açmaq lazımdır. Addımlar, yoxlamalar və geri qayıdış: [`docs/runbooks/p3b2-firewall-cutover.md`](./docs/runbooks/p3b2-firewall-cutover.md). Qısaca: Center → Update → `server/deployments/docker/.env`-ə `FIREWALL_ENGINE=nft` → `docker compose up -d control-plane` → Center → Update bir daha.
 
-1. Docker deployment qovluğuna keçid edin:
-   ```bash
-   cd server/deployments/docker
-   ```
+### Yeniləmə
+Center → **Update**: kodu yeniləyir, `.env`, verilənlər bazası və VPN konfiqləri saxlanılır, əvvəlcə ehtiyat nüsxə alınır (`/var/backups/novusgate/`), uğursuz olsa əvvəlki versiya avtomatik bərpa olunur. Verilənlər bazası miqrasiyaları control plane başlayanda öz-özünə tətbiq olunur.
 
-2.  **Mühiti Konfiqurasiya Edin (.env)**:
-    ```bash
-    cp .env.example .env
-    # .env faylını açın və ən azı ADMIN_PASSWORD təyin edin
-    nano .env
-    ```
-
-3.  **Xidmətləri başladın**:
-    ```bash
-    docker-compose up -d --build
-    ```
-
-   Bu əmr aşağıdakıları başladacaq:
-   - **PostgreSQL** (Məlumat bazası)
-   - **Control Plane** (Backend API - port 8080)
-   - **Web Dashboard** (Frontend - port 3007)
-
-3. Dashboard-a daxil olun: `http://localhost:3007`
-
-> **Qeyd:** Tam VPN funksionallığı üçün WireGuard kernel modullarına malik Linux mühiti tələb olunur. Windows/Mac əməliyyat sistemlərində bəzi VPN funksiyaları məhdud ola bilər, lakin UI və API tam işlək vəziyyətdə olacaq.
+**Köhnə versiyadan yeniləyənlər üçün:** rollar əvvəl yox idi, ona görə mövcud istifadəçilərin hamısı **Admin** olur — yeniləmədən sonra Parametrlər → İstifadəçilər-də rolları yoxlayın.
 
 ---
 
-### Əl ilə Quraşdırma (Manual Production)
-
-İstehsalat (production) mühitində manual quraşdırmanı üstün tutan təcrübəli istifadəçilər üçün:
-👉 **[Server İstifadəçi Təlimatı](./server/USER_GUIDE_AZ.md)**
+### NovusGate Center arxada nə edir?
+1. **Yoxlama (preflight):** OS, CPU, RAM, disk, portlar.
+2. **Paketlər:** `apt-get update`, Docker (get.docker.com), WireGuard, Fail2Ban.
+3. **Fayllar:** `/opt/NovusGate`; admin VPN konfiqi `/opt/NovusGate/admin-vpn.conf`.
+4. **Təhlükəsizlik:** DB parolu, API key, master key (node açarlarını şifrələyir) yaradılır və `server/deployments/docker/.env`-də yalnız root üçün saxlanılır; SSH üçün Fail2Ban jail-i (3 səhv cəhd = 1 saat ban); `wg0` admin VPN.
+5. **Xidmətlər:** `docker compose up -d` — PostgreSQL, control plane, panel.
 
 ---
 
-## 🌐 Şəbəkə İdarəçiliyi
+### Lokal inkişaf / manual işə salma
+```bash
+cd server/deployments/docker
+cp .env.example .env     # ən azı ADMIN_PASSWORD, API_KEY və MASTER_KEY (openssl rand -hex 32) təyin edin
+docker compose up -d --build
+```
+Bu PostgreSQL-i, control plane-i (API, port 8080) və paneli (port 3007) başladır. Panel: `https://localhost:3007`.
 
-NovusGate **çoxlu izolyasiya edilmiş şəbəkələri** dəstəkləyir:
+> **Qeyd:** tam VPN funksionallığı üçün WireGuard dəstəkli Linux lazımdır. Windows/macOS-da UI və API işləyir, VPN funksiyaları məhdud ola bilər.
+
+Manual production quraşdırması: 👉 **[Server İstifadəçi Təlimatı](./server/USER_GUIDE_AZ.md)**
+
+---
+
+## 🌐 Şəbəkə İdarəsi
 
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **İzolyasiya Edilmiş Subnet-lər** | Hər şəbəkənin öz CIDR-i var (məs., 10.10.0.0/24, 10.20.0.0/24) |
-| **Xüsusi İnterfeyslər** | Avtomatik WireGuard interfeys təyinatı (wg0, wg1, wg2...) |
-| **Unikal Portlar** | Hər şəbəkə fərqli UDP portunda dinləyir (51820, 51821...) |
-| **Müstəqil Node-lar** | Node-lar müəyyən şəbəkələrə aiddir və digərlərindən izolyasiya edilib |
+| **Ayrı subnet-lər** | Hər şəbəkənin öz CIDR-i var (məs. 10.10.0.0/24, 10.20.0.0/24); üst-üstə düşə bilməz |
+| **Öz interfeysi** | Avtomatik təyin olunur: wg0, wg1, wg2… |
+| **Öz portu** | Hər şəbəkə növbəti boş UDP portunda dinləyir (51820, 51821…) |
+| **Klient DNS** | Şəbəkənin cihazlarının işlədəcəyi DNS serverləri (ən çox 3 IPv4) |
 
-### Şəbəkə Yaratmaq
-
-1. Dashboard-da **Networks** səhifəsinə keçin
-2. **Create Network** düyməsinə klikləyin
-3. Ad və CIDR aralığı daxil edin (məs., `10.50.0.0/24`)
-4. Sistem avtomatik olaraq interfeys və port təyin edir
+**Şəbəkə yaratmaq:** Panel → **Şəbəkələr** → yeni şəbəkə → ad və CIDR (məs. `10.50.0.0/24`). İnterfeys və port avtomatik təyin olunur; o portu (UDP) internetə açın.
 
 ---
 
-## 🛡️ Təhlükəsizlik Qeydləri
+## 🛡️ Təhlükəsizlik
 
-* Quraşdırıcı **unikal giriş məlumatları** yaradır — onları dərhal yadda saxlayın.
-* UDP portlarının **51820+** açıq olduğundan əmin olun (hər şəbəkə üçün bir port).
-* Admin dashboard defolt olaraq **VPN arxasında gizlidir**.
-* İstehsalat (production) mühitində Web Dashboard-u **Nginx və ya Caddy (SSL ilə)** arxasında işlədin.
-* **Fail2Ban** avtomatik quraşdırılır və SSH-ı qorumaq üçün konfiqurasiya edilir (3 uğursuz cəhd = 1 saat blok).
-
-Təhlükəsizlik seçim deyil — bu, standartdır.
+* Panel, API və DB **yalnız VPN-dən** əlçatandır (3007, 5432, 8080, 8443 internetə bağlıdır).
+* API açarı brauzerə heç vaxt düşmür: panelin nginx-i onu sorğuya özü əlavə edir.
+* Giriş sessiyası 24 saat keçərlidir; səhv parol cəhdləri məhdudlaşdırılır; rollar hər sorğuda yoxlanılır.
+* Server səhifəsindəki dəyişikliklər üçün parol **yenidən** soruşulur (5 dəqiqəlik).
+* Node private açarları verilənlər bazasında master key ilə şifrələnmiş saxlanılır.
+* Hər API dəyişikliyi audit jurnalına yazılır.
+* **Fail2Ban** SSH-ı qoruyur (3 səhv cəhd = 1 saat ban).
+* Quraşdırmanın sonunda göstərilən giriş məlumatlarını təhlükəsiz yerdə saxlayın.
 
 ---
 
 ## 📊 Server Monitorinqi
 
-NovusGate daxili server monitorinqi ilə gəlir:
-
-| Göstərici | Təsvir |
-|-----------|--------|
-| **CPU İstifadəsi** | Real vaxt rejimində prosessor yüklənməsi faizi |
-| **RAM İstifadəsi** | İstifadə olunan/ümumi yaddaş göstəricisi |
-| **Disk İstifadəsi** | Kök bölməsi üçün yaddaş istifadəsi |
-| **Uptime** | Son yenidən başlatmadan bəri serverin işləmə müddəti |
-
-Bütün göstəricilər əsas Dashboard-da göstərilir və avtomatik yenilənir.
+Əsas paneldə real vaxtda: **CPU**, **RAM**, **disk** istifadəsi və **uptime**; şəbəkə və node statistikaları, node-ların onlayn/oflayn vəziyyəti.
 
 ---
 
-## 🔒 Fail2Ban İdarəetməsi
-
-Serverinizi brute-force hücumlarından qoruyun:
+## 🔒 Fail2Ban
 
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **Jail Statusu** | Aktiv jail-ləri (SSH və s.) və onların konfiqurasiyasını görün |
-| **Bloklanmış IP-lər** | Hər jail üzrə hazırda bloklanmış IP ünvanlarını görün |
-| **Blok Statistikası** | Ümumi bloklar, cari bloklar, uğursuz cəhdlər |
-| **Bir Kliklə Blokdan Çıxarma** | Veb interfeysdən IP ünvanlarını dərhal blokdan çıxarın |
-| **Log Görüntüləyicisi** | Fail2Ban loglarını əməliyyat filtri ilə nəzərdən keçirin |
+| **Jail statusu və ayarları** | bantime, findtime, maxretry |
+| **Ban edilmiş IP-lər** | Hər jail üzrə; bir kliklə ban-dan çıxarma |
+| **Əl ilə və daimi ban** | IP-ni əl ilə ban etmək; daimi ban firewall-da saxlanılır |
+| **Ağ siyahı** | Heç vaxt ban edilməyəcək IP/CIDR-lər |
+| **Tarixçə və loglar** | Ban tarixçəsi, filtr ilə loglar |
 
-Dashboard-da **Security → Fail2Ban** bölməsindən daxil olun.
+Paneldə **Fail2Ban** səhifəsi.
 
 ---
 
-## 🔥 Firewall İdarəetməsi
+## 🔥 Firewall
 
-NovusGate hərtərəfli firewall idarəetmə sistemi ilə gəlir:
-
-### Host Firewall (iptables)
-
+### Host firewall
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **Açıq Portlar** | Serverdəki açıq portları görün və idarə edin |
-| **IP Bloklama** | Müəyyən IP ünvanlarını və ya CIDR aralıqlarını bloklayın |
-| **IP İcazə** | Etibarlı IP ünvanlarını ağ siyahıya əlavə edin |
-| **Chain İdarəetməsi** | INPUT, OUTPUT, FORWARD chain qaydalarını görün |
-| **Qorunan Portlar** | SSH, WireGuard və API portları təsadüfi bağlanmadan qorunur |
-| **Qaydaları Export Et** | Cari firewall qaydalarını ehtiyat nüsxə üçün yükləyin |
-| **Firewall Sıfırla** | Defolt NovusGate firewall konfiqurasiyasını bərpa edin |
+| **Açıq portlar** | Serverin portlarını açmaq və bağlamaq |
+| **IP blok / icazə** | IP və ya CIDR; idarə portları heç vaxt internetə açılmır |
+| **Qorunan portlar** | SSH, WireGuard və idarə portları təsadüfi bağlanmadan qorunur |
+| **Export / Reset** | Qaydaları yükləmək, defolta qaytarmaq |
+| **Advanced, Live, History** | nftables mühərriki ilə (yuxarıya baxın): servislər, IP qaydaları, port yönləndirmə, 60 saniyəlik təsdiq, canlı sayğaclar, dəyişiklik tarixçəsi və bərpa |
 
-### VPN Firewall (Şəbəkələrarası Qaydalar)
-
-VPN şəbəkələri arasında trafik axınını idarə edin:
-
+### VPN firewall (şəbəkələr arası qaydalar)
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **Şəbəkədən-Şəbəkəyə Qaydalar** | Müxtəlif VPN şəbəkələri arasında trafikə icazə verin və ya bloklayın |
-| **Node-Spesifik Qaydalar** | Müəyyən node-lar üçün qaydalar yaradın |
-| **Protokol Filtri** | TCP, UDP, ICMP və ya bütün protokollar üzrə filtrləyin |
-| **Port Əsaslı Qaydalar** | Müəyyən portlara və ya port aralıqlarına icazə verin/bloklayın |
-| **Prioritet Sistemi** | Qaydalar prioritet sırasına görə işlənir (aşağı = yüksək prioritet) |
-| **Avtomatik AllowedIPs** | Client konfiqləri avtomatik olaraq icazə verilmiş hədəf şəbəkələri əhatə edir |
+| **Mənbə / hədəf** | Şəbəkə, node, qrup və ya xüsusi IP |
+| **Protokol və port** | TCP, UDP, ICMP və ya hamısı; port, siyahı və ya aralıq |
+| **Prioritet** | Kiçik rəqəm əvvəl; ilk uyğun gələn qayda qərar verir |
+| **Siyasət matrisi** | Hansı şəbəkənin hansına çata bildiyini və səbəbini göstərir |
+| **Avtomatik AllowedIPs** | Cihaz konfiqləri icazə verilmiş şəbəkələri özü əhatə edir |
 
-**VPN Firewall Necə İşləyir:**
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
 │ Mənbə Node  │ ──► │   VPN Server    │ ──► │ Hədəf Node  │
-│ (10.10.0.2) │     │ FORWARD chain   │     │ (10.20.0.5) │
-└─────────────┘     │ VPN Qaydaları   │     └─────────────┘
-                    └─────────────────┘
+│ (10.10.0.3) │     │  VPN qaydaları  │     │ (10.20.0.5) │
+└─────────────┘     └─────────────────┘     └─────────────┘
 ```
 
-Bütün VPN trafiki server üzərindən keçir. VPN firewall qaydaları serverin FORWARD chain-ini idarə edir və hansı trafikin şəbəkələr arasında yönləndirilə biləcəyini müəyyən edir.
+Bütün VPN trafiki hub üzərindən keçir; VPN qaydaları hansı trafikin şəbəkələr arasında keçə biləcəyini müəyyən edir.
 
-**İstifadə Nümunələri:**
-- Ofis şəbəkəsinin (10.10.0.0/24) admin panelinə (10.99.0.1) girişinə icazə vermək
-- Development şəbəkəsinin production serverlərə girişini bloklamaq
-- Müəyyən şəbəkələr arasında yalnız HTTP/HTTPS trafikinə icazə vermək
-- Qonaq şəbəkəsini daxili resurslardan izolyasiya etmək
-
-Dashboard-da **Firewall** səhifəsindən daxil olun.
+**Nümunələr:** ofis şəbəkəsinə admin şəbəkəsinə giriş vermək, development-in production-a girişini bağlamaq, yalnız HTTP/HTTPS-ə icazə vermək, qonaq şəbəkəsini izolyasiya etmək.
 
 ---
 
-## 📸 Ekran Görüntüləri (Screenshots)
+## 📸 Ekran Görüntüləri
 
-### Web Dashboard (İdarə Paneli)
+### Veb Panel
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
   <img src="web/public/photo/web/0.png" alt="Web 0" width="45%">
   <img src="web/public/photo/web/1.png" alt="Web 1" width="45%">
@@ -571,66 +418,56 @@ Dashboard-da **Firewall** səhifəsindən daxil olun.
   <img src="web/public/photo/web/12.png" alt="Web 12" width="45%">
 </div>
 
-### NovusGate Center (İdarəetmə Mərkəzi)
+### NovusGate Center
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-  <img src="web/public/photo/installer/0.png" alt="Installer 0" width="45%">
-  <img src="web/public/photo/installer/1.png" alt="Installer 1" width="45%">
-  <img src="web/public/photo/installer/2.png" alt="Installer 2" width="45%">
-  <img src="web/public/photo/installer/3.png" alt="Installer 3" width="45%">
-  <img src="web/public/photo/installer/4.png" alt="Installer 4" width="45%">
+  <img src="web/public/photo/installer/0.png" alt="Center 0" width="45%">
+  <img src="web/public/photo/installer/1.png" alt="Center 1" width="45%">
+  <img src="web/public/photo/installer/2.png" alt="Center 2" width="45%">
+  <img src="web/public/photo/installer/3.png" alt="Center 3" width="45%">
+  <img src="web/public/photo/installer/4.png" alt="Center 4" width="45%">
 </div>
+
+> Qeyd: ekran görüntüləri əvvəlki versiyadandır; yeni səhifələr (Qruplar, Limitlər, Server, Audit və s.) onlarda yoxdur.
 
 ---
 
-## 🤝 Töhfə Vermək (Contributing)
+## 🤝 Töhfə Vermək
 
-Töhfələrinizi gözləyirik ❤️
-Xəta hesabatları (Bug reports), yeni funksiya təklifləri və Pull Request-lər yüksək qiymətləndirilir.
-
-Töhfə verməzdən əvvəl zəhmət olmasa **Developer Təlimatlarını** oxuyun.
+Töhfələrinizi gözləyirik ❤️ Xəta hesabatları, yeni funksiya təklifləri və Pull Request-lər yüksək qiymətləndirilir. Töhfə verməzdən əvvəl **Developer təlimatlarını** oxuyun.
 
 ---
 
 ## ⭐ Layihəyə Dəstək
 
-Əgər **NovusGate** sizin üçün faydalıdırsa:
-
-* ⭐ Repozitoriyaya ulduz (Star) verin
+* ⭐ Repozitoriyaya ulduz verin
 * 🐛 Xətalar barədə məlumat verin (Issues)
 * 💡 Yeni ideyalar təklif edin
 * 📣 Başqaları ilə paylaşın
-
-Açıq-qaynaq (Open-source) icma ilə yaşayır.
 
 ---
 
 ## 🤝 Professional Dəstək / Enterprise Support
 
-> **Quraşdırma çətin gəlir?** Biz sizə kömək edə bilərik!
+> **Quraşdırma çətin gəlir?** Biz kömək edə bilərik!
 
-Əgər bu təlimatda göstərilən addımları özünüz icra edə bilmirsinizsə və ya enterprise səviyyəsində tam dəstək lazımdırsa, bizə müraciət edə bilərsiniz:
-
-### Ödənişli Xidmətlər
-
+### Ödənişli xidmətlər
 | Xidmət | Təsvir |
 |--------|--------|
-| 🛠️ **Tam Quraşdırma** | NovusGate-in sizin infrastrukturda tam quraşdırılması |
-| 🔧 **Server Konfiqurasiyası** | Linux, Docker, Firewall və Təhlükəsizlik konfiqurasiyası |
-| 📞 **Texniki Dəstək** | Problem həlli və davamlı dəstək |
-| 📚 **Təlim** | Komandanız üçün NovusGate istifadəsi təlimi |
+| 🛠️ **Tam quraşdırma** | NovusGate-in sizin infrastrukturda tam quraşdırılması |
+| 🔧 **Server konfiqurasiyası** | Linux, Docker, firewall və təhlükəsizlik |
+| 📞 **Texniki dəstək** | Problem həlli və davamlı dəstək |
+| 📚 **Təlim** | Komandanız üçün NovusGate təlimi |
 
-> 💰 **Qiymətləndirmə**: Xidmət haqqı görüləcək işin həcminə və mürəkkəbliyinə əsasən fərdi olaraq hesablanır. Pulsuz konsultasiya üçün bizimlə əlaqə saxlayın.
+> 💰 **Qiymət** işin həcminə və mürəkkəbliyinə görə fərdi hesablanır. Pulsuz konsultasiya üçün əlaqə saxlayın.
 
 ### Əlaqə
-
 📧 **Email**: Ali.Z.Zeynalli@gmail.com  
 💼 **LinkedIn**: [linkedin.com/in/ali7zeynalli](https://linkedin.com/in/ali7zeynalli)  
 📱 **Telefon**: +49 152 2209 4631 (whatsapp)
 
-> 💼 Enterprise müştərilər üçün SLA (Service Level Agreement) ilə dəstək mövcuddur.
+> 💼 Enterprise müştərilər üçün SLA ilə dəstək mövcuddur.
 
-### 🌍 Dəstək Verilən Dillər
-
+### 🌍 Dəstək dilləri
 | Dil | Language |
 |-----|----------|
 | 🇦🇿 Azərbaycan | Azerbaijani |
@@ -643,20 +480,20 @@ Açıq-qaynaq (Open-source) icma ilə yaşayır.
 
 ## 📄 Lisenziya
 
-Bu layihə **Apache License 2.0** altında lisenziyalanıb - ətraflı məlumat üçün [LICENSE](LICENSE) faylına baxın.
+Bu layihə **Apache License 2.0** altında lisenziyalanıb — ətraflı: [LICENSE](LICENSE).
 
 **© 2025 Əli Zeynallı**
 
-Apache 2.0 Lisenziyası sizə imkan verir:
+Apache 2.0 sizə imkan verir:
 - ✅ Proqramı istənilən məqsəd üçün istifadə etmək (kommersiya daxil)
 - ✅ Proqramı dəyişdirmək və paylamaq
-- ✅ Töhfə edənlərin patent iddialarından istifadə etmək
+- ✅ Töhfə edənlərin patent hüquqlarından istifadə etmək
 
 Sizdən tələb olunur:
 - 📋 Orijinal müəllif hüququ qeydini saxlamaq
 - 📋 LICENSE və NOTICE fayllarını daxil etmək
-- 📋 Proqrama edilən əhəmiyyətli dəyişiklikləri qeyd etmək
-- 📋 Orijinal müəllifə istinad vermək
+- 📋 Edilən əhəmiyyətli dəyişiklikləri qeyd etmək
+- 📋 Orijinal müəllifə istinad etmək
 
 > 📜 Attribution tələbləri üçün [NOTICE](NOTICE) faylına baxın.
 

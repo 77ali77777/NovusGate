@@ -7,550 +7,395 @@
 
 🚀 **Build your own private VPN network — without SaaS lock-in or painful configurations.**
 
-**NovusGate** is a modern, fully self-hosted **VPN control plane** built on top of the **WireGuard®** protocol.  
-It allows you to securely connect servers, cloud instances, and personal devices using a clean **Hub-and-Spoke architecture**, all managed from a single web dashboard.
+**NovusGate** is a modern, fully self-hosted **VPN control plane** built on top of the **WireGuard®** protocol.
+It connects servers, cloud instances and personal devices through a clean **Hub-and-Spoke architecture**, all managed from a single web dashboard.
 
 Whether you're running production infrastructure or simply want full ownership of your private network, **NovusGate gives you clarity, security, and control**.
 
 ![NovusGate Dashboard](web/public/novusgate_banner.png)
 
+> 🇦🇿 **Azərbaycanca:** [README_AZ.md](./README_AZ.md)
+
 ---
 
 ## ⚠️ Important: What NovusGate Is (and Isn't)
 
-**NovusGate is NOT a "hide my IP" or "bypass geo-restrictions" VPN.**
+**NovusGate is NOT a commercial "hide my IP" or "bypass geo-restrictions" VPN service.**
 
-It is a **private network infrastructure tool** designed for:
+It is a **private network infrastructure tool** for:
 - ✅ Secure server-to-server communication
 - ✅ Remote access to internal services
 - ✅ Connecting distributed infrastructure
 - ✅ Building trusted private networks
 
-**Traffic Routing:**
-- Only traffic destined for your VPN subnets (e.g., `10.x.x.x`) goes through the tunnel
-- Your regular internet traffic (YouTube, Google, etc.) goes directly through your ISP
-- This is called **Split Tunneling** — efficient and purposeful
-
-If you need a "full tunnel" VPN to hide all your traffic, NovusGate is not the right tool. Use commercial VPN services for that purpose.
+**Traffic routing:**
+- **Default — split tunnel:** only traffic for your VPN networks (e.g. `10.x.x.x`) goes through the tunnel; your normal internet traffic goes straight through your ISP.
+- **Optional — full tunnel:** turn on full tunnel for a node in the panel and all its internet traffic leaves through your server (DNS goes through the tunnel too).
 
 ---
 
 ## 🎯 The Problem NovusGate Solves
 
 **Scenario:** You have a server somewhere (cloud, home, office) but:
-- ❌ You don't have a static IP to connect to it
-- ❌ You don't want to expose your server's IP directly to the internet
-- ❌ NAT/Firewall makes direct connections impossible
+- ❌ You don't have a static IP to reach it
+- ❌ You don't want to expose its ports to the internet
+- ❌ NAT/firewall makes direct connections impossible
 
-**Solution with NovusGate:**
+**The NovusGate solution:**
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   Your Server   │     │  NovusGate Hub  │     │  Your Computer  │
-│   (No Static IP)│     │   (Cloud VPS)   │     │  (Home/Office)  │
+│ (No Static IP)  │     │   (Cloud VPS)   │     │  (Home/Office)  │
 │                 │     │                 │     │                 │
-│   10.10.10.2    │───▶│   10.10.10.1    │◀───│   10.10.10.3    │
+│   10.10.10.3    │────▶│   10.10.10.1    │◀────│   10.10.10.4    │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
          │                     ▲                     │
-         └────────── Both connect to Hub ────────────┘
+         └───────── Both connect to Hub ────────────┘
 ```
 
-Once both devices connect to NovusGate:
+Once both devices are connected to NovusGate:
 - ✅ They see each other as if on the **same local network**
-- ✅ Your server becomes `10.10.10.2` — always reachable
-- ✅ Your computer becomes `10.10.10.3` — can SSH, RDP, or access any service
-- ✅ No port forwarding needed
-- ✅ No static IP required
-- ✅ Works behind NAT, firewalls, anywhere
+- ✅ Your server becomes `10.10.10.3` — always reachable
+- ✅ Your computer becomes `10.10.10.4` — SSH, RDP or any service
+- ✅ No port forwarding and no static IP needed
+- ✅ Works behind NAT and firewalls
 
-**Real-world example:**
+(The hub takes the network's first address and the second is reserved; devices start at the third.)
+
+**Real example:**
 ```bash
-# From your computer (10.10.10.3), connect to your server:
-ssh user@10.10.10.2
+# From your computer (10.10.10.4), connect to your server:
+ssh user@10.10.10.3
 
-# Access a web service running on your server:
-curl http://10.10.10.2:8080
+# Reach a web service running on your server:
+curl http://10.10.10.3:8080
 ```
-
-It's like having all your devices on the same LAN — no matter where they physically are.
 
 ---
 
 ## ✨ Why NovusGate?
 
-Most private network solutions today are either:
-- ❌ SaaS-based black boxes  
-- ❌ Hard to manage at scale  
-- ❌ Overkill for small teams  
-- ❌ Or painful to self-host  
+Most private networking solutions today are either:
+- ❌ SaaS black boxes
+- ❌ Hard to manage at scale
+- ❌ Overly complex for small teams
+- ❌ Or painful to self-host
 
-**NovusGate was built to be different.**
+**NovusGate is built to be different:** ownership over convenience, simplicity over complexity, transparency over abstraction.
 
-It focuses on:
-- **Ownership over convenience**
-- **Simplicity over complexity**
-- **Transparency over abstraction**
-
-You run it.  
-You control it.  
-Your network — your rules.
+You run it. You control it. Your network — your rules.
 
 ---
 
 ## 🚀 Key Features
 
-- **Multi-Network Architecture**  
-  Create multiple isolated VPN networks, each with its own WireGuard interface, subnet, and port.
+**Networks and devices**
+- **Multiple networks** — each with its own WireGuard interface (wg0, wg1…), subnet and UDP port.
+- **Device (node) management** — QR code for mobile, `.conf` for desktop, a one-line install script for Linux (one-time, 15-minute token). Access can expire on a date.
+- **Full tunnel** — all internet traffic of a chosen node goes through the hub.
+- **Per-network client DNS** — the DNS servers written into device configs.
+- **Topology map**, network details and **traffic history** per node.
 
-- **Hub-and-Spoke Architecture**  
-  Centralized control where all traffic is securely routed through your server.
+**Firewall and control**
+- **VPN rules** — allow/block between networks, nodes, groups and IPs, by protocol and port, in priority order; a **network policy matrix** shows who can reach whom and why.
+- **Node groups** — apply rules and limits to several nodes at once.
+- **Host firewall** — open ports, block/allow IPs; the management ports (3007, 5432, 8080, 8443) stay reachable over the VPN only.
+- **nftables engine** (optional, see below) — Advanced tab (services, IP rules, port forwarding), changes rolled back unless confirmed within 60 seconds, **Live** (counters, conntrack) and **History** (change history, restore).
+- **Limit profiles** (with the nftables engine) — speed limits, concurrent connection limits, schedules and a **monthly traffic quota** (block or slow down, 80%/100% notices).
+- **Fail2Ban** — SSH protection, jail settings, whitelist, manual and permanent bans, ban history, logs.
 
-- **Modern Web Dashboard**  
-  Manage networks, nodes, inspect traffic, and control your VPN using a sleek React-based UI.
+**Administration and security**
+- **Roles** — Admin, Operator, Viewer; each sees and does only what it may.
+- **Sessions** — a sign-in lasts 24 hours; view and end active sessions; failed sign-ins are rate-limited.
+- **Audit log** — changes made through the API and sign-in attempts.
+- **Server page** (admin only, asks for the password again) — services (docker, fail2ban, WireGuard), host network, kernel settings (undone after 90 seconds unless kept), host name, time zone/NTP, package upgrades and reboot.
+- **Backups** and **Telegram notifications**.
+- **Panel in two languages** (English / Azerbaijani) and **a "?" beside every field** explaining what it is, who needs it and what changing it does.
 
-- **One-Click Installer**  
-  Deploy and update NovusGate effortlessly using a dedicated Docker-based installer.
-
-- **Safe & Smart Updates**  
-  Upgrade your system without losing configuration or network state.
-
-- **Secure by Default**  
-  WireGuard cryptography, JWT authentication, and API key–based internal communication.
-
-- **Multi-Platform Client Support**  
-  QR codes for mobile, config downloads for desktop, one-line install scripts for Linux.
-
-- **Server Monitoring Dashboard**  
-  Real-time CPU, RAM, Disk usage and system uptime displayed on the main dashboard.
-
-- **Fail2Ban Integration**  
-  Built-in SSH brute-force protection with jail management, banned IP viewing, and one-click unban.
-
-- **Firewall Management**  
-  Comprehensive host firewall (iptables) and VPN inter-network firewall with traffic control between VPN networks.
-
-- **Unified Network Overview**  
-  Dashboard shows all networks combined with total statistics, plus per-network breakdown.
+**NovusGate Center**
+- **Install and update** a server over SSH (backup first, automatic rollback on failure), reinstall, uninstall, **Join VPN** (connect another server as a node), web terminal, server monitoring and job logs.
 
 ---
 
 ## 📡 VPN Type
 
-**NovusGate is a Remote Access VPN with Client-Based Architecture.**
+**NovusGate is a client-based Remote Access VPN.**
 
 | VPN Type | NovusGate? | Description |
 |----------|------------|-------------|
-| ☁️ Cloud VPN | ⚠️ | Not a managed service like AWS/Azure VPN Gateway. NovusGate is self-hosted and can run on any cloud or on-premises |
-| 🔐 IPsec VPN | ❌ | Uses WireGuard protocol instead of IPsec |
-| 🌐 SSL VPN | ❌ | Not browser-based, requires WireGuard client |
-| 💻 **Client-Based VPN** | ✅ | Requires WireGuard client software |
-| 🏢 Site-to-Site VPN | ⚠️ | Possible via node-to-node connections |
-| 📡 **Remote Access VPN** | ✅ | Primary use case |
+| ☁️ Cloud VPN | ⚠️ | Not a managed service like AWS/Azure VPN Gateway; runs on any cloud or on-prem server |
+| 🔐 IPsec VPN | ❌ | Uses WireGuard instead of IPsec |
+| 🌐 SSL VPN | ❌ | Not browser-based; needs a WireGuard client |
+| 💻 **Client-based VPN** | ✅ | With the WireGuard client |
+| 🏢 Site-to-Site VPN | ⚠️ | Possible by joining a Linux server as a node |
+| 📡 **Remote Access VPN** | ✅ | The main use case |
 
-**Key Characteristics:**
-- **Protocol:** WireGuard (modern, fast, secure)
-- **Architecture:** Hub-and-Spoke (centralized control)
-- **Tunneling:** Encrypted trusted tunnel with Split Tunneling
-- **Deployment:** Cloud-ready (any provider) or on-premises
-- **Clients:** Mobile (QR), Desktop (.conf), Linux (scripts)
+- **Protocol:** WireGuard · **Architecture:** Hub-and-Spoke · **Tunnel:** split by default, full optional
+- **Clients:** mobile (QR), desktop (.conf), Linux (script)
 
 ---
 
-## 👥 Who is NovusGate for?
+## 👥 Who Is NovusGate For?
 
-- **SysAdmins** managing secure access between servers and data centers  
-- **DevOps Engineers** connecting infrastructure across environments  
-- **Developers** building internal or self-hosted platforms  
-- **Privacy-conscious users** who want full control over their VPN setup  
-
-If you value **self-hosting, security, and simplicity**, NovusGate is for you.
+- **System administrators** — secure access between servers and data centres
+- **DevOps engineers** — connecting infrastructure across environments
+- **Developers** — internal or self-hosted platforms
+- **Privacy-minded users** — full control over their own VPN
 
 ---
 
-## 🧠 How It Works (High-Level)
+## 🧠 How It Works (Short)
 
-1. A **central server** acts as the control plane  
-2. Create **isolated networks** with unique subnets (10.x.x.0/24)
-3. Devices register and authenticate securely  
-4. WireGuard tunnels are established automatically  
-5. Traffic is routed securely through the control plane  
-
-No hidden magic.  
-No vendor lock-in.  
-Just clean networking.
+1. A **central server (hub)** runs the control plane, the panel and PostgreSQL in Docker.
+2. You create **separate networks**, each with its own subnet (e.g. `10.20.0.0/24`).
+3. Devices get a config (QR, `.conf` or Linux script).
+4. WireGuard tunnels come up; traffic is routed through the hub according to the firewall rules.
 
 ---
 
 ## 📂 System Architecture
 
-NovusGate is designed as a **modular system**, separating control, interface, and deployment for maximum flexibility and maintainability.
-
 ```
-┌────────────────────────────────────────────────────────────┐
-│                     NovusGate Server                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │  Network 1  │  │  Network 2  │  │  Network N  │         │
-│  │   wg0:51820 │  │   wg1:51821 │  │   wgN:518XX │         │
-│  │ 10.10.0.0/24│  │ 10.20.0.0/24│  │ 10.XX.0.0/24│         │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
-│         │                │                │                │
-│  ┌──────┴────────────────┴────────────────┴──────┐         │
-│  │              REST API (Go Backend)            │         │
-│  │                 PostgreSQL DB                 │         │
-│  └───────────────────────────────────────────────┘         │
-└────────────────────────────────────────────────────────────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-         ┌────┴────┐  ┌────┴────┐  ┌────┴────┐
-         │ Client  │  │ Client  │  │ Client  │
-         │ (Phone) │  │ (Laptop)│  │ (Server)│
-         └─────────┘  └─────────┘  └─────────┘
++-------------------------------------------------------------+
+|                     NovusGate Server (hub)                  |
+|  +-------------+  +-------------+  +-------------+          |
+|  |  Network 1  |  |  Network 2  |  |  Network N  |          |
+|  |  wg0:51820  |  |  wg1:51821  |  |  wgN:518XX  |          |
+|  | 10.99.0.0/24|  | 10.20.0.0/24|  | 10.XX.0.0/24|          |
+|  +------+------+  +------+------+  +------+------+          |
+|         |                |                |                 |
+|  +------+----------------+----------------+------+          |
+|  |  Control plane (Go, REST API) · PostgreSQL    |          |
+|  |  Panel (React, nginx, HTTPS :3007)            |          |
+|  +-----------------------------------------------+          |
++-------------------------------------------------------------+
+                            |
+              +-------------+-------------+
+              |             |             |
+         +----+----+   +----+----+   +----+----+
+         |  Phone  |   | Laptop  |   | Server  |
+         +---------+   +---------+   +---------+
 ```
 
-### 1. Server (Backend)
-📁 `./server`
+| Part | Folder | Guides |
+|------|--------|--------|
+| **Server (backend)** — Go; WireGuard, firewall, PostgreSQL, REST API | `./server` | [Developer](./server/DEVELOPER_GUIDE.md) · [User](./server/USER_GUIDE.md) |
+| **Web panel (frontend)** — React, TypeScript, Tailwind | `./web` | [Developer](./web/DEVELOPER_GUIDE.md) |
+| **NovusGate Center** — install and manage over SSH, Node.js | `./NovusGate Center` | [Developer](./NovusGate%20Center/DEVELOPER_GUIDE.md) · [User](./NovusGate%20Center/USER_GUIDE.md) |
 
-The core logic written in **Go**.  
-Manages WireGuard interfaces, PostgreSQL database, and exposes the REST API.
-
-- **Developer Guide:** `./server/DEVELOPER_GUIDE.md`  
-- **User Guide:** `./server/USER_GUIDE.md`
-
----
-
-### 2. Web Dashboard (Frontend)
-📁 `./web`
-
-Administrative interface built with **React**, **TypeScript**, and **Tailwind CSS**.
-
-- **Developer Guide:** `./web/DEVELOPER_GUIDE.md`  
-- **User Guide:** `./web/USER_GUIDE.md`
-
----
-
-### 3. NovusGate Center
-📁 `./installer`
-
-A standalone **Node.js** tool that simplifies deployment on Linux servers via SSH.
-
-- **Developer Guide:** `./installer/DEVELOPER_GUIDE.md`  
-- **User Guide:** `./installer/USER_GUIDE.md`
-
----
-
-> 🇦🇿 **Azərbaycan Dilində**  
-> Layihənin əsas sənədlərini Azərbaycan dilində oxumaq üçün  
-> 👉 **[README_AZ.md](./README_AZ.md)**
+Technical documentation: [`docs/`](./docs) (API, data model, security, deployment, runbooks; mostly in Azerbaijani).
 
 ---
 
 ## ⚡ Quick Start
 
-### Prerequisites
+### Requirements
 
-**On your local computer:**
-- Docker & Docker Compose installed
+**On your own computer (for the Center):**
+- Docker and Docker Compose
 
-**On your remote server:**
-- Linux server (Ubuntu 20.04 / 22.04 recommended)
-- SSH access with root or sudo privileges
-- Open ports: 22 (SSH), 51820+ (UDP for WireGuard), 8080 (API)
+**The server (hub):**
+- **Ubuntu 22.04 or newer** (24.04 and 26.04 checked) or **Debian 12 or newer** (13 checked)
+- x86_64 or aarch64; at least 1 GB RAM (2 GB recommended), 3 GB free disk
+- SSH access as root or as a user with passwordless `sudo`
+- Ports open from the internet: **22/tcp** (SSH) and **51820/udp** (each new network takes the next port: 51821, 51822…)
+- Do **not** open 3007 (panel), 5432 (DB), 8080 (API) or 8443 to the internet — NovusGate opens them to the VPN only.
+
+The Center checks the server first (OS version, CPU, RAM, disk, ports) and stops if it does not fit.
 
 ---
 
-### Installation Process (Step-by-Step)
+### Installation (step by step)
 
-> **Note:** This process launches the **NovusGate Center**, a web-based wizard that will guide you through setting up the server, database, and VPN configurations.
-
-#### Step 1: Clone the Repository
-
+#### 1. Clone the repository
 ```bash
 git clone https://github.com/Ali7Zeynalli/NovusGate.git
 cd NovusGate
 ```
 
-#### Step 2: Start NovusGate Center
-
+#### 2. Start NovusGate Center
 ```bash
 cd "NovusGate Center"
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
-#### Step 3: Open NovusGate Center Web Interface
+#### 3. Open the Center
+In your browser: `http://localhost:3017`
 
-Open your browser and go to:
-```
-http://localhost:3017
-```
-
-#### Step 4: Connect to Your Remote Server
-
-In the installer interface, enter your server credentials:
-
+#### 4. Add your server
 | Field | Description |
 |-------|-------------|
-| **Host** | Your server's IP address (e.g., `203.0.113.50`) |
-| **Port** | SSH port (default: `22`) |
-| **Username** | SSH username (e.g., `root` or `ubuntu`) |
-| **Password** | SSH password or use SSH key |
+| **Server Name** | Any name you like |
+| **Host** | The server's IP address (e.g. `203.0.113.50`) |
+| **SSH Port** | Default `22` |
+| **Username** | `root` or a user with passwordless `sudo` |
+| **Password / Private Key** | SSH password or a PEM key (a passphrase is supported) |
 
-Click **Connect** to establish SSH connection.
-
-#### Step 5: Configure Installation
-
-After connecting, configure the installation settings:
-
+#### 5. Installation settings
 | Setting | Description |
 |---------|-------------|
-| **Admin Username** | Dashboard login username (default: `admin`) |
-| **Admin Password** | Dashboard login password (auto-generated or custom) |
-| **Server Endpoint** | Your server's public IP for VPN connections |
-| **Admin CIDR** | Admin network subnet (default: `10.99.0.0/24`) |
-| **API Key** | Internal API security key (auto-generated) |
+| **Admin Username** | The panel's first admin user (default `admin`) |
+| **Admin Password** | Leave empty to get a random one |
+| **Admin VPN Gateway IP** | The hub's address on the admin VPN (default `10.99.0.1`, network `10.99.0.0/24`) |
+| **Database Name / User / Password** | For PostgreSQL; an empty password is generated |
 
-#### Step 6: Start Installation
+The **"?"** beside each field explains what it does.
 
-Click **Install NovusGate Server** button.
+#### 6. Install
+The Center updates the system, installs Docker, WireGuard and Fail2Ban, uploads NovusGate to `/opt/NovusGate`, generates the secrets (DB password, API key, master key), builds and starts the containers and creates the **admin VPN** (`wg0`).
 
-The installer will:
-1. ✅ Update system packages
-2. ✅ Install Docker & Docker Compose
-3. ✅ Install WireGuard
-4. ✅ Install Fail2Ban (SSH protection)
-5. ✅ Clone NovusGate repository
-6. ✅ Configure environment variables
-7. ✅ Build and start Docker containers
-8. ✅ Create Admin VPN network
-9. ✅ Generate admin VPN configuration
+#### 7. Get the admin VPN config
+When the install finishes, the Center shows the **admin VPN configuration**: **📥 Download admin-vpn.conf**. It is also kept on the server at `/opt/NovusGate/admin-vpn.conf`.
 
-#### Step 7: Save Your Credentials
+#### 8. Connect to the VPN
+1. Install a WireGuard client (Windows, macOS, Linux, Android, iOS).
+2. Import `admin-vpn.conf` and activate it.
+3. Your VPN address will be `10.99.0.2`; `ping 10.99.0.1` should answer.
 
-After installation completes, the installer will display:
-
-```
-╔════════════════════════════════════════════╗
-║         INSTALLATION COMPLETE!             ║
-╠════════════════════════════════════════════╣
-║  Admin Username: admin                     ║
-║  Admin Password: xxxxxxxxxxxxxxxx          ║
-║                                            ║
-║  Dashboard URL: https://10.99.0.1:3007     ║
-║  (Accessible only via VPN)                 ║
-╚════════════════════════════════════════════╝
-```
-
-⚠️ **IMPORTANT:** Save these credentials immediately! They won't be shown again.
-
-#### Step 8: Download Admin VPN Config
-
-The installer provides your admin VPN configuration:
-- **QR Code** - Scan with WireGuard mobile app
-- **Download .conf** - For desktop WireGuard client
-- **Copy Config** - Manual configuration
-
-#### Step 9: Connect to Admin VPN
-
-1. Install WireGuard client on your device
-2. Import the admin configuration
-3. Activate the VPN connection
-4. Verify connection (you should get IP like `10.99.0.2`)
-
-#### Step 10: Access the Dashboard
-
-Once connected to VPN, open:
+#### 9. Open the panel
 ```
 https://10.99.0.1:3007
 ```
+(If you changed the gateway IP, use that IP.)
 
-Login with your admin credentials from Step 7.
+- Type **`https://`** — `http://` does not work.
+- The browser warns about the certificate (the panel uses a self-signed one): **Advanced → Proceed**.
+- **User name and password:** in the Center select the server → **Server Credentials** (available at any time), or at the end of the install log under `ADMIN USER` / `ADMIN PASS`.
 
-🎉 **Congratulations!** NovusGate is now installed and ready to use.
+🎉 Done.
 
----
+#### If the panel does not open
+| Symptom | What to do |
+|---------|-----------|
+| The page does not load | Check "Latest handshake" in WireGuard; `ping 10.99.0.1` |
+| You use the server's public IP | It will not work: the panel is reachable over the VPN only |
+| The password is refused | After 10 failed sign-ins in 15 minutes sign-in is blocked for a while; wait, and take the password from Center → Server Credentials |
 
-### Post-Installation
-
-After accessing the dashboard, you can:
-- Create additional VPN networks
-- Add nodes/clients to networks
-- Monitor server resources
-- Manage Fail2Ban security
-- View traffic statistics
-
----
-
-### Technical Details: What does NovusGate Center do?
-
-The installer automates the setup on your remote Linux server. Here is exactly what happens under the hood:
-
-1.  **System Updates**: Runs `apt-get update` to ensure fresh packages.
-2.  **Dependencies**: Installs `docker`, `docker-compose`, `wireguard`, and `fail2ban`.
-3.  **File Placement**:
-    -   Installation Directory: `/opt/NovusGate`
-    -   Admin VPN Config: `/opt/NovusGate/admin-vpn.conf`
-4.  **Security Setup**:
-    -   Generates secure random secrets for Database, JWT, and API Keys.
-    -   Configures `fail2ban` jail for SSH protection.
-    -   Sets up `wg0` WireGuard interface for the Admin Network.
-5.  **Service Startup**:
-    -   Creates `.env` files in `/opt/NovusGate/server/deployments/docker/` and `/opt/NovusGate/web/`.
-    -   Launches services using `docker-compose up -d`.
-
-This ensures a standardized, secure, and production-ready environment without manual configuration.
+On the server:
+```bash
+docker ps --format '{{.Names}} {{.Status}}'
+sudo wg show wg0 | head -12
+curl -sk -o /dev/null -w '%{http_code}\n' https://10.99.0.1:3007
+```
 
 ---
 
-### Local Development / Manual Run
+### After installation
+- Create more VPN networks and add devices (QR, `.conf`, Linux script).
+- **Settings → Users**: give everyone the role they need (Admin / Operator / Viewer).
+- Set up Telegram notifications and backups.
+- To join another Linux server as a node: panel → Nodes → Connect → Linux → install script; then Center → **Join VPN** (it refuses to run on the hub itself, where it would replace the hub's `wg0`).
 
-If you want to run NovusGate locally (without the Installer wizard) for development or testing:
+### nftables firewall engine (for limits, quota, Advanced tab)
+An installation runs in **iptables** mode by default. **Limit profiles, the traffic quota, the Advanced tab (port forwarding etc.), Live and History** need the nftables engine. Steps, checks and the way back: [`docs/runbooks/p3b2-firewall-cutover.md`](./docs/runbooks/p3b2-firewall-cutover.md). In short: Center → Update → add `FIREWALL_ENGINE=nft` to `server/deployments/docker/.env` → `docker compose up -d control-plane` → Center → Update once more.
 
-1. Navigate to the docker deployment directory:
-   ```bash
-   cd server/deployments/docker
-   ```
+### Updating
+Center → **Update**: updates the code and keeps `.env`, the database and the VPN configs; a backup is taken first (`/var/backups/novusgate/`) and the previous version is restored automatically if the update fails. Database migrations run by themselves when the control plane starts.
 
-3.  **Configure Environment**:
-    ```bash
-    cp .env.example .env
-    # Edit .env and set ADMIN_PASSWORD at minimum
-    nano .env
-    ```
-
-4.  **Start the services**:
-    ```bash
-    docker-compose up -d --build
-    ```
-
-   This will start:
-   - **PostgreSQL** (Database)
-   - **Control Plane** (Backend API on port 8080)
-   - **Web Dashboard** (Frontend on port 3007)
-
-3. Access the dashboard at `http://localhost:3007`
-
-> **Note:** For full VPN functionality, this requires a Linux environment with WireGuard kernel modules. On Windows/Mac, some VPN features may be limited, but the UI and API will function.
+**Upgrading from an old version:** roles did not exist before, so all existing users become **Admin** — check the roles under Settings → Users after the upgrade.
 
 ---
 
-### Manual Production Installation
+### What NovusGate Center does behind the scenes
+1. **Preflight:** OS, CPU, RAM, disk, ports.
+2. **Packages:** `apt-get update`, Docker (get.docker.com), WireGuard, Fail2Ban.
+3. **Files:** `/opt/NovusGate`; the admin VPN config at `/opt/NovusGate/admin-vpn.conf`.
+4. **Security:** generates the DB password, API key and master key (which encrypts node keys) and keeps them root-only in `server/deployments/docker/.env`; a Fail2Ban jail for SSH (3 failures = 1 hour ban); the `wg0` admin VPN.
+5. **Services:** `docker compose up -d` — PostgreSQL, control plane, panel.
 
-For advanced users who prefer manual setup on a production server, refer to:
-👉 **[Server User Guide](./server/USER_GUIDE.md)**
+---
+
+### Local development / manual start
+```bash
+cd server/deployments/docker
+cp .env.example .env     # set at least ADMIN_PASSWORD, API_KEY and MASTER_KEY (openssl rand -hex 32)
+docker compose up -d --build
+```
+This starts PostgreSQL, the control plane (API, port 8080) and the panel (port 3007). Panel: `https://localhost:3007`.
+
+> **Note:** full VPN functionality needs Linux with WireGuard. On Windows/macOS the UI and API work, but VPN functions may be limited.
+
+Manual production setup: 👉 **[Server User Guide](./server/USER_GUIDE.md)**
 
 ---
 
 ## 🌐 Network Management
 
-NovusGate supports **multiple isolated networks**:
-
 | Feature | Description |
 |---------|-------------|
-| **Isolated Subnets** | Each network has its own CIDR (e.g., 10.10.0.0/24, 10.20.0.0/24) |
-| **Dedicated Interfaces** | Automatic WireGuard interface allocation (wg0, wg1, wg2...) |
-| **Unique Ports** | Each network listens on a different UDP port (51820, 51821...) |
-| **Independent Nodes** | Nodes belong to specific networks and are isolated from others |
+| **Separate subnets** | Each network has its own CIDR (e.g. 10.10.0.0/24, 10.20.0.0/24); they may not overlap |
+| **Own interface** | Assigned automatically: wg0, wg1, wg2… |
+| **Own port** | Each network listens on the next free UDP port (51820, 51821…) |
+| **Client DNS** | The DNS servers the network's devices use (up to 3 IPv4 addresses) |
 
-### Creating a Network
-
-1. Go to **Networks** page in the dashboard
-2. Click **Create Network**
-3. Enter a name and CIDR range (e.g., `10.50.0.0/24`)
-4. The system automatically assigns interface and port
+**Create a network:** panel → **Networks** → new network → name and CIDR (e.g. `10.50.0.0/24`). The interface and port are assigned automatically; open that port (UDP) to the internet.
 
 ---
 
-## 🛡️ Security Notes
+## 🛡️ Security
 
-* Installer generates **unique credentials** — save them immediately
-* Ensure UDP ports **51820+** are open (one per network)
-* Admin dashboard is **hidden behind VPN** by default
-* For production use, run the Web Dashboard behind **Nginx or Caddy with SSL**
-* **Fail2Ban** is automatically installed and configured to protect SSH (3 failed attempts = 1 hour ban)
-
-Security is not optional — it's the default.
+* The panel, API and database are reachable **over the VPN only** (3007, 5432, 8080, 8443 are closed to the internet).
+* The API key never reaches the browser: the panel's nginx adds it to each request itself.
+* A sign-in lasts 24 hours; failed sign-ins are rate-limited; roles are checked on every request.
+* Changes on the Server page ask for the password **again** (valid for 5 minutes).
+* Node private keys are stored encrypted with the master key.
+* Every API change is written to the audit log.
+* **Fail2Ban** protects SSH (3 failures = 1 hour ban).
+* Keep the credentials shown at the end of the installation somewhere safe.
 
 ---
 
 ## 📊 Server Monitoring
 
-NovusGate includes built-in server monitoring:
-
-| Metric | Description |
-|--------|-------------|
-| **CPU Usage** | Real-time processor utilization percentage |
-| **RAM Usage** | Memory consumption with used/total display |
-| **Disk Usage** | Storage utilization for the root partition |
-| **Uptime** | Server running time since last boot |
-
-All metrics are displayed on the main Dashboard and refresh automatically.
+The main dashboard shows live **CPU**, **RAM**, **disk** usage and **uptime**, network and node statistics, and which nodes are online.
 
 ---
 
-## 🔒 Fail2Ban Management
-
-Protect your server from brute-force attacks:
+## 🔒 Fail2Ban
 
 | Feature | Description |
 |---------|-------------|
-| **Jail Status** | View active jails (SSH, etc.) and their configuration |
-| **Banned IPs** | See currently banned IP addresses per jail |
-| **Ban Statistics** | Total bans, current bans, failed attempts |
-| **One-Click Unban** | Instantly unban IP addresses from the web interface |
-| **Log Viewer** | Browse Fail2Ban logs with action filtering |
+| **Jail status and settings** | bantime, findtime, maxretry |
+| **Banned IPs** | Per jail; unban with one click |
+| **Manual and permanent bans** | Ban an IP by hand; permanent bans live in the firewall |
+| **Whitelist** | IPs/CIDRs that are never banned |
+| **History and logs** | Ban history, logs with a filter |
 
-Access via **Security → Fail2Ban** in the dashboard.
+The **Fail2Ban** page in the panel.
 
 ---
 
-## 🔥 Firewall Management
+## 🔥 Firewall
 
-NovusGate includes a comprehensive firewall management system:
-
-### Host Firewall (iptables)
-
+### Host firewall
 | Feature | Description |
 |---------|-------------|
-| **Open Ports** | View and manage open ports on the server |
-| **Block IPs** | Block specific IP addresses or CIDR ranges |
-| **Allow IPs** | Whitelist trusted IP addresses |
-| **Chain Management** | View INPUT, OUTPUT, FORWARD chain rules |
-| **Protected Ports** | SSH, WireGuard, and API ports are protected from accidental closure |
-| **Export Rules** | Download current firewall rules for backup |
-| **Reset Firewall** | Restore default NovusGate firewall configuration |
+| **Open ports** | Open and close the server's ports |
+| **Block / allow IPs** | IPs or CIDRs; the management ports are never opened to the internet |
+| **Protected ports** | SSH, WireGuard and management ports are protected from accidental closing |
+| **Export / Reset** | Download the rules, go back to the defaults |
+| **Advanced, Live, History** | With the nftables engine (see above): services, IP rules, port forwarding, 60-second confirm, live counters, change history and restore |
 
-### VPN Firewall (Inter-Network Rules)
-
-Control traffic flow between VPN networks:
-
+### VPN firewall (rules between networks)
 | Feature | Description |
 |---------|-------------|
-| **Network-to-Network Rules** | Allow or block traffic between different VPN networks |
-| **Node-Specific Rules** | Create rules for specific nodes |
-| **Protocol Filtering** | Filter by TCP, UDP, ICMP, or all protocols |
-| **Port-Based Rules** | Allow/block specific ports or port ranges |
-| **Priority System** | Rules are processed in priority order (lower = higher priority) |
-| **Auto AllowedIPs** | Client configs automatically include permitted destination networks |
+| **Source / destination** | Network, node, group or a custom IP |
+| **Protocol and port** | TCP, UDP, ICMP or all; a port, a list or a range |
+| **Priority** | Lower number first; the first matching rule decides |
+| **Policy matrix** | Shows which network can reach which, and why |
+| **Automatic AllowedIPs** | Device configs include the networks they are allowed to reach |
 
-**How VPN Firewall Works:**
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
-│ Source Node │ ──► │   VPN Server    │ ──► │ Dest Node   │
-│ (10.10.0.2) │     │ FORWARD chain   │     │ (10.20.0.5) │
-└─────────────┘     │ VPN Rules apply │     └─────────────┘
-                    └─────────────────┘
+│ Source Node │ ──► │   VPN Server    │ ──► │  Dest Node  │
+│ (10.10.0.3) │     │    VPN rules    │     │ (10.20.0.5) │
+└─────────────┘     └─────────────────┘     └─────────────┘
 ```
 
-All VPN traffic flows through the server. VPN firewall rules control the server's FORWARD chain, determining which traffic can be forwarded between networks.
+All VPN traffic passes through the hub; the VPN rules decide which traffic may pass between networks.
 
-**Example Use Cases:**
-- Allow office network (10.10.0.0/24) to access admin panel (10.99.0.1)
-- Block development network from accessing production servers
-- Allow only HTTP/HTTPS traffic between specific networks
-- Isolate guest network from internal resources
-
-Access via **Firewall** page in the dashboard.
-
+**Examples:** let the office network reach the admin network, block development from production, allow only HTTP/HTTPS, isolate a guest network.
 
 ---
 
@@ -583,70 +428,60 @@ Access via **Firewall** page in the dashboard.
   <img src="web/public/photo/web/12.png" alt="Web 12" width="45%">
 </div>
 
-### NovusGate Center Interface
+### NovusGate Center
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-  <img src="web/public/photo/installer/0.png" alt="Installer 0" width="45%">
-  <img src="web/public/photo/installer/1.png" alt="Installer 1" width="45%">
-  <img src="web/public/photo/installer/2.png" alt="Installer 2" width="45%">
-  <img src="web/public/photo/installer/3.png" alt="Installer 3" width="45%">
-  <img src="web/public/photo/installer/4.png" alt="Installer 4" width="45%">
+  <img src="web/public/photo/installer/0.png" alt="Center 0" width="45%">
+  <img src="web/public/photo/installer/1.png" alt="Center 1" width="45%">
+  <img src="web/public/photo/installer/2.png" alt="Center 2" width="45%">
+  <img src="web/public/photo/installer/3.png" alt="Center 3" width="45%">
+  <img src="web/public/photo/installer/4.png" alt="Center 4" width="45%">
 </div>
+
+> Note: the screenshots are from an earlier version; newer pages (Groups, Limits, Server, Audit and others) are not in them.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome ❤️
-Bug reports, feature requests, and pull requests are highly appreciated.
-
-Please read the **Developer Guides** before contributing.
+Contributions are welcome ❤️ Bug reports, feature ideas and pull requests are appreciated. Please read the **Developer Guides** before contributing.
 
 ---
 
 ## ⭐ Support the Project
 
-If you find **NovusGate** useful:
-
 * ⭐ Star the repository
-* 🐛 Open issues
-* 💡 Suggest features
+* 🐛 Report bugs (Issues)
+* 💡 Suggest new ideas
 * 📣 Share it with others
-
-Open-source lives through community.
 
 ---
 
 ## 🤝 Professional Support / Enterprise Support
 
-> **Finding installation difficult?** We can help!
+> **Finding the installation difficult?** We can help!
 
-If you cannot perform the steps shown in this guide yourself or need full enterprise-level support, you can contact us:
-
-### Paid Services
-
+### Paid services
 | Service | Description |
 |---------|-------------|
-| 🛠️ **Full Installation** | Complete installation of NovusGate in your infrastructure |
-| 🔧 **Server Configuration** | Linux, Docker, Firewall and Security configuration |
-| 📞 **Technical Support** | Problem resolution and ongoing support |
-| 📚 **Training** | NovusGate usage training for your team |
+| 🛠️ **Full installation** | Complete NovusGate setup on your infrastructure |
+| 🔧 **Server configuration** | Linux, Docker, firewall and security |
+| 📞 **Technical support** | Troubleshooting and ongoing support |
+| 📚 **Training** | NovusGate training for your team |
 
-> 💰 **Pricing**: Service fees are calculated individually based on the scope and complexity of work. Contact us for a free consultation.
+> 💰 **Pricing** depends on the scope and complexity of the work. Contact us for a free consultation.
 
 ### Contact
-
 📧 **Email**: Ali.Z.Zeynalli@gmail.com  
 💼 **LinkedIn**: [linkedin.com/in/ali7zeynalli](https://linkedin.com/in/ali7zeynalli)  
-📱 **Phone**: +49 152 2209 4631 (WhatsApp)
+📱 **Phone**: +49 152 2209 4631 (whatsapp)
 
-> 💼 SLA (Service Level Agreement) support is available for enterprise customers.
+> 💼 SLA-backed support is available for enterprise customers.
 
-### 🌍 Supported Languages
-
+### 🌍 Supported languages
 | Language | Dil |
 |----------|-----|
-| 🇦🇿 Azerbaijani | Azərbaycan |
 | 🇬🇧 English | İngilis |
+| 🇦🇿 Azerbaijani | Azərbaycan |
 | 🇩🇪 German | Alman |
 | 🇷🇺 Russian | Rus |
 | 🇹🇷 Turkish | Türk |
@@ -655,24 +490,24 @@ If you cannot perform the steps shown in this guide yourself or need full enterp
 
 ## 📄 License
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** — see [LICENSE](LICENSE).
 
 **© 2025 Ali Zeynalli**
 
-The Apache 2.0 License allows you to:
+Apache 2.0 lets you:
 - ✅ Use the software for any purpose (including commercial)
-- ✅ Modify and distribute the software
-- ✅ Use patent claims of contributors
+- ✅ Modify and distribute it
+- ✅ Use contributors' patent rights
 
-While requiring you to:
-- 📋 Include the original copyright notice
+You must:
+- 📋 Keep the original copyright notice
 - 📋 Include the LICENSE and NOTICE files
-- 📋 State significant changes made to the software
-- � Provide attribution to the original author
+- 📋 State significant changes you made
+- 📋 Credit the original author
 
-> 📜 See [NOTICE](NOTICE) file for attribution requirements.
+> 📜 See [NOTICE](NOTICE) for attribution requirements.
 
 ---
 
-**Developed by [Ali Zeynalli](https://github.com/Ali7Zeynalli)**  
+**Made by [Ali Zeynalli](https://github.com/Ali7Zeynalli)**  
 *Project NovusGate*

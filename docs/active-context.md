@@ -314,6 +314,7 @@
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-16 | README və README_AZ hazırkı sistemə uyğunlaşdırıldı (tələblər, Center sahələri, panel ünvanı https, full tunnel, yeni imkanlar, nftables keçidi, yeniləmə, rollar) | README.md, README_AZ.md | README-lər rebuild-dən əvvəlki vəziyyətdə qalmışdı |
 | 2026-10-15 | "?" kömək hər input-da (panel + Center), Center auditi düzəlişləri, iptables port aralığı, simvol sayan ad limiti | web/src/components/HelpTip.tsx, web/src/i18n/locales/*/help*.json, web/tests/help*.mjs, NovusGate Center/public/index.html + scripts, rest/firewall_handlers.go, firewall/limits.go | İstifadəçi tələbi; Center auditi; mətn yoxlaması · `656e141`..`ca5796c` |
 | 2026-10-15 | P10a: server idarəsi (step-up, allow-list komandalar, sysctl geri qaytarma, upgrade/reboot), klient DNS, Server səhifəsi; minor-lar; web strict + biome 0 | hostadmin/, api/rest/{server_admin_handlers,network_dns,openapi}.go, migrations 019, web/src/pages/Server/, lib/serverAdmin.ts | P10a planı; review minor-ları · `1b88d5d`..`3be393f` |
 | 2026-10-15 | Qalan işlər + köhnə paket review + brauzer testi: set_no, audit 429/retention, Center log, strictNullChecks, tzdata | migrations 018, store, firewall, rest, Center joblog, web, main.go | review və brauzer testi · `e8fb974`..`f65bce3` |
