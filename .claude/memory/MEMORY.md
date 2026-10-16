@@ -3,3 +3,4 @@
 - [Scripted edit pitfalls](scripted-edit-pitfalls.md) — JS replace with $ corrupts files; dry-run scripted edits on a copy
 - [Min host Ubuntu 22.04](min-host-ubuntu-2204.md) — no old servers; preflight requires Ubuntu 22.04+ / Debian 12+
 - [Help "?" on every input](help-tip-every-input.md) — what it is / who needs it / what happens; en+az; panel and Center
+- [Network tunnel mode + UX bar](network-tunnel-mode-and-ux-standard.md) — split/full chosen per network, nodes inherit; nft toggle in panel; professional, self-explaining UI
