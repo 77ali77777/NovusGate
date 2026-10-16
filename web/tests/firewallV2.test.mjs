@@ -27,3 +27,20 @@ test('toRFC3339 turns a datetime-local value into UTC, empty stays undefined', (
   const v = toRFC3339('2026-10-20T10:30')
   assert.match(v, /^2026-10-2\dT\d\d:30:00\.000Z$/) // local time zone of the test runner
 })
+
+// In iptables mode (the default after an install) the v2 endpoints answer
+// 409 firewall_disabled. That is a state, not a failure: no retries (the
+// tabs showed "Loading…" for ~7 s) and a clear explanation instead.
+test('engineState tells an off engine from a failure', async () => {
+  const { engineState, retryFirewallV2 } = await import('../src/lib/firewallV2.ts')
+  const err = (code, status = 409) => ({ response: { status, data: { error: { code, message: 'x' } } } })
+  assert.equal(engineState(err('firewall_disabled')), 'disabled')
+  assert.equal(engineState(err('firewall_not_ready')), 'not_ready')
+  assert.equal(engineState(err('internal_error', 500)), 'error')
+  assert.equal(engineState(new Error('network down')), 'error')
+  assert.equal(engineState(null), 'error')
+  assert.equal(retryFirewallV2(0, err('firewall_disabled')), false)
+  assert.equal(retryFirewallV2(0, err('firewall_not_ready')), true, 'the engine is starting: try again')
+  assert.equal(retryFirewallV2(0, err('internal_error', 500)), true)
+  assert.equal(retryFirewallV2(2, err('internal_error', 500)), false, 'two retries at most')
+})

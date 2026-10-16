@@ -3,16 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { useFirewallV2Preview } from '@/api/client'
 import { Badge, Card } from '@/components/ui'
 import { systemRules } from '@/lib/systemRules'
+import { EngineOff } from './EngineOff'
 
 // SystemRulesTab: the rules NovusGate adds on its own (read-only), taken from
 // the compiled nftables ruleset, so the list always matches what is applied.
 export const SystemRulesTab = () => {
   const { t } = useTranslation('firewallv2')
-  const { data, isLoading, isError } = useFirewallV2Preview(true)
+  const { data, isLoading, error } = useFirewallV2Preview(true)
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
-  if (isError || !data) {
-    return <p className="text-sm text-gray-500">{t('systemRules.unavailable')}</p>
-  }
+  if (error || !data) return <EngineOff error={error} fallback={t('systemRules.unavailable')} />
   const rules = systemRules(data.script)
   const chains = [...new Set(rules.map((r) => r.chain))]
   return (

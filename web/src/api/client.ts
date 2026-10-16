@@ -726,6 +726,7 @@ export const api = new ApiClient()
 // React Query hooks
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type AuditCursor, nextBefore } from '@/lib/audit'
+import { engineState, retryFirewallV2 } from '@/lib/firewallV2'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
 import { roleAtLeast } from '@/lib/roles'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
@@ -1297,7 +1298,14 @@ export function useFirewallV2State(enabled = true) {
     queryKey: ['firewall', 'v2', 'state'],
     queryFn: () => api.getFirewallV2State(),
     enabled,
-    refetchInterval: (query) => (query.state.data?.pending ? 5000 : 30000),
+    retry: retryFirewallV2,
+    // With the engine off (iptables mode) there is nothing to poll for.
+    refetchInterval: (query) =>
+      query.state.error && engineState(query.state.error) === 'disabled'
+        ? false
+        : query.state.data?.pending
+          ? 5000
+          : 30000,
   })
 }
 
@@ -1306,6 +1314,7 @@ export function useFirewallV2Preview(enabled: boolean) {
     queryKey: ['firewall', 'v2', 'preview'],
     queryFn: () => api.getFirewallV2Preview(),
     enabled,
+    retry: retryFirewallV2,
   })
 }
 
@@ -1322,6 +1331,7 @@ export function useFirewallV2History() {
   return useQuery({
     queryKey: ['firewall', 'v2', 'history'],
     queryFn: () => api.getFirewallV2History(),
+    retry: retryFirewallV2,
   })
 }
 

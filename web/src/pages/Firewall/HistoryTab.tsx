@@ -9,20 +9,21 @@ import {
 import { Badge, Button, Card } from '@/components/ui'
 import { formatDateTime } from '@/i18n'
 import { PendingBanner } from './AdvancedTab'
+import { EngineOff } from './EngineOff'
 
 // HistoryTab: every applied nftables change with what it added and removed.
 // Restore is a normal change: it must be confirmed or it rolls back.
 export const HistoryTab = () => {
   const { t } = useTranslation('firewallv2')
   const isAdmin = useCan('admin')
-  const { data, isLoading } = useFirewallV2History()
+  const { data, isLoading, error } = useFirewallV2History()
   const { data: state } = useFirewallV2State()
   const restore = useRestoreFirewallV2History()
   const enforcing = state?.mode === 'nft'
   const entries = data?.entries ?? []
 
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
-  if (!data) return <p className="text-sm text-gray-500">{t('history.unavailable')}</p>
+  if (!data) return <EngineOff error={error} fallback={t('history.unavailable')} />
 
   return (
     <div className="space-y-4">

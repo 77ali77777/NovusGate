@@ -138,5 +138,17 @@
       "limitSchedule": "Cədvəli olan limit profilinin node-ları onun vaxt pəncərələrindən keçir.",
       "limitWindow": "Limit profilinin icazə verilən vaxt pəncərəsi (UTC); pəncərələrdən kənarda node-un trafiki kəsilir."
     }
+  },
+  "engineOff": {
+    "title": "nftables firewall mühərriki bu serverdə aktiv deyil",
+    "why": "Server iptables mühərriki ilə işləyir; quraşdırmadan sonra defolt belədir. Bu tab yalnız nftables mühərriki ilə işləyir.",
+    "needs": "iptables rejimində əlçatan olmayanlar: Advanced tab (servislər, IP qaydaları, port yönləndirmə, full tunnel), History, System Rules, limit profilləri və trafik kvotası.",
+    "howTitle": "Necə açmaq olar (admin, serverdə):",
+    "step1": "NovusGate Center → Update.",
+    "step2": "/opt/NovusGate/server/deployments/docker/.env faylına bu sətri əlavə edin:",
+    "step4": "NovusGate Center → Update bir daha (host tərəfini nftables üçün qurur).",
+    "more": "Əvvəl və sonra yoxlamalar, iptables-ə geri qayıdış:",
+    "startingTitle": "Firewall mühərriki başlayır",
+    "starting": "nftables mühərriki mövcud iptables qaydalarını götürür. Bu bir az çəkir; hazır olanda tab özü yüklənir."
   }
 }

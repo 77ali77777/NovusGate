@@ -1,5 +1,7 @@
-// Helpers for the nftables (firewall v2) tab. Kept free of imports so they
-// run under `node --experimental-strip-types` in web/tests.
+// Helpers for the nftables (firewall v2) tab. They import only modules that
+// have no imports themselves, so they run under `node --experimental-strip-types`
+// in web/tests.
+import { errorBodyCode } from '../api/errors.ts'
 
 // parseList splits a user-typed list of addresses on commas and whitespace.
 export function parseList(text: string): string[] {
@@ -59,4 +61,23 @@ export function formatBytes(bytes: number): string {
 export function usagePercent(count: number, max: number): number {
   if (max <= 0) return 0
   return Math.min(100, Math.floor((count / max) * 100))
+}
+
+export type EngineState = 'disabled' | 'not_ready' | 'error'
+
+// engineState reads why a /firewall/v2 request failed: the server runs the
+// iptables engine (disabled, the default after an install), the engine is
+// still starting (not_ready, iptables import pending), or something else failed.
+export function engineState(err: unknown): EngineState {
+  const code = errorBodyCode(err)
+  if (code === 'firewall_disabled') return 'disabled'
+  if (code === 'firewall_not_ready') return 'not_ready'
+  return 'error'
+}
+
+// retryFirewallV2 is the retry rule of the /firewall/v2 queries: an engine
+// that is off stays off, so it is not retried; a starting engine and real
+// failures are (twice).
+export function retryFirewallV2(failures: number, err: unknown): boolean {
+  return engineState(err) !== 'disabled' && failures < 2
 }

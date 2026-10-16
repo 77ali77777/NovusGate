@@ -138,5 +138,17 @@
       "limitSchedule": "Nodes of a limit profile with a schedule go through its time windows.",
       "limitWindow": "An allowed time window of a limit profile (UTC); outside the windows the node is cut off."
     }
+  },
+  "engineOff": {
+    "title": "The nftables firewall engine is not active on this server",
+    "why": "The server runs the iptables engine; that is the default after an installation. This tab works with the nftables engine only.",
+    "needs": "Not available in iptables mode: the Advanced tab (services, IP rules, port forwarding, full tunnel), History, System Rules, limit profiles and the traffic quota.",
+    "howTitle": "How to turn it on (an admin, on the server):",
+    "step1": "NovusGate Center → Update.",
+    "step2": "In /opt/NovusGate/server/deployments/docker/.env add the line",
+    "step4": "NovusGate Center → Update once more (it sets up the host side for nftables).",
+    "more": "Checks before and after, and the way back to iptables:",
+    "startingTitle": "The firewall engine is starting",
+    "starting": "The nftables engine is taking over the current iptables rules. This takes a moment; the tab loads by itself when it is ready."
   }
 }

@@ -27,6 +27,7 @@ import type {
   FirewallV2Pending,
   FirewallV2Service,
 } from '@/types'
+import { EngineOff } from './EngineOff'
 
 const protocolOptions = [
   { value: 'tcp', label: 'TCP' },
@@ -581,11 +582,11 @@ const PreviewSection = () => {
 
 export const AdvancedTab = () => {
   const { t } = useTranslation('firewallv2')
-  const { data: state, isLoading } = useFirewallV2State()
+  const { data: state, isLoading, error } = useFirewallV2State()
   // Host firewall changes are admin-only (P9a).
   const isAdmin = useCan('admin')
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
-  if (!state) return <p className="text-sm text-gray-500">{t('engineUnavailable')}</p>
+  if (!state) return <EngineOff error={error} fallback={t('engineUnavailable')} />
   const enforcing = state.mode === 'nft'
   const locked = !enforcing || !!state.pending || !isAdmin
   return (
