@@ -62,6 +62,8 @@ type Server struct {
 	host         hostadmin.Runner       // host commands (P10a); nil: nsenter
 	activityMu   sync.RWMutex
 	ifaceErrs    sync.Map // network ID -> last reason its interface did not come up
+	ifaceRetry   sync.Map // network ID -> retryState of the interface check
+	ifaceLocks   sync.Map // interface name -> *sync.Mutex (lockInterface)
 }
 
 // NewServer creates a new REST API server
@@ -120,26 +122,16 @@ func (s *Server) loadNetworks() {
 		s.managers[network.ID] = mgr
 		s.managersMu.Unlock()
 
-		// The interface runs as its systemd unit on the host; bringUp puts
-		// the stored peers back (the unit starts without them) and keeps the
-		// reason when it cannot (shown with the network, retried by
-		// KeepInterfaces).
-		if err := s.bringUp(ctx, network, false); err != nil {
-			continue
-		}
-		slog.Info(fmt.Sprintf("Network %s (%s) is UP on port %d", network.Name, network.InterfaceName, port))
-
-		// SYNC: Import existing peers from WireGuard into DB
+		// SYNC: Import existing peers from WireGuard into DB. This runs
+		// before bringUp: handing an interface brought up outside systemd to
+		// its unit restarts it, which drops its runtime peers.
 		peers, err := mgr.GetPeers()
-		if err == nil && len(peers) > 0 {
+		dbNodes, listErr := s.store.ListNodes(ctx, network.ID)
+		if listErr != nil {
+			slog.Error(fmt.Sprintf("Failed to list DB nodes: %v", listErr))
+		}
+		if err == nil && listErr == nil && len(peers) > 0 {
 			slog.Info(fmt.Sprintf("Syncing %d peers from %s to database...", len(peers), network.InterfaceName))
-
-			// Get existing DB nodes to avoid duplicates
-			dbNodes, err := s.store.ListNodes(ctx, network.ID)
-			if err != nil {
-				slog.Error(fmt.Sprintf("Failed to list DB nodes: %v", err))
-				continue
-			}
 
 			existingKeys := make(map[string]bool)
 			for _, n := range dbNodes {
@@ -202,6 +194,16 @@ func (s *Server) loadNetworks() {
 			}
 		}
 
+		// The interface runs as its systemd unit on the host; bringUp puts
+		// the stored peers back (the unit starts without them) and keeps the
+		// reason when it cannot (shown with the network, retried by
+		// KeepInterfaces).
+		unlock := s.lockInterface(network.InterfaceName)
+		err = s.bringUp(ctx, network, false)
+		unlock()
+		if err == nil {
+			slog.Info(fmt.Sprintf("Network %s (%s) is UP on port %d", network.Name, network.InterfaceName, port))
+		}
 	}
 }
 
@@ -616,7 +618,7 @@ func (s *Server) handleListNetworks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, n := range networks {
-		s.withInterfaceStatus(n)
+		s.withInterfaceStatus(r, n)
 	}
 	jsonResponse(w, http.StatusOK, networks)
 }
@@ -725,7 +727,11 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	network.ServerPublicKey = publicKey
 	network.ServerEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 
-	// 4. Save to DB (now with keys)
+	// 4. Save to DB (now with keys). The interface lock is held from here
+	// until its config is written and its unit started, so the check cannot
+	// try the half-made interface.
+	unlock := s.lockInterface(network.InterfaceName)
+	defer unlock()
 	if err := s.store.CreateNetwork(r.Context(), &network); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to create network: "+err.Error())
 		return
@@ -759,7 +765,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
-	s.withInterfaceStatus(&network)
+	s.withInterfaceStatus(r, &network)
 	jsonResponse(w, http.StatusCreated, network)
 }
 
@@ -774,7 +780,7 @@ func (s *Server) handleGetNetwork(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
-	s.withInterfaceStatus(network)
+	s.withInterfaceStatus(r, network)
 	jsonResponse(w, http.StatusOK, network)
 }
 
@@ -798,21 +804,26 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Bring down WireGuard interface
+	// Under the interface lock, the row goes first and the interface second
+	// (like a node: its row first), so the check, which re-reads the network
+	// under the same lock, cannot start the unit again.
+	if network.InterfaceName != "" {
+		unlock := s.lockInterface(network.InterfaceName)
+		defer unlock()
+	}
+	if err := s.store.DeleteNetwork(r.Context(), id); err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to delete network")
+		return
+	}
 	if network.InterfaceName != "" {
 		wgTeardown(network.InterfaceName)
 		s.setInterfaceError(network.ID, "")
+		s.ifaceRetry.Delete(network.ID)
 
 		// Unregister manager
 		s.managersMu.Lock()
 		delete(s.managers, id)
 		s.managersMu.Unlock()
-	}
-
-	// Delete from DB
-	if err := s.store.DeleteNetwork(r.Context(), id); err != nil {
-		errorResponse(w, http.StatusInternalServerError, "failed to delete network")
-		return
 	}
 
 	slog.Info(fmt.Sprintf("Network %s (%s) deleted", network.Name, network.InterfaceName))

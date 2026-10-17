@@ -202,10 +202,12 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRestartService(w http.ResponseWriter, r *http.Request) {
-	if err := hostadmin.Restart(s.hostRunner(), mux.Vars(r)["unit"]); err != nil {
+	unit := mux.Vars(r)["unit"]
+	if err := hostadmin.Restart(s.hostRunner(), unit); err != nil {
 		hostError(w, "restart", err)
 		return
 	}
+	s.restorePeersAfterUnitRestart(r.Context(), unit)
 	w.WriteHeader(http.StatusNoContent)
 }
 

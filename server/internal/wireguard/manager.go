@@ -50,35 +50,63 @@ func (m *Manager) SetupInterface(configContent string) error {
 func (m *Manager) unit() string { return "wg-quick@" + m.InterfaceName }
 
 // Up makes sure the interface runs as its systemd unit on the host and comes
-// back at boot. A running unit is left alone. An interface brought up
-// outside systemd (by hand, or from the container by an older version) is
-// handed over to the unit: the unit would fail on it ("already exists").
+// back at boot. An active unit whose interface exists and is up is left
+// alone. Anything else starts afresh (freshStart): wg-quick@ is a oneshot
+// unit that stays "active" when its interface was deleted or set down, and
+// an interface brought up outside systemd (by hand, or from the container
+// by an older version) would make the unit fail ("already exists").
 // Runtime peers are not in the config (SaveConfig = false): callers restore
 // them after Up and Restart.
 func (m *Manager) Up() error {
-	if out, err := run("systemctl", "enable", m.unit()); err != nil {
-		return fmt.Errorf("systemctl enable %s failed: %s: %w", m.unit(), out, err)
+	if err := m.enable(); err != nil {
+		return err
 	}
-	if m.isInterfaceUp() {
-		if m.unitActive() {
-			return nil
-		}
-		m.downOutsideSystemd()
+	exists, up := linkState(m.InterfaceName)
+	active := m.unitActive()
+	if exists && up && active {
+		return nil
 	}
-	return m.systemctl("start")
+	return m.freshStart(exists, active)
 }
 
-// Restart applies a new config, or brings back an interface that is
-// misbehaving, through its systemd unit.
+// Restart starts the unit afresh: a new config applies, a misbehaving
+// interface is rebuilt.
 func (m *Manager) Restart() error {
+	if err := m.enable(); err != nil {
+		return err
+	}
+	exists, _ := linkState(m.InterfaceName)
+	return m.freshStart(exists, m.unitActive())
+}
+
+func (m *Manager) enable() error {
 	if out, err := run("systemctl", "enable", m.unit()); err != nil {
 		return fmt.Errorf("systemctl enable %s failed: %s: %w", m.unit(), out, err)
 	}
-	if m.isInterfaceUp() && !m.unitActive() {
+	return nil
+}
+
+// freshStart stops whatever holds the interface (its unit, or wg-quick run
+// outside systemd), removes a leftover link and starts the unit. A failed
+// stop is not fatal: the start that follows reports what is wrong.
+func (m *Manager) freshStart(exists, active bool) error {
+	if active {
+		if out, err := run("systemctl", "stop", m.unit()); err != nil {
+			slog.Warn(fmt.Sprintf("[WG] systemctl stop %s: %s: %v", m.unit(), out, err))
+		}
+	} else if exists {
 		m.downOutsideSystemd()
-		return m.systemctl("start")
 	}
-	return m.systemctl("restart")
+	if still, _ := linkState(m.InterfaceName); still {
+		if out, err := run("ip", "link", "delete", m.InterfaceName); err != nil {
+			slog.Warn(fmt.Sprintf("[WG] ip link delete %s: %s: %v", m.InterfaceName, out, err))
+		}
+	}
+	// A unit that failed before would refuse to start again soon after.
+	if out, err := run("systemctl", "reset-failed", m.unit()); err != nil {
+		slog.Warn(fmt.Sprintf("[WG] systemctl reset-failed %s: %s: %v", m.unit(), out, err))
+	}
+	return m.systemctl("start")
 }
 
 // Down stops the interface for good (its network is deleted): the unit is
@@ -191,16 +219,21 @@ func (m *Manager) RemovePeer(publicKey string) error {
 	return nil
 }
 
-// IsUp reports whether the interface exists on the host.
-func (m *Manager) IsUp() bool { return m.isInterfaceUp() }
+// isInterfaceUp reports whether the interface exists on the host.
+func (m *Manager) isInterfaceUp() bool {
+	exists, _ := linkState(m.InterfaceName)
+	return exists
+}
 
-func (m *Manager) isInterfaceUp() bool { return interfaceExists(m.InterfaceName) }
-
-// interfaceExists looks the interface up directly: the control plane shares
-// the host's network namespace (replaced in tests).
-var interfaceExists = func(name string) bool {
-	_, err := net.InterfaceByName(name)
-	return err == nil
+// linkState reports whether the interface exists and whether it is up,
+// looked up directly: the control plane shares the host's network namespace
+// (replaced in tests).
+var linkState = func(name string) (exists, up bool) {
+	ifc, err := net.InterfaceByName(name)
+	if err != nil {
+		return false, false
+	}
+	return true, ifc.Flags&net.FlagUp != 0
 }
 
 // GetPublicKey retrieves the server's public key by deriving it from the private key in the config

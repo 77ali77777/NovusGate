@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
 	"github.com/novusgate/novusgate/internal/wireguard"
@@ -128,5 +129,94 @@ func TestKeepInterfaces(t *testing.T) {
 	body := callAs(t, s, "GET", "/api/v1/networks/"+seed.network.ID, "", true).Body.String()
 	if !strings.Contains(body, "start failed: no device") {
 		t.Fatalf("the reason must be kept: %s", body)
+	}
+}
+
+// A bring-up that keeps failing is not retried every 30 s (each failed
+// wg-quick may leave PostUp firewall rules behind): it backs off.
+func TestKeepInterfacesBacksOff(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seedContract(t, st)
+	now := time.Date(2026, 10, 17, 9, 0, 0, 0, time.UTC)
+	origNow := ifaceNow
+	ifaceNow = func() time.Time { return now }
+	t.Cleanup(func() { ifaceNow = origNow })
+	calls := fakeInterfaces(t, map[string]bool{"wg68": true}, errors.New("start failed"))
+	s.keepInterfacesOnce(context.Background())
+	s.keepInterfacesOnce(context.Background())
+	if len(*calls) != 1 {
+		t.Fatalf("a second try right away = %d bring-ups, want 1", len(*calls))
+	}
+	now = now.Add(5 * time.Minute)
+	s.keepInterfacesOnce(context.Background())
+	if len(*calls) != 2 {
+		t.Fatalf("after the back-off = %d bring-ups, want 2", len(*calls))
+	}
+}
+
+// The check never brings back a network that is gone (deleted meanwhile).
+func TestKeepInterfaceSkipsADeletedNetwork(t *testing.T) {
+	s, _, _ := newContractServer(t)
+	calls := fakeInterfaces(t, map[string]bool{}, nil)
+	s.keepInterface(context.Background(), "00000000-0000-0000-0000-0000000000aa")
+	if len(*calls) != 0 {
+		t.Fatalf("a deleted network was brought up: %+v", *calls)
+	}
+}
+
+// Deleting a network waits for a bring-up of its interface in progress, so
+// a check cannot start the unit again after the delete stopped it.
+func TestDeleteNetworkWaitsForTheInterface(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	fakeInterfaces(t, map[string]bool{}, nil)
+	origTeardown := wgTeardown
+	wgTeardown = func(string) {}
+	t.Cleanup(func() { wgTeardown = origTeardown })
+	unlock := s.lockInterface("wg66")
+	done := make(chan int)
+	go func() { done <- callAs(t, s, "DELETE", "/api/v1/networks/"+seed.network.ID, "", true).Code }()
+	select {
+	case <-done:
+		t.Fatal("the delete must wait for the interface lock")
+	case <-time.After(150 * time.Millisecond):
+	}
+	unlock()
+	if code := <-done; code != 204 {
+		t.Fatalf("delete = %d", code)
+	}
+}
+
+// Viewers see whether an interface runs, not the host's error text.
+func TestViewerSeesStateNotReason(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	fakeInterfaces(t, map[string]bool{}, nil)
+	s.setInterfaceError(seed.network.ID, "journal: secret-ish host detail")
+	viewer := roleSession(t, st, "contract-iface-viewer", "viewer")
+	body := callWith(t, s, viewer, "GET", "/api/v1/networks/"+seed.network.ID, "").Body.String()
+	if !strings.Contains(body, `"interface_up":false`) || strings.Contains(body, "host detail") {
+		t.Fatalf("viewer = %s", body)
+	}
+	if body := callAs(t, s, "GET", "/api/v1/networks/"+seed.network.ID, "", true).Body.String(); !strings.Contains(body, "host detail") {
+		t.Fatalf("an admin sees the reason: %s", body)
+	}
+}
+
+// Restarting wg-quick@wgN from the Server page drops its runtime peers; they
+// are put back right away.
+func TestServerPageRestartOfAWireGuardUnitRestoresPeers(t *testing.T) {
+	s, h := newServerAdmin(t)
+	seed := seedContract(t, s.store)
+	fakeInterfaces(t, map[string]bool{"wg66": true}, nil)
+	var restored []string
+	restoreNetworkPeers = func(_ *Server, _ context.Context, n *models.Network, _ *wireguard.Manager) {
+		restored = append(restored, n.InterfaceName)
+	}
+	h.out["systemctl list-units wg-quick@* --all --no-legend --plain"] = "wg-quick@wg66.service loaded active exited WireGuard\n"
+	callAs(t, s, "POST", "/api/v1/auth/step-up", `{"password":"contract-pw-1"}`, true)
+	rec := callAs(t, s, "POST", "/api/v1/server/services/wg-quick@wg66/restart", "", true)
+	if rec.Code != 204 || len(restored) != 1 || restored[0] != "wg66" {
+		t.Fatalf("restart = %d %s, restored %v (network %s)", rec.Code, rec.Body, restored, seed.network.ID)
 	}
 }

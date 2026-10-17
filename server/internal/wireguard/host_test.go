@@ -30,15 +30,21 @@ func (h *hostRun) run(name string, args ...string) (string, error) {
 	return h.out[cmd], nil
 }
 
-func fakeHost(t *testing.T, exists bool) *hostRun {
+func (h *hostRun) joined() string { return strings.Join(h.calls, "\n") }
+
+// fakeHost fakes the host's commands and the interface's link: exists, up.
+// The unit counts as active unless the test fails "is-active".
+func fakeHost(t *testing.T, exists, up bool) *hostRun {
 	t.Helper()
 	h := &hostRun{out: map[string]string{}, fail: map[string]bool{}}
-	origRun, origExists := run, interfaceExists
+	origRun, origLink := run, linkState
 	run = h.run
-	interfaceExists = func(string) bool { return exists }
-	t.Cleanup(func() { run, interfaceExists = origRun, origExists })
+	linkState = func(string) (bool, bool) { return exists, up }
+	t.Cleanup(func() { run, linkState = origRun, origLink })
 	return h
 }
+
+const isActive = "systemctl is-active --quiet wg-quick@wg3"
 
 func TestCommandsRunOnTheHost(t *testing.T) {
 	cmd, cancel := command("wg", "show", "wg1", "dump")
@@ -50,46 +56,63 @@ func TestCommandsRunOnTheHost(t *testing.T) {
 }
 
 func TestUpStartsTheSystemdUnit(t *testing.T) {
-	h := fakeHost(t, false)
+	h := fakeHost(t, false, false)
+	h.fail[isActive] = true
 	if err := NewManager("wg3").Up(); err != nil {
 		t.Fatal(err)
 	}
-	want := "systemctl enable wg-quick@wg3\nsystemctl start wg-quick@wg3"
-	if got := strings.Join(h.calls, "\n"); got != want {
+	want := "systemctl enable wg-quick@wg3\n" + isActive + "\nsystemctl reset-failed wg-quick@wg3\nsystemctl start wg-quick@wg3"
+	if got := h.joined(); got != want {
 		t.Fatalf("calls:\n%s\nwant:\n%s", got, want)
 	}
 }
 
-// Up already: only made sure it comes back at boot.
+// Running and up: only made sure it comes back at boot.
 func TestUpLeavesARunningUnit(t *testing.T) {
-	h := fakeHost(t, true)
+	h := fakeHost(t, true, true)
 	if err := NewManager("wg3").Up(); err != nil {
 		t.Fatal(err)
 	}
-	for _, c := range h.calls {
-		if strings.Contains(c, "start") || strings.Contains(c, "down") {
-			t.Fatalf("a running unit must not be touched: %v", h.calls)
-		}
+	if got, want := h.joined(), "systemctl enable wg-quick@wg3\n"+isActive; got != want {
+		t.Fatalf("a running unit must not be touched:\n%s", got)
 	}
 }
 
-// Brought up outside systemd (by hand, or by an older version from the
-// container): handed over to the unit, else the unit fails "already exists".
+// Brought up outside systemd (by hand, or from the container by an older
+// version): handed over to the unit, else the unit fails "already exists".
 func TestUpHandsAManualInterfaceToSystemd(t *testing.T) {
-	h := fakeHost(t, true)
-	h.fail["systemctl is-active --quiet wg-quick@wg3"] = true
+	h := fakeHost(t, true, true)
+	h.fail[isActive] = true
 	if err := NewManager("wg3").Up(); err != nil {
 		t.Fatal(err)
 	}
-	got := strings.Join(h.calls, "\n")
-	if !strings.Contains(got, "wg-quick down wg3\nsystemctl start wg-quick@wg3") {
+	got := h.joined()
+	if !strings.Contains(got, "wg-quick down wg3") || !strings.HasSuffix(got, "systemctl start wg-quick@wg3") ||
+		strings.Contains(got, "systemctl stop") {
 		t.Fatalf("calls:\n%s", got)
+	}
+}
+
+// wg-quick@ is a oneshot unit that stays "active" after its interface is
+// gone (deleted by hand) or set down: start would do nothing. The unit is
+// stopped and started again.
+func TestUpRecoversAnActiveUnitWithoutItsInterface(t *testing.T) {
+	for name, link := range map[string][2]bool{"deleted": {false, false}, "set down": {true, false}} {
+		h := fakeHost(t, link[0], link[1])
+		if err := NewManager("wg3").Up(); err != nil {
+			t.Fatal(err)
+		}
+		got := h.joined()
+		if !strings.Contains(got, "systemctl stop wg-quick@wg3") || !strings.HasSuffix(got, "systemctl start wg-quick@wg3") {
+			t.Errorf("%s: calls:\n%s", name, got)
+		}
 	}
 }
 
 // A unit that does not start says why (its journal), not just "failed".
 func TestUpReportsTheUnitsJournal(t *testing.T) {
-	h := fakeHost(t, false)
+	h := fakeHost(t, false, false)
+	h.fail[isActive] = true
 	h.fail["systemctl start wg-quick@wg3"] = true
 	h.out["journalctl -u wg-quick@wg3 -n 5 --no-pager -o cat"] = "RTNETLINK answers: Address already in use"
 	err := NewManager("wg3").Up()
@@ -98,24 +121,26 @@ func TestUpReportsTheUnitsJournal(t *testing.T) {
 	}
 }
 
-// A new config takes effect through a restart of the unit.
+// Restart always starts afresh: stop the running unit, start it again (a
+// new config applies, a broken interface is rebuilt).
 func TestRestartAppliesANewConfig(t *testing.T) {
-	h := fakeHost(t, true)
+	h := fakeHost(t, true, true)
 	if err := NewManager("wg3").Restart(); err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(h.calls, "\n"); !strings.Contains(got, "systemctl restart wg-quick@wg3") {
+	got := h.joined()
+	if !strings.Contains(got, "systemctl stop wg-quick@wg3") || !strings.HasSuffix(got, "systemctl start wg-quick@wg3") {
 		t.Fatalf("calls:\n%s", got)
 	}
 }
 
 // Down stops the unit for good; an interface left behind is removed.
 func TestDownDisablesTheUnit(t *testing.T) {
-	h := fakeHost(t, true)
+	h := fakeHost(t, true, true)
 	if err := NewManager("wg3").Down(); err != nil {
 		t.Fatal(err)
 	}
-	got := strings.Join(h.calls, "\n")
+	got := h.joined()
 	if !strings.Contains(got, "systemctl disable --now wg-quick@wg3") || !strings.Contains(got, "ip link delete wg3") {
 		t.Fatalf("calls:\n%s", got)
 	}
@@ -123,7 +148,7 @@ func TestDownDisablesTheUnit(t *testing.T) {
 
 // The host needs its own wireguard-tools.
 func TestInitNeedsTheHostsTools(t *testing.T) {
-	h := fakeHost(t, false)
+	h := fakeHost(t, false, false)
 	h.fail["wg --version"] = true
 	if err := NewManager("wg3").Init(); err == nil || !strings.Contains(err.Error(), "host") {
 		t.Fatalf("Init = %v, want an error naming the host", err)

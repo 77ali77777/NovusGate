@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -65,13 +67,17 @@ func (s *Server) setInterfaceError(networkID, reason string) {
 	s.ifaceErrs.Store(networkID, reason)
 }
 
-// withInterfaceStatus fills a network's live interface fields.
-func (s *Server) withInterfaceStatus(n *models.Network) {
+// withInterfaceStatus fills a network's live interface fields. The reason is
+// host detail (unit journal, wg-quick output): viewers get the state only.
+func (s *Server) withInterfaceStatus(r *http.Request, n *models.Network) {
 	if n == nil {
 		return
 	}
 	n.InterfaceUp = n.InterfaceName != "" && interfaceUp(n.InterfaceName)
 	n.InterfaceError = ""
+	if user, _ := sessionFrom(r); user != nil && roleRank[user.Role] < roleRank["operator"] {
+		return
+	}
 	if v, ok := s.ifaceErrs.Load(n.ID); ok {
 		n.InterfaceError = v.(string)
 	}
@@ -106,6 +112,41 @@ func (s *Server) noteInterfaceError(network *models.Network, err error) {
 	s.setInterfaceError(network.ID, err.Error())
 }
 
+// lockInterface serialises everything that starts or stops one interface
+// (create, delete, restart, start-up, the check), so a check cannot start a
+// unit again after a delete stopped it. It returns the unlock.
+func (s *Server) lockInterface(name string) func() {
+	v, _ := s.ifaceLocks.LoadOrStore(name, &sync.Mutex{})
+	mu := v.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
+}
+
+// ifaceNow is the check's clock (replaced in tests).
+var ifaceNow = time.Now
+
+// retryState is the check's back-off for one network's interface.
+type retryState struct {
+	fails int
+	next  time.Time
+}
+
+// Back-off of the check after failed bring-ups: 1, 2, 4 … minutes, at most
+// maxRetryDelay. Every failed wg-quick start may leave its PostUp firewall
+// rules behind, so a failing unit is not retried every 30 s.
+const maxRetryDelay = 10 * time.Minute
+
+func retryDelay(fails int) time.Duration {
+	d := interfaceCheckEvery
+	for i := 0; i < fails && d < maxRetryDelay; i++ {
+		d *= 2
+	}
+	if d > maxRetryDelay {
+		d = maxRetryDelay
+	}
+	return d
+}
+
 // keepInterfacesOnce brings up every network interface that is missing.
 func (s *Server) keepInterfacesOnce(ctx context.Context) {
 	networks, err := s.store.ListNetworks(ctx)
@@ -115,10 +156,39 @@ func (s *Server) keepInterfacesOnce(ctx context.Context) {
 	}
 	for _, n := range networks {
 		if n.InterfaceName == "" || interfaceUp(n.InterfaceName) {
+			s.ifaceRetry.Delete(n.ID)
 			continue
 		}
-		_ = s.bringUp(ctx, n, false) // the reason is kept and logged by bringUp
+		s.keepInterface(ctx, n.ID)
 	}
+}
+
+// keepInterface brings one network's interface back, under its lock and
+// only while the network still exists, unless its back-off has not passed.
+func (s *Server) keepInterface(ctx context.Context, networkID string) {
+	n, err := s.store.GetNetwork(ctx, networkID)
+	if err != nil || n == nil || n.InterfaceName == "" {
+		return
+	}
+	unlock := s.lockInterface(n.InterfaceName)
+	defer unlock()
+	if n, err = s.store.GetNetwork(ctx, networkID); err != nil || n == nil || interfaceUp(n.InterfaceName) {
+		return // deleted meanwhile, or brought up by someone else
+	}
+	var st retryState
+	if v, ok := s.ifaceRetry.Load(n.ID); ok {
+		st = v.(retryState)
+		if ifaceNow().Before(st.next) {
+			return
+		}
+	}
+	if err := s.bringUp(ctx, n, false); err != nil {
+		st.fails++
+		st.next = ifaceNow().Add(retryDelay(st.fails))
+		s.ifaceRetry.Store(n.ID, st)
+		return
+	}
+	s.ifaceRetry.Delete(n.ID)
 }
 
 // KeepInterfaces checks the interfaces every interfaceCheckEvery until ctx
@@ -148,10 +218,39 @@ func (s *Server) handleRestartInterface(w http.ResponseWriter, r *http.Request) 
 		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
-	if err := s.bringUp(r.Context(), network, true); err != nil {
+	unlock := s.lockInterface(network.InterfaceName)
+	err = s.bringUp(r.Context(), network, true)
+	unlock()
+	if err != nil {
 		errorWithCode(w, http.StatusInternalServerError, "interface_failed", err.Error())
 		return
 	}
-	s.withInterfaceStatus(network)
+	s.ifaceRetry.Delete(network.ID)
+	s.withInterfaceStatus(r, network)
 	jsonResponse(w, http.StatusOK, network)
+}
+
+// restorePeersAfterUnitRestart puts the peers back after the Server page
+// restarted wg-quick@wgN: the unit starts without its runtime peers, and its
+// interface exists, so the check would not see the loss.
+func (s *Server) restorePeersAfterUnitRestart(ctx context.Context, unit string) {
+	iface, ok := strings.CutPrefix(unit, "wg-quick@")
+	if !ok {
+		return
+	}
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("[WG] restore after restarting %s: %v", unit, err))
+		return
+	}
+	for _, n := range networks {
+		if n.InterfaceName != iface {
+			continue
+		}
+		if mgr := s.getManager(n.ID); mgr != nil {
+			unlock := s.lockInterface(iface)
+			restoreNetworkPeers(s, ctx, n, mgr)
+			unlock()
+		}
+	}
 }
