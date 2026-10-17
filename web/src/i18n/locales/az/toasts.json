@@ -89,5 +89,7 @@
   "rebootStarted": "Server yenidən başlayır",
   "failedToStartUpgrade": "Yeniləmə başladılmadı",
   "upgradeStarted": "Paket yeniləməsi başladı",
-  "failedToChangeTunnel": "Tunel rejimi dəyişdirilmədi"
+  "failedToChangeTunnel": "Tunel rejimi dəyişdirilmədi",
+  "failedToRestartInterface": "İnterfeys qalxmadı",
+  "interfaceRestarted": "İnterfeys işləyir"
 }

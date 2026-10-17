@@ -797,6 +797,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/networks/{id}/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restart the network's WireGuard interface (its systemd unit on the host) and put its peers back; 500 interface_failed with the reason when it does not come up */
+        post: operations["post_networks_by_id_restart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/networks/{id}/tunnel": {
         parameters: {
             query?: never;
@@ -1920,7 +1937,9 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             id: string;
+            interface_error: string;
             interface_name: string;
+            interface_up: boolean;
             listen_port: number;
             name: string;
             server_endpoint?: string;
@@ -1935,7 +1954,9 @@ export interface components {
             /** Format: date-time */
             created_at?: string;
             id?: string;
+            interface_error?: string;
             interface_name?: string;
+            interface_up?: boolean;
             listen_port?: number;
             name?: string;
             server_endpoint?: string;
@@ -4205,6 +4226,37 @@ export interface operations {
                 "application/json": components["schemas"]["ClientDNSRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_networks_by_id_restart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

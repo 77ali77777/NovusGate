@@ -89,5 +89,7 @@
   "rebootStarted": "The server is rebooting",
   "failedToStartUpgrade": "Failed to start the upgrade",
   "upgradeStarted": "Package upgrade started",
-  "failedToChangeTunnel": "Failed to change the tunnel mode"
+  "failedToChangeTunnel": "Failed to change the tunnel mode",
+  "failedToRestartInterface": "The interface did not come up",
+  "interfaceRestarted": "The interface is running"
 }

@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { Activity, Network, Plus, Search, Shield, Trash2 } from 'lucide-react'
+import { Network, Plus, Search, Shield, Trash2 } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { useCan, useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/c
 import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
+import { NetworkInterfaceStatus } from '@/components/NetworkStatus'
 import { FirewallPendingNotice, NetworkTunnel, TunnelChoice } from '@/components/Tunnel'
 import { dateFnsLocale } from '@/i18n'
 import { networkLabel, networkMatches } from '@/lib/networkDisplay'
@@ -190,17 +191,9 @@ export const Networks = () => {
                     </div>
                   </div>
 
-                  {/* Status Bar - Mock for now but could be real if backend returned it */}
+                  {/* The hub interface as the server reports it */}
                   <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        {t('common:fields.status')}
-                      </span>
-                      <span className="text-green-600 dark:text-green-400 font-medium">
-                        {t('common:status.active')}
-                      </span>
-                    </div>
+                    <NetworkInterfaceStatus network={network} />
                   </div>
                 </div>
               </div>

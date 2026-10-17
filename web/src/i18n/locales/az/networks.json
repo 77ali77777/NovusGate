@@ -93,5 +93,13 @@
     "formHint": "Bunu sonra da dəyişə bilərsiniz; o zaman cihazların konfiqurasiyası yenidən yüklənməlidir.",
     "confirmed": "Təsdiqləndi: tunel rejimi dəyişdi.",
     "rolledBack": "Vaxtında təsdiq edilmədi: firewall əvvəlki vəziyyətinə qayıtdı, tunel rejimi dəyişmədi."
+  },
+  "status": {
+    "up": "İşləyir",
+    "down": "Dayanıb",
+    "unknown": "Naməlum",
+    "downHint": "Bu şəbəkənin WireGuard interfeysi serverdə işləmir: cihazlar qoşula bilmir. Server hər 30 saniyədən bir yenidən cəhd edir.",
+    "restart": "Yenidən qaldır",
+    "restarting": "Qaldırılır…"
   }
 }

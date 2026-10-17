@@ -555,6 +555,13 @@ class ApiClient {
     return data
   }
 
+  // Restarts a network's WireGuard interface (its systemd unit on the host)
+  // and puts its peers back; a failure says why (500 interface_failed).
+  async restartNetworkInterface(id: string): Promise<Network> {
+    const { data } = await this.client.post<Network>(`/networks/${id}/restart`)
+    return data
+  }
+
   // Tunnel mode of a network or one node. In nftables mode the server
   // answers with a pending firewall change to confirm; in iptables mode it is
   // stored at once (pending absent).
@@ -1450,6 +1457,22 @@ export const useRestoreFirewallV2History = () =>
     (id: string) => api.restoreFirewallV2History(id),
     'toasts:failedToRestoreFirewallState'
   )
+
+// Restart a network's interface (the "Restart" on a network that is down).
+export function useRestartNetworkInterface() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: {
+      errorTitle: 'toasts:failedToRestartInterface',
+      successTitle: 'toasts:interfaceRestarted',
+    },
+    mutationFn: (id: string) => api.restartNetworkInterface(id),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['networks'] })
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+    },
+  })
+}
 
 // Network client DNS (P10a).
 export function useSetNetworkDNS() {

@@ -59,3 +59,21 @@ export function networkMatches(
     network.interface_name ?? '',
   ].some((s) => s.toLowerCase().includes(q))
 }
+
+export interface InterfaceState {
+  state: 'up' | 'down' | 'unknown'
+  reason: string // why it did not come up, when the server knows
+}
+
+// interfaceState is the hub interface of a network as the server reports it
+// (interface_up, interface_error); an older server without them is unknown.
+export function interfaceState(network: {
+  interface_up?: boolean
+  interface_error?: string
+}): InterfaceState {
+  if (network.interface_up === undefined) return { state: 'unknown', reason: '' }
+  return {
+    state: network.interface_up ? 'up' : 'down',
+    reason: network.interface_up ? '' : (network.interface_error ?? ''),
+  }
+}

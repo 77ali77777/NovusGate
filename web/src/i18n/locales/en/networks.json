@@ -93,5 +93,13 @@
     "formHint": "You can change this later; devices then need their configs downloaded again.",
     "confirmed": "Confirmed: the tunnel mode has changed.",
     "rolledBack": "Not confirmed in time: the firewall went back to its previous state and the tunnel mode did not change."
+  },
+  "status": {
+    "up": "Running",
+    "down": "Down",
+    "unknown": "Unknown",
+    "downHint": "The WireGuard interface of this network does not run on the server: devices cannot connect. The server retries every 30 seconds.",
+    "restart": "Restart",
+    "restarting": "Restarting…"
   }
 }
