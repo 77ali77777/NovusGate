@@ -102,6 +102,7 @@ func (m *Manager) freshStart(exists, active bool) error {
 			slog.Warn(fmt.Sprintf("[WG] ip link delete %s: %s: %v", m.InterfaceName, out, err))
 		}
 	}
+	m.fixLegacyPostUp()
 	// A unit that failed before would refuse to start again soon after.
 	if out, err := run("systemctl", "reset-failed", m.unit()); err != nil {
 		slog.Warn(fmt.Sprintf("[WG] systemctl reset-failed %s: %s: %v", m.unit(), out, err))
@@ -127,6 +128,26 @@ func (m *Manager) Down() error {
 func (m *Manager) unitActive() bool {
 	_, err := run("systemctl", "is-active", "--quiet", m.unit())
 	return err == nil
+}
+
+// fixLegacyPostUp rewrites an older version's PostUp/PostDown (which need
+// awk, denied by Ubuntu 26.04's wg-quick profile) before the unit starts.
+// It runs after the stop, so the old PostDown has removed its own rules. A
+// failure is logged; the start then shows what is wrong.
+func (m *Manager) fixLegacyPostUp() {
+	content, err := os.ReadFile(m.ConfigPath)
+	if err != nil {
+		return // no config yet: the start reports it
+	}
+	fixed, changed := rewriteLegacyPostUp(string(content), EgressInterface())
+	if !changed {
+		return
+	}
+	if err := os.WriteFile(m.ConfigPath, []byte(fixed), 0600); err != nil {
+		slog.Warn(fmt.Sprintf("[WG] could not rewrite the PostUp of %s: %v", m.ConfigPath, err))
+		return
+	}
+	slog.Info(fmt.Sprintf("[WG] %s: PostUp rewritten without awk", m.ConfigPath))
 }
 
 // downOutsideSystemd takes down an interface its unit does not own; a
@@ -161,7 +182,7 @@ func (m *Manager) CreateServerConfig(addressCIDR string, port int, peers []strin
 
 	// 2. Generate Config Content
 	gen := NewConfigGenerator()
-	configContent := gen.GenerateServerConfig(privKey, port, addressCIDR)
+	configContent := gen.GenerateServerConfig(privKey, port, addressCIDR, EgressInterface())
 
 	// 3. Write and Setup
 	return m.SetupInterface(configContent)
@@ -171,7 +192,7 @@ func (m *Manager) CreateServerConfig(addressCIDR string, port int, peers []strin
 func (m *Manager) CreateServerConfigWithKey(privateKey string, addressCIDR string, port int) error {
 	// Generate Config Content using provided key
 	gen := NewConfigGenerator()
-	configContent := gen.GenerateServerConfig(privateKey, port, addressCIDR)
+	configContent := gen.GenerateServerConfig(privateKey, port, addressCIDR, EgressInterface())
 
 	// Write and Setup
 	return m.SetupInterface(configContent)
