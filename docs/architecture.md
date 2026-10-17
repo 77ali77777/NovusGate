@@ -155,6 +155,7 @@
 
 ## WireGuard interfeysləri hostda (2026-10-17)
 - **Niyə:** Ubuntu 26.04 `/usr/bin/wg-quick` və `/usr/bin/wg` üçün yol üzrə yapışan AppArmor profilləri gətirir. Privileged konteynerdə də tətbiq olunur: konteynerin wg-quick-i öz busybox `readlink`-ini işlədə bilmirdi (`apparmor="DENIED" operation="exec" profile="wg-quick" name="/bin/busybox"`), paneldən yaradılan heç bir şəbəkə qalxmırdı.
+- **PostUp (2026-10-17):** internet interfeysi Go-da tapılıb adı yazılır (`-o eth0`), `$(ip route get … | awk …)` yoxdur — hostun wg-quick profili `awk`-ı rədd edir. Köhnə konfiqlər unit başlamazdan əvvəl yenidən yazılır.
 - **Necə:** `internal/wireguard` bütün `wg`, `wg-quick`, `ip`, `systemctl`, `journalctl` əmrlərini `nsenter -t 1 -m -u -i -n` ilə hostda işlədir (hostun öz alətləri, öz profilləri ilə). Hər şəbəkənin interfeysi hostda `wg-quick@wgN` systemd unit-idir (wg0 kimi): `Up` = `enable` + `start` (əl ilə qaldırılmış interfeys unit-ə verilir), `Restart` = yeni konfiq, `Down` = `disable --now` + qalan interfeys silinir. Açarlar Go-da (Curve25519) yaradılır, `wg genkey/pubkey` işləmir.
 - **Görünən vəziyyət:** şəbəkə JSON-unda `interface_up` və `interface_error` (son uğursuzluğun səbəbi, unit-in jurnalı ilə). Start-da, şəbəkə yaradılanda və `POST /networks/{id}/restart`-da qaldırılır; `KeepInterfaces` hər 30 s itmiş interfeysi qaldırır. Hər qaldırılmadan sonra DB-dəki peer-lər qaytarılır (`SaveConfig = false`).
 - Konteynerdən kənar development: `wireguard.SetHostTools(false)`.
