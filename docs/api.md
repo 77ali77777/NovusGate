@@ -323,3 +323,7 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `PUT/DELETE /firewall/v2/egress/{nodeId}` işləməyə davam edir: açıq = `full` override; bağlı = split şəbəkədə override yox, full şəbəkədə `split` override.
 - nftables rejimində: təsdiq gözləyən dəyişiklik zamanı istənən reconcile (məsələn tam tunel şəbəkəsində yeni cihaz) təsdiqdən sonra da işləyir. Eyni rejim yenidən göndəriləndə dəyişiklik yaranmır (200, `affected_nodes: 0`). Shadow rejimi iptables kimi davranır.
 - DOCKER-USER (yalnız nft rejimində, `CutoverIptables`): wg ↔ Docker körpüləri (`docker0`, `br-+`) arası trafik `RETURN` (Docker özü qərar verir), qalan wg trafiki `ACCEPT`. iptables/shadow rejimində start zamanı bu qaydalar silinir.
+
+## Şəbəkə interfeysinin vəziyyəti (2026-10-17)
+- `Network` cavablarında `interface_up` (interfeys hostda var) və `interface_error` (son qaldırma uğursuzluğunun səbəbi; uğurda `""`). Şəbəkə yaradılanda interfeys qalxmasa da 201 qaytarılır, səbəb `interface_error`-dadır.
+- `POST /networks/{id}/restart` → 200 `Network` (interfeys hostda `wg-quick@wgN` kimi yenidən başladılır, peer-lər DB-dən qaytarılır); qalxmasa 500 `interface_failed` səbəblə. Rol: operator. Naməlum şəbəkə → 404.

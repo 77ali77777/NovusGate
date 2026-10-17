@@ -22,6 +22,7 @@ var operatorRoutes = map[string]bool{
 	"POST /api/v1/networks":                     true,
 	"DELETE /api/v1/networks/{id}":              true,
 	"PUT /api/v1/networks/{id}/dns":             true,
+	"POST /api/v1/networks/{id}/restart":        true,
 	"POST /api/v1/networks/{networkId}/servers": true,
 	"POST /api/v1/networks/{networkId}/sync":    true,
 	"PUT /api/v1/nodes/{id}":                    true,

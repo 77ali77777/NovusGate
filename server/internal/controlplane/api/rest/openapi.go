@@ -88,6 +88,7 @@ var docOps = []docOp{
 	{"GET", "/api/v1/networks/{id}", "Get a network", "networks", nil, 200, models.Network{}, false},
 	{"DELETE", "/api/v1/networks/{id}", "Delete a network (not wg0)", "networks", nil, 204, nil, false},
 	{"PUT", "/api/v1/networks/{id}/dns", "Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split)", "networks", ClientDNSRequest{}, 200, models.Network{}, false},
+	{"POST", "/api/v1/networks/{id}/restart", "Restart the network's WireGuard interface (its systemd unit on the host) and put its peers back; 500 interface_failed with the reason when it does not come up", "networks", nil, 200, models.Network{}, false},
 	{"PUT", "/api/v1/networks/{id}/tunnel", "Set what the network's nodes route through the hub: split (VPN networks) or full (all IPv4; the hub is their internet exit). Admin; a firewall change in nftables mode", "networks", NetworkTunnelRequest{}, 200, V2ChangeResponse{}, false},
 	{"GET", "/api/v1/networks/{networkId}/nodes", "List a network's nodes", "nodes", nil, 200, []models.Node{}, false},
 	{"POST", "/api/v1/networks/{networkId}/servers", "Create a node with its WireGuard config", "nodes", CreateServerRequest{}, 201, CreateServerResponse{}, false},

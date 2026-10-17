@@ -19,9 +19,10 @@ func TestCommandsTimeOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
-	orig := commandTimeout
-	t.Cleanup(func() { commandTimeout = orig })
+	orig, origPrefix := commandTimeout, hostPrefix
+	t.Cleanup(func() { commandTimeout, hostPrefix = orig, origPrefix })
 	commandTimeout = 200 * time.Millisecond
+	hostPrefix = nil // the fake wg on PATH, not the host's
 
 	start := time.Now()
 	if _, err := NewManager("wg-test").GetPeers(); err == nil {

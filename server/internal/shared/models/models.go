@@ -28,6 +28,10 @@ type Network struct {
 	InterfaceName    string    `json:"interface_name"`              // Interface name (e.g., wg0)
 	ClientDNS        string    `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
 	TunnelMode       string    `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
+	// Live state of the hub's interface (not stored): whether it runs, and
+	// the last reason it could not be brought up ("" when it came up).
+	InterfaceUp    bool   `json:"interface_up"`
+	InterfaceError string `json:"interface_error"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }

@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"regexp"
 	"strings"
@@ -610,12 +609,10 @@ func bootstrapSystem(db *store.Store) error {
 
 		// Step 2: Derive public key from private key (or get from running interface)
 		if privateKey != "" {
-			// Derive public key from private key using wg pubkey
-			cmd := exec.Command("wg", "pubkey")
-			cmd.Stdin = strings.NewReader(privateKey)
-			output, err := cmd.Output()
+			// Derive public key from private key (in Go, as wg pubkey does)
+			derived, err := wireguard.PublicKey(privateKey)
 			if err == nil {
-				publicKey = strings.TrimSpace(string(output))
+				publicKey = derived
 				slog.Info(fmt.Sprintf("Derived public key: %s", publicKey))
 			} else {
 				slog.Error(fmt.Sprintf("Warning: Failed to derive public key: %v", err))
@@ -680,11 +677,8 @@ func bootstrapSystem(db *store.Store) error {
 
 			// Derive public key
 			if actualPrivateKey != "" {
-				cmd := exec.Command("wg", "pubkey")
-				cmd.Stdin = strings.NewReader(actualPrivateKey)
-				output, err := cmd.Output()
-				if err == nil {
-					actualPublicKey = strings.TrimSpace(string(output))
+				if derived, err := wireguard.PublicKey(actualPrivateKey); err == nil {
+					actualPublicKey = derived
 				}
 			}
 

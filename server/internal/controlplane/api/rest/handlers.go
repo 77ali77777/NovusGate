@@ -61,6 +61,7 @@ type Server struct {
 	notifySender notify.Sender          // sends the test message
 	host         hostadmin.Runner       // host commands (P10a); nil: nsenter
 	activityMu   sync.RWMutex
+	ifaceErrs    sync.Map // network ID -> last reason its interface did not come up
 }
 
 // NewServer creates a new REST API server
@@ -73,7 +74,12 @@ func NewServer(store *store.Store) *Server {
 	}
 	s.setupRoutes()
 	// Initialize existing networks from DB
-	go s.loadNetworks()
+	go func() {
+		s.loadNetworks()
+		// Then bring back any interface that goes missing (reboot of a unit,
+		// a failed start, an interface removed by hand).
+		s.KeepInterfaces(context.Background())
+	}()
 	return s
 }
 
@@ -99,7 +105,7 @@ func (s *Server) loadNetworks() {
 		// Initialize manager
 		mgr := wireguard.NewManager(network.InterfaceName)
 		if err := wgInit(mgr); err != nil {
-			slog.Warn(fmt.Sprintf("Warning: WireGuard tools missing for %s", network.Name))
+			s.noteInterfaceError(network, err)
 			continue
 		}
 
@@ -114,12 +120,14 @@ func (s *Server) loadNetworks() {
 		s.managers[network.ID] = mgr
 		s.managersMu.Unlock()
 
-		// Ensure interface is UP
-		if err := mgr.Up(); err != nil {
-			slog.Info(fmt.Sprintf("Note: Interface %s might already be up: %v", network.InterfaceName, err))
-		} else {
-			slog.Info(fmt.Sprintf("Network %s (%s) is UP on port %d", network.Name, network.InterfaceName, port))
+		// The interface runs as its systemd unit on the host; bringUp puts
+		// the stored peers back (the unit starts without them) and keeps the
+		// reason when it cannot (shown with the network, retried by
+		// KeepInterfaces).
+		if err := s.bringUp(ctx, network, false); err != nil {
+			continue
 		}
+		slog.Info(fmt.Sprintf("Network %s (%s) is UP on port %d", network.Name, network.InterfaceName, port))
 
 		// SYNC: Import existing peers from WireGuard into DB
 		peers, err := mgr.GetPeers()
@@ -194,25 +202,6 @@ func (s *Server) loadNetworks() {
 			}
 		}
 
-		// Restore DB peers missing from the interface. Runtime peers are not
-		// written to wgN.conf (SaveConfig = false), so a host reboot drops them.
-		dbNodes, err := s.store.ListNodes(ctx, network.ID)
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Warning: cannot restore peers for %s: %v", network.InterfaceName, err))
-			continue
-		}
-		livePeers, err := mgr.GetPeers()
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Warning: cannot read peers of %s: %v", network.InterfaceName, err))
-			continue
-		}
-		restored, _, restoreErrs := restorePeers(mgr, dbNodes, livePeers, time.Now())
-		if restored > 0 || len(restoreErrs) > 0 {
-			slog.Info(fmt.Sprintf("Restored %d peers on %s (%d errors)", restored, network.InterfaceName, len(restoreErrs)))
-		}
-		for _, e := range restoreErrs {
-			slog.Warn(fmt.Sprintf("Warning: %s", e))
-		}
 	}
 }
 
@@ -274,6 +263,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/networks/{id}", s.handleGetNetwork).Methods("GET")
 	api.HandleFunc("/networks/{id}", s.handleDeleteNetwork).Methods("DELETE")
 	api.HandleFunc("/networks/{id}/dns", s.handleSetNetworkDNS).Methods("PUT")
+	api.HandleFunc("/networks/{id}/restart", s.handleRestartInterface).Methods("POST")
 
 	// Nodes
 	api.HandleFunc("/networks/{networkId}/nodes", s.handleListNodes).Methods("GET")
@@ -625,6 +615,9 @@ func (s *Server) handleListNetworks(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to list networks")
 		return
 	}
+	for _, n := range networks {
+		s.withInterfaceStatus(n)
+	}
 	jsonResponse(w, http.StatusOK, networks)
 }
 
@@ -739,18 +732,22 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 5. Initialize WireGuard Interface
+	// The network is stored either way; when its interface does not come up
+	// the response (and every later read) carries why, the panel offers a
+	// restart, and KeepInterfaces retries.
 	mgr := wireguard.NewManager(network.InterfaceName)
 	if err := wgInit(mgr); err != nil {
-		slog.Warn(fmt.Sprintf("Warning: WireGuard tools not available: %v", err))
+		s.noteInterfaceError(&network, err)
 	} else {
 		// Create WireGuard config with the generated key
 		// Calculate server IP (first usable IP in CIDR)
 		serverAddr, addrErr := hubAddress(network.CIDR)
 		if addrErr != nil {
-			slog.Warn(fmt.Sprintf("Warning: invalid CIDR %s: %v", network.CIDR, addrErr))
+			s.noteInterfaceError(&network, fmt.Errorf("invalid CIDR %s: %w", network.CIDR, addrErr))
 		} else if err := wgCreateInterface(mgr, privateKey, serverAddr, port); err != nil {
-			slog.Error(fmt.Sprintf("Warning: Failed to create WireGuard config for %s: %v", network.Name, err))
+			s.noteInterfaceError(&network, err)
 		} else {
+			s.setInterfaceError(network.ID, "")
 			slog.Info(fmt.Sprintf("WireGuard interface %s created for network %s", network.InterfaceName, network.Name))
 		}
 
@@ -762,6 +759,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
+	s.withInterfaceStatus(&network)
 	jsonResponse(w, http.StatusCreated, network)
 }
 
@@ -776,6 +774,7 @@ func (s *Server) handleGetNetwork(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusNotFound, "network not found")
 		return
 	}
+	s.withInterfaceStatus(network)
 	jsonResponse(w, http.StatusOK, network)
 }
 
@@ -802,6 +801,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	// Bring down WireGuard interface
 	if network.InterfaceName != "" {
 		wgTeardown(network.InterfaceName)
+		s.setInterfaceError(network.ID, "")
 
 		// Unregister manager
 		s.managersMu.Lock()

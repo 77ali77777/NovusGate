@@ -43,10 +43,14 @@ echo "$*" >> "` + wgLog + `"
 		}
 	}
 	t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
-	origDelay := loadNetworksDelay
-	t.Cleanup(func() { loadNetworksDelay = origDelay })
+	wireguard.SetHostTools(false) // the fake wg on PATH, not the host's
+	origDelay, origBring := loadNetworksDelay, wgBringUp
+	t.Cleanup(func() { loadNetworksDelay, wgBringUp = origDelay, origBring; wireguard.SetHostTools(true) })
 	loadNetworksDelay = 0
 	wgInit = func(*wireguard.Manager) error { return nil } // newContractServer restores it
+	// The interfaces "come up" (their systemd units are the host's); the
+	// peers are then restored and imported through the fake wg.
+	wgBringUp = func(*wireguard.Manager, bool) error { return nil }
 
 	s.loadNetworks()
 

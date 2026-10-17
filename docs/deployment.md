@@ -120,3 +120,9 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
   - `rsync` yoxdursa quraşdırır; köhnə kopyalama yolu silindi (silinmiş fayllar qalırdı);
   - hub "degraded" qalxırsa və ya `novusgate-web` işləmirsə xəbərdarlıq yazır, update saxlanılır.
 - **Docker əməliyyatları:** konteyner adı yoxlanılır (`[A-Za-z0-9][A-Za-z0-9_.-]*`), çünki SSH ilə shell-ə gedir.
+
+## WireGuard hostda (2026-10-17)
+- Hostda `wireguard-tools` olmalıdır (installer wg0 üçün onsuz da quraşdırır). Control-plane hər şəbəkəni hostda `wg-quick@wgN` systemd unit-i kimi qaldırır və `enable` edir: interfeyslər reboot-dan, Update-dən və konteyner restartından sonra özləri qalxır.
+- Yeni versiyaya keçəndə mövcud şəbəkələr control-plane-in ilk start-ında avtomatik unit-ə çevrilir (əl ilə qaldırılmış interfeys endirilib unit ilə qaldırılır). Peer-lər DB-dən qaytarılır.
+- `WG_RECONCILER` compose default-u `enforce`-dur: itmiş peer-lər özbaşına qayıdır.
+- Yoxlama: `systemctl list-units 'wg-quick@*'`, `wg show`; paneldə şəbəkə kartında vəziyyət və "Yenidən qaldır".

@@ -1428,8 +1428,14 @@
           "id": {
             "type": "string"
           },
+          "interface_error": {
+            "type": "string"
+          },
           "interface_name": {
             "type": "string"
+          },
+          "interface_up": {
+            "type": "boolean"
           },
           "listen_port": {
             "type": "integer"
@@ -1456,7 +1462,9 @@
           "client_dns",
           "created_at",
           "id",
+          "interface_error",
           "interface_name",
+          "interface_up",
           "listen_port",
           "name",
           "tunnel_mode",
@@ -1479,8 +1487,14 @@
           "id": {
             "type": "string"
           },
+          "interface_error": {
+            "type": "string"
+          },
           "interface_name": {
             "type": "string"
+          },
+          "interface_up": {
+            "type": "boolean"
           },
           "listen_port": {
             "type": "integer"
@@ -5541,6 +5555,47 @@
           }
         },
         "summary": "Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split)",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/networks/{id}/restart": {
+      "post": {
+        "operationId": "post_networks_by_id_restart",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Restart the network's WireGuard interface (its systemd unit on the host) and put its peers back; 500 interface_failed with the reason when it does not come up",
         "tags": [
           "networks"
         ]

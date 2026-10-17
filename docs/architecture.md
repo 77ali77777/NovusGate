@@ -107,8 +107,8 @@
 - **Paket:** `internal/controlplane/reconciler`. DB WireGuard peer-ləri üçün həqiqət mənbəyidir.
 - **`WG_RECONCILER` rejimləri:**
   - `off`: köhnə davranış, goroutine işləmir;
-  - `shadow` (default): yalnız log yazır;
-  - `enforce`: fərqi tətbiq edir.
+  - `shadow`: yalnız log yazır;
+  - `enforce` (2026-10-17-dən compose default-u): fərqi tətbiq edir — itmiş peer-ləri DB-dən qaytarır, DB-də olmayan peer-lərə toxunmur.
 
   Səhv dəyər verilsə server başlamır.
 - **Nə vaxt işləyir:** hər 15 saniyədən bir. Node və şəbəkə yazmalarından sonra da trigger olunur (`triggerReconcile`). Ardıcıl trigger-lər bir işləməyə birləşir.
@@ -152,3 +152,9 @@
 - Mətnlər `locales/{en,az}/help<Bölmə>.json`-dadır, hər açarın `what` / `who` / `effect` hissəsi var. `Input`/`Select` `help="ns:açar"` alır; xam `<input>` `data-help` daşıyır və eyni faylda `<HelpTip k=…>` olmalıdır.
 - `tests/helpScan.mjs` + `helpTips.test.mjs`: köməksiz input və ya hər iki dildə tam olmayan mətn build-i sındırır. Yeni sahə mətni ilə birlikdə gəlir.
 - Center (`public/index.html`, i18n yoxdur): eyni üç hissə ingiliscə, səhifənin öz script-i ilə.
+
+## WireGuard interfeysləri hostda (2026-10-17)
+- **Niyə:** Ubuntu 26.04 `/usr/bin/wg-quick` və `/usr/bin/wg` üçün yol üzrə yapışan AppArmor profilləri gətirir. Privileged konteynerdə də tətbiq olunur: konteynerin wg-quick-i öz busybox `readlink`-ini işlədə bilmirdi (`apparmor="DENIED" operation="exec" profile="wg-quick" name="/bin/busybox"`), paneldən yaradılan heç bir şəbəkə qalxmırdı.
+- **Necə:** `internal/wireguard` bütün `wg`, `wg-quick`, `ip`, `systemctl`, `journalctl` əmrlərini `nsenter -t 1 -m -u -i -n` ilə hostda işlədir (hostun öz alətləri, öz profilləri ilə). Hər şəbəkənin interfeysi hostda `wg-quick@wgN` systemd unit-idir (wg0 kimi): `Up` = `enable` + `start` (əl ilə qaldırılmış interfeys unit-ə verilir), `Restart` = yeni konfiq, `Down` = `disable --now` + qalan interfeys silinir. Açarlar Go-da (Curve25519) yaradılır, `wg genkey/pubkey` işləmir.
+- **Görünən vəziyyət:** şəbəkə JSON-unda `interface_up` və `interface_error` (son uğursuzluğun səbəbi, unit-in jurnalı ilə). Start-da, şəbəkə yaradılanda və `POST /networks/{id}/restart`-da qaldırılır; `KeepInterfaces` hər 30 s itmiş interfeysi qaldırır. Hər qaldırılmadan sonra DB-dəki peer-lər qaytarılır (`SaveConfig = false`).
+- Konteynerdən kənar development: `wireguard.SetHostTools(false)`.
