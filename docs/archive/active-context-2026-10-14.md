@@ -248,3 +248,142 @@
   6 minor ledger-də.
 - **Davam:** P5 (UI kit). Vizual maket istifadəçinin təsdiqini tələb edir.
 
+
+<!-- Moved from docs/active-context.md on 2026-10-17 -->
+### 2026-10-14: Təxirə salınmış bütün kiçik məsələlərin bağlanması
+- **Tapşırıq:** "heç bir kiçik heç nə qalmasın". P1–P4 final review-larından qalan bütün `minor (deferred)` bəndləri transkriptdən toplandı.
+- **Plan:** `docs/superpowers/plans/2026-10-14-deferred-minors-cleanup.md`. 8 batch (A–H), 75 bənd. Bəziləri əvvəlki fazalarda artıq həll olunmuşdu, onlar `verified-closed` kimi qeyd olunub. Üç bənd səbəbi yazılmaqla bağlanıb:
+  - ölçülməmiş performans dəyişikliyi;
+  - reboot-da timeout-ların yenidən başlaması;
+  - `Allow`-da OPTIONS.
+- **Commit-lər:** `a79dfc4`..`3639795` (təxminən 20 commit).
+- **Final review (opus):** 3 Important bağlandı:
+  - geniş route-un node peer-ini bloklaması;
+  - checkin body-sinin limitsiz oxunması;
+  - `v1` key-lərlə uyğunluq.
+
+  Minor-ların hamısı ya düzəldildi, ya da səbəbi yazılmaqla bağlandı.
+- **Yoxlamalar:**
+  - Go: `test-with-postgres.sh` → 10 paket `ok` (`NFT_CHECK=1` daxil);
+  - `nft-versions-check.sh` → 1.0.2, 1.0.6, 1.0.9 `NFT-VERSIONS-OK`;
+  - `setup-firewall_test.sh` → `OK`;
+  - Center → 36/36;
+  - web → `tsc` 0, biome 99/31, `vite build` ok.
+- **Davranış dəyişiklikləri** (ətraflı siyahı plan faylındadır):
+  - HEAD dəstəyi;
+  - debug 404-ün vahid xəta formatına keçməsi;
+  - `/30`-dan kiçik şəbəkələrin rədd edilməsi;
+  - API açarının simvol yoxlaması;
+  - IPv6 və səhv portlu VPN qaydalarının rədd edilməsi;
+  - Center-in `web/.env`-ə açar yazmaması;
+  - Center-də formdakı dəyərlərin yoxlanması.
+- **Davam:** P5 (UI kit). Vizual maketin təsdiqi lazımdır.
+
+### 2026-10-14: Açıq qərarlar və hand-off hazırlığı
+- **Tapşırıq:** "hamısını hazırla, düzəlişləri et, sonra report ver". İstifadəçinin qərarları:
+  - Postgres yalnız loopback-də;
+  - Allow IP admin portlarını açmır (§6b.4);
+  - `/health` detalları yalnız auth ilə.
+- **Commit-lər:** `3bb858c`, `5510657`, `2b374d8`, `8d4b700`, `b1320ea`, `1840033`.
+- **Nəticə:**
+  - `web/.env` və `NovusGate Center/.env` git-dən çıxarıldı və ignore olundu; `server/deployments/docker/.env` də ignore olunur;
+  - compose `127.0.0.1:5432:5432`;
+  - CI faylı `docs/ci/ci.yml`-dədir, kopyalanmalıdır;
+  - Allow IP: nft guard sətri, iptables mangle `NOVUSGATE-ADMIN` (IPv4 və IPv6), API 400, Center uninstall IPv6 guard-ı silir;
+  - `/health` anonim çağırışa `{status, version}` qaytarır.
+- **P5 mockup:** https://claude.ai/artifact/T3qJP3n5KZBgunekRtTSi1. Dörd artboard:
+  - Foundations;
+  - Components (light/dark tweak, işləyən dialog, tablar, switch);
+  - Nodes (light);
+  - Nodes (dark).
+
+  Təsdiq gözləyir.
+- **Yoxlamalar:**
+  - Go 10/10 (`NFT_CHECK=1`);
+  - `NFT-VERSIONS-OK`;
+  - shell `OK`;
+  - Center 38/38;
+  - real iptables (nft və legacy backend) guard-ı yükləyir, iki dəfə işə salındıqdan sonra bir jump qalır;
+  - WSL kernel-ində legacy ip6tables `mangle` yoxdur, skript xəbərdarlıq verib davam edir.
+- **İcra olunmayıb:**
+  - real hostda port bloklanmasının funksional testi;
+  - CI-nin GitHub-da işə salınması.
+- **Davam:** mockup təsdiqi → P5 planı.
+
+### 2026-10-14: P5 mockup tam paritetlə yenidən quruldu
+- **Tapşırıq:** istifadəçi mockup-un natamam olduğunu dedi. Mockup hazırkı paneldəki hər səhifəni, modalı, detalı, redaktə/silmə/əlavə axınını və config pəncərəsini əks etdirməlidir, heç nə əskik olmamalıdır.
+- **Nəticə:** https://claude.ai/artifact/T3qJP3n5KZBgunekRtTSi1. 40 lövhə; mənbə `web/src`-in sətir-sətir inventarıdır. Repo kodu dəyişməyib.
+  - **Ümumi:** Login, Dashboard, Feedback/vəziyyətlər.
+  - **Networks:** 3 lövhə.
+  - **Nodes:** 11 lövhə; detal, modallar və Connect-in 5 tabı daxil.
+  - **Firewall:** 10 lövhə.
+  - **Fail2Ban:** 10 lövhə.
+  - **Settings.**
+- **Yoxlamalar:**
+  - inventarın 10 mətni `grep` ilə kodda təsdiqləndi;
+  - xəta mətnləri və config şablonu backend-dən götürüldü;
+  - render yoxlanmayıb.
+- **Davam:** istifadəçinin mockup-a rəyi və ya təsdiqi → P5 planı.
+- **Klikləmə prototipi (eyni gün):** mockup klikləmə ilə gəzilən panelə çevrildi. Kanvas Login-dən açılır (`launch: focused`). 36 lövhə interaktivdir:
+  - yan menyu səhifələrə keçid edir;
+  - düymələr modallara keçid edir;
+  - tablar tab səhifələrinə keçid edir;
+  - Cancel/Save əvvəlki səhifəyə qaytarır.
+
+  Skript 106 keçidi yoxladı, sınıq keçid 0. Brauzerdə klik yoxlanmayıb.
+- **İstifadəçi qərarı:** yeni dizayna ehtiyac olmadı. Hazırkı frontend və dizayn saxlanılır, P5 və P6 ləğv olundu (master spec §2-də qeyd edilib).
+
+### 2026-10-14: Frontend baqları (hazırkı dizaynda)
+- **B13:** `EditNodeModal` "Keep Current" ilə açılır; tarix sahəsi yalnız "Set Custom Date" seçiləndə görünür, ona görə keçmiş müddət artıq saxlamağı bloklamır.
+  - Müddət hesabı `web/src/lib/nodeExpiry.ts`-ə çıxarıldı.
+  - `alert` əvəzinə xəta formanın içində göstərilir.
+  - Keçmiş müddətlə yenidən aktivləşdirəndə xəbərdarlıq çıxır.
+- **B15:** backend artıq 400 qaytarır (P4a); frontend yalnız 401-də çıxış edir. Kodda əlavə dəyişiklik lazım olmadı.
+- **Səssiz xətalar:** `App.tsx`-də `MutationCache` hər mutasiya xətasını serverin mesajı ilə toast kimi göstərir, `meta.successTitle` olanda uğuru da göstərir. Yeni `components/Toaster.tsx` mövcud store bildirişlərini Layout-da göstərir.
+  - Hook-lara `meta` əlavə olundu (`api/client.ts`: 20, `Fail2Ban.tsx`: 5).
+  - Formada xətanı özü göstərən mutasiyalar `inlineError` ilə işarələndi: create network, parol, istifadəçi yaratma.
+  - Close Port-un ikiqat `alert`-i çıxarıldı.
+- **Testlər:** `web/tests/nodeExpiry.test.mjs` (8). `npm test` Node 22 `--experimental-strip-types` ilə işləyir, yeni paket yoxdur; `docs/ci/ci.yml` web job-u Node 22-yə keçdi.
+- **Yoxlamalar:**
+  - Node 22: `tsc` OK, `npm test` 8/8, `vite build` OK, bundle-da açar yoxdur;
+  - biome: 98 xəta / 31 xəbərdarlıq, əvvəl 99 / 31 idi; yeni xəta yoxdur, `package.json`-un sonuna sətir əlavə olundu.
+- **Brauzerdə yoxlanmayıb:** toast-ların görünüşü, Edit Node axını.
+
+### 2026-10-14: P3c — Firewall "Advanced (nftables)" tabı (hazırkı dizaynda)
+- **Nəticə:** Firewall səhifəsinə yeni tab əlavə olundu (`pages/Firewall/AdvancedTab.tsx`). Mövcud v2 API-dən istifadə edir, backend dəyişməyib. Bölmələr:
+  - engine statusu: rejim, qorunan SSH portları, internet interfeysi, host xətası;
+  - gözləyən dəyişiklik: geri sayım və "Confirm change"; təsdiq olunmasa host özü geri qaytarır;
+  - servislər (port aralığı, mənbələr, interfeys);
+  - IP qaydaları: block/allow, portlar, bitmə vaxtı, mənşə;
+  - port yönləndirmə;
+  - full tunnel (egress), sidebar-da seçilmiş şəbəkənin node-ları üçün;
+  - nft ruleset önizləməsi.
+
+  `nft` rejimindən başqa rejimlərdə və təsdiq gözləyən dəyişiklik varkən dəyişiklik düymələri bağlıdır; önizləmə hər rejimdə işləyir.
+- **Kod:** `api/client.ts`-ə 10 v2 metodu və hook əlavə olundu. State gözləyən dəyişiklik varkən 5 s-dən bir, əks halda 30 s-dən bir yenilənir. Tiplər `types/index.ts`-dədir; `pending` `null` ola bilər. Köməkçilər `lib/firewallV2.ts`-dədir.
+- **Testlər:** `web/tests/firewallV2.test.mjs`, 4 test, əvvəl düşdü sonra keçdi; cəmi 12/12. `tsc` OK, biome 98/31 (yeni xəta yoxdur), `vite build` OK.
+- **P3c-dən qalanlar** (P3 spec §5): Live (sayğaclar, drop log-u, conntrack) və History (diff, rollback) üçün backend endpoint-i yoxdur. Bunlar backend işi tələb edir. *(2026-10-15: hər ikisi edildi, aşağıya baxın.)*
+- **Brauzerdə və real nft hostda yoxlanmayıb.**
+
+### 2026-10-14: P7 — NovusGate Center
+- **Commit-lər:** `0ff8d86`, `62a3601`, `2218adf`, `c7236cc`, `e33821e`.
+- **`servers.json`:** `lib/store.js` hər dəyişiklikdə faylı yenidən oxuyur və atomik yazır (tmp + rename). Uzun install sonda köhnə məlumatla yazıb başqa dəyişiklikləri silmir. Korlanmış fayl boş siyahı ilə əvəz olunmur.
+- **Bir server üçün eyni anda bir iş:** `lib/jobs.js`, digər iş gedərkən 409 qaytarır. Install, update, reinstall, migrate, uninstall, prune və join-vpn-ə aiddir.
+- **Paralel arxiv:** hər install öz müvəqqəti arxivini yaradır (`lib/archive.js`, `execFile`).
+- **Non-root SSH istifadəçisi:** bağlantıdakı bütün əmrlər `sudo -n` ilə işləyir (`lib/ssh.js connect`), Fail2Ban modulu da daxil.
+- **Terminal:** key passphrase ötürülür; shell brauzerin ölçüsü ilə açılır və resize-ı izləyir (səhifə əvvəl resize göndərmirdi).
+- **B10 Join VPN:** paneldəki install skripti (Nodes → Connect → Linux) yapışdırılır və 0700 fayl kimi yüklənir, ona görə token `ps`-də görünmür. Skript root kimi işləyir, sonra silinir, çıxış SSE ilə gəlir. Səhifədə Join VPN düyməsi və modal əlavə olundu.
+- **Skriptlər:** `compose()` Compose v2-dən istifadə edir, v1 yalnız fallback-dir. `apt_get()` dpkg lock-u 10 dəqiqəyə qədər gözləyir. `setup-firewall.sh` də v2-yə keçdi.
+- **Uninstall:**
+  - artıq qlobal `docker system prune` və bütün cədvəllərin flush-u yoxdur;
+  - yalnız NovusGate silinir: konteynerlər, volume-lar, yalnız qurduğu image-lər (`--rmi local`), wg interfeysləri (DB, PostUp imzası, wg0), INPUT, `NOVUSGATE-ADMIN`, nft cədvəli, boot unit, rollback timer, fail2ban jail faylı, `/etc/novusgate`, `/var/lib/novusgate`.
+- **Update:**
+  - dəyişiklikdən əvvəl backup: kod və `.env`, `/etc/wireguard`, `pg_dump` → `/var/backups/novusgate/update-<vaxt>` (son 5 saxlanılır);
+  - xəta (`trap ERR`) və ya `/health` 1 dəqiqədə cavab verməsə avtomatik rollback; DB avtomatik geri qaytarılmır (miqrasiyalar yalnız genişləndirir).
+- **Testlər:** Center 71/71 (yeni: store, jobs, archive, ssh, join, run, scripts); shell `OK`.
+- **İcra olunmayıb:** real serverdə install, update, rollback, uninstall və join-vpn; brauzerdə terminal.
+- **Spec §4.5-dən edilməyənlər:**
+  - skriptlərin `scripts/*.sh` fayllarına çıxarılması: refaktor, istifadəçiyə görünən faydası yoxdur; `shellQuote` injection-u artıq bağlayır;
+  - job log-larının saxlanması: install çıxışında parollar var, saxlamaq təhlükəsizlik qərarıdır;
+  - tam preflight (OS, disk).
+
