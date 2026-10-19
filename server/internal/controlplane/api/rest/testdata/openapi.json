@@ -6316,6 +6316,47 @@
         ]
       }
     },
+    "/api/v1/nodes/{id}/rotate-key": {
+      "post": {
+        "operationId": "post_nodes_by_id_rotate_key",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Give a device a new key pair; its old config stops working, the new one is downloaded with GET config",
+        "tags": [
+          "nodes"
+        ]
+      }
+    },
     "/api/v1/nodes/{id}/traffic": {
       "get": {
         "operationId": "get_nodes_by_id_traffic",

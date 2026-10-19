@@ -94,6 +94,7 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 ## P2c dəyişiklikləri
 - **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi əlavə və yeniləmələrin sayıdır (vaxtı keçmiş peer-lərin silinməsi hər iki rejimdə edilir). `ok: false` olanda `status: degraded` qaytarılır.
 - **`PUT /nodes/{id}`:** cavab forması dəyişmir. Node aktiv olanda (məsələn gələcək `expires_at` verildikdə) peer əlavə olunur, aktiv olmayanda silinir (B11).
+- **`POST /nodes/{id}/rotate-key`** (operator, 2026-10-19, VLAN planı M4): cihaza yeni açar cütü. Əvvəl köhnə peer interfeysdən silinir (alınmasa 500, heç nə dəyişmir), sonra DB-də açar və `config_routes = ''`, aktiv cihaz üçün yeni peer. Cavab: node (`config_outdated: true`, `has_config: true`); yeni konfiq `GET /nodes/{id}/config` ilə alınır. Köhnə konfiq dərhal işləməz olur. 404: cihaz yoxdur.
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.
 
 ## Xəta formatı (P2d-1)

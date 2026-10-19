@@ -175,3 +175,22 @@ func (s *Store) CheckNodeKeys(ctx context.Context) error {
 	}
 	return nil
 }
+
+// SetNodeKeys gives a node a new key pair (VLAN plan M4): the public key,
+// the sealed private key and an empty config_routes, so the device shows
+// its config as outdated until it is downloaded again.
+func (s *Store) SetNodeKeys(ctx context.Context, nodeID, publicKey, privateKey string) error {
+	sealed, err := secretbox.Seal(s.box, privateKey, nodeID)
+	if err != nil {
+		return err
+	}
+	res, err := s.db.ExecContext(ctx, `UPDATE nodes SET public_key = $2, private_key_enc = $3, config_routes = '' WHERE id = $1`,
+		nodeID, publicKey, sealed)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}

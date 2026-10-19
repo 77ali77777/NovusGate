@@ -272,6 +272,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/nodes/{id}", s.handleGetNode).Methods("GET")
 	api.HandleFunc("/nodes/{id}", s.handleUpdateNode).Methods("PUT", "PATCH")
 	api.HandleFunc("/nodes/{id}", s.handleDeleteNode).Methods("DELETE")
+	api.HandleFunc("/nodes/{id}/rotate-key", s.handleRotateNodeKey).Methods("POST")
 	api.HandleFunc("/nodes/{id}/checkin", s.handleNodeCheckIn).Methods("POST")
 
 	// WireGuard Config & Utils

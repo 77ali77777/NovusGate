@@ -28,6 +28,7 @@ var operatorRoutes = map[string]bool{
 	"PUT /api/v1/nodes/{id}":                    true,
 	"PATCH /api/v1/nodes/{id}":                  true,
 	"DELETE /api/v1/nodes/{id}":                 true,
+	"POST /api/v1/nodes/{id}/rotate-key":        true, // the new config is fetched with the operator-only config GET
 	"POST /api/v1/nodes/{id}/checkin":           true, // with a session: the panel reports for a node
 	"POST /api/v1/groups":                       true,
 	"PUT /api/v1/groups/{id}":                   true,

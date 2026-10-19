@@ -3,10 +3,13 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
+	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
 // VLAN-style access (plan 2026-10-19, M1): every device's config routes all
@@ -201,5 +204,69 @@ func TestAccessCheckEndpoint(t *testing.T) {
 		if rec := callAs(t, s, "GET", c.path, "", true); rec.Code != c.code {
 			t.Errorf("%s = %d %s, want %d", c.path, rec.Code, rec.Body, c.code)
 		}
+	}
+}
+
+// VLAN plan M4: a device gets a new key and config; the old config stops
+// working at once (its peer is removed), the new one is a fresh download.
+func TestRotateNodeKey(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	old := seed.node.PublicKey
+	own := seed.node.VirtualIP.String() + "/32"
+	f := &fakePC{peers: map[string]wireguard.PeerStatus{old: {AllowedIPs: own}}}
+	orig := nodePeerControl
+	t.Cleanup(func() { nodePeerControl = orig })
+	nodePeerControl = func(*Server, string) peerControl { return f }
+	configOf(t, s, seed.node.ID)
+
+	rec := callAs(t, s, "POST", "/api/v1/nodes/"+seed.node.ID+"/rotate-key", "", true)
+	if rec.Code != 200 {
+		t.Fatalf("rotate = %d %s", rec.Code, rec.Body)
+	}
+	var n models.Node
+	if err := json.Unmarshal(rec.Body.Bytes(), &n); err != nil {
+		t.Fatal(err)
+	}
+	if n.PublicKey == "" || n.PublicKey == old || !n.ConfigOutdated {
+		t.Fatalf("new key, config to download again: %s", rec.Body)
+	}
+	if want := []string{"remove " + old, "add " + n.PublicKey + " " + own}; !reflect.DeepEqual(f.calls, want) {
+		t.Fatalf("calls = %v, want %v", f.calls, want)
+	}
+	conf := configOf(t, s, seed.node.ID)
+	var priv string
+	for _, line := range strings.Split(conf, "\n") {
+		if strings.HasPrefix(line, "PrivateKey = ") {
+			priv = strings.TrimPrefix(line, "PrivateKey = ")
+		}
+	}
+	if pub, err := wireguard.PublicKey(priv); err != nil || pub != n.PublicKey {
+		t.Fatalf("the config carries the new key: %v %q", err, pub)
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/nodes/00000000-0000-0000-0000-000000000000/rotate-key", "", true); rec.Code != 404 {
+		t.Fatalf("unknown device = %d", rec.Code)
+	}
+}
+
+type failRemove struct{ *fakePC }
+
+func (failRemove) RemovePeer(string) error { return errors.New("wg: device busy") }
+
+// If the old peer cannot be removed, nothing changes: a "new" key beside a
+// still-working old config would be worse than no rotation.
+func TestRotateNodeKeyKeepsTheKeyWhenThePeerStays(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	orig := nodePeerControl
+	t.Cleanup(func() { nodePeerControl = orig })
+	nodePeerControl = func(*Server, string) peerControl {
+		return failRemove{&fakePC{peers: map[string]wireguard.PeerStatus{}}}
+	}
+	if rec := callAs(t, s, "POST", "/api/v1/nodes/"+seed.node.ID+"/rotate-key", "", true); rec.Code != 500 {
+		t.Fatalf("rotate = %d %s", rec.Code, rec.Body)
+	}
+	if n, _ := st.GetNode(context.Background(), seed.node.ID); n.PublicKey != seed.node.PublicKey {
+		t.Fatalf("key changed: %s", n.PublicKey)
 	}
 }

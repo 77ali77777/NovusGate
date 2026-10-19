@@ -97,6 +97,7 @@ var docOps = []docOp{
 	{"PUT", "/api/v1/nodes/{id}", "Update a node", "nodes", UpdateNodeRequest{}, 200, models.Node{}, false},
 	{"PUT", "/api/v1/nodes/{id}/tunnel", "Set one node's tunnel mode (split, full, or empty to follow its network). Admin; a firewall change in nftables mode", "nodes", NodeTunnelRequest{}, 200, V2ChangeResponse{}, false},
 	{"PATCH", "/api/v1/nodes/{id}", "Update a node (same as PUT)", "nodes", UpdateNodeRequest{}, 200, models.Node{}, false},
+	{"POST", "/api/v1/nodes/{id}/rotate-key", "Give a device a new key pair; its old config stops working, the new one is downloaded with GET config", "nodes", nil, 200, models.Node{}, false},
 	{"DELETE", "/api/v1/nodes/{id}", "Delete a node", "nodes", nil, 200, StatusResponse{}, false},
 	{"POST", "/api/v1/nodes/{id}/checkin", "Report node information (panel session, or the install script's X-Enrollment-Token)", "nodes", NodeCheckInRequest{}, 200, models.Node{}, false},
 	{"GET", "/api/v1/nodes/{id}/config", "Download the client WireGuard config", "nodes", nil, 200, mediaType("text/plain"), false},
