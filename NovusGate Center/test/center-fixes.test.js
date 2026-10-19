@@ -35,7 +35,10 @@ test('install routes the address pool in the admin config', () => {
   assert.ok(line, 'ADMIN_ROUTES is chosen by a case on VPN_SUBNET');
   assert.match(all.install, /^AllowedIPs = \$ADMIN_ROUTES$/m);
   const { execFileSync } = require('node:child_process');
-  const pick = (subnet) => execFileSync('sh', ['-c', `VPN_SUBNET=${subnet}; ${line}; printf %s "$ADMIN_ROUTES"`]).toString();
+  const pick = (subnet, server = '203.0.113.5') =>
+    execFileSync('sh', ['-c', `VPN_SUBNET=${subnet}; SERVER_IP=${server}; ${line}; printf %s "$ADMIN_ROUTES"`]).toString();
   assert.strictEqual(pick('10.99.0.0/24'), '10.0.0.0/8');
   assert.strictEqual(pick('172.20.0.0/24'), '172.20.0.0/24');
+  // A hub reached at a 10.x address: its handshakes would go into the tunnel.
+  assert.strictEqual(pick('10.99.0.0/24', '10.0.5.4'), '10.99.0.0/24');
 });

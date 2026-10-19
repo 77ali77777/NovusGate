@@ -262,6 +262,7 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 ## `GET/PUT /api/v1/settings/vpn` (2026-10-19, server tərəfli marşrut P1)
 - **GET** (bütün rollar): `{pool, next_cidr}` — konfiqlərin marşrutladığı hovuz və yeni şəbəkənin alacağı /24 (`""`: hovuz doludur).
 - **P2:** cavabda həm də `endpoint_host` (`""`: IP) və `endpoint_default` (WG_SERVER_ENDPOINT). PUT `{endpoint_host}` — domen (RFC 1123) və ya IPv4, port və sxemsiz; 400 `invalid_endpoint_host`. PUT-da sahələrdən biri kifayətdir, verilməyən dəyişmir. Konfiqlərdə `Endpoint = <host>:<şəbəkə portu>`.
+- Review düzəlişi: server ünvanı (IPv4) hovuzun içində ola bilməz — 400 `endpoint_inside_pool`; endpoint-i hovuzun içində olan şəbəkənin konfiqi hovuzu yox, şəbəkələri adla yazır. iptables rejimində `NOVUSGATE-VPN` sonunda `-i wg+ -d <hovuz> -j DROP`: hub tərəfindəki hovuz ünvanlarına (provayderin özəl şəbəkəsi, Docker) yalnız qayda icazə verəndə çatılır (nft-də onsuz da default drop).
 - **PUT** (admin) `{pool}`: özəl IPv4 blok, /8–/16, şəbəkə ünvanı ilə yazılmış (10/8, 172.16/12, 192.168/16, 100.64/10 daxilində); 400 `invalid_pool`. Bütün cihaz konfiqləri köhnəlir.
 - **`POST /networks`:** `cidr` boş olsa server hovuzdan növbəti boş /24-ü seçir (10/8-də: 10.10.0.0/24, 10.11.0.0/24, …); hovuz doludursa 409 `pool_full`; hovuzdan kənar CIDR 400 `cidr_outside_pool`.
 - Konfiq `AllowedIPs`: hovuz + hovuzdan kənar şəbəkələr + qaydanın digər tərəfinin kənar aralıqları; hovuzun içində yeni şəbəkə konfiqi dəyişmir.

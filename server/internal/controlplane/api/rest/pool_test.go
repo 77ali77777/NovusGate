@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/netip"
 	"strings"
 	"testing"
@@ -141,5 +142,36 @@ func TestEndpointHostInConfigs(t *testing.T) {
 	callAs(t, s, "PUT", "/api/v1/settings/vpn", `{"endpoint_host":""}`, true)
 	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "Endpoint = 203.0.113.1\n") {
 		t.Fatalf("cleared: the network's own endpoint again:\n%s", conf)
+	}
+}
+
+// Review P1/P2: a hub reached at an address inside the pool would have its
+// own handshakes routed into the tunnel; such configs name the networks.
+func TestEndpointInsideThePoolKeepsNetworkRoutes(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	ctx := context.Background()
+	key := func(c string) string { return strings.Repeat(c, 43) + "=" }
+	n := &models.Network{Name: "private-hub", CIDR: "10.70.0.0/24", ServerPrivateKey: key("s"), ServerPublicKey: key("S"),
+		ServerEndpoint: "10.200.0.9:51870", ListenPort: 51870, InterfaceName: "wg70"}
+	if err := st.CreateNetwork(ctx, n); err != nil {
+		t.Fatal(err)
+	}
+	node := &models.Node{NetworkID: n.ID, Name: "behind", VirtualIP: net.ParseIP("10.70.0.3"), PublicKey: key("N"),
+		Labels: map[string]string{}, Status: models.NodeStatusOnline}
+	if err := st.CreateNode(ctx, node); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetNodePrivateKey(ctx, node.ID, key("P")); err != nil {
+		t.Fatal(err)
+	}
+	conf := configOf(t, s, node.ID)
+	if strings.Contains(conf, "10.0.0.0/8") || !strings.Contains(conf, "AllowedIPs = 10.70.0.0/24") {
+		t.Fatalf("endpoint 10.200.0.9 is inside the pool: networks by name:\n%s", conf)
+	}
+	t.Cleanup(func() { st.SetVPNEndpointHost(ctx, "") })
+	for _, bad := range []string{`{"endpoint_host":"10.1.2.3"}`, `{"endpoint_host":"999.1.1.1"}`, `{"endpoint_host":"1.2.3"}`} {
+		if rec := callAs(t, s, "PUT", "/api/v1/settings/vpn", bad, true); rec.Code != 400 {
+			t.Errorf("%s = %d %s", bad, rec.Code, rec.Body)
+		}
 	}
 }

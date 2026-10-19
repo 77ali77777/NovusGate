@@ -212,11 +212,13 @@
 - **P1:** DB 023 `vpn_settings.pool`; konfiq `AllowedIPs` = hovuz (+ hovuzdan kənar şəbəkələr, kənar aralıqlar); `POST /networks` CIDR boşdursa növbəti /24, hovuzdan kənar 400; `GET/PUT /settings/vpn`; panel: şəbəkə formasında CIDR avtomatik, Settings → "VPN ünvan hovuzu"; Center `install.sh` admin konfiqi hovuzu marşrutlayır.
 - **Yoxlamalar:** Go 16/16, web 118, Center 111, brauzerdə şəbəkə avtomatik 10.10.0.0/24 aldı, konfiq `AllowedIPs = 10.0.0.0/8`.
 - **P2:** DB 024 `vpn_settings.endpoint_host`; konfiq `Endpoint` = domen:port (4 konfiq yeri bir köməkçidə: `nodeEndpoint`); "konfiq köhnədir" endpoint-i də izləyir (`config_routes` = `AllowedIPs @ Endpoint`); install.sh HEAD artıq qeyd yazmır; Settings → "Server ünvanı (domen)". Center quraşdırma formasına domen sahəsi əlavə olunmayıb (admin konfiqi IP ilə qalır).
-- **Davam:** P3 (DNS hubda), P4 (NETMAP).
+- **P1/P2 review düzəlişləri:** endpoint hovuzun içindədirsə konfiq şəbəkələri adla yazır (əks halda tunel qalxmırdı), PUT bunu rədd edir; iptables-də hovuza gedən qaydasız trafik DROP (hubun 10.x LAN/VPC-si açıq qalırdı); yanlış IP (999.1.1.1) domen kimi keçmir; Center: server IP 10.x-dirsə admin konfiqi yalnız admin alt şəbəkəsini marşrutlayır. Təxirə salınan minor-lar: full tunel cihazları yenilənmədən sonra bir dəfə yalançı "köhnədir" göstərir; 192.168/16 hovuzu ev LAN-ları ilə toqquşa bilər; birgə PUT atomik deyil; 023 rollback-i 024-dən əvvəl edilməməlidir.
+- **Davam:** P3 (DNS hubda), P4 (NETMAP) — istifadəçi təsdiqi gözləyir (hubda yeni xidmət).
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
-| 2026-10-19 | Server ünvanı domen ilə (DB 024), konfiq endpoint-i bir yerdə | server/internal/controlplane/{store/vpn_settings.go,api/rest/{pool,routes,config_handlers}.go}, web/src/pages/Settings/EndpointHostCard.tsx, i18n | Server tərəfli marşrut P2 |
+| 2026-10-19 | P1/P2 review: endpoint hovuzda, iptables hovuz DROP, Center admin konfiqi | server/internal/controlplane/api/rest/{pool,routes,firewall_handlers}.go, NovusGate Center/scripts/install.sh | Müstəqil review |
+| 2026-10-19 | Server ünvanı domen ilə (DB 024), konfiq endpoint-i bir yerdə | server/internal/controlplane/{store/vpn_settings.go,api/rest/{pool,routes,config_handlers}.go}, web/src/pages/Settings/EndpointHostCard.tsx, i18n | Server tərəfli marşrut P2 · `4d7e471` |
 | 2026-10-19 | Ünvan hovuzu: konfiq bir dəfə, şəbəkə CIDR avtomatik (DB 023) | server/internal/controlplane/{store/vpn_settings.go,api/rest/{pool,routes,handlers}.go}, NovusGate Center/scripts/install.sh, web/src/pages/{Networks,Settings}, i18n | Server tərəfli marşrut P1 · `87a1e0c` |
 | 2026-10-19 | VLAN review düzəlişləri (iptables yenidən qurma, kənar marşrut, rotate-key) | server/internal/controlplane/api/rest/{firewall_engine,firewall_handlers,handlers,routes,rotate_key}.go, web/src/api/client.ts, i18n nodes | Müstəqil review |
 | 2026-10-19 | Cihaz açarını yeniləmə (API + "Yeni açar"), Admin VPN izahı | server/internal/controlplane/{store/node_keys.go,api/rest/rotate_key.go}, web/src/{pages/Nodes/Nodes.tsx,lib/deviceActions.ts,api/client.ts}, i18n | VLAN planı M4 · `028bdb4`, `d306466` |

@@ -122,6 +122,10 @@ func validEndpointHost(s string) (string, error) {
 	if len(h) > 253 || !strings.Contains(h, ".") {
 		return "", bad
 	}
+	// A top label of digits is a mistyped address (999.1.1.1, 1.2.3), not a name.
+	if last := h[strings.LastIndex(h, ".")+1:]; strings.Trim(last, "0123456789") == "" {
+		return "", bad
+	}
 	for _, l := range strings.Split(h, ".") {
 		if !hostLabelRe.MatchString(l) {
 			return "", bad
@@ -214,6 +218,28 @@ func (s *Server) handleSetVPNSettings(w http.ResponseWriter, r *http.Request) {
 	if req.EndpointHost != nil {
 		if host, err = validEndpointHost(*req.EndpointHost); err != nil {
 			errorWithCode(w, http.StatusBadRequest, "invalid_endpoint_host", err.Error())
+			return
+		}
+	}
+	// The hub may not be reached at an address the configs route into the
+	// tunnel: its handshakes would go into the tunnel itself.
+	if req.Pool != nil || req.EndpointHost != nil {
+		checkPool, checkHost := pool, host
+		if req.Pool == nil {
+			if checkPool, err = s.vpnPool(r.Context()); err != nil {
+				errorResponse(w, http.StatusInternalServerError, "failed to read the address pool")
+				return
+			}
+		}
+		if req.EndpointHost == nil {
+			if checkHost, err = s.store.VPNEndpointHost(r.Context()); err != nil {
+				errorResponse(w, http.StatusInternalServerError, "failed to read the endpoint host")
+				return
+			}
+		}
+		if a, perr := netip.ParseAddr(checkHost); perr == nil && checkPool.Contains(a) {
+			errorWithCode(w, http.StatusBadRequest, "endpoint_inside_pool", "the server address "+checkHost+
+				" is inside the address pool "+checkPool.String()+": devices could not reach the hub; use a public address or a domain")
 			return
 		}
 	}

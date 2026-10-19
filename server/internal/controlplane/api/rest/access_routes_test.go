@@ -105,7 +105,8 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg71 -o wg71 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg72 -o wg72 -j RETURN",
-		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation"} {
+		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
+		"iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP -m comment --comment novusgate-vpn-isolation"} {
 		stub.out[cmd] = ""
 	}
 	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\nnum pkts bytes target prot opt in out source destination\n"
@@ -123,6 +124,11 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 	if accept < 0 || sameA < 0 || sameB < 0 || drop < 0 || drop < accept || drop < sameA || drop < sameB {
 		t.Fatalf("rules, then same-network RETURNs, then the default DROP:\n%s", calls)
 	}
+	// The pool (server-side routing): devices route all of it into the
+	// tunnel, so hub-side 10.x hosts that no rule names are dropped too.
+	if pool := strings.Index(calls, "iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP"); pool < accept {
+		t.Fatalf("rules, then the pool DROP:\n%s", calls)
+	}
 }
 
 // A mutual rule is stored as such and applied both ways in iptables mode.
@@ -139,7 +145,8 @@ func TestMutualRuleInIptablesMode(t *testing.T) {
 	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg73 -o wg73 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg74 -o wg74 -j RETURN",
-		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation"} {
+		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
+		"iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP -m comment --comment novusgate-vpn-isolation"} {
 		stub.out[cmd] = ""
 	}
 	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\nnum pkts bytes target prot opt in out source destination\n"
@@ -322,7 +329,8 @@ func TestIptablesRebuildsAfterNodeDelete(t *testing.T) {
 	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg66 -o wg66 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg68 -o wg68 -j RETURN",
-		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation"} {
+		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
+		"iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP -m comment --comment novusgate-vpn-isolation"} {
 		stub.out[cmd] = ""
 	}
 	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\nnum pkts bytes target prot opt in out source destination\n"

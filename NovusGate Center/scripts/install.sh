@@ -193,8 +193,10 @@ systemctl restart wg-quick@wg0
 
 # Generate Client Config. It routes the address pool every device config
 # routes (10.0.0.0/8, server-side routing), so new networks need no new
-# admin config; an admin subnet outside the pool is routed by itself.
-case "$VPN_SUBNET" in 10.*) ADMIN_ROUTES=10.0.0.0/8 ;; *) ADMIN_ROUTES=$VPN_SUBNET ;; esac
+# admin config while the panel keeps that pool. An admin subnet outside it,
+# or a hub reached at a 10.x address (its handshakes would enter the
+# tunnel), routes the admin subnet only.
+case "$VPN_SUBNET:$SERVER_IP" in 10.*:10.*) ADMIN_ROUTES=$VPN_SUBNET ;; 10.*) ADMIN_ROUTES=10.0.0.0/8 ;; *) ADMIN_ROUTES=$VPN_SUBNET ;; esac
 cat <<CLIENT > /tmp/admin-vpn.conf
 [Interface]
 PrivateKey = $WG_CLIENT_PRIVATE_KEY

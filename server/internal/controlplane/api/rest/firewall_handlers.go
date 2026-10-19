@@ -1461,6 +1461,17 @@ func (s *Server) isolateNetworks(ctx context.Context) error {
 	if _, err := execHostCommand("iptables", "-A", vpnChain, "-i", "wg+", "-o", "wg+", "-j", "DROP", "-m", "comment", "--comment", isolationComment); err != nil {
 		return fmt.Errorf("%s isolation rule: %w", vpnChain, err)
 	}
+	// Device configs route the whole address pool into the tunnel
+	// (server-side routing): hub-side hosts in it (a provider's private
+	// network, Docker) are reached only where a rule above allows it, as
+	// with the nftables engine's default drop.
+	pool, err := s.vpnPool(ctx)
+	if err != nil {
+		return fmt.Errorf("%s pool rule: %w", vpnChain, err)
+	}
+	if _, err := execHostCommand("iptables", "-A", vpnChain, "-i", "wg+", "-d", pool.String(), "-j", "DROP", "-m", "comment", "--comment", isolationComment); err != nil {
+		return fmt.Errorf("%s pool rule: %w", vpnChain, err)
+	}
 	return nil
 }
 

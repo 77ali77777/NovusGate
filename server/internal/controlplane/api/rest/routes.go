@@ -157,6 +157,13 @@ func (p routePlan) allowedIPs(n *models.Node) string {
 	if p.full[n.ID] {
 		return "0.0.0.0/0"
 	}
+	// A hub reached at an address inside the pool would get its own
+	// handshakes routed into the tunnel: such configs name the networks.
+	if p.pool.IsValid() && p.endpointInPool(n) {
+		q := p
+		q.pool = netip.Prefix{}
+		return q.allowedIPs(n)
+	}
 	own := p.cidr[n.NetworkID]
 	out := []string{}
 	if p.pool.IsValid() {
@@ -180,6 +187,21 @@ func (p routePlan) allowedIPs(n *models.Node) string {
 	}
 	sort.Strings(custom)
 	return strings.Join(append(out, custom...), ", ")
+}
+
+// endpointInPool: the node's network is reached at an IP inside the pool.
+// A name cannot be judged here; the settings refuse an IP inside the pool.
+func (p routePlan) endpointInPool(n *models.Node) bool {
+	nw := p.nets[n.NetworkID]
+	if nw == nil {
+		return false
+	}
+	host := endpointOf(p.host, nw)
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	a, err := netip.ParseAddr(host)
+	return err == nil && p.pool.Contains(a.Unmap())
 }
 
 // inPool: cidr lies wholly inside the pool, which the config already routes.
