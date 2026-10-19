@@ -80,5 +80,14 @@
     "endOwnConfirm": "Öz sessiyanız bitirilsin? Hesabdan çıxış ediləcək.",
     "endConfirm": "{{username}} istifadəçisinin bu sessiyası bitirilsin?",
     "end": "Sessiyanı bitir"
+  },
+  "vpnPool": {
+    "title": "VPN ünvan hovuzu",
+    "description": "Hər cihaz konfiqi yalnız bu bir bloku marşrutlayır; şəbəkələr onun içində yaradılır. Ona görə yeni şəbəkə, qayda və qrup heç bir cihazda yeni konfiq tələb etmir — kimin kimə çatacağını server həll edir.",
+    "label": "Ünvan hovuzu",
+    "save": "Hovuzu saxla",
+    "next": "Növbəti şəbəkə {{next}} alacaq.",
+    "warning": "Bir dəfə seçin. Sonradan dəyişmək bütün cihazların konfiqi yenidən yükləməsi deməkdir.",
+    "confirm": "Ünvan hovuzu {{pool}} olsun? Bütün cihazlar konfiqini bir dəfə yenidən yükləməli olacaq."
   }
 }

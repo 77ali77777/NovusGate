@@ -64,5 +64,10 @@
       "who": "Bəzi hadisələrdən xəbər tutmaq, digərlərindən isə yox istəyən adminlər.",
       "effect": "Yalnız işarələnmiş hadisələr və yalnız bildirişlər aktiv olanda göndərilir. Eyni hadisənin 30 dəqiqə ərzindəki təkrarı bir dəfə göndərilir; Firewall səhifəsində edilən hər dəyişiklik göndərilir (Fail2Ban daimi ban-ları yox). Cihaz 5 dəqiqə WireGuard handshake olmadıqda oflayn sayılır."
     }
+  },
+  "vpnPool": {
+    "what": "Bütün cihaz konfiqlərinin VPN-ə yönəltdiyi bir özəl IPv4 bloku (/8 – /16), məsələn 10.0.0.0/8. Yeni şəbəkələr onun içində /24 alır.",
+    "who": "Adminlər, başlanğıcda bir dəfə. Yalnız cihazlar öz marşrutlanan 10.x ünvanları olan şirkət şəbəkələrindədirsə daraldın (məsələn 10.96.0.0/12).",
+    "effect": "Bütün konfiqlər bu bloku marşrutlayır, ona görə şəbəkə və qayda əlavə etmək konfiqi dəyişmir. Hovuzu dəyişmək hər konfiqi dəyişir: cihazlar yenidən yükləyənə qədər \"konfiq köhnədir\" göstərir. Hovuzdan kənarda yaradılmış şəbəkələr işləməyə davam edir; konfiqlər onları adı ilə marşrutlayır."
   }
 }

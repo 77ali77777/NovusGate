@@ -24,9 +24,9 @@
     "name": "Network Name",
     "namePlaceholder": "e.g. My Secure Network",
     "cidrPlaceholder": "e.g. 10.10.0.0/24",
-    "cidrTitle": "Must be a valid private network (10.x.x.0/24)",
-    "cidrHint": "Must be a /24 private subnet (e.g., 10.10.5.0/24). All networks are restricted to /24 for security and performance.",
-    "interfaceNote": "A dedicated WireGuard interface and listening port will be automatically assigned to this network."
+    "cidrHint": "Leave it empty: the server takes the next free /24 of the address pool {{pool}}. A CIDR you type must lie inside the pool.",
+    "interfaceNote": "A dedicated WireGuard interface and listening port will be automatically assigned to this network.",
+    "cidrAuto": "Automatic: {{next}}"
   },
   "detail": {
     "notFound": "Network not found.",

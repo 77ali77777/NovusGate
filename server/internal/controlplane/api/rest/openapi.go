@@ -140,6 +140,8 @@ var docOps = []docOp{
 	{"DELETE", "/api/v1/auth/sessions/{id}", "End a login session", "auth", nil, 204, nil, false},
 	{"GET", "/api/v1/notifications/settings", "Telegram notification settings (the bot token is never returned)", "notifications", nil, 200, models.NotificationSettings{}, false},
 	{"PUT", "/api/v1/notifications/settings", "Update the Telegram notification settings; an empty bot_token keeps the stored one", "notifications", NotificationSettingsRequest{}, 200, models.NotificationSettings{}, false},
+	{"GET", "/api/v1/settings/vpn", "Address pool every device config routes, and the /24 a new network would get", "settings", nil, 200, VPNSettingsResponse{}, false},
+	{"PUT", "/api/v1/settings/vpn", "Change the address pool (admin); devices need their config once more", "settings", VPNSettingsRequest{}, 200, VPNSettingsResponse{}, false},
 	{"POST", "/api/v1/notifications/test", "Send a test message to the configured chat", "notifications", nil, 200, StatusMessageResponse{}, false},
 	{"GET", "/api/v1/debug/wireguard/{networkId}", "Compare DB nodes with live peers", "networks", nil, 200, DebugWireGuardResponse{}, false},
 	{"GET", "/api/v1/stats/overview", "Dashboard counters", "system", nil, 200, StatsOverviewResponse{}, false},

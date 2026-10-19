@@ -138,3 +138,7 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 ## 022: qarşılıqlı VPN qaydası (2026-10-19)
 - `firewall_rules.bidirectional` BOOLEAN NOT NULL DEFAULT `false`: `true` olanda qayda hər iki istiqamətdə tətbiq olunur (nft və iptables). Köhnə qaydalar bir tərəfli qalır.
 - Rollback: `migrations_rollback/022_rule_bidirectional.down.sql`.
+
+## 023: VPN ünvan hovuzu (2026-10-19, server tərəfli marşrut P1)
+- `vpn_settings` (tək sətir, `id = 1`): `pool` TEXT NOT NULL DEFAULT `10.0.0.0/8`, `updated_at`. Hər cihaz konfiqi `AllowedIPs`-də bu bloku marşrutlayır (tam tunel: `0.0.0.0/0`); hovuzdan kənar köhnə şəbəkələr və qaydaların kənar aralıqları əlavə yazılır.
+- Rollback: `migrations_rollback/023_vpn_settings.down.sql` (konfiqlər yenidən hər şəbəkəni adla yazır; cihazlar bir dəfə yükləməlidir).

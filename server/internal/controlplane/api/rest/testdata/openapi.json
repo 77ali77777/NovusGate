@@ -3260,6 +3260,29 @@
         },
         "type": "object"
       },
+      "VPNSettingsRequest": {
+        "properties": {
+          "pool": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "VPNSettingsResponse": {
+        "properties": {
+          "next_cidr": {
+            "type": "string"
+          },
+          "pool": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "next_cidr",
+          "pool"
+        ],
+        "type": "object"
+      },
       "WireGuardCheck": {
         "properties": {
           "interfaces": {
@@ -7027,6 +7050,76 @@
         "summary": "Set the time zone and NTP (step-up)",
         "tags": [
           "server"
+        ]
+      }
+    },
+    "/api/v1/settings/vpn": {
+      "get": {
+        "operationId": "get_settings_vpn",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VPNSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Address pool every device config routes, and the /24 a new network would get",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "operationId": "put_settings_vpn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VPNSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VPNSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change the address pool (admin); devices need their config once more",
+        "tags": [
+          "settings"
         ]
       }
     },

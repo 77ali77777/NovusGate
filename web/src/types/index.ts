@@ -230,6 +230,9 @@ export type FirewallPolicyMatrix = S['Matrix']
 // for two networks, devices or groups.
 export type AccessCheckResult = S['AccessResult']
 export type AccessSide = { type: 'network' | 'node' | 'group'; id: string }
+// GET/PUT /settings/vpn: the address pool every device config routes (server-side
+// routing, P1) and the /24 a new network would get.
+export type VPNSettings = S['VPNSettingsResponse']
 
 // GET /firewall/v2/history: newest first; added/removed are readable lines.
 export type FirewallV2HistoryEntry = S['V2HistoryEntry']

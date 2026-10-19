@@ -90,6 +90,7 @@ var viewerReads = map[string]bool{
 	"GET /api/v1/firewall/vpn/rules":             true,
 	"GET /api/v1/groups":                         true,
 	"GET /api/v1/limits":                         true,
+	"GET /api/v1/settings/vpn":                   true, // the network form shows the next free CIDR
 	"GET /api/v1/networks":                       true,
 	"GET /api/v1/networks/{id}":                  true,
 	"GET /api/v1/networks/{networkId}/nodes":     true,

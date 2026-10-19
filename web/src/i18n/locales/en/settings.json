@@ -80,5 +80,14 @@
     "endOwnConfirm": "End your own session? You will be signed out.",
     "endConfirm": "End this session of {{username}}?",
     "end": "End"
+  },
+  "vpnPool": {
+    "title": "VPN address pool",
+    "description": "Every device config routes this one block; networks are made inside it. So new networks, rules and groups never need a new config on any device — the server decides who reaches whom.",
+    "label": "Address pool",
+    "save": "Save pool",
+    "next": "The next network gets {{next}}.",
+    "warning": "Choose it once. Changing it later means every device downloads its config again.",
+    "confirm": "Change the address pool to {{pool}}? Every device will need to download its config once more."
   }
 }

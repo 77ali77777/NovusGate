@@ -259,6 +259,12 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
   - node `/32` ünvanına, custom isə prefiksə çevrilir.
 - Default nəticə (2026-10-19, M1-dən bəri bütün rejimlərdə eyni): eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`. Qarşılıqlı (`bidirectional`) qayda hər iki istiqamətdə sayılır.
 
+## `GET/PUT /api/v1/settings/vpn` (2026-10-19, server tərəfli marşrut P1)
+- **GET** (bütün rollar): `{pool, next_cidr}` — konfiqlərin marşrutladığı hovuz və yeni şəbəkənin alacağı /24 (`""`: hovuz doludur).
+- **PUT** (admin) `{pool}`: özəl IPv4 blok, /8–/16, şəbəkə ünvanı ilə yazılmış (10/8, 172.16/12, 192.168/16, 100.64/10 daxilində); 400 `invalid_pool`. Bütün cihaz konfiqləri köhnəlir.
+- **`POST /networks`:** `cidr` boş olsa server hovuzdan növbəti boş /24-ü seçir (10/8-də: 10.10.0.0/24, 10.11.0.0/24, …); hovuz doludursa 409 `pool_full`; hovuzdan kənar CIDR 400 `cidr_outside_pool`.
+- Konfiq `AllowedIPs`: hovuz + hovuzdan kənar şəbəkələr + qaydanın digər tərəfinin kənar aralıqları; hovuzun içində yeni şəbəkə konfiqi dəyişmir.
+
 ## `GET /api/v1/firewall/access-check` (2026-10-19, VLAN planı M3)
 "Kim kimi görür?": iki tərəf (şəbəkə, cihaz və ya qrup) arasında, hər iki istiqamətdə. Bütün rollar oxuya bilər.
 - **Sorğu:** `from_type`, `to_type` ∈ `network` / `node` / `group`; `from_id`, `to_id` UUID.

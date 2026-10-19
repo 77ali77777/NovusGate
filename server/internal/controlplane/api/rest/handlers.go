@@ -352,6 +352,8 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/firewall/vpn/apply", s.handleVPNFirewallApply).Methods("POST")
 	api.HandleFunc("/firewall/policy-matrix", s.handleFirewallPolicyMatrix).Methods("GET")
 	api.HandleFunc("/firewall/access-check", s.handleAccessCheck).Methods("GET")
+	api.HandleFunc("/settings/vpn", s.handleGetVPNSettings).Methods("GET")
+	api.HandleFunc("/settings/vpn", s.handleSetVPNSettings).Methods("PUT")
 	s.setupFirewallV2Routes(api)
 
 	// Helper for SPA (Single Page Application) serving
@@ -635,6 +637,26 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Server-side routing (P1): configs route one pool, so a network lives
+	// inside it. Without a CIDR the server picks the next free /24.
+	pool, err := s.vpnPool(r.Context())
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "failed to read the address pool")
+		return
+	}
+	if strings.TrimSpace(network.CIDR) == "" {
+		next, ok, err := s.nextCIDR(r.Context(), pool)
+		if err != nil {
+			errorResponse(w, http.StatusInternalServerError, "failed to list networks")
+			return
+		}
+		if !ok {
+			errorWithCode(w, http.StatusConflict, "pool_full", "the address pool "+pool.String()+" has no free /24 left")
+			return
+		}
+		network.CIDR = next.String()
+	}
+
 	// Validate CIDR format
 	_, newNet, err := net.ParseCIDR(network.CIDR)
 	if err != nil {
@@ -656,6 +678,11 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	// tunnel change (PUT .../tunnel): that needs an admin.
 	if user, _ := sessionFrom(r); network.TunnelMode == models.TunnelFull && user != nil && roleRank[user.Role] < roleRank["admin"] {
 		errorWithCode(w, http.StatusForbidden, "forbidden", "your role ("+user.Role+") cannot create a full-tunnel network; it needs admin")
+		return
+	}
+	if p, perr := netip.ParsePrefix(newNet.String()); perr == nil && !(pool.Bits() <= p.Bits() && pool.Contains(p.Addr())) {
+		errorWithCode(w, http.StatusBadRequest, "cidr_outside_pool", "CIDR "+network.CIDR+" is outside the address pool "+pool.String()+
+			": device configs route only the pool (leave the CIDR empty to get the next free /24)")
 		return
 	}
 	// The hub takes the first address; a /31 or /32 leaves no room for a peer.

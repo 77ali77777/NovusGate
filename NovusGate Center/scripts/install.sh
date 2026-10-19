@@ -191,7 +191,10 @@ WG0
 systemctl enable wg-quick@wg0
 systemctl restart wg-quick@wg0
 
-# Generate Client Config
+# Generate Client Config. It routes the address pool every device config
+# routes (10.0.0.0/8, server-side routing), so new networks need no new
+# admin config; an admin subnet outside the pool is routed by itself.
+case "$VPN_SUBNET" in 10.*) ADMIN_ROUTES=10.0.0.0/8 ;; *) ADMIN_ROUTES=$VPN_SUBNET ;; esac
 cat <<CLIENT > /tmp/admin-vpn.conf
 [Interface]
 PrivateKey = $WG_CLIENT_PRIVATE_KEY
@@ -201,7 +204,7 @@ DNS = 8.8.8.8
 [Peer]
 PublicKey = $WG_SERVER_PUBLIC_KEY
 Endpoint = $SERVER_IP:51820
-AllowedIPs = $VPN_SUBNET
+AllowedIPs = $ADMIN_ROUTES
 PersistentKeepalive = 25
 CLIENT
 

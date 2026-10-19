@@ -93,5 +93,7 @@
   "failedToRestartInterface": "İnterfeys qalxmadı",
   "interfaceRestarted": "İnterfeys işləyir",
   "keyRotated": "Yeni açar yaradıldı — yeni konfiqi yükləyin",
-  "failedToRotateKey": "Açar dəyişdirilmədi"
+  "failedToRotateKey": "Açar dəyişdirilmədi",
+  "poolSaved": "Ünvan hovuzu saxlandı — cihazlar konfiqi bir dəfə yenidən yükləməlidir",
+  "failedToSavePool": "Ünvan hovuzu saxlanmadı"
 }

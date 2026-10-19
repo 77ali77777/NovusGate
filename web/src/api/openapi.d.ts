@@ -1296,6 +1296,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings/vpn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Address pool every device config routes, and the /24 a new network would get */
+        get: operations["get_settings_vpn"];
+        /** Change the address pool (admin); devices need their config once more */
+        put: operations["put_settings_vpn"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stats/overview": {
         parameters: {
             query?: never;
@@ -2454,6 +2472,13 @@ export interface components {
             source_network_id?: string | null;
             source_node_id?: string | null;
             source_type?: string;
+        };
+        VPNSettingsRequest: {
+            pool?: string;
+        };
+        VPNSettingsResponse: {
+            next_cidr: string;
+            pool: string;
         };
         WireGuardCheck: {
             interfaces: {
@@ -5388,6 +5413,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemInfo"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_settings_vpn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNSettingsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_settings_vpn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VPNSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VPNSettingsResponse"];
                 };
             };
             /** @description Error */

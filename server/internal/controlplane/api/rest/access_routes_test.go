@@ -32,15 +32,15 @@ func configOf(t *testing.T, s *Server, nodeID string) string {
 func TestConfigRoutesEveryNetwork(t *testing.T) {
 	s, st, _ := newContractServer(t)
 	seed := seedContract(t, st) // contract-net 10.66.0.0/24 (the node's), contract-zempty 10.68.0.0/24
-	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "AllowedIPs = 10.66.0.0/24, 10.68.0.0/24\n") {
-		t.Fatalf("no rule yet, still every network (own first):\n%s", conf)
+	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "AllowedIPs = 10.0.0.0/8\n") {
+		t.Fatalf("no rule yet, still every network (the pool holds them):\n%s", conf)
 	}
 	rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", `{"name":"to lan","source_type":"network","source_network_id":"`+
 		seed.network.ID+`","dest_type":"custom","dest_ip":"192.168.50.0/24","protocol":"all","action":"accept","priority":100,"enabled":true}`, true)
 	if rec.Code != 201 {
 		t.Fatalf("rule = %d %s", rec.Code, rec.Body)
 	}
-	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "AllowedIPs = 10.66.0.0/24, 10.68.0.0/24, 192.168.50.0/24\n") {
+	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "AllowedIPs = 10.0.0.0/8, 192.168.50.0/24\n") {
 		t.Fatalf("an address range outside the VPN is routed once a rule names it:\n%s", conf)
 	}
 	if err := st.SetNodeEgress(context.Background(), seed.node.ID, true); err != nil {
@@ -76,12 +76,14 @@ func TestConfigOutdatedFlag(t *testing.T) {
 	if outdated() {
 		t.Fatal("just downloaded: up to date")
 	}
-	n := &models.Network{Name: "contract-routes-new", CIDR: "10.69.0.0/24", ListenPort: 51869, InterfaceName: "wg69"}
+	// Since the pool (P1) a new network inside it changes nothing; one
+	// outside it (made before the pool existed) still does.
+	n := &models.Network{Name: "contract-routes-new", CIDR: "192.168.69.0/24", ListenPort: 51869, InterfaceName: "wg69"}
 	if err := st.CreateNetwork(context.Background(), n); err != nil {
 		t.Fatal(err)
 	}
 	if !outdated() {
-		t.Fatal("a new network makes the config outdated")
+		t.Fatal("a new network outside the pool makes the config outdated")
 	}
 	if body := callAs(t, s, "GET", "/api/v1/nodes/"+seed.node.ID, "", true).Body.String(); !strings.Contains(body, `"config_outdated":true`) {
 		t.Fatalf("the device page says it too: %s", body)

@@ -206,9 +206,16 @@
 - **İcra olunmayıb:** nft rejimində real host yoxlaması; real serverdə M1 təcridi; test stack-də peer əməliyyatları (nsenter yoxdur — unit testlə örtülüb).
 - **Müstəqil review (M1–M4) və düzəlişlər:** iptables rejimində şəbəkə/cihaz dəyişikliyindən sonra `NOVUSGATE-VPN` yenidən qurulmurdu (yeni şəbəkənin cihazları bir-birini görmürdü; silinmiş cihazın ACCEPT-i ünvanı alan yeni cihaza qalırdı) → `reconcileFirewall` iptables-də də zənciri qurur, qurulma mutex ilə seriyalaşır; kənar IP aralığı bütün cihazlara verilirdi → yalnız qaydanın digər tərəfinə; custom `0.0.0.0/0` rədd; köhnə `syncPeerAllowedIPs` silindi (`wg set` ilə silinmiş peer-i geri yarada bilirdi, M1-dən sonra faydasız idi; ip_forward saxlanıldı); rotate-key: öz cihazı 409, yeni peer alınmasa 500, cihaz üzrə kilid; Admin VPN izahı qaydaları da deyir. Təxirə salınan minor-lar cavabda.
 - **Davam:** real serverdə yoxlama.
+
+### 2026-10-19: Server tərəfli marşrut — konfiq bir dəfə (P1)
+- **İstifadəçi tələbi:** istifadəçi tərəfində konfiq heç vaxt dəyişməsin, hər şeyi server idarə etsin. Hesabat: hovuz (P1), domen endpoint (P2), DNS hubda (P3), NETMAP (P4); split/tam tunel və açar dəyişikliyi qaçılmaz olaraq konfiq tələb edir. İstifadəçi "et" dedi; tövsiyələr qəbul olundu (hovuz 10.0.0.0/8, dəyişdirilə bilən).
+- **P1:** DB 023 `vpn_settings.pool`; konfiq `AllowedIPs` = hovuz (+ hovuzdan kənar şəbəkələr, kənar aralıqlar); `POST /networks` CIDR boşdursa növbəti /24, hovuzdan kənar 400; `GET/PUT /settings/vpn`; panel: şəbəkə formasında CIDR avtomatik, Settings → "VPN ünvan hovuzu"; Center `install.sh` admin konfiqi hovuzu marşrutlayır.
+- **Yoxlamalar:** Go 16/16, web 118, Center 111, brauzerdə şəbəkə avtomatik 10.10.0.0/24 aldı, konfiq `AllowedIPs = 10.0.0.0/8`.
+- **Davam:** P2 (endpoint domen), P3 (DNS hubda), P4 (NETMAP).
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-19 | Ünvan hovuzu: konfiq bir dəfə, şəbəkə CIDR avtomatik (DB 023) | server/internal/controlplane/{store/vpn_settings.go,api/rest/{pool,routes,handlers}.go}, NovusGate Center/scripts/install.sh, web/src/pages/{Networks,Settings}, i18n | Server tərəfli marşrut P1 |
 | 2026-10-19 | VLAN review düzəlişləri (iptables yenidən qurma, kənar marşrut, rotate-key) | server/internal/controlplane/api/rest/{firewall_engine,firewall_handlers,handlers,routes,rotate_key}.go, web/src/api/client.ts, i18n nodes | Müstəqil review |
 | 2026-10-19 | Cihaz açarını yeniləmə (API + "Yeni açar"), Admin VPN izahı | server/internal/controlplane/{store/node_keys.go,api/rest/rotate_key.go}, web/src/{pages/Nodes/Nodes.tsx,lib/deviceActions.ts,api/client.ts}, i18n | VLAN planı M4 · `028bdb4`, `d306466` |
 | 2026-10-19 | "Kim kimi görür?" yoxlayıcısı (API + panel kartı) | server/internal/controlplane/{firewall/access_check.go,firewall/matrix.go,api/rest/firewall_matrix.go}, web/src/{pages/Firewall/AccessChecker.tsx,lib/accessCheck.ts,lib/matrixReason.ts}, i18n | VLAN planı M3 · `4646d67`, `339b6aa` |

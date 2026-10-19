@@ -4,7 +4,13 @@ import type React from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { useCan, useCreateNetwork, useDeleteNetwork, useNetworks } from '@/api/client'
+import {
+  useCan,
+  useCreateNetwork,
+  useDeleteNetwork,
+  useNetworks,
+  useVPNSettings,
+} from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
@@ -23,7 +29,9 @@ export const Networks = () => {
   const createMutation = useCreateNetwork()
   const deleteMutation = useDeleteNetwork()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [formData, setFormData] = useState<CreateNetworkForm>({ name: '', cidr: '10.10.0.0/24' })
+  // An empty CIDR: the server takes the next free /24 of the address pool.
+  const [formData, setFormData] = useState<CreateNetworkForm>({ name: '', cidr: '' })
+  const { data: vpn } = useVPNSettings()
   const [searchQuery, setSearchQuery] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -35,7 +43,7 @@ export const Networks = () => {
     try {
       await createMutation.mutateAsync(formData)
       setIsCreateModalOpen(false)
-      setFormData({ name: '', cidr: '10.10.0.0/24' })
+      setFormData({ name: '', cidr: '' })
     } catch (error) {
       console.error('Failed to create network:', error)
       // Extract error message from response
@@ -259,15 +267,18 @@ export const Networks = () => {
                     data-help="helpNetworks:cidr"
                     id="net-2"
                     type="text"
-                    required
                     value={formData.cidr}
-                    onChange={(e) => setFormData({ ...formData, cidr: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, cidr: e.target.value.trim() })}
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder={t('form.cidrPlaceholder')}
-                    pattern="^10\.\d+\.\d+\.0\/24$"
-                    title={t('form.cidrTitle')}
+                    placeholder={
+                      vpn?.next_cidr
+                        ? t('form.cidrAuto', { next: vpn.next_cidr })
+                        : t('form.cidrPlaceholder')
+                    }
                   />
-                  <p className="mt-1 text-xs text-gray-500">{t('form.cidrHint')}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('form.cidrHint', { pool: vpn?.pool ?? '10.0.0.0/8' })}
+                  </p>
                 </div>
 
                 <div>

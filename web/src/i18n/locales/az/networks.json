@@ -24,9 +24,9 @@
     "name": "Şəbəkənin adı",
     "namePlaceholder": "məs. Təhlükəsiz şəbəkəm",
     "cidrPlaceholder": "məs. 10.10.0.0/24",
-    "cidrTitle": "Etibarlı özəl şəbəkə olmalıdır (10.x.x.0/24)",
-    "cidrHint": "/24 özəl alt şəbəkə olmalıdır (məs. 10.10.5.0/24). Təhlükəsizlik və performans üçün bütün şəbəkələr /24 ilə məhdudlaşdırılır.",
-    "interfaceNote": "Bu şəbəkəyə avtomatik olaraq ayrıca WireGuard interfeysi və dinləmə portu təyin ediləcək."
+    "cidrHint": "Boş qoyun: server {{pool}} ünvan hovuzundan növbəti boş /24-ü götürür. Əl ilə yazdığınız CIDR hovuzun içində olmalıdır.",
+    "interfaceNote": "Bu şəbəkəyə avtomatik olaraq ayrıca WireGuard interfeysi və dinləmə portu təyin ediləcək.",
+    "cidrAuto": "Avtomatik: {{next}}"
   },
   "detail": {
     "notFound": "Şəbəkə tapılmadı.",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/netip"
 	"sort"
 	"strings"
 
@@ -15,9 +16,11 @@ import (
 // hub's firewall alone (nftables: table inet novusgate; iptables:
 // NOVUSGATE-VPN, with networks apart by default in both). So a rule works
 // at once and in both directions of a connection (replies are routed back),
-// and no device needs a new config when rules change. A device needs one
-// only when the routes themselves change: a new network, its tunnel mode,
-// an address range outside the VPN that a rule names.
+// and no device needs a new config when rules change. Since P1 of
+// server-side routing the config routes one address pool and networks are
+// made inside it (pool.go), so a new network needs none either. A device
+// needs one only when its routes change: its tunnel mode, the pool, an
+// address range outside the pool that a rule names.
 
 // routePlan holds what every device's config routes.
 type routePlan struct {
@@ -25,6 +28,7 @@ type routePlan struct {
 	all    []string          // every VPN network CIDR, sorted
 	custom []customRoute     // ranges outside the VPN that enabled accept rules name
 	full   map[string]bool   // nodes that use the hub as internet exit
+	pool   netip.Prefix      // the address pool every config routes (invalid: not read)
 }
 
 // loadRoutePlan reads the networks, the rules' outside ranges and the
@@ -45,6 +49,9 @@ func (s *Server) loadRoutePlan(ctx context.Context) (routePlan, error) {
 		}
 	}
 	sort.Strings(p.all)
+	if p.pool, err = s.vpnPool(ctx); err != nil {
+		slog.Warn("config routes: address pool not read; configs name each network", "error", err)
+	}
 
 	if rules, err := s.store.ListVPNFirewallRules(ctx); err != nil {
 		slog.Warn("config routes: VPN rules not read; outside address ranges are not routed", "error", err)
@@ -134,32 +141,45 @@ func customIP(kind, ip string) string {
 }
 
 // allowedIPs is the AllowedIPs of a node's config: everything for full
-// tunnel, else its own network first, the other VPN networks, then the
-// outside ranges of the rules whose other end covers the device.
+// tunnel, else the address pool, the VPN networks outside it (made before
+// the pool; its own first), then the outside ranges of the rules whose
+// other end covers the device.
 func (p routePlan) allowedIPs(n *models.Node) string {
 	if p.full[n.ID] {
 		return "0.0.0.0/0"
 	}
 	own := p.cidr[n.NetworkID]
 	out := []string{}
-	if own != "" {
+	if p.pool.IsValid() {
+		out = append(out, p.pool.String())
+	}
+	if own != "" && !p.inPool(own) {
 		out = append(out, own)
 	}
 	for _, c := range p.all {
-		if c != own {
+		if c != own && !p.inPool(c) {
 			out = append(out, c)
 		}
 	}
 	var custom []string
 	seen := map[string]bool{}
 	for _, c := range p.custom {
-		if !seen[c.cidr] && c.covers(n) {
+		if !seen[c.cidr] && !p.inPool(c.cidr) && c.covers(n) {
 			seen[c.cidr] = true
 			custom = append(custom, c.cidr)
 		}
 	}
 	sort.Strings(custom)
 	return strings.Join(append(out, custom...), ", ")
+}
+
+// inPool: cidr lies wholly inside the pool, which the config already routes.
+func (p routePlan) inPool(cidr string) bool {
+	c, err := netip.ParsePrefix(cidr)
+	if err != nil || !p.pool.IsValid() {
+		return false
+	}
+	return p.pool.Bits() <= c.Bits() && p.pool.Contains(c.Addr())
 }
 
 // nodeRouting returns the AllowedIPs and DNS of a node's config. DNS is the

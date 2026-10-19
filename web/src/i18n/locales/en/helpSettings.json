@@ -64,5 +64,10 @@
       "who": "Admins who want to hear about some events and not others.",
       "effect": "Only checked events are sent, and only while notifications are on. Repeats of an identical event within 30 minutes are sent once; every change made on the Firewall page is sent (Fail2Ban permanent bans are not). A device counts as offline after 5 minutes without a WireGuard handshake."
     }
+  },
+  "vpnPool": {
+    "what": "One private IPv4 block (/8 to /16), for example 10.0.0.0/8, that every device config routes through the VPN. New networks get a /24 inside it.",
+    "who": "Admins, once at the start. Narrow it (for example 10.96.0.0/12) only if devices sit in company networks that use routed 10.x addresses of their own.",
+    "effect": "All configs route this block, so adding networks or rules never changes a config. Changing the pool changes every config: devices show \"config outdated\" until downloaded again. Networks made outside the pool keep working; configs route them by name."
   }
 }

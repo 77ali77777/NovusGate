@@ -93,5 +93,7 @@
   "failedToRestartInterface": "The interface did not come up",
   "interfaceRestarted": "The interface is running",
   "keyRotated": "New key created — download the new config",
-  "failedToRotateKey": "The key was not changed"
+  "failedToRotateKey": "The key was not changed",
+  "poolSaved": "Address pool saved — devices need their config once more",
+  "failedToSavePool": "The address pool was not saved"
 }

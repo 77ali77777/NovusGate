@@ -6,6 +6,7 @@ import { ChangePasswordCard } from './ChangePasswordCard'
 import { NotificationsCard } from './NotificationsCard'
 import { SessionsCard } from './SessionsCard'
 import { UserManagementCard } from './UserManagementCard'
+import { VPNPoolCard } from './VPNPoolCard'
 
 export const SettingsPage: React.FC = () => {
   const { t } = useTranslation('settings')
@@ -23,6 +24,7 @@ export const SettingsPage: React.FC = () => {
             <UserManagementCard />
             <BackupsCard />
             <NotificationsCard />
+            <VPNPoolCard />
           </>
         )}
         <SessionsCard />

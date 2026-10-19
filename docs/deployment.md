@@ -126,3 +126,6 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
 - Yeni versiyaya keçəndə mövcud şəbəkələr control-plane-in ilk start-ında avtomatik unit-ə çevrilir (əl ilə qaldırılmış interfeys endirilib unit ilə qaldırılır). Peer-lər DB-dən qaytarılır.
 - `WG_RECONCILER` compose default-u `enforce`-dur: itmiş peer-lər özbaşına qayıdır.
 - Yoxlama: `systemctl list-units 'wg-quick@*'`, `wg show`; paneldə şəbəkə kartında vəziyyət və "Yenidən qaldır".
+
+## Admin VPN konfiqi və ünvan hovuzu (2026-10-19)
+Center `install.sh` admin konfiqinə `AllowedIPs = 10.0.0.0/8` yazır (admin alt şəbəkəsi 10.x-dirsə; başqa aralıqdırsa öz alt şəbəkəsini). Panel şəbəkələri bu hovuzda yaradır, ona görə yeni şəbəkələr üçün admin konfiqini dəyişmək lazım deyil. Mövcud quraşdırmalarda köhnə `admin-vpn.conf` yalnız wg0-u görür — Admin VPN-də özünüzə cihaz yaradın.

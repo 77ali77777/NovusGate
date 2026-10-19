@@ -54,6 +54,7 @@ import type {
   UserRole,
   VPNFirewallRule,
   VPNFirewallRuleRequest,
+  VPNSettings,
 } from '@/types'
 
 // Audit log page size (GET /audit allows up to 500).
@@ -502,6 +503,16 @@ class ApiClient {
     return data
   }
 
+  async getVPNSettings(): Promise<VPNSettings> {
+    const { data } = await this.client.get<VPNSettings>('/settings/vpn')
+    return data
+  }
+
+  async setVPNSettings(pool: string): Promise<VPNSettings> {
+    const { data } = await this.client.put<VPNSettings>('/settings/vpn', { pool })
+    return data
+  }
+
   async getAccessCheck(from: AccessSide, to: AccessSide): Promise<AccessCheckResult> {
     const { data } = await this.client.get<AccessCheckResult>('/firewall/access-check', {
       params: { from_type: from.type, from_id: from.id, to_type: to.type, to_id: to.id },
@@ -817,6 +828,7 @@ export function useCreateNetwork() {
     mutationFn: (data: CreateNetworkForm) => api.createNetwork(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['networks'] })
+      queryClient.invalidateQueries({ queryKey: ['settings', 'vpn'] }) // the next free /24
     },
   })
 }
@@ -1298,6 +1310,25 @@ export function useFirewallPolicyMatrix(enabled: boolean) {
     queryFn: () => api.getFirewallPolicyMatrix(),
     enabled,
     refetchInterval: 30000,
+  })
+}
+
+// The address pool every device config routes and the next network's /24.
+export function useVPNSettings() {
+  return useQuery({ queryKey: ['settings', 'vpn'], queryFn: () => api.getVPNSettings() })
+}
+
+export function useSetVPNSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToSavePool', successTitle: 'toasts:poolSaved' },
+    mutationFn: (pool: string) => api.setVPNSettings(pool),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'vpn'] })
+      // Every device's routes change: their "config outdated" marks do too.
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+      queryClient.invalidateQueries({ queryKey: ['node'] })
+    },
   })
 }
 
