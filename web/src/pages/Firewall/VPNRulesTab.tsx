@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowLeftRight,
   ArrowRight,
   CheckCircle,
   Info,
@@ -164,7 +165,21 @@ export const VPNRulesTab = ({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">{getEndpointDisplay(rule, 'source')}</td>
-                    <td className="px-4 py-3 text-sm">{getEndpointDisplay(rule, 'dest')}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {/* The arrow says the direction: one-way or both ways */}
+                      <span className="flex items-center gap-2">
+                        {rule.bidirectional ? (
+                          <span title={t('vpnRules.mutual')} className="text-blue-600">
+                            <ArrowLeftRight className="w-4 h-4" aria-label={t('vpnRules.mutual')} />
+                          </span>
+                        ) : (
+                          <span title={t('vpnRules.oneWay')} className="text-gray-400">
+                            <ArrowRight className="w-4 h-4" aria-label={t('vpnRules.oneWay')} />
+                          </span>
+                        )}
+                        {getEndpointDisplay(rule, 'dest')}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm uppercase">{rule.protocol}</td>
                     <td className="px-4 py-3 text-sm font-mono">
                       {rule.port || t('vpnRules.allPorts')}

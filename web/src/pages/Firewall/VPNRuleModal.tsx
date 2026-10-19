@@ -1,10 +1,27 @@
-import { Globe, Server } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  Ban,
+  CheckCircle2,
+  Globe,
+  Network,
+  Server,
+  Users,
+} from 'lucide-react'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, useGroups } from '@/api/client'
 import { HelpTip } from '@/components/HelpTip'
 import { Button, Modal } from '@/components/ui'
-import { withProtocol } from '@/lib/vpnRule'
+import {
+  autoRuleName,
+  missingStep,
+  presetOf,
+  ruleSummary,
+  SERVICE_PRESETS,
+  withPreset,
+  withProtocol,
+} from '@/lib/vpnRule'
 import type {
   Network as NetworkType,
   Node,
@@ -19,11 +36,54 @@ interface VPNRuleModalProps {
   onClose: () => void
   form: VPNFirewallRuleRequest
   setForm: React.Dispatch<React.SetStateAction<VPNFirewallRuleRequest>>
-  onSubmit: (e: React.FormEvent) => void
+  onSubmit: (e: React.FormEvent, request: VPNFirewallRuleRequest) => void
   isEditing: boolean
   loading: boolean
   networks: NetworkType[]
 }
+
+type Side = 'source' | 'dest'
+
+const fieldClass = 'w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600'
+
+// choiceClass styles one button of a button group (the chosen one stands out).
+const choiceClass = (on: boolean) =>
+  `px-3 py-2 rounded-lg border text-sm text-left transition-colors ${
+    on
+      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
+      : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
+  }`
+
+// StepCard is one numbered question of the form.
+const StepCard = ({
+  n,
+  title,
+  hint,
+  help,
+  children,
+}: {
+  n: number
+  title: string
+  hint: string
+  help: string
+  children: React.ReactNode
+}) => (
+  <section className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-3">
+    <div className="flex items-start gap-3">
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+        {n}
+      </span>
+      <div>
+        <h4 className="font-medium">
+          {title}
+          <HelpTip k={help} />
+        </h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+      </div>
+    </div>
+    {children}
+  </section>
+)
 
 export const VPNRuleModal = ({
   isOpen,
@@ -63,26 +123,224 @@ export const VPNRuleModal = ({
     }
   }, [form.dest_network_id, form.dest_type])
 
-  const endpointTypes: { value: VPNEndpointType; label: string }[] = [
-    { value: 'any', label: t('common:state.any') },
-    { value: 'network', label: t('common:fields.network') },
-    { value: 'node', label: t('common:fields.node') },
-    { value: 'group', label: t('ruleModal.group') },
-    { value: 'custom', label: t('ruleModal.customIp') },
+  const endpointTypes: { value: VPNEndpointType; label: string; icon: typeof Globe }[] = [
+    { value: 'network', label: t('ruleForm.type.network'), icon: Network },
+    { value: 'node', label: t('ruleForm.type.node'), icon: Server },
+    { value: 'group', label: t('ruleForm.type.group'), icon: Users },
+    { value: 'custom', label: t('ruleForm.type.custom'), icon: Globe },
+    { value: 'any', label: t('ruleForm.type.any'), icon: Globe },
   ]
 
   const protocols: { value: VPNFirewallProtocol; label: string }[] = [
-    { value: 'all', label: t('ruleModal.protocolAll') },
     { value: 'tcp', label: 'TCP' },
     { value: 'udp', label: 'UDP' },
-    { value: 'icmp', label: 'ICMP' },
+    { value: 'icmp', label: t('ruleForm.what.ping') },
   ]
 
-  const actions: { value: VPNFirewallAction; label: string }[] = [
-    { value: 'accept', label: t('ruleModal.actionAccept') },
-    { value: 'drop', label: t('ruleModal.actionDrop') },
-    { value: 'reject', label: t('ruleModal.actionReject') },
+  const decisions: { value: VPNFirewallAction; label: string; hint: string }[] = [
+    {
+      value: 'accept',
+      label: t('ruleForm.decision.accept'),
+      hint: t('ruleForm.decision.acceptHint'),
+    },
+    { value: 'drop', label: t('ruleForm.decision.drop'), hint: t('ruleForm.decision.dropHint') },
+    {
+      value: 'reject',
+      label: t('ruleForm.decision.reject'),
+      hint: t('ruleForm.decision.rejectHint'),
+    },
   ]
+
+  // sideName is how a side reads: label in the sentences («Office» network),
+  // plain in the automatic rule name (Office).
+  const sideName = (side: Side): { label: string; plain: string } => {
+    const type = side === 'source' ? form.source_type : form.dest_type
+    const pick = t('ruleForm.side.pick')
+    const named = (key: string, name?: string) =>
+      name
+        ? { label: t(`ruleForm.side.${key}`, { name }), plain: name }
+        : { label: pick, plain: pick }
+    switch (type) {
+      case 'network': {
+        const id = side === 'source' ? form.source_network_id : form.dest_network_id
+        return named('network', networks.find((x) => x.id === id)?.name)
+      }
+      case 'node': {
+        const id = side === 'source' ? form.source_node_id : form.dest_node_id
+        return named(
+          'node',
+          (side === 'source' ? sourceNodes : destNodes).find((x) => x.id === id)?.name
+        )
+      }
+      case 'group': {
+        const id = side === 'source' ? form.source_group_id : form.dest_group_id
+        return named('group', groups.find((x) => x.id === id)?.name)
+      }
+      case 'custom':
+        return named('custom', (side === 'source' ? form.source_ip : form.dest_ip)?.trim())
+      default: {
+        // "anyone" starts a connection, it goes "anywhere"
+        const any = t(side === 'source' ? 'ruleForm.side.anySource' : 'ruleForm.side.anyDest')
+        return { label: any, plain: any }
+      }
+    }
+  }
+
+  const source = sideName('source')
+  const dest = sideName('dest')
+  const from = source.label
+  const to = dest.label
+  const autoName = autoRuleName(source.plain, dest.plain, !!form.bidirectional)
+  const summary = ruleSummary(form)
+  const what = t(`ruleForm.what.${summary.what.key}`, summary.what.params)
+  const missing = missingStep(form)
+  const serviceMode = form.protocol === 'all' ? 'all' : 'some'
+  const preset = presetOf(form)
+
+  const submit = (e: React.FormEvent) => {
+    const name = (form.name ?? '').trim() || autoName
+    onSubmit(e, { ...form, name })
+  }
+
+  // sidePicker is the "who" / "to whom" question: a kind, then the one thing.
+  const sidePicker = (side: Side) => {
+    const s = side === 'source'
+    const type = s ? form.source_type : form.dest_type
+    const networkId = s ? form.source_network_id : form.dest_network_id
+    const nodeId = s ? form.source_node_id : form.dest_node_id
+    const groupId = s ? form.source_group_id : form.dest_group_id
+    const ip = s ? form.source_ip : form.dest_ip
+    const nodes = s ? sourceNodes : destNodes
+    const set = (
+      patch: Partial<
+        Record<'type' | 'network_id' | 'node_id' | 'group_id' | 'ip', string | undefined>
+      >
+    ) =>
+      setForm((f) => {
+        const out: Record<string, unknown> = { ...f }
+        for (const [k, v] of Object.entries(patch)) out[`${side}_${k}`] = v
+        return out as unknown as VPNFirewallRuleRequest
+      })
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {endpointTypes.map((et) => (
+            <button
+              key={et.value}
+              type="button"
+              aria-pressed={type === et.value}
+              className={choiceClass(type === et.value)}
+              onClick={() =>
+                set({
+                  type: et.value,
+                  network_id: undefined,
+                  node_id: undefined,
+                  group_id: undefined,
+                  ip: undefined,
+                })
+              }
+            >
+              <et.icon className="w-4 h-4 inline mr-1" />
+              {et.label}
+            </button>
+          ))}
+        </div>
+        {(type === 'network' || type === 'node') && (
+          <div>
+            <label htmlFor={`${side}-network`} className="block text-sm font-medium mb-1">
+              {t(type === 'node' ? 'ruleForm.deviceNetwork' : 'ruleForm.whichNetwork')}
+              {type === 'node' ? (
+                <HelpTip k="helpFirewall:vpnRule.nodeNetwork" />
+              ) : (
+                <HelpTip k="helpFirewall:vpnRule.network" />
+              )}
+            </label>
+            <select
+              data-help="helpFirewall:vpnRule.network"
+              id={`${side}-network`}
+              value={networkId || ''}
+              onChange={(e) => set({ network_id: e.target.value || undefined, node_id: undefined })}
+              className={fieldClass}
+            >
+              <option value="">{t('ruleModal.selectNetwork')}</option>
+              {networks.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name} ({n.cidr})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {type === 'node' && (
+          <div>
+            <label htmlFor={`${side}-node`} className="block text-sm font-medium mb-1">
+              {t('ruleForm.whichDevice')}
+              <HelpTip k="helpFirewall:vpnRule.node" />
+            </label>
+            <select
+              data-help="helpFirewall:vpnRule.node"
+              id={`${side}-node`}
+              value={nodeId || ''}
+              onChange={(e) => set({ node_id: e.target.value || undefined })}
+              className={fieldClass}
+              disabled={!networkId}
+            >
+              <option value="">
+                {networkId ? t('ruleModal.selectNode') : t('ruleForm.networkFirst')}
+              </option>
+              {nodes.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name} ({n.virtual_ip})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {type === 'group' && (
+          <div>
+            <label htmlFor={`${side}-group`} className="block text-sm font-medium mb-1">
+              {t('ruleForm.whichGroup')}
+              <HelpTip k="helpFirewall:vpnRule.group" />
+            </label>
+            <select
+              data-help="helpFirewall:vpnRule.group"
+              id={`${side}-group`}
+              value={groupId || ''}
+              onChange={(e) => set({ group_id: e.target.value || undefined })}
+              className={fieldClass}
+            >
+              <option value="">{t('ruleModal.selectGroup')}</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({t('ruleModal.groupMembers', { count: g.members?.length ?? 0 })})
+                </option>
+              ))}
+            </select>
+            {groups.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">{t('ruleForm.noGroups')}</p>
+            )}
+          </div>
+        )}
+        {type === 'custom' && (
+          <div>
+            <label htmlFor={`${side}-ip`} className="block text-sm font-medium mb-1">
+              {t('ruleForm.whichAddress')}
+              <HelpTip k="helpFirewall:vpnRule.customIp" />
+            </label>
+            <input
+              data-help="helpFirewall:vpnRule.customIp"
+              id={`${side}-ip`}
+              type="text"
+              value={ip || ''}
+              onChange={(e) => set({ ip: e.target.value })}
+              className={fieldClass}
+              placeholder={t('ruleModal.cidrPlaceholder')}
+            />
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <Modal
@@ -91,448 +349,272 @@ export const VPNRuleModal = ({
       title={isEditing ? t('ruleModal.titleEdit') : t('ruleModal.titleAdd')}
       size="lg"
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        {/* Basic Info */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="vpn-rule-1" className="block text-sm font-medium mb-1">
-              {t('ruleModal.ruleName')}
-              <HelpTip k="helpFirewall:vpnRule.name" />
-            </label>
-            <input
-              data-help="helpFirewall:vpnRule.name"
-              id="vpn-rule-1"
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder={t('ruleModal.namePlaceholder')}
-            />
-          </div>
-          <div>
-            <label htmlFor="vpn-rule-2" className="block text-sm font-medium mb-1">
-              {t('common:fields.priority')}
-              <HelpTip k="helpFirewall:vpnRule.priority" />
-            </label>
-            <input
-              data-help="helpFirewall:vpnRule.priority"
-              id="vpn-rule-2"
-              type="number"
-              required
-              min="1"
-              max="1000"
-              value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value, 10) || 100 })}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            />
-          </div>
-        </div>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-gray-600 dark:text-gray-300">{t('ruleForm.intro')}</p>
 
-        <div>
-          <label htmlFor="vpn-rule-3" className="block text-sm font-medium mb-1">
-            {t('ruleModal.descriptionOptional')}
-            <HelpTip k="helpFirewall:vpnRule.description" />
-          </label>
-          <input
-            data-help="helpFirewall:vpnRule.description"
-            id="vpn-rule-3"
-            type="text"
-            value={form.description || ''}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            placeholder={t('ruleModal.descriptionPlaceholder')}
-          />
-        </div>
+        <StepCard
+          n={1}
+          title={t('ruleForm.who')}
+          hint={t('ruleForm.whoHint')}
+          help="helpFirewall:vpnRule.who"
+        >
+          {sidePicker('source')}
+        </StepCard>
 
-        {/* Source */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-3">
-          <h4 className="font-medium flex items-center gap-2">
-            <Globe className="w-4 h-4" /> {t('common:fields.source')}
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="vpn-rule-4" className="block text-sm font-medium mb-1">
-                {t('common:fields.type')}
-                <HelpTip k="helpFirewall:vpnRule.endpointType" />
-              </label>
-              <select
-                data-help="helpFirewall:vpnRule.endpointType"
-                id="vpn-rule-4"
-                value={form.source_type}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    source_type: e.target.value as VPNEndpointType,
-                    source_network_id: undefined,
-                    source_node_id: undefined,
-                    source_group_id: undefined,
-                    source_ip: undefined,
-                  })
-                }
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              >
-                {endpointTypes.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
+        <StepCard
+          n={2}
+          title={t('ruleForm.toWhom')}
+          hint={t('ruleForm.toWhomHint')}
+          help="helpFirewall:vpnRule.toWhom"
+        >
+          {sidePicker('dest')}
+        </StepCard>
+
+        <StepCard
+          n={3}
+          title={t('ruleForm.whatTitle')}
+          hint={t('ruleForm.whatHint')}
+          help="helpFirewall:vpnRule.what"
+        >
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-pressed={serviceMode === 'all'}
+              className={choiceClass(serviceMode === 'all')}
+              onClick={() => setForm((f) => withProtocol(f, 'all'))}
+            >
+              {t('ruleForm.everything')}
+            </button>
+            <button
+              type="button"
+              aria-pressed={serviceMode === 'some'}
+              className={choiceClass(serviceMode === 'some')}
+              onClick={() => serviceMode === 'all' && setForm((f) => withPreset(f, 'web'))}
+            >
+              {t('ruleForm.someServices')}
+            </button>
+          </div>
+          {serviceMode === 'some' && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {SERVICE_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={preset === p.id}
+                    className={choiceClass(preset === p.id)}
+                    onClick={() => setForm((f) => withPreset(f, p.id))}
+                  >
+                    {t(`ruleForm.preset.${p.id}`)}
+                  </button>
                 ))}
-              </select>
-            </div>
-            {form.source_type === 'network' && (
-              <div>
-                <label htmlFor="vpn-rule-5" className="block text-sm font-medium mb-1">
-                  {t('common:fields.network')}
-                  <HelpTip k="helpFirewall:vpnRule.network" />
-                </label>
-                <select
-                  data-help="helpFirewall:vpnRule.network"
-                  id="vpn-rule-5"
-                  value={form.source_network_id || ''}
-                  onChange={(e) =>
-                    setForm({ ...form, source_network_id: e.target.value || undefined })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="">{t('ruleModal.selectNetwork')}</option>
-                  {networks.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.name} ({n.cidr})
-                    </option>
-                  ))}
-                </select>
               </div>
-            )}
-            {form.source_type === 'node' && (
-              <>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="vpn-rule-6" className="block text-sm font-medium mb-1">
-                    {t('common:fields.network')}
-                    <HelpTip k="helpFirewall:vpnRule.nodeNetwork" />
+                  <label htmlFor="vpn-rule-protocol" className="block text-sm font-medium mb-1">
+                    {t('common:fields.protocol')}
+                    <HelpTip k="helpFirewall:vpnRule.protocol" />
                   </label>
                   <select
-                    data-help="helpFirewall:vpnRule.nodeNetwork"
-                    id="vpn-rule-6"
-                    value={form.source_network_id || ''}
+                    data-help="helpFirewall:vpnRule.protocol"
+                    id="vpn-rule-protocol"
+                    value={form.protocol}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
-                        source_network_id: e.target.value || undefined,
-                        source_node_id: undefined,
-                      })
+                      setForm((f) => withProtocol(f, e.target.value as VPNFirewallProtocol))
                     }
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    className={fieldClass}
                   >
-                    <option value="">{t('ruleModal.selectNetwork')}</option>
-                    {networks.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name}
+                    {protocols.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <label htmlFor="vpn-rule-7" className="block text-sm font-medium mb-1">
-                    {t('common:fields.node')}
-                    <HelpTip k="helpFirewall:vpnRule.node" />
+                <div>
+                  <label htmlFor="vpn-rule-port" className="block text-sm font-medium mb-1">
+                    {t('ruleModal.portOptional')}
+                    <HelpTip k="helpFirewall:vpnRule.port" />
                   </label>
-                  <select
-                    data-help="helpFirewall:vpnRule.node"
-                    id="vpn-rule-7"
-                    value={form.source_node_id || ''}
-                    onChange={(e) =>
-                      setForm({ ...form, source_node_id: e.target.value || undefined })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                    disabled={!form.source_network_id}
-                  >
-                    <option value="">{t('ruleModal.selectNode')}</option>
-                    {sourceNodes.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name} ({n.virtual_ip})
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    data-help="helpFirewall:vpnRule.port"
+                    id="vpn-rule-port"
+                    type="text"
+                    value={form.port || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))}
+                    className={fieldClass}
+                    placeholder={t('ruleModal.portPlaceholder')}
+                    disabled={form.protocol === 'icmp'}
+                  />
                 </div>
-              </>
-            )}
-            {form.source_type === 'group' && (
-              <div>
-                <label htmlFor="source-group" className="block text-sm font-medium mb-1">
-                  {t('ruleModal.group')}
-                  <HelpTip k="helpFirewall:vpnRule.group" />
-                </label>
-                <select
-                  data-help="helpFirewall:vpnRule.group"
-                  id="source-group"
-                  value={form.source_group_id || ''}
-                  onChange={(e) =>
-                    setForm({ ...form, source_group_id: e.target.value || undefined })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="">{t('ruleModal.selectGroup')}</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name} ({t('ruleModal.groupMembers', { count: g.members?.length ?? 0 })})
-                    </option>
-                  ))}
-                </select>
               </div>
+            </div>
+          )}
+        </StepCard>
+
+        <StepCard
+          n={4}
+          title={t('ruleForm.directionTitle')}
+          hint={t('ruleForm.directionHint')}
+          help="helpFirewall:vpnRule.direction"
+        >
+          <div className="grid sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              aria-pressed={!form.bidirectional}
+              className={choiceClass(!form.bidirectional)}
+              onClick={() => setForm((f) => ({ ...f, bidirectional: false }))}
+            >
+              <span className="font-medium flex items-center gap-1">
+                <ArrowRight className="w-4 h-4" /> {t('ruleForm.oneWay')}
+              </span>
+              <span className="block text-xs mt-1 opacity-80">
+                {t('ruleForm.oneWayHint', { from, to })}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={!!form.bidirectional}
+              className={choiceClass(!!form.bidirectional)}
+              onClick={() => setForm((f) => ({ ...f, bidirectional: true }))}
+            >
+              <span className="font-medium flex items-center gap-1">
+                <ArrowLeftRight className="w-4 h-4" /> {t('ruleForm.mutual')}
+              </span>
+              <span className="block text-xs mt-1 opacity-80">
+                {t('ruleForm.mutualHint', { from, to })}
+              </span>
+            </button>
+          </div>
+        </StepCard>
+
+        <StepCard
+          n={5}
+          title={t('ruleForm.decisionTitle')}
+          hint={t('ruleForm.decisionHint')}
+          help="helpFirewall:vpnRule.action"
+        >
+          <div className="grid sm:grid-cols-3 gap-2">
+            {decisions.map((d) => (
+              <button
+                key={d.value}
+                type="button"
+                aria-pressed={form.action === d.value}
+                className={choiceClass(form.action === d.value)}
+                onClick={() => setForm((f) => ({ ...f, action: d.value }))}
+              >
+                <span className="font-medium">{d.label}</span>
+                <span className="block text-xs mt-1 opacity-80">{d.hint}</span>
+              </button>
+            ))}
+          </div>
+        </StepCard>
+
+        {/* The result in one plain sentence */}
+        <div
+          className={`p-4 rounded-lg border flex gap-3 ${
+            form.action === 'accept'
+              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+          }`}
+        >
+          {form.action === 'accept' ? (
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+          ) : (
+            <Ban className="w-5 h-5 text-red-600 flex-shrink-0" />
+          )}
+          <div className="text-sm">
+            <p className="font-medium">{t('ruleForm.resultTitle')}</p>
+            {/* Until both sides are chosen, say what is missing instead */}
+            {missing ? (
+              <p className="text-amber-700 dark:text-amber-300">
+                {t(`ruleForm.missing.${missing}`)}
+              </p>
+            ) : (
+              <p>{t(`ruleForm.summary.${summary.key}`, { from, to, what })}</p>
             )}
-            {form.source_type === 'custom' && (
+          </div>
+        </div>
+
+        {/* Name, order and notes: optional, for people who need them */}
+        <details className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+          <summary className="cursor-pointer text-sm font-medium">{t('ruleForm.more')}</summary>
+          <div className="space-y-4 mt-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="vpn-rule-8" className="block text-sm font-medium mb-1">
-                  IP/CIDR
-                  <HelpTip k="helpFirewall:vpnRule.customIp" />
+                <label htmlFor="vpn-rule-name" className="block text-sm font-medium mb-1">
+                  {t('ruleForm.nameOptional')}
+                  <HelpTip k="helpFirewall:vpnRule.name" />
                 </label>
                 <input
-                  data-help="helpFirewall:vpnRule.customIp"
-                  id="vpn-rule-8"
+                  data-help="helpFirewall:vpnRule.name"
+                  id="vpn-rule-name"
                   type="text"
-                  value={form.source_ip || ''}
-                  onChange={(e) => setForm({ ...form, source_ip: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                  placeholder={t('ruleModal.cidrPlaceholder')}
+                  maxLength={255}
+                  value={form.name ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className={fieldClass}
+                  placeholder={autoName}
                 />
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Destination */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-3">
-          <h4 className="font-medium flex items-center gap-2">
-            <Server className="w-4 h-4" /> {t('common:fields.destination')}
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="vpn-rule-9" className="block text-sm font-medium mb-1">
-                {t('common:fields.type')}
-                <HelpTip k="helpFirewall:vpnRule.endpointType" />
-              </label>
-              <select
-                data-help="helpFirewall:vpnRule.endpointType"
-                id="vpn-rule-9"
-                value={form.dest_type}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    dest_type: e.target.value as VPNEndpointType,
-                    dest_network_id: undefined,
-                    dest_node_id: undefined,
-                    dest_group_id: undefined,
-                    dest_ip: undefined,
-                  })
-                }
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              >
-                {endpointTypes.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {form.dest_type === 'network' && (
               <div>
-                <label htmlFor="vpn-rule-10" className="block text-sm font-medium mb-1">
-                  {t('common:fields.network')}
-                  <HelpTip k="helpFirewall:vpnRule.network" />
-                </label>
-                <select
-                  data-help="helpFirewall:vpnRule.network"
-                  id="vpn-rule-10"
-                  value={form.dest_network_id || ''}
-                  onChange={(e) =>
-                    setForm({ ...form, dest_network_id: e.target.value || undefined })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="">{t('ruleModal.selectNetwork')}</option>
-                  {networks.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.name} ({n.cidr})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {form.dest_type === 'node' && (
-              <>
-                <div>
-                  <label htmlFor="vpn-rule-11" className="block text-sm font-medium mb-1">
-                    {t('common:fields.network')}
-                    <HelpTip k="helpFirewall:vpnRule.nodeNetwork" />
-                  </label>
-                  <select
-                    data-help="helpFirewall:vpnRule.nodeNetwork"
-                    id="vpn-rule-11"
-                    value={form.dest_network_id || ''}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        dest_network_id: e.target.value || undefined,
-                        dest_node_id: undefined,
-                      })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                  >
-                    <option value="">{t('ruleModal.selectNetwork')}</option>
-                    {networks.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="vpn-rule-12" className="block text-sm font-medium mb-1">
-                    {t('common:fields.node')}
-                    <HelpTip k="helpFirewall:vpnRule.node" />
-                  </label>
-                  <select
-                    data-help="helpFirewall:vpnRule.node"
-                    id="vpn-rule-12"
-                    value={form.dest_node_id || ''}
-                    onChange={(e) =>
-                      setForm({ ...form, dest_node_id: e.target.value || undefined })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                    disabled={!form.dest_network_id}
-                  >
-                    <option value="">{t('ruleModal.selectNode')}</option>
-                    {destNodes.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name} ({n.virtual_ip})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-            {form.dest_type === 'group' && (
-              <div>
-                <label htmlFor="dest-group" className="block text-sm font-medium mb-1">
-                  {t('ruleModal.group')}
-                  <HelpTip k="helpFirewall:vpnRule.group" />
-                </label>
-                <select
-                  data-help="helpFirewall:vpnRule.group"
-                  id="dest-group"
-                  value={form.dest_group_id || ''}
-                  onChange={(e) => setForm({ ...form, dest_group_id: e.target.value || undefined })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="">{t('ruleModal.selectGroup')}</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name} ({t('ruleModal.groupMembers', { count: g.members?.length ?? 0 })})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {form.dest_type === 'custom' && (
-              <div>
-                <label htmlFor="vpn-rule-13" className="block text-sm font-medium mb-1">
-                  IP/CIDR
-                  <HelpTip k="helpFirewall:vpnRule.customIp" />
+                <label htmlFor="vpn-rule-priority" className="block text-sm font-medium mb-1">
+                  {t('common:fields.priority')}
+                  <HelpTip k="helpFirewall:vpnRule.priority" />
                 </label>
                 <input
-                  data-help="helpFirewall:vpnRule.customIp"
-                  id="vpn-rule-13"
-                  type="text"
-                  value={form.dest_ip || ''}
-                  onChange={(e) => setForm({ ...form, dest_ip: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                  placeholder={t('ruleModal.cidrPlaceholder')}
+                  data-help="helpFirewall:vpnRule.priority"
+                  id="vpn-rule-priority"
+                  type="number"
+                  required
+                  min="1"
+                  max="1000"
+                  value={form.priority}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, priority: parseInt(e.target.value, 10) || 100 }))
+                  }
+                  className={fieldClass}
                 />
               </div>
-            )}
+            </div>
+            <div>
+              <label htmlFor="vpn-rule-description" className="block text-sm font-medium mb-1">
+                {t('ruleModal.descriptionOptional')}
+                <HelpTip k="helpFirewall:vpnRule.description" />
+              </label>
+              <input
+                data-help="helpFirewall:vpnRule.description"
+                id="vpn-rule-description"
+                type="text"
+                value={form.description || ''}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                className={fieldClass}
+                placeholder={t('ruleModal.descriptionPlaceholder')}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                data-help="helpFirewall:vpnRule.enabled"
+                type="checkbox"
+                id="enabled"
+                checked={form.enabled}
+                onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
+                className="rounded"
+              />
+              <label htmlFor="enabled" className="text-sm">
+                {t('ruleModal.enabled')}
+                <HelpTip k="helpFirewall:vpnRule.enabled" />
+              </label>
+            </div>
           </div>
-        </div>
-
-        {/* Protocol, Port, Action */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="vpn-rule-14" className="block text-sm font-medium mb-1">
-              {t('common:fields.protocol')}
-              <HelpTip k="helpFirewall:vpnRule.protocol" />
-            </label>
-            <select
-              data-help="helpFirewall:vpnRule.protocol"
-              id="vpn-rule-14"
-              value={form.protocol}
-              onChange={(e) => setForm(withProtocol(form, e.target.value as VPNFirewallProtocol))}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            >
-              {protocols.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="vpn-rule-15" className="block text-sm font-medium mb-1">
-              {t('ruleModal.portOptional')}
-              <HelpTip k="helpFirewall:vpnRule.port" />
-            </label>
-            <input
-              data-help="helpFirewall:vpnRule.port"
-              id="vpn-rule-15"
-              type="text"
-              value={form.port || ''}
-              onChange={(e) => setForm({ ...form, port: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              placeholder={t('ruleModal.portPlaceholder')}
-              disabled={form.protocol === 'icmp' || form.protocol === 'all'}
-            />
-          </div>
-          <div>
-            <label htmlFor="vpn-rule-16" className="block text-sm font-medium mb-1">
-              {t('common:fields.action')}
-              <HelpTip k="helpFirewall:vpnRule.action" />
-            </label>
-            <select
-              data-help="helpFirewall:vpnRule.action"
-              id="vpn-rule-16"
-              value={form.action}
-              onChange={(e) => setForm({ ...form, action: e.target.value as VPNFirewallAction })}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-            >
-              {actions.map((a) => (
-                <option key={a.value} value={a.value}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Enabled Toggle */}
-        <div className="flex items-center gap-2">
-          <input
-            data-help="helpFirewall:vpnRule.enabled"
-            type="checkbox"
-            id="enabled"
-            checked={form.enabled}
-            onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-            className="rounded"
-          />
-          <label htmlFor="enabled" className="text-sm">
-            {t('ruleModal.enabled')}
-            <HelpTip k="helpFirewall:vpnRule.enabled" />
-          </label>
-        </div>
+        </details>
 
         {/* Submit */}
         <div className="flex justify-end gap-2 pt-4 border-t dark:border-gray-700">
           <Button variant="secondary" type="button" onClick={onClose}>
             {t('common:actions.cancel')}
           </Button>
-          <Button variant="primary" type="submit" loading={loading}>
+          <Button variant="primary" type="submit" loading={loading} disabled={missing !== null}>
             {isEditing ? t('actions.updateRule') : t('actions.createRule')}
           </Button>
         </div>

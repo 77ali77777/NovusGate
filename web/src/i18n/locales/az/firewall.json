@@ -143,14 +143,16 @@
       "destNode": "Təyinat cihaz",
       "howBody": "Bütün VPN trafiki serverdən keçir. VPN qaydaları serverdə tətbiq olunur və hansı trafikin ötürülə biləcəyini müəyyən edir.",
       "noteTitle": "Vacib qeyd",
-      "noteBody": "VPN qaydası yaratdığınız zaman mənbə cihazın <code>AllowedIPs</code> konfiqurasiyası avtomatik yenilənir. Lakin artıq qoşulmuş cihazların konfiqurasiyanı yenidən yükləməsi lazım ola bilər.",
+      "noteBody": "Şəbəkələr standart olaraq bir-birini görmür. Qayda serverdə dərhal qüvvəyə minir; cihazlara yeni konfiq lazım deyil (yalnız qayda VPN-dən kənar IP aralığını adlandıranda cihaz səhifəsi konfiqi yenidən yükləməyi xahiş edir).",
       "startTitle": "Başlanğıc",
       "step1": "Yuxarıdakı <strong>\"VPN qaydası\"</strong> düyməsini klikləyin",
       "step2": "Mənbə və təyinat şəbəkəsini/cihazını seçin",
       "step3": "Protokol və portu seçin (istəyə bağlı)",
       "step4": "Əməliyyatı seçin: <accept>Qəbul et</accept> (icazə ver) və ya <drop>At</drop> (blokla)"
     },
-    "unknownGroup": "Naməlum qrup"
+    "unknownGroup": "Naməlum qrup",
+    "oneWay": "Bir tərəfli",
+    "mutual": "Qarşılıqlı"
   },
   "ruleModal": {
     "titleAdd": "VPN qaydası əlavə et",
@@ -208,5 +210,85 @@
       "partial": "yalnız bəzi portlar, protokollar və ya cihazlar keçir",
       "click": "Qadağanı açmaq üçün xanaya klikləyin — həmin cüt üçün doldurulmuş qayda forması açılır."
     }
+  },
+  "ruleForm": {
+    "intro": "Beş qısa suala cavab verin. Siz burada icazə verməyənə qədər şəbəkələr bir-birini görmür.",
+    "who": "Kim?",
+    "whoHint": "Əlaqəni kimin cihazları başladır.",
+    "toWhom": "Kimə?",
+    "toWhomHint": "Nəyə çatmaq istəyirlər.",
+    "type": {
+      "network": "Şəbəkə",
+      "node": "Bir cihaz",
+      "group": "Qrup",
+      "custom": "IP ünvanı",
+      "any": "Hər kəs / hər yer"
+    },
+    "whichNetwork": "Hansı şəbəkə?",
+    "deviceNetwork": "Cihazın şəbəkəsi",
+    "whichDevice": "Hansı cihaz?",
+    "networkFirst": "Əvvəlcə şəbəkəni seçin",
+    "whichGroup": "Hansı qrup?",
+    "noGroups": "Hələ qrup yoxdur — Qruplar səhifəsində yaradın.",
+    "whichAddress": "Hansı ünvan və ya aralıq?",
+    "whatTitle": "Nəyə?",
+    "whatHint": "Hər şeyə, yoxsa yalnız müəyyən xidmətlərə.",
+    "everything": "Hər şey",
+    "someServices": "Yalnız müəyyən xidmətlər",
+    "preset": {
+      "web": "Veb (HTTP/HTTPS)",
+      "ssh": "SSH",
+      "rdp": "Uzaq masaüstü (RDP)",
+      "files": "Fayl paylaşımı (SMB)",
+      "ping": "Ping"
+    },
+    "directionTitle": "İstiqamət",
+    "directionHint": "Əlaqəni kim başlada bilər.",
+    "oneWay": "Bir tərəfli",
+    "oneWayHint": "{{from}} → {{to}} çatır; {{to}} özü əlaqə başlada bilməz, yalnız cavab verir.",
+    "mutual": "Qarşılıqlı",
+    "mutualHint": "{{from}} və {{to}} bir-birinə çata bilər.",
+    "decisionTitle": "Qərar",
+    "decisionHint": "Bu trafikə icazə verilsin, yoxsa bloklansın.",
+    "decision": {
+      "accept": "İcazə ver",
+      "acceptHint": "Trafik keçir.",
+      "drop": "Blokla",
+      "dropHint": "Səssizcə atılır; göndərən gözləyir.",
+      "reject": "Rədd et",
+      "rejectHint": "Bloklanır; göndərənə dərhal bildirilir."
+    },
+    "side": {
+      "pick": "(hələ seçilməyib)",
+      "network": "«{{name}}» şəbəkəsi",
+      "node": "«{{name}}» cihazı",
+      "group": "«{{name}}» qrupu",
+      "custom": "{{name}}",
+      "anySource": "hər kəs",
+      "anyDest": "hər yer"
+    },
+    "what": {
+      "all": "hər şey",
+      "port": "{{proto}} port {{port}}",
+      "proto": "bütün {{proto}} portları",
+      "ping": "ping (ICMP)"
+    },
+    "resultTitle": "Bu qayda nə edir",
+    "summary": {
+      "allow": {
+        "oneWay": "{{from}} → {{to}} çata bilər ({{what}}). Əksinə yox: {{to}} özü əlaqə başlada bilməz, yalnız cavab verir.",
+        "mutual": "{{from}} və {{to}} bir-birinə çata bilər ({{what}})."
+      },
+      "block": {
+        "oneWay": "{{from}} → {{to}} bloklanır ({{what}}). Əks istiqamətə bu qayda toxunmur.",
+        "mutual": "{{from}} və {{to}} arasında hər iki istiqamət bloklanır ({{what}})."
+      }
+    },
+    "missing": {
+      "source": "1-ci addımı tamamlayın: kimi seçin.",
+      "dest": "2-ci addımı tamamlayın: kimə olduğunu seçin."
+    },
+    "more": "Ətraflı: ad, sıra, qeyd",
+    "nameOptional": "Ad (istəyə bağlı)"
   }
 }

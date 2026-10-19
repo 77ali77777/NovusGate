@@ -725,9 +725,7 @@ export const NodeDetailPage: React.FC = () => {
 
       {/* The routes changed on the server: the device needs its config once more. */}
       {node.config_outdated && (
-        <div
-          className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
-        >
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <div className="space-y-2">
             <p className="font-semibold">{t('outdated.title')}</p>

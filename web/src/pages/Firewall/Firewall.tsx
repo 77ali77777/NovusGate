@@ -75,11 +75,12 @@ export const Firewall: React.FC = () => {
   const [vpnRuleForm, setVPNRuleForm] = useState<VPNFirewallRuleRequest>({
     name: '',
     description: '',
-    source_type: 'any',
-    dest_type: 'any',
+    source_type: 'network',
+    dest_type: 'network',
     protocol: 'all',
     port: '',
     action: 'accept',
+    bidirectional: false,
     priority: 100,
     enabled: true,
   })
@@ -258,13 +259,14 @@ export const Firewall: React.FC = () => {
   }
 
   // VPN Rule handlers
-  const handleVPNRuleSubmit = async (e: React.FormEvent) => {
+  // The modal passes the form it submits (it names a rule left unnamed).
+  const handleVPNRuleSubmit = async (e: React.FormEvent, request: VPNFirewallRuleRequest) => {
     e.preventDefault()
     try {
       if (editingVPNRule) {
-        await updateVPNRuleMutation.mutateAsync({ id: editingVPNRule.id, request: vpnRuleForm })
+        await updateVPNRuleMutation.mutateAsync({ id: editingVPNRule.id, request })
       } else {
-        await createVPNRuleMutation.mutateAsync(vpnRuleForm)
+        await createVPNRuleMutation.mutateAsync(request)
       }
       setShowVPNRuleModal(false)
       setEditingVPNRule(null)
@@ -292,6 +294,7 @@ export const Firewall: React.FC = () => {
       protocol: rule.protocol,
       port: rule.port || '',
       action: rule.action,
+      bidirectional: rule.bidirectional,
       priority: rule.priority,
       enabled: rule.enabled,
     })
@@ -314,8 +317,8 @@ export const Firewall: React.FC = () => {
   ) => {
     setEditingVPNRule(null)
     setVPNRuleForm({
-      // The name column holds 255 characters.
-      name: `${from.name} → ${to.name}`.slice(0, 255),
+      // Left empty: the modal names it "A → B" or "A ⇄ B" by the direction chosen.
+      name: '',
       description: '',
       source_type: 'network',
       source_network_id: from.id,
@@ -324,6 +327,7 @@ export const Firewall: React.FC = () => {
       protocol: 'all',
       port: '',
       action: 'accept',
+      bidirectional: false,
       priority: pairRulePriority((vpnRules || []).map((r) => r.priority)),
       enabled: true,
     })
@@ -334,11 +338,12 @@ export const Firewall: React.FC = () => {
     setVPNRuleForm({
       name: '',
       description: '',
-      source_type: 'any',
-      dest_type: 'any',
+      source_type: 'network',
+      dest_type: 'network',
       protocol: 'all',
       port: '',
       action: 'accept',
+      bidirectional: false,
       priority: 100,
       enabled: true,
     })

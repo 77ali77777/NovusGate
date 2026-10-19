@@ -58,12 +58,32 @@
     "action": {
       "what": "What happens to matching traffic: Accept lets it through, Drop discards it silently, Reject discards it and tells the sender.",
       "who": "Everyone writing a rule.",
-      "effect": "Applies as soon as the rule is saved. With Drop the sender waits until it times out; with Reject it gets an error at once. With the nftables engine, traffic that matches no rule is dropped, except replies to allowed connections, port forwards, traffic between devices of the same network and full-tunnel internet traffic."
+      "effect": "Applies as soon as the rule is saved. With Block the sender waits until it times out; with Refuse it gets an error at once. Between networks, traffic that no rule allows is dropped in both firewall modes; replies to allowed connections, traffic inside one network, port forwards and full-tunnel internet traffic still pass."
     },
     "enabled": {
       "what": "Turns the rule on or off without deleting it.",
       "who": "Operators who want to pause a rule, for example while testing.",
       "effect": "A disabled rule stays saved but is not enforced; traffic is then decided by the other rules."
+    },
+    "who": {
+      "what": "The side that starts the connection: a whole network, one device, a group of devices, an IP address or anyone.",
+      "who": "Everyone writing a rule.",
+      "effect": "Only these devices may open the connections the rule allows. Changing the kind clears the earlier choice."
+    },
+    "toWhom": {
+      "what": "What the connection goes to: a network, one device, a group, an IP address or anywhere.",
+      "who": "Everyone writing a rule.",
+      "effect": "Together with step 1 it says which pair the rule is about. Changing the kind clears the earlier choice."
+    },
+    "what": {
+      "what": "Which traffic the rule covers: everything, or only a service such as web, SSH or remote desktop.",
+      "who": "Operators who want to open only what is needed, for example only remote desktop to one server.",
+      "effect": "With Everything every protocol and port matches. A service fills in the protocol and port for you; you can also type ports yourself (80, 8000-9000)."
+    },
+    "direction": {
+      "what": "One-way: only the side in step 1 may start connections, the other side only answers. Both ways: each side may start connections to the other.",
+      "who": "Anyone linking offices or groups: both ways for two offices that work together, one-way when for example admins reach a network but that network must not reach the admins.",
+      "effect": "Replies always come back, so one-way is enough for most access. Both ways adds the reverse rule on the server for you; devices need no new configuration."
     }
   },
   "openPort": {

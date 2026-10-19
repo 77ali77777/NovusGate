@@ -233,7 +233,7 @@ export const NetworkDetailPage = () => {
                       r.source_node_name ||
                       r.source_ip ||
                       t(`ruleEndpoint.${r.source_type}`, { defaultValue: r.source_type })}{' '}
-                    →{' '}
+                    {r.bidirectional ? '⇄' : '→'}{' '}
                     {r.dest_network_name ||
                       r.dest_node_name ||
                       r.dest_ip ||

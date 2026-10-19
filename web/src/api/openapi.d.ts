@@ -2353,6 +2353,7 @@ export interface components {
         };
         VPNFirewallRule: {
             action: string;
+            bidirectional: boolean;
             /** Format: date-time */
             created_at: string;
             description?: string;
@@ -2383,6 +2384,7 @@ export interface components {
         };
         VPNFirewallRuleRequest: {
             action?: string;
+            bidirectional?: boolean;
             description?: string;
             dest_group_id?: string | null;
             dest_ip?: string;

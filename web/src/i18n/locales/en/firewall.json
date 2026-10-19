@@ -143,14 +143,16 @@
       "destNode": "Destination Device",
       "howBody": "All VPN traffic flows through the server. VPN rules are applied on the server and determine which traffic can be forwarded.",
       "noteTitle": "Important Note",
-      "noteBody": "When you create a VPN rule, the source device's <code>AllowedIPs</code> configuration is automatically updated. However, existing connected devices may need to reload their configuration.",
+      "noteBody": "Networks cannot see each other by default. A rule takes effect on the server at once; devices need no new configuration (only when a rule names an address range outside the VPN does the device page ask you to download it again).",
       "startTitle": "Getting Started",
       "step1": "Click the <strong>\"VPN Rule\"</strong> button above",
       "step2": "Select source and destination network/device",
       "step3": "Choose protocol and port (optional)",
       "step4": "Select action: <accept>Accept</accept> (allow) or <drop>Drop</drop> (block)"
     },
-    "unknownGroup": "Unknown group"
+    "unknownGroup": "Unknown group",
+    "oneWay": "One-way",
+    "mutual": "Both ways"
   },
   "ruleModal": {
     "titleAdd": "Add VPN Rule",
@@ -208,5 +210,85 @@
       "partial": "only some ports, protocols or devices pass",
       "click": "To lift a deny, click the cell — a rule form opens, filled in for that pair."
     }
+  },
+  "ruleForm": {
+    "intro": "Answer five short questions. Networks cannot see each other until you allow it here.",
+    "who": "Who?",
+    "whoHint": "Whose devices start the connection.",
+    "toWhom": "To whom?",
+    "toWhomHint": "What they want to reach.",
+    "type": {
+      "network": "A network",
+      "node": "One device",
+      "group": "A group",
+      "custom": "IP address",
+      "any": "Anyone / anywhere"
+    },
+    "whichNetwork": "Which network?",
+    "deviceNetwork": "The device's network",
+    "whichDevice": "Which device?",
+    "networkFirst": "Choose the network first",
+    "whichGroup": "Which group?",
+    "noGroups": "No groups yet — create one on the Groups page.",
+    "whichAddress": "Which address or range?",
+    "whatTitle": "What?",
+    "whatHint": "Everything, or only certain services.",
+    "everything": "Everything",
+    "someServices": "Only certain services",
+    "preset": {
+      "web": "Web (HTTP/HTTPS)",
+      "ssh": "SSH",
+      "rdp": "Remote desktop (RDP)",
+      "files": "File sharing (SMB)",
+      "ping": "Ping"
+    },
+    "directionTitle": "Direction",
+    "directionHint": "Who may start a connection.",
+    "oneWay": "One-way",
+    "oneWayHint": "{{from}} reaches {{to}}; {{to}} cannot start a connection back, it only answers.",
+    "mutual": "Both ways",
+    "mutualHint": "{{from}} and {{to}} can both reach each other.",
+    "decisionTitle": "Decision",
+    "decisionHint": "Allow or block this traffic.",
+    "decision": {
+      "accept": "Allow",
+      "acceptHint": "The traffic passes.",
+      "drop": "Block",
+      "dropHint": "Silently dropped; the sender waits.",
+      "reject": "Refuse",
+      "rejectHint": "Blocked; the sender is told at once."
+    },
+    "side": {
+      "pick": "(not chosen yet)",
+      "network": "network «{{name}}»",
+      "node": "device «{{name}}»",
+      "group": "group «{{name}}»",
+      "custom": "{{name}}",
+      "anySource": "anyone",
+      "anyDest": "anywhere"
+    },
+    "what": {
+      "all": "everything",
+      "port": "{{proto}} port {{port}}",
+      "proto": "all {{proto}} ports",
+      "ping": "ping (ICMP)"
+    },
+    "resultTitle": "What this rule does",
+    "summary": {
+      "allow": {
+        "oneWay": "{{from}} can reach {{to}} ({{what}}). {{to}} cannot start a connection back — it only answers.",
+        "mutual": "{{from}} and {{to}} can reach each other ({{what}})."
+      },
+      "block": {
+        "oneWay": "{{from}} cannot reach {{to}} ({{what}}). This rule does not touch the other direction.",
+        "mutual": "{{from}} and {{to}} cannot reach each other ({{what}})."
+      }
+    },
+    "missing": {
+      "source": "Finish step 1: choose who.",
+      "dest": "Finish step 2: choose to whom."
+    },
+    "more": "More: name, order, note",
+    "nameOptional": "Name (optional)"
   }
 }

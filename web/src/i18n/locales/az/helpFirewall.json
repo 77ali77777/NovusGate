@@ -58,12 +58,32 @@
     "action": {
       "what": "Uyğun gələn trafiklə nə olur: \"Qəbul et\" buraxır, \"At (drop)\" səssizcə atır, \"Rədd et\" atır və göndərənə bildirir.",
       "who": "Qayda yazan hər kəs.",
-      "effect": "Qayda yadda saxlanan kimi tətbiq olunur. \"At\" ilə göndərən vaxt bitənə qədər gözləyir; \"Rədd et\" ilə dərhal xəta alır. nftables mühərrikində heç bir qaydaya uyğun gəlməyən trafik atılır; istisnalar: icazəli bağlantılara cavablar, port yönləndirmələri, eyni şəbəkənin cihazları arasındakı trafik və tam tunel internet trafiki."
+      "effect": "Qayda yadda saxlanan kimi tətbiq olunur. \"Blokla\" ilə göndərən vaxt bitənə qədər gözləyir; \"Rədd et\" ilə dərhal xəta alır. Şəbəkələr arasında heç bir qaydanın icazə vermədiyi trafik hər iki firewall rejimində atılır; icazəli əlaqələrin cavabları, bir şəbəkə daxilindəki trafik, port yönləndirmələri və tam tunel internet trafiki yenə keçir."
     },
     "enabled": {
       "what": "Qaydanı silmədən aktiv və ya deaktiv edir.",
       "who": "Qaydanı müvəqqəti dayandırmaq istəyən operatorlar, məsələn sınaq zamanı.",
       "effect": "Deaktiv qayda saxlanılır, amma tətbiq olunmur; trafik onda digər qaydalarla həll olunur."
+    },
+    "who": {
+      "what": "Əlaqəni başladan tərəf: bütöv şəbəkə, bir cihaz, cihaz qrupu, IP ünvanı və ya hər kəs.",
+      "who": "Qayda yazan hər kəs.",
+      "effect": "Qaydanın icazə verdiyi əlaqəni yalnız bu cihazlar aça bilər. Növü dəyişəndə əvvəlki seçim silinir."
+    },
+    "toWhom": {
+      "what": "Əlaqənin getdiyi yer: şəbəkə, bir cihaz, qrup, IP ünvanı və ya hər yer.",
+      "who": "Qayda yazan hər kəs.",
+      "effect": "1-ci addımla birlikdə qaydanın hansı cütə aid olduğunu bildirir. Növü dəyişəndə əvvəlki seçim silinir."
+    },
+    "what": {
+      "what": "Qaydanın hansı trafikə aid olduğu: hər şey, ya da veb, SSH, uzaq masaüstü kimi yalnız bir xidmət.",
+      "who": "Yalnız lazım olanı açmaq istəyən operatorlar, məsələn bir serverə yalnız uzaq masaüstü.",
+      "effect": "\"Hər şey\" seçiləndə bütün protokol və portlar uyğun gəlir. Xidmət seçəndə protokol və port özü dolur; portları əl ilə də yaza bilərsiniz (80, 8000-9000)."
+    },
+    "direction": {
+      "what": "Bir tərəfli: əlaqəni yalnız 1-ci addımdakı tərəf başlada bilər, digər tərəf yalnız cavab verir. Qarşılıqlı: hər iki tərəf digərinə əlaqə başlada bilər.",
+      "who": "Ofisləri və ya qrupları birləşdirən hər kəs: birgə işləyən iki ofis üçün qarşılıqlı; məsələn adminlər şəbəkəyə çatmalı, şəbəkə isə adminlərə çatmamalı olanda bir tərəfli.",
+      "effect": "Cavablar həmişə qayıdır, ona görə çox hal üçün bir tərəfli kifayətdir. Qarşılıqlı seçiləndə server əks qaydanı özü əlavə edir; cihazlara yeni konfiq lazım deyil."
     }
   },
   "openPort": {
