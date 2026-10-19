@@ -39,6 +39,7 @@ import { type AdvancedSection, advancedLocked, type FirewallTab } from '@/lib/fi
 import { engineMode } from '@/lib/firewallV2'
 import { pairRulePriority } from '@/lib/policyMatrix'
 import type { ChainInfo, FirewallRule, VPNFirewallRule, VPNFirewallRuleRequest } from '@/types'
+import { AccessChecker, type CheckSide } from './AccessChecker'
 import { AdvancedTab } from './AdvancedTab'
 import { HistoryTab } from './HistoryTab'
 import { LimitsTab } from './LimitsTab'
@@ -334,6 +335,37 @@ export const Firewall: React.FC = () => {
     setShowVPNRuleModal(true)
   }
 
+  // The access checker opens a new rule for the two sides it checked.
+  const handleCreateRuleForSides = (from: CheckSide, to: CheckSide) => {
+    const side = (s: CheckSide) => ({
+      network: s.type === 'group' ? undefined : s.networkId,
+      node: s.type === 'node' ? s.id : undefined,
+      group: s.type === 'group' ? s.id : undefined,
+    })
+    const src = side(from)
+    const dst = side(to)
+    setEditingVPNRule(null)
+    setVPNRuleForm({
+      name: '',
+      description: '',
+      source_type: from.type,
+      source_network_id: src.network,
+      source_node_id: src.node,
+      source_group_id: src.group,
+      dest_type: to.type,
+      dest_network_id: dst.network,
+      dest_node_id: dst.node,
+      dest_group_id: dst.group,
+      protocol: 'all',
+      port: '',
+      action: 'accept',
+      bidirectional: false,
+      priority: pairRulePriority((vpnRules || []).map((r) => r.priority)),
+      enabled: true,
+    })
+    setShowVPNRuleModal(true)
+  }
+
   const resetVPNRuleForm = () => {
     setVPNRuleForm({
       name: '',
@@ -469,6 +501,7 @@ export const Firewall: React.FC = () => {
                 </Button>
               </div>
             )}
+            <AccessChecker onCreateRule={isOperator ? handleCreateRuleForSides : undefined} />
             <PolicyMatrix onCreateRule={handleCreateRuleForPair} />
             <VPNRulesTab
               rules={vpnRules || []}

@@ -11,12 +11,17 @@ interface Cell {
   rule?: string
 }
 
-const KEYS = new Set(['rule', 'same_network', 'isolated', 'iptables_default'])
+// mixed and empty come from the access check (a side's devices differ; a group
+// without devices).
+const KEYS = new Set(['rule', 'same_network', 'isolated', 'iptables_default', 'mixed', 'empty'])
 
 export function matrixReason(t: T, cell: Cell): string {
   if (!cell.reason_key || !KEYS.has(cell.reason_key)) return cell.reason
   const base = t(`firewall:matrix.reason.${cell.reason_key}`, { rule: cell.rule ?? '' })
-  return cell.verdict === 'partial' ? t('firewall:matrix.reason.partial', { reason: base }) : base
+  // mixed already says the answer is partial
+  return cell.verdict === 'partial' && cell.reason_key !== 'mixed'
+    ? t('firewall:matrix.reason.partial', { reason: base })
+    : base
 }
 
 // SHORT_MAX is the longest short reason a matrix cell shows.

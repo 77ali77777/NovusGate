@@ -195,14 +195,18 @@
       "same_network": "standart (eyni şəbəkə)",
       "isolated": "standart (şəbəkələr bir-birindən təcrid olunub)",
       "iptables_default": "standart (iptables rejimi heç bir qaydanın atmadığı VPN trafikini qəbul edir)",
-      "partial": "bəzi trafik bundan fərqlənir: {{reason}}"
+      "partial": "bəzi trafik bundan fərqlənir: {{reason}}",
+      "mixed": "bu tərəfin cihazları fərqli cavab alır",
+      "empty": "qrupda cihaz yoxdur"
     },
     "cellLimited": "Buradakı bəzi cihazların limit profili var.",
     "short": {
       "rule": "qayda",
       "same_network": "eyni şəbəkə",
       "isolated": "ayrıdır",
-      "iptables_default": "iptables defoltu"
+      "iptables_default": "iptables defoltu",
+      "mixed": "qarışıq",
+      "empty": "boş qrup"
     },
     "legend": {
       "allow": "trafik keçir",
@@ -290,5 +294,36 @@
     },
     "more": "Ətraflı: ad, sıra, qeyd",
     "nameOptional": "Ad (istəyə bağlı)"
+  },
+  "accessCheck": {
+    "title": "Kim kimi görür?",
+    "help": "İki tərəf seçin — şəbəkə, cihaz və ya qrup — bir-birinə çata bildiklərini və hansı qaydanın qərar verdiyini görün.",
+    "from": "Birinci tərəf",
+    "to": "İkinci tərəf",
+    "type": {
+      "network": "Şəbəkə",
+      "node": "Cihaz",
+      "group": "Qrup"
+    },
+    "network": "Şəbəkə",
+    "device": "Cihaz",
+    "group": "Qrup",
+    "pickNetwork": "Şəbəkə seçin",
+    "pickDevice": "Cihaz seçin",
+    "pickGroup": "Qrup seçin",
+    "networkFirst": "Əvvəlcə şəbəkəni seçin",
+    "choose": "Cavabı görmək üçün hər iki tərəfi seçin.",
+    "loading": "Yoxlanılır…",
+    "error": "Yoxlama alınmadı.",
+    "headline": {
+      "both": "«{{a}}» və «{{b}}» bir-birini görür (qarşılıqlı).",
+      "fromOnly": "Bir tərəfli: «{{a}}» → «{{b}}» çata bilər; «{{b}}» isə özü əlaqə başlada bilməz, yalnız cavab verir.",
+      "toOnly": "Bir tərəfli: «{{b}}» → «{{a}}» çata bilər; «{{a}}» isə özü əlaqə başlada bilməz, yalnız cavab verir.",
+      "none": "«{{a}}» və «{{b}}» bir-birini görmür.",
+      "partial": "Qismən: yalnız bəzi xidmətlər və ya bəzi cihazlar keçir. Aşağıda hər istiqamətə baxın."
+    },
+    "direction": "{{from}} → {{to}}",
+    "rules": "Aid qaydalar: {{rules}}",
+    "makeRule": "Bu cüt üçün qayda yaz"
   }
 }

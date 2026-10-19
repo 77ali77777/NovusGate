@@ -226,6 +226,10 @@ export type SessionInfo = S['SessionInfo']
 // GET /firewall/policy-matrix: cells[from][to] for every pair of VPN networks,
 // computed by the backend from the VPN rules and the firewall mode.
 export type FirewallPolicyMatrix = S['Matrix']
+// GET /firewall/access-check (VLAN plan M3): who can reach whom, both ways,
+// for two networks, devices or groups.
+export type AccessCheckResult = S['AccessResult']
+export type AccessSide = { type: 'network' | 'node' | 'group'; id: string }
 
 // GET /firewall/v2/history: newest first; added/removed are readable lines.
 export type FirewallV2HistoryEntry = S['V2HistoryEntry']

@@ -231,5 +231,17 @@
       "who": "Admins and operators whose VPN rules on the server were changed by hand (for example on the shell), or when the rules did not come back after a server restart.",
       "effect": "The rules for traffic between networks are rebuilt from the list in the panel; manual changes to them on the server are replaced. The list itself does not change. The action is written to the audit log."
     }
+  },
+  "accessCheck": {
+    "side": {
+      "what": "Which kind of side to check: a whole network, one device or a group of devices.",
+      "who": "Anyone asking whether two offices, a device and a server, or a group and a network can reach each other.",
+      "effect": "Only shows the answer; nothing changes until you write a rule. Changing the kind clears the choice for this side."
+    },
+    "item": {
+      "what": "The network, device or group on this side. For a device, choose its network first.",
+      "who": "Anyone checking access before or after writing a rule.",
+      "effect": "The answer appears as soon as both sides are chosen and follows every rule change."
+    }
   }
 }

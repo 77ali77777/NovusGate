@@ -195,14 +195,18 @@
       "same_network": "default (same network)",
       "isolated": "default (networks are isolated)",
       "iptables_default": "default (iptables mode accepts VPN traffic no rule drops)",
-      "partial": "some traffic differs from {{reason}}"
+      "partial": "some traffic differs from {{reason}}",
+      "mixed": "the devices on this side get different answers",
+      "empty": "the group has no devices"
     },
     "cellLimited": "Some devices here have limit profiles.",
     "short": {
       "rule": "rule",
       "same_network": "same network",
       "isolated": "isolated",
-      "iptables_default": "iptables default"
+      "iptables_default": "iptables default",
+      "mixed": "mixed",
+      "empty": "empty group"
     },
     "legend": {
       "allow": "traffic passes",
@@ -290,5 +294,36 @@
     },
     "more": "More: name, order, note",
     "nameOptional": "Name (optional)"
+  },
+  "accessCheck": {
+    "title": "Who can reach whom?",
+    "help": "Pick two sides — networks, devices or groups — to see whether they can reach each other and which rule decides.",
+    "from": "First side",
+    "to": "Second side",
+    "type": {
+      "network": "Network",
+      "node": "Device",
+      "group": "Group"
+    },
+    "network": "Network",
+    "device": "Device",
+    "group": "Group",
+    "pickNetwork": "Choose a network",
+    "pickDevice": "Choose a device",
+    "pickGroup": "Choose a group",
+    "networkFirst": "Choose the network first",
+    "choose": "Choose both sides to see the answer.",
+    "loading": "Checking…",
+    "error": "The check failed.",
+    "headline": {
+      "both": "“{{a}}” and “{{b}}” can reach each other (both ways).",
+      "fromOnly": "One-way: “{{a}}” can reach “{{b}}”; “{{b}}” cannot start a connection back, it only answers.",
+      "toOnly": "One-way: “{{b}}” can reach “{{a}}”; “{{a}}” cannot start a connection back, it only answers.",
+      "none": "“{{a}}” and “{{b}}” cannot reach each other.",
+      "partial": "Only partly: some services or some devices pass. See each direction below."
+    },
+    "direction": "{{from}} → {{to}}",
+    "rules": "Rules involved: {{rules}}",
+    "makeRule": "Write a rule for this pair"
   }
 }

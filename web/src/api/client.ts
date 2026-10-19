@@ -1,6 +1,8 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios'
 import type { components } from '@/api/openapi'
 import type {
+  AccessCheckResult,
+  AccessSide,
   AllowIPRequest,
   AuditEntry,
   BlockIPRequest,
@@ -491,6 +493,13 @@ class ApiClient {
 
   async getFirewallPolicyMatrix(): Promise<FirewallPolicyMatrix> {
     const { data } = await this.client.get<FirewallPolicyMatrix>('/firewall/policy-matrix')
+    return data
+  }
+
+  async getAccessCheck(from: AccessSide, to: AccessSide): Promise<AccessCheckResult> {
+    const { data } = await this.client.get<AccessCheckResult>('/firewall/access-check', {
+      params: { from_type: from.type, from_id: from.id, to_type: to.type, to_id: to.id },
+    })
     return data
   }
 
@@ -1270,6 +1279,15 @@ export function useFirewallPolicyMatrix(enabled: boolean) {
     queryFn: () => api.getFirewallPolicyMatrix(),
     enabled,
     refetchInterval: 30000,
+  })
+}
+
+// Who can reach whom; under ['firewall', 'vpn'] so rule changes refresh it.
+export function useAccessCheck(from: AccessSide | null, to: AccessSide | null) {
+  return useQuery({
+    queryKey: ['firewall', 'vpn', 'access', from, to],
+    queryFn: () => api.getAccessCheck(from as AccessSide, to as AccessSide),
+    enabled: !!from && !!to,
   })
 }
 

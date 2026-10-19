@@ -193,6 +193,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/firewall/access-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who can reach whom: two networks, devices or groups (from_type, from_id, to_type, to_id), both directions */
+        get: operations["get_firewall_access_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/firewall/host/export": {
         parameters: {
             query?: never;
@@ -1559,6 +1576,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessResult: {
+            forward: components["schemas"]["AccessVerdict"];
+            from: components["schemas"]["EndpointInfo"];
+            reverse: components["schemas"]["AccessVerdict"];
+            to: components["schemas"]["EndpointInfo"];
+        };
+        AccessVerdict: {
+            reason: string;
+            reason_key: string;
+            rule?: string;
+            rules: string[] | null;
+            verdict: string;
+        };
         AllowIPRequest: {
             ip?: string;
             ports?: string;
@@ -1665,6 +1695,12 @@ export interface components {
         DroppedSource: {
             address: string;
             seconds_ago: number;
+        };
+        EndpointInfo: {
+            addresses: string[] | null;
+            id: string;
+            name: string;
+            type: string;
         };
         Error: {
             error: {
@@ -2824,6 +2860,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DebugWireGuardResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_firewall_access_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessResult"];
                 };
             };
             /** @description Error */

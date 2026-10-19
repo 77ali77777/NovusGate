@@ -231,5 +231,17 @@
       "who": "Serverdəki VPN qaydaları əl ilə (məsələn, terminalda) dəyişdirilmiş admin və operatorlar, ya da server yenidən başladıqdan sonra qaydalar geri qayıtmayıbsa.",
       "effect": "Şəbəkələr arası trafik qaydaları paneldəki siyahıdan yenidən qurulur; serverdə onlara əl ilə edilən dəyişikliklər əvəz olunur. Siyahının özü dəyişmir. Əməliyyat audit jurnalına yazılır."
     }
+  },
+  "accessCheck": {
+    "side": {
+      "what": "Yoxlanan tərəfin növü: bütöv şəbəkə, bir cihaz və ya cihaz qrupu.",
+      "who": "İki ofisin, bir cihazla serverin, ya da qrupla şəbəkənin bir-birinə çatıb-çatmadığını soruşan hər kəs.",
+      "effect": "Yalnız cavabı göstərir; qayda yazana qədər heç nə dəyişmir. Növü dəyişəndə bu tərəfin seçimi silinir."
+    },
+    "item": {
+      "what": "Bu tərəfdəki şəbəkə, cihaz və ya qrup. Cihaz üçün əvvəlcə onun şəbəkəsini seçin.",
+      "who": "Qayda yazmazdan əvvəl və ya sonra girişi yoxlayan hər kəs.",
+      "effect": "Hər iki tərəf seçilən kimi cavab görünür və hər qayda dəyişikliyindən sonra yenilənir."
+    }
   }
 }
