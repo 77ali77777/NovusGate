@@ -256,9 +256,14 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - Qaydalar firewall-un kompilyasiya etdiyi kimi qiymətləndirilir:
   - aktiv qaydalar `priority`, sonra `created_at` sırası ilə yoxlanır, ilk uyğun gələn qalib gəlir;
   - node `/32` ünvanına, custom isə prefiksə çevrilir.
-- Default nəticə rejimdən asılıdır:
-  - nft: eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`;
-  - iptables və shadow: `allow`.
+- Default nəticə (2026-10-19, M1-dən bəri bütün rejimlərdə eyni): eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`. Qarşılıqlı (`bidirectional`) qayda hər iki istiqamətdə sayılır.
+
+## `GET /api/v1/firewall/access-check` (2026-10-19, VLAN planı M3)
+"Kim kimi görür?": iki tərəf (şəbəkə, cihaz və ya qrup) arasında, hər iki istiqamətdə. Bütün rollar oxuya bilər.
+- **Sorğu:** `from_type`, `to_type` ∈ `network` / `node` / `group`; `from_id`, `to_id` UUID.
+- **Cavab:** `from`, `to` (`type`, `id`, `name`, `addresses[]`); `forward` (from əlaqə başladır) və `reverse` (to başladır) → `verdict` (`allow` / `deny` / `partial`), `reason`, `reason_key` (`rule`, `same_network`, `isolated`, `mixed` — tərəfin cihazları fərqli cavab alır, `empty` — cihazsız qrup), `rule` (həlledici qayda), `rules[]`.
+- Qiymətləndirmə matrislə eynidir, cihaz-cihaz: qrup üzvlərinə, cihaz `/32`-yə açılır.
+- **Xətalar:** 400 (yanlış tip və ya UUID), 404 (şəbəkə/cihaz/qrup tapılmadı).
 
 ## Node qrupları — `/api/v1/groups` (P9a, 2026-10-15)
 - `GET /groups` → `{groups: NodeGroup[]}`, ada görə sıralı. `NodeGroup`: `id`, `name`, `description`, `created_at`, `members[]` (`node_id`, `name`, `virtual_ip`, `network_id`).

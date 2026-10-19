@@ -55,13 +55,17 @@ func prefixScope(p, n netip.Prefix) scope {
 }
 
 // endScope is prefixScope for one side of a rule; a group set covers "some"
-// of a network when one of its members is inside it.
+// of a network when one of its members is inside it, and the whole of a
+// single address (one device, as the access check asks) that is a member.
 func endScope(set string, p netip.Prefix, sets map[string][]netip.Addr, n netip.Prefix) scope {
 	if set == "" {
 		return prefixScope(p, n)
 	}
 	for _, a := range sets[set] {
 		if n.Contains(a) {
+			if n.IsSingleIP() {
+				return scopeWhole
+			}
 			return scopeSome
 		}
 	}

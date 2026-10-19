@@ -160,3 +160,46 @@ func TestMutualRuleInIptablesMode(t *testing.T) {
 		t.Fatalf("update = %d %s", rec.Code, rec.Body)
 	}
 }
+
+// VLAN plan M3: "who can reach whom" between a device, a network or a group.
+func TestAccessCheckEndpoint(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	other := &models.Network{Name: "check-b", CIDR: "10.75.0.0/24", ListenPort: 51875, InterfaceName: "wg75"}
+	if err := st.CreateNetwork(context.Background(), other); err != nil {
+		t.Fatal(err)
+	}
+	path := func(ft, fid, tt, tid string) string {
+		return "/api/v1/firewall/access-check?from_type=" + ft + "&from_id=" + fid + "&to_type=" + tt + "&to_id=" + tid
+	}
+	rec := callAs(t, s, "GET", path("node", seed.node.ID, "network", other.ID), "", true)
+	if rec.Code != 200 {
+		t.Fatalf("check = %d %s", rec.Code, rec.Body)
+	}
+	var res struct {
+		From    struct{ Name string } `json:"from"`
+		Forward struct {
+			Verdict   string `json:"verdict"`
+			ReasonKey string `json:"reason_key"`
+		} `json:"forward"`
+		Reverse struct{ Verdict string } `json:"reverse"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.From.Name != seed.node.Name || res.Forward.Verdict != "deny" || res.Forward.ReasonKey != "isolated" || res.Reverse.Verdict != "deny" {
+		t.Fatalf("isolated by default: %s", rec.Body)
+	}
+	for _, c := range []struct {
+		path string
+		code int
+	}{
+		{path("custom", seed.node.ID, "network", other.ID), 400},
+		{path("node", "not-a-uuid", "network", other.ID), 400},
+		{path("node", seed.node.ID, "group", "00000000-0000-0000-0000-000000000000"), 404},
+	} {
+		if rec := callAs(t, s, "GET", c.path, "", true); rec.Code != c.code {
+			t.Errorf("%s = %d %s, want %d", c.path, rec.Code, rec.Body, c.code)
+		}
+	}
+}

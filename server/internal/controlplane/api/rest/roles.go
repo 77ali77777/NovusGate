@@ -79,6 +79,7 @@ var viewerReads = map[string]bool{
 	"GET /api/v1/auth/me":                        true,
 	"GET /api/v1/auth/sessions":                  true, // the handler shows a non-admin only its own
 	"GET /api/v1/backups":                        true,
+	"GET /api/v1/firewall/access-check":          true,
 	"GET /api/v1/firewall/host/rules":            true,
 	"GET /api/v1/firewall/policy-matrix":         true,
 	"GET /api/v1/firewall/v2/history":            true,

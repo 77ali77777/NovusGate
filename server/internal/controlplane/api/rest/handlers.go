@@ -347,6 +347,7 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/firewall/vpn/rules/{id}", s.handleVPNFirewallDeleteRule).Methods("DELETE")
 	api.HandleFunc("/firewall/vpn/apply", s.handleVPNFirewallApply).Methods("POST")
 	api.HandleFunc("/firewall/policy-matrix", s.handleFirewallPolicyMatrix).Methods("GET")
+	api.HandleFunc("/firewall/access-check", s.handleAccessCheck).Methods("GET")
 	s.setupFirewallV2Routes(api)
 
 	// Helper for SPA (Single Page Application) serving

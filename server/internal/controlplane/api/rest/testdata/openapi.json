@@ -1,6 +1,59 @@
 {
   "components": {
     "schemas": {
+      "AccessResult": {
+        "properties": {
+          "forward": {
+            "$ref": "#/components/schemas/AccessVerdict"
+          },
+          "from": {
+            "$ref": "#/components/schemas/EndpointInfo"
+          },
+          "reverse": {
+            "$ref": "#/components/schemas/AccessVerdict"
+          },
+          "to": {
+            "$ref": "#/components/schemas/EndpointInfo"
+          }
+        },
+        "required": [
+          "forward",
+          "from",
+          "reverse",
+          "to"
+        ],
+        "type": "object"
+      },
+      "AccessVerdict": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "reason_key": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "verdict": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "reason_key",
+          "rules",
+          "verdict"
+        ],
+        "type": "object"
+      },
       "AllowIPRequest": {
         "properties": {
           "ip": {
@@ -386,6 +439,33 @@
         "required": [
           "address",
           "seconds_ago"
+        ],
+        "type": "object"
+      },
+      "EndpointInfo": {
+        "properties": {
+          "addresses": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "addresses",
+          "id",
+          "name",
+          "type"
         ],
         "type": "object"
       },
@@ -3763,6 +3843,37 @@
         "summary": "Compare DB nodes with live peers",
         "tags": [
           "networks"
+        ]
+      }
+    },
+    "/api/v1/firewall/access-check": {
+      "get": {
+        "operationId": "get_firewall_access_check",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Who can reach whom: two networks, devices or groups (from_type, from_id, to_type, to_id), both directions",
+        "tags": [
+          "firewall-vpn"
         ]
       }
     },

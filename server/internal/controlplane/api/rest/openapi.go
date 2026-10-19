@@ -174,6 +174,7 @@ var docOps = []docOp{
 	{"GET", "/api/v1/firewall/v2/state", "nftables engine state", "firewall-v2", nil, 200, V2StateResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/preview", "Compiled nftables ruleset", "firewall-v2", nil, 200, V2PreviewResponse{}, false},
 	{"GET", "/api/v1/firewall/policy-matrix", "Network x network policy matrix from the VPN rules and the firewall mode", "firewall-vpn", nil, 200, firewall.Matrix{}, false},
+	{"GET", "/api/v1/firewall/access-check", "Who can reach whom: two networks, devices or groups (from_type, from_id, to_type, to_id), both directions", "firewall-vpn", nil, 200, firewall.AccessResult{}, false},
 	{"GET", "/api/v1/firewall/v2/history", "Applied firewall changes, newest first, with the lines each added and removed", "firewall-v2", nil, 200, V2HistoryResponse{}, false},
 	{"POST", "/api/v1/firewall/v2/history/{id}/restore", "Restore the firewall state of a history entry (as a confirmable change)", "firewall-v2", nil, 200, V2ChangeResponse{}, false},
 	{"GET", "/api/v1/firewall/v2/live", "Rule counters, sources dropped in the last hour and the conntrack table (any mode)", "firewall-v2", nil, 200, V2LiveResponse{}, false},
