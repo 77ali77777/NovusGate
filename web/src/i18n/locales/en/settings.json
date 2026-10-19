@@ -89,5 +89,16 @@
     "next": "The next network gets {{next}}.",
     "warning": "Choose it once. Changing it later means every device downloads its config again.",
     "confirm": "Change the address pool to {{pool}}? Every device will need to download its config once more."
+  },
+  "endpointHost": {
+    "title": "Server address (domain)",
+    "description": "The name every device config reaches the hub by. With a domain, moving the server to a new IP changes only the DNS record — no device needs a new config.",
+    "label": "Domain or IP",
+    "save": "Save address",
+    "using": "Configs reach the hub at {{host}}.",
+    "usingIp": "Empty: configs use the server IP {{ip}}.",
+    "warning": "Point the domain’s A record at this server first. Changing this means every device downloads its config once more.",
+    "confirm": "Change the server address in every device config? Every device will need to download its config once more.",
+    "placeholder": "e.g. vpn.example.com"
   }
 }

@@ -142,3 +142,7 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 ## 023: VPN ünvan hovuzu (2026-10-19, server tərəfli marşrut P1)
 - `vpn_settings` (tək sətir, `id = 1`): `pool` TEXT NOT NULL DEFAULT `10.0.0.0/8`, `updated_at`. Hər cihaz konfiqi `AllowedIPs`-də bu bloku marşrutlayır (tam tunel: `0.0.0.0/0`); hovuzdan kənar köhnə şəbəkələr və qaydaların kənar aralıqları əlavə yazılır.
 - Rollback: `migrations_rollback/023_vpn_settings.down.sql` (konfiqlər yenidən hər şəbəkəni adla yazır; cihazlar bir dəfə yükləməlidir).
+
+## 024: server ünvanı (2026-10-19, P2)
+- `vpn_settings.endpoint_host` TEXT NOT NULL DEFAULT `''`: konfiqlərin `Endpoint`-də işlətdiyi domen və ya IPv4 (port şəbəkədən). Boş: şəbəkənin saxlanmış endpoint-i. `nodes.config_routes` indi `<AllowedIPs> @ <Endpoint>` saxlayır — endpoint dəyişəndə də "konfiq köhnədir".
+- Rollback: `migrations_rollback/024_endpoint_host.down.sql`.

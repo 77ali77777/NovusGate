@@ -508,8 +508,9 @@ class ApiClient {
     return data
   }
 
-  async setVPNSettings(pool: string): Promise<VPNSettings> {
-    const { data } = await this.client.put<VPNSettings>('/settings/vpn', { pool })
+  // A field left out is not changed.
+  async setVPNSettings(body: { pool?: string; endpoint_host?: string }): Promise<VPNSettings> {
+    const { data } = await this.client.put<VPNSettings>('/settings/vpn', body)
     return data
   }
 
@@ -1322,10 +1323,24 @@ export function useSetVPNSettings() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { errorTitle: 'toasts:failedToSavePool', successTitle: 'toasts:poolSaved' },
-    mutationFn: (pool: string) => api.setVPNSettings(pool),
+    mutationFn: (pool: string) => api.setVPNSettings({ pool }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings', 'vpn'] })
       // Every device's routes change: their "config outdated" marks do too.
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+      queryClient.invalidateQueries({ queryKey: ['node'] })
+    },
+  })
+}
+
+// The name configs reach the hub by (P2); "" keeps the IP endpoint.
+export function useSetEndpointHost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToSaveEndpoint', successTitle: 'toasts:endpointSaved' },
+    mutationFn: (host: string) => api.setVPNSettings({ endpoint_host: host }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'vpn'] })
       queryClient.invalidateQueries({ queryKey: ['nodes'] })
       queryClient.invalidateQueries({ queryKey: ['node'] })
     },

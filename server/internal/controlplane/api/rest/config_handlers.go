@@ -17,7 +17,6 @@ import (
 // DNS queries do not leave outside it.
 const fullTunnelDNS = "1.1.1.1"
 
-
 // handleDownloadConfig returns the WireGuard config for a node
 func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
@@ -65,19 +64,12 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverEndpoint := network.ServerEndpoint
-	if serverEndpoint == "" {
-		port := network.ListenPort
-		if port == 0 {
-			port = wireguard.DefaultServerPort
-		}
-		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
-	}
+	serverEndpoint := s.nodeEndpoint(r.Context(), network)
 
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -134,19 +126,12 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverEndpoint := network.ServerEndpoint
-	if serverEndpoint == "" {
-		port := network.ListenPort
-		if port == 0 {
-			port = wireguard.DefaultServerPort
-		}
-		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
-	}
+	serverEndpoint := s.nodeEndpoint(r.Context(), network)
 
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -227,23 +212,16 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var serverPublicKey, serverEndpoint string
-	if network.ServerPublicKey != "" {
-		serverPublicKey = network.ServerPublicKey
-		serverEndpoint = network.ServerEndpoint
-	} else {
+	serverPublicKey := network.ServerPublicKey
+	if serverPublicKey == "" {
 		serverPublicKey = "SERVER_KEY_NOT_CONFIGURED"
-		port := network.ListenPort
-		if port == 0 {
-			port = wireguard.DefaultServerPort
-		}
-		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 	}
+	serverEndpoint := s.nodeEndpoint(r.Context(), network)
 
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -289,14 +267,7 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	}
 	hub, _, _ = strings.Cut(hub, "/")
 
-	serverEndpoint := network.ServerEndpoint
-	if serverEndpoint == "" {
-		port := network.ListenPort
-		if port == 0 {
-			port = wireguard.DefaultServerPort
-		}
-		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
-	}
+	serverEndpoint := s.nodeEndpoint(r.Context(), network)
 
 	serverPublicKey := network.ServerPublicKey
 	if serverPublicKey == "" {
@@ -316,7 +287,6 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -325,6 +295,7 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Content-Type", "text/x-shellscript")
 		return
 	}
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
 	// 2. A fresh one-time token lets the script check in over the VPN.
 	token, err := newSessionToken()
 	if err != nil {

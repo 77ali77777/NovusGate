@@ -3,6 +3,7 @@ import { useCan } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
 import { BackupsCard } from './BackupsCard'
 import { ChangePasswordCard } from './ChangePasswordCard'
+import { EndpointHostCard } from './EndpointHostCard'
 import { NotificationsCard } from './NotificationsCard'
 import { SessionsCard } from './SessionsCard'
 import { UserManagementCard } from './UserManagementCard'
@@ -25,6 +26,7 @@ export const SettingsPage: React.FC = () => {
             <BackupsCard />
             <NotificationsCard />
             <VPNPoolCard />
+            <EndpointHostCard />
           </>
         )}
         <SessionsCard />

@@ -109,3 +109,37 @@ func TestVPNSettingsAPI(t *testing.T) {
 		}
 	}
 }
+
+// P2: configs name the hub by a domain, so a new server IP changes only a
+// DNS record, not any config.
+func TestEndpointHostInConfigs(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	t.Cleanup(func() { st.SetVPNEndpointHost(context.Background(), "") })
+	configOf(t, s, seed.node.ID)
+	rec := callAs(t, s, "PUT", "/api/v1/settings/vpn", `{"endpoint_host":"vpn.example.com"}`, true)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"endpoint_host":"vpn.example.com"`) || !strings.Contains(rec.Body.String(), `"pool":"10.0.0.0/8"`) {
+		t.Fatalf("put host = %d %s", rec.Code, rec.Body)
+	}
+	if body := callAs(t, s, "GET", "/api/v1/nodes/"+seed.node.ID, "", true).Body.String(); !strings.Contains(body, `"config_outdated":true`) {
+		t.Fatalf("a new endpoint makes the config outdated once: %s", body)
+	}
+	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "Endpoint = vpn.example.com:51866\n") {
+		t.Fatalf("endpoint by name and the network's port:\n%s", conf)
+	}
+	if body := callAs(t, s, "GET", "/api/v1/nodes/"+seed.node.ID, "", true).Body.String(); !strings.Contains(body, `"config_outdated":false`) {
+		t.Fatalf("downloaded: up to date: %s", body)
+	}
+	for _, bad := range []string{`{"endpoint_host":"http://vpn.example.com"}`, `{"endpoint_host":"vpn.example.com:51820"}`, `{"endpoint_host":"a..b"}`, `{}`} {
+		if rec := callAs(t, s, "PUT", "/api/v1/settings/vpn", bad, true); rec.Code != 400 {
+			t.Errorf("%s = %d %s", bad, rec.Code, rec.Body)
+		}
+	}
+	if rec := callAs(t, s, "PUT", "/api/v1/settings/vpn", `{"endpoint_host":"198.51.100.7"}`, true); rec.Code != 200 {
+		t.Fatalf("an IPv4 address = %d %s", rec.Code, rec.Body)
+	}
+	callAs(t, s, "PUT", "/api/v1/settings/vpn", `{"endpoint_host":""}`, true)
+	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "Endpoint = 203.0.113.1\n") {
+		t.Fatalf("cleared: the network's own endpoint again:\n%s", conf)
+	}
+}

@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/netip"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/novusgate/novusgate/internal/shared/models"
+	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
 // VLAN-style access (plan 2026-10-19, M1): a device's config routes every
@@ -29,19 +32,22 @@ type routePlan struct {
 	custom []customRoute     // ranges outside the VPN that enabled accept rules name
 	full   map[string]bool   // nodes that use the hub as internet exit
 	pool   netip.Prefix      // the address pool every config routes (invalid: not read)
+	host   string            // the endpoint host configs name ("" keeps each network's endpoint)
+	nets   map[string]*models.Network
 }
 
 // loadRoutePlan reads the networks, the rules' outside ranges and the
 // full-tunnel nodes. Only the network list is required: without the rules
 // or the exit set the plan routes the VPN networks (and logs why).
 func (s *Server) loadRoutePlan(ctx context.Context) (routePlan, error) {
-	p := routePlan{cidr: map[string]string{}, full: map[string]bool{}}
+	p := routePlan{cidr: map[string]string{}, full: map[string]bool{}, nets: map[string]*models.Network{}}
 	networks, err := s.store.ListNetworks(ctx)
 	if err != nil {
 		return p, fmt.Errorf("list networks: %w", err)
 	}
 	vpn := map[string]bool{}
 	for _, n := range networks {
+		p.nets[n.ID] = n
 		p.cidr[n.ID] = n.CIDR
 		if !vpn[n.CIDR] {
 			vpn[n.CIDR] = true
@@ -51,6 +57,9 @@ func (s *Server) loadRoutePlan(ctx context.Context) (routePlan, error) {
 	sort.Strings(p.all)
 	if p.pool, err = s.vpnPool(ctx); err != nil {
 		slog.Warn("config routes: address pool not read; configs name each network", "error", err)
+	}
+	if p.host, err = s.store.VPNEndpointHost(ctx); err != nil {
+		slog.Warn("config routes: endpoint host not read; configs use each network's endpoint", "error", err)
 	}
 
 	if rules, err := s.store.ListVPNFirewallRules(ctx); err != nil {
@@ -182,6 +191,39 @@ func (p routePlan) inPool(cidr string) bool {
 	return p.pool.Bits() <= c.Bits() && p.pool.Contains(c.Addr())
 }
 
+// endpointOf is the endpoint a network's configs name (P2 of server-side
+// routing): the configured host with the network's port, else the stored
+// endpoint, else WG_SERVER_ENDPOINT with the port.
+func endpointOf(host string, n *models.Network) string {
+	port := n.ListenPort
+	if port == 0 {
+		port = wireguard.DefaultServerPort
+	}
+	if host != "" {
+		return net.JoinHostPort(host, strconv.Itoa(port))
+	}
+	if n.ServerEndpoint != "" {
+		return n.ServerEndpoint
+	}
+	return fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
+}
+
+// nodeEndpoint is the endpoint for a config of network n.
+func (s *Server) nodeEndpoint(ctx context.Context, n *models.Network) string {
+	host, err := s.store.VPNEndpointHost(ctx)
+	if err != nil {
+		slog.Warn("config endpoint: host not read; the network's endpoint is used", "error", err)
+		host = ""
+	}
+	return endpointOf(host, n)
+}
+
+// configRecord is what a handed-out config is remembered by: its routes
+// and the endpoint it names. A change of either marks it outdated.
+func configRecord(allowed, endpoint string) string {
+	return allowed + " @ " + endpoint
+}
+
 // nodeRouting returns the AllowedIPs and DNS of a node's config. DNS is the
 // network's client DNS; without one, full tunnel uses fullTunnelDNS (names
 // resolve over the tunnel) and split tunnel has none.
@@ -222,7 +264,11 @@ func (s *Server) markOutdated(ctx context.Context, nodes ...*models.Node) {
 	}
 	for _, n := range nodes {
 		if n != nil {
-			n.ConfigOutdated = n.ConfigRoutes != p.allowedIPs(n)
+			endpoint := ""
+			if nw := p.nets[n.NetworkID]; nw != nil {
+				endpoint = endpointOf(p.host, nw)
+			}
+			n.ConfigOutdated = n.ConfigRoutes != configRecord(p.allowedIPs(n), endpoint)
 		}
 	}
 }

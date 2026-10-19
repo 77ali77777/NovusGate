@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/netip"
+	"regexp"
+	"strings"
+
+	"github.com/novusgate/novusgate/internal/wireguard"
 )
 
 // Server-side routing, P1 (2026-10-19): a device config is handed out once.
@@ -85,11 +89,45 @@ func nextNetworkCIDR(pool netip.Prefix, used []netip.Prefix) (netip.Prefix, bool
 type VPNSettingsResponse struct {
 	Pool     string `json:"pool"`
 	NextCIDR string `json:"next_cidr"` // the /24 a new network would get; "" when the pool is full
+	// EndpointHost (P2): the name or address configs reach the hub by; ""
+	// keeps each network's endpoint, EndpointDefault (WG_SERVER_ENDPOINT).
+	EndpointHost    string `json:"endpoint_host"`
+	EndpointDefault string `json:"endpoint_default"`
 }
 
-// VPNSettingsRequest is the body of PUT /api/v1/settings/vpn.
+// VPNSettingsRequest is the body of PUT /api/v1/settings/vpn; a field left
+// out is not changed, at least one is required.
 type VPNSettingsRequest struct {
-	Pool string `json:"pool"`
+	Pool         *string `json:"pool,omitempty"`
+	EndpointHost *string `json:"endpoint_host,omitempty"`
+}
+
+// hostLabelRe is one DNS label (RFC 1123).
+var hostLabelRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+// validEndpointHost accepts "" (clear), an IPv4 address or a DNS name,
+// without a scheme or port (the network's port is added).
+func validEndpointHost(s string) (string, error) {
+	h := strings.ToLower(strings.TrimSpace(s))
+	if h == "" {
+		return "", nil
+	}
+	if a, err := netip.ParseAddr(h); err == nil {
+		if !a.Is4() {
+			return "", fmt.Errorf("endpoint_host: only IPv4 addresses or names")
+		}
+		return h, nil
+	}
+	bad := fmt.Errorf("endpoint_host must be a domain like vpn.example.com or an IPv4 address, without port")
+	if len(h) > 253 || !strings.Contains(h, ".") {
+		return "", bad
+	}
+	for _, l := range strings.Split(h, ".") {
+		if !hostLabelRe.MatchString(l) {
+			return "", bad
+		}
+	}
+	return h, nil
 }
 
 // vpnPool reads the stored pool; a stored value that no longer parses
@@ -127,7 +165,11 @@ func (s *Server) vpnSettings(ctx context.Context) (VPNSettingsResponse, error) {
 	if err != nil {
 		return VPNSettingsResponse{}, err
 	}
-	out := VPNSettingsResponse{Pool: pool.String()}
+	host, err := s.store.VPNEndpointHost(ctx)
+	if err != nil {
+		return VPNSettingsResponse{}, err
+	}
+	out := VPNSettingsResponse{Pool: pool.String(), EndpointHost: host, EndpointDefault: wireguard.GetServerEndpoint()}
 	if c, ok, err := s.nextCIDR(ctx, pool); err != nil {
 		return out, err
 	} else if ok {
@@ -155,14 +197,37 @@ func (s *Server) handleSetVPNSettings(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	pool, err := validPool(req.Pool)
-	if err != nil {
-		errorWithCode(w, http.StatusBadRequest, "invalid_pool", err.Error())
+	if req.Pool == nil && req.EndpointHost == nil {
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "give pool or endpoint_host")
 		return
 	}
-	if err := s.store.SetVPNPool(r.Context(), pool.String()); err != nil {
-		errorResponse(w, http.StatusInternalServerError, "failed to store the pool")
-		return
+	// Both are checked before either is stored.
+	var pool netip.Prefix
+	host := ""
+	var err error
+	if req.Pool != nil {
+		if pool, err = validPool(*req.Pool); err != nil {
+			errorWithCode(w, http.StatusBadRequest, "invalid_pool", err.Error())
+			return
+		}
+	}
+	if req.EndpointHost != nil {
+		if host, err = validEndpointHost(*req.EndpointHost); err != nil {
+			errorWithCode(w, http.StatusBadRequest, "invalid_endpoint_host", err.Error())
+			return
+		}
+	}
+	if req.Pool != nil {
+		if err := s.store.SetVPNPool(r.Context(), pool.String()); err != nil {
+			errorResponse(w, http.StatusInternalServerError, "failed to store the pool")
+			return
+		}
+	}
+	if req.EndpointHost != nil {
+		if err := s.store.SetVPNEndpointHost(r.Context(), host); err != nil {
+			errorResponse(w, http.StatusInternalServerError, "failed to store the endpoint host")
+			return
+		}
 	}
 	s.handleGetVPNSettings(w, r)
 }

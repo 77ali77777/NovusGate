@@ -69,5 +69,10 @@
     "what": "Bütün cihaz konfiqlərinin VPN-ə yönəltdiyi bir özəl IPv4 bloku (/8 – /16), məsələn 10.0.0.0/8. Yeni şəbəkələr onun içində /24 alır.",
     "who": "Adminlər, başlanğıcda bir dəfə. Yalnız cihazlar öz marşrutlanan 10.x ünvanları olan şirkət şəbəkələrindədirsə daraldın (məsələn 10.96.0.0/12).",
     "effect": "Bütün konfiqlər bu bloku marşrutlayır, ona görə şəbəkə və qayda əlavə etmək konfiqi dəyişmir. Hovuzu dəyişmək hər konfiqi dəyişir: cihazlar yenidən yükləyənə qədər \"konfiq köhnədir\" göstərir. Hovuzdan kənarda yaradılmış şəbəkələr işləməyə davam edir; konfiqlər onları adı ilə marşrutlayır."
+  },
+  "endpointHost": {
+    "what": "Cihaz konfiqlərinin hubun Endpoint-i kimi işlətdiyi domen (məsələn vpn.example.com) və ya IPv4 ünvanı; şəbəkənin portu əlavə olunur. http:// və port yazmayın.",
+    "who": "Adminlər, bir dəfə. Server başqa IP-yə köçə bilərsə faydalıdır (başqa provayder, yeni VPS).",
+    "effect": "Bütün konfiqlər bu adı işlədir: cihazlar bir dəfə yükləyənə qədər \"konfiq köhnədir\" göstərir. Sonra serverin yeni IP-si yalnız DNS dəyişikliyi tələb edir. Boş qalsa quraşdırmada verilən server IP-si işlənir."
   }
 }

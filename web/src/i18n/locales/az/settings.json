@@ -89,5 +89,16 @@
     "next": "Növbəti şəbəkə {{next}} alacaq.",
     "warning": "Bir dəfə seçin. Sonradan dəyişmək bütün cihazların konfiqi yenidən yükləməsi deməkdir.",
     "confirm": "Ünvan hovuzu {{pool}} olsun? Bütün cihazlar konfiqini bir dəfə yenidən yükləməli olacaq."
+  },
+  "endpointHost": {
+    "title": "Server ünvanı (domen)",
+    "description": "Bütün cihaz konfiqlərinin hubu tapdığı ad. Domen olanda server yeni IP-yə köçəndə yalnız DNS yazısı dəyişir — heç bir cihaza yeni konfiq lazım olmur.",
+    "label": "Domen və ya IP",
+    "save": "Ünvanı saxla",
+    "using": "Konfiqlər hubu {{host}} ünvanında tapır.",
+    "usingIp": "Boş: konfiqlər serverin {{ip}} IP-sini işlədir.",
+    "warning": "Əvvəlcə domenin A yazısını bu serverə yönəldin. Bunu dəyişmək bütün cihazların konfiqi bir dəfə yenidən yükləməsi deməkdir.",
+    "confirm": "Bütün cihaz konfiqlərində server ünvanı dəyişsin? Bütün cihazlar konfiqini bir dəfə yenidən yükləməli olacaq.",
+    "placeholder": "məs. vpn.example.com"
   }
 }

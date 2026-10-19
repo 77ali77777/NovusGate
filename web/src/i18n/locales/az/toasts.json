@@ -95,5 +95,7 @@
   "keyRotated": "Yeni açar yaradıldı — yeni konfiqi yükləyin",
   "failedToRotateKey": "Açar dəyişdirilmədi",
   "poolSaved": "Ünvan hovuzu saxlandı — cihazlar konfiqi bir dəfə yenidən yükləməlidir",
-  "failedToSavePool": "Ünvan hovuzu saxlanmadı"
+  "failedToSavePool": "Ünvan hovuzu saxlanmadı",
+  "endpointSaved": "Server ünvanı saxlandı — cihazlar konfiqi bir dəfə yenidən yükləməlidir",
+  "failedToSaveEndpoint": "Server ünvanı saxlanmadı"
 }

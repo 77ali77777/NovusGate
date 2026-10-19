@@ -3262,7 +3262,12 @@
       },
       "VPNSettingsRequest": {
         "properties": {
+          "endpoint_host": {
+            "nullable": true,
+            "type": "string"
+          },
           "pool": {
+            "nullable": true,
             "type": "string"
           }
         },
@@ -3270,6 +3275,12 @@
       },
       "VPNSettingsResponse": {
         "properties": {
+          "endpoint_default": {
+            "type": "string"
+          },
+          "endpoint_host": {
+            "type": "string"
+          },
           "next_cidr": {
             "type": "string"
           },
@@ -3278,6 +3289,8 @@
           }
         },
         "required": [
+          "endpoint_default",
+          "endpoint_host",
           "next_cidr",
           "pool"
         ],

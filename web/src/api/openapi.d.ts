@@ -2474,9 +2474,12 @@ export interface components {
             source_type?: string;
         };
         VPNSettingsRequest: {
-            pool?: string;
+            endpoint_host?: string | null;
+            pool?: string | null;
         };
         VPNSettingsResponse: {
+            endpoint_default: string;
+            endpoint_host: string;
             next_cidr: string;
             pool: string;
         };
