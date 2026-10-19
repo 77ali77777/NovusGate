@@ -134,3 +134,7 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 ## 021: cihaza verilən konfiqin marşrutu (2026-10-19)
 - `nodes.config_routes` TEXT NOT NULL DEFAULT `''`: cihaza sonuncu verilən konfiqin `AllowedIPs`-i (konfiq, QR, install.sh, yaradılma). Hazırkı ilə fərqlidirsə (və ya `''`) API `config_outdated: true` qaytarır.
 - Rollback: `migrations_rollback/021_config_routes.down.sql`.
+
+## 022: qarşılıqlı VPN qaydası (2026-10-19)
+- `firewall_rules.bidirectional` BOOLEAN NOT NULL DEFAULT `false`: `true` olanda qayda hər iki istiqamətdə tətbiq olunur (nft və iptables). Köhnə qaydalar bir tərəfli qalır.
+- Rollback: `migrations_rollback/022_rule_bidirectional.down.sql`.

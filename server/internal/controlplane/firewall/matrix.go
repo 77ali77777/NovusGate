@@ -78,10 +78,10 @@ func verdictOf(action string) string {
 // PolicyMatrix evaluates the VPN rules for every pair of networks the way
 // the firewall does: enabled rules in stored order (priority, then
 // creation), first match wins, with endpoints resolved to addresses (a node
-// is its /32, so it only touches its own network). nftEnforcing selects the
-// default: nftables isolates networks (same network allowed); iptables mode
-// accepts VPN traffic no rule drops. Rules that cannot be resolved are
-// skipped, as the firewall skips them, and returned as warnings.
+// is its /32, so it only touches its own network). Both engines isolate
+// networks by default (same network allowed); a mutual rule counts in both
+// directions. nftEnforcing only marks rate limits. Rules that cannot be
+// resolved are skipped, as the firewall skips them, and returned as warnings.
 func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, []error, error) {
 	networks, err := src.ListNetworks(ctx)
 	if err != nil {

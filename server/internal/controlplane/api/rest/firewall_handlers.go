@@ -907,8 +907,11 @@ type VPNFirewallRuleRequest struct {
 	Protocol        string  `json:"protocol"`                  // tcp, udp, icmp, all
 	Port            string  `json:"port,omitempty"`
 	Action          string  `json:"action"` // accept, drop, reject
-	Priority        int     `json:"priority"`
-	Enabled         bool    `json:"enabled"`
+	// Bidirectional (mutual): both ends may start connections; false
+	// (one-way): only the source may, replies always come back.
+	Bidirectional bool `json:"bidirectional,omitempty"`
+	Priority      int  `json:"priority"`
+	Enabled       bool `json:"enabled"`
 }
 
 // validateVPNFirewallRule validates a VPN firewall rule request
@@ -1057,6 +1060,7 @@ func (s *Server) handleVPNFirewallCreateRule(w http.ResponseWriter, r *http.Requ
 		Protocol:        req.Protocol,
 		Port:            req.Port,
 		Action:          req.Action,
+		Bidirectional:   req.Bidirectional,
 		Priority:        req.Priority,
 		Enabled:         req.Enabled,
 	}
@@ -1139,6 +1143,7 @@ func (s *Server) handleVPNFirewallUpdateRule(w http.ResponseWriter, r *http.Requ
 		Protocol:        req.Protocol,
 		Port:            req.Port,
 		Action:          req.Action,
+		Bidirectional:   req.Bidirectional,
 		Priority:        req.Priority,
 		Enabled:         req.Enabled,
 	}
@@ -1246,6 +1251,12 @@ func (s *Server) applyVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 		for _, destIP := range dests {
 			if err := appendVPNIptablesRule(rule, sourceIP, destIP); err != nil && firstErr == nil {
 				firstErr = err
+			}
+			// Mutual: the destination side may start connections too.
+			if rule.Bidirectional {
+				if err := appendVPNIptablesRule(rule, destIP, sourceIP); err != nil && firstErr == nil {
+					firstErr = err
+				}
 			}
 		}
 	}

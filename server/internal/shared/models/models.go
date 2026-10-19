@@ -18,22 +18,22 @@ const (
 
 // Network represents a VPN network (Hub configuration)
 type Network struct {
-	ID               string    `json:"id"`
-	Name             string    `json:"name"`
-	CIDR             string    `json:"cidr"`
-	ServerPrivateKey string    `json:"-"`                           // Hub's private key (never sent to client)
-	ServerPublicKey  string    `json:"server_public_key,omitempty"` // Hub's public key (sent to peers)
-	ServerEndpoint   string    `json:"server_endpoint,omitempty"`   // Hub's endpoint (IP:Port)
-	ListenPort       int       `json:"listen_port"`                 // UDP port (e.g., 51820)
-	InterfaceName    string    `json:"interface_name"`              // Interface name (e.g., wg0)
-	ClientDNS        string    `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
-	TunnelMode       string    `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	CIDR             string `json:"cidr"`
+	ServerPrivateKey string `json:"-"`                           // Hub's private key (never sent to client)
+	ServerPublicKey  string `json:"server_public_key,omitempty"` // Hub's public key (sent to peers)
+	ServerEndpoint   string `json:"server_endpoint,omitempty"`   // Hub's endpoint (IP:Port)
+	ListenPort       int    `json:"listen_port"`                 // UDP port (e.g., 51820)
+	InterfaceName    string `json:"interface_name"`              // Interface name (e.g., wg0)
+	ClientDNS        string `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
+	TunnelMode       string `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
 	// Live state of the hub's interface (not stored): whether it runs, and
 	// the last reason it could not be brought up ("" when it came up).
-	InterfaceUp    bool   `json:"interface_up"`
-	InterfaceError string `json:"interface_error"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	InterfaceUp    bool      `json:"interface_up"`
+	InterfaceError string    `json:"interface_error"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // Tunnel modes. Split: a node's config routes the VPN networks through the
@@ -65,7 +65,7 @@ type Node struct {
 	HasConfig  bool              `json:"has_config"` // the server holds its private key: config, QR and install script work
 	// TunnelOverride is TunnelSplit or TunnelFull for this node only; empty:
 	// the node follows its network's TunnelMode.
-	TunnelOverride string    `json:"tunnel_override"`
+	TunnelOverride string `json:"tunnel_override"`
 	// ConfigRoutes is the AllowedIPs of the config last handed out for the
 	// node ("" before that was recorded); ConfigOutdated (not stored) says
 	// the node's config must be downloaded again to match the current one.
@@ -142,6 +142,10 @@ type VPNFirewallRule struct {
 	Protocol string `json:"protocol"`       // tcp, udp, icmp, all
 	Port     string `json:"port,omitempty"` // port or range
 	Action   string `json:"action"`         // accept, drop, reject
+	// Bidirectional (mutual): both ends may start connections; one rule,
+	// applied both ways. A one-way rule lets only its source start them
+	// (replies always come back).
+	Bidirectional bool `json:"bidirectional"`
 
 	// Metadata
 	Priority  int       `json:"priority"`

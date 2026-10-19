@@ -267,6 +267,7 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `DELETE /groups/{id}` → 204; VPN qaydası qrupu istifadə edirsə 409 `group_in_use`.
 - `PUT /groups/{id}/members` `{node_ids: []}` → üzvləri tam əvəz edir (transaksiya), sonra VPN qaydaları yenidən tətbiq olunur.
 - VPN qaydası: `source_type`/`dest_type` üçün yeni dəyər `group`; sorğuda `source_group_id`/`dest_group_id`, cavabda əlavə olaraq `source_group_name`/`dest_group_name`.
+- VPN qaydası `bidirectional` (bool, default `false`): `true` = qarşılıqlı — hər iki tərəf əlaqə başlada bilər (hub əks istiqamətli qaydanı da yazır); `false` = bir tərəfli — yalnız mənbə başlayır, cavablar həmişə qayıdır.
 - nft rejimində qrup `set grp_N { type ipv4_addr; }` kimi kompilyasiya olunur; iptables rejimində hər üzv cütü üçün ayrıca qayda yazılır.
 
 ## Panel rolları (P9a, 2026-10-15)

@@ -117,3 +117,46 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 		t.Fatalf("rules, then same-network RETURNs, then the default DROP:\n%s", calls)
 	}
 }
+
+// A mutual rule is stored as such and applied both ways in iptables mode.
+func TestMutualRuleInIptablesMode(t *testing.T) {
+	s, st, stub := newContractServer(t)
+	ctx := context.Background()
+	a := &models.Network{Name: "mut-a", CIDR: "10.73.0.0/24", ListenPort: 51873, InterfaceName: "wg73"}
+	b := &models.Network{Name: "mut-b", CIDR: "10.74.0.0/24", ListenPort: 51874, InterfaceName: "wg74"}
+	for _, n := range []*models.Network{a, b} {
+		if err := st.CreateNetwork(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
+		"iptables -A NOVUSGATE-VPN -i wg73 -o wg73 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg74 -o wg74 -j RETURN",
+		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation"} {
+		stub.out[cmd] = ""
+	}
+	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\nnum pkts bytes target prot opt in out source destination\n"
+	stub.calls = nil
+	rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", `{"name":"a and b","source_type":"network","source_network_id":"`+
+		a.ID+`","dest_type":"network","dest_network_id":"`+b.ID+`","protocol":"all","action":"accept","priority":100,"enabled":true,"bidirectional":true}`, true)
+	if rec.Code != 201 || !strings.Contains(rec.Body.String(), `"bidirectional":true`) {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	calls := strings.Join(stub.calls, "\n")
+	for _, want := range []string{"-s 10.73.0.0/24 -d 10.74.0.0/24 -j ACCEPT", "-s 10.74.0.0/24 -d 10.73.0.0/24 -j ACCEPT"} {
+		if !strings.Contains(calls, want) {
+			t.Errorf("missing %q in\n%s", want, calls)
+		}
+	}
+	var r models.VPNFirewallRule
+	json.Unmarshal(rec.Body.Bytes(), &r)
+	got := callAs(t, s, "GET", "/api/v1/firewall/vpn/rules", "", true).Body.String()
+	if !strings.Contains(got, `"bidirectional":true`) {
+		t.Fatalf("list = %s", got)
+	}
+	rec = callAs(t, s, "PUT", "/api/v1/firewall/vpn/rules/"+r.ID, `{"name":"a to b","source_type":"network","source_network_id":"`+
+		a.ID+`","dest_type":"network","dest_network_id":"`+b.ID+`","protocol":"all","action":"accept","priority":100,"enabled":true,"bidirectional":false}`, true)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"bidirectional":false`) {
+		t.Fatalf("update = %d %s", rec.Code, rec.Body)
+	}
+}

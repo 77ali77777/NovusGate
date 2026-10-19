@@ -475,7 +475,8 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 			dn.name as dest_network_name,
 			dnode.name as dest_node_name,
 			fr.source_group_id, fr.dest_group_id,
-			sg.name as source_group_name, dg.name as dest_group_name
+			sg.name as source_group_name, dg.name as dest_group_name,
+			fr.bidirectional
 		FROM firewall_rules fr
 		LEFT JOIN networks sn ON fr.source_network_id = sn.id
 		LEFT JOIN nodes snode ON fr.source_node_id = snode.id
@@ -506,6 +507,7 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 			&rule.Priority, &rule.Enabled, &rule.CreatedAt, &rule.UpdatedAt,
 			&sourceNetworkName, &sourceNodeName, &destNetworkName, &destNodeName,
 		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
+		&rule.Bidirectional,
 		); err != nil {
 			return nil, err
 		}
@@ -566,7 +568,8 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 			dn.name as dest_network_name,
 			dnode.name as dest_node_name,
 			fr.source_group_id, fr.dest_group_id,
-			sg.name as source_group_name, dg.name as dest_group_name
+			sg.name as source_group_name, dg.name as dest_group_name,
+			fr.bidirectional
 		FROM firewall_rules fr
 		LEFT JOIN networks sn ON fr.source_network_id = sn.id
 		LEFT JOIN nodes snode ON fr.source_node_id = snode.id
@@ -583,6 +586,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 		&rule.Priority, &rule.Enabled, &rule.CreatedAt, &rule.UpdatedAt,
 		&sourceNetworkName, &sourceNodeName, &destNetworkName, &destNodeName,
 		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
+		&rule.Bidirectional,
 	)
 	
 	if err == sql.ErrNoRows {
@@ -641,14 +645,14 @@ func (s *Store) CreateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 			dest_type, dest_network_id, dest_node_id, dest_ip,
 			protocol, port, action,
 			priority, enabled, created_at, updated_at,
-			source_group_id, dest_group_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+			source_group_id, dest_group_id, bidirectional
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 	`, rule.ID, rule.Name, nullString(rule.Description),
 		rule.SourceType, nullStringPtr(rule.SourceNetworkID), nullStringPtr(rule.SourceNodeID), nullString(rule.SourceIP),
 		rule.DestType, nullStringPtr(rule.DestNetworkID), nullStringPtr(rule.DestNodeID), nullString(rule.DestIP),
 		rule.Protocol, nullString(rule.Port), rule.Action,
 		rule.Priority, rule.Enabled, rule.CreatedAt, rule.UpdatedAt,
-		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID))
+		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID), rule.Bidirectional)
 	
 	return err
 }
@@ -664,14 +668,14 @@ func (s *Store) UpdateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 			dest_type = $8, dest_network_id = $9, dest_node_id = $10, dest_ip = $11,
 			protocol = $12, port = $13, action = $14,
 			priority = $15, enabled = $16, updated_at = $17,
-			source_group_id = $18, dest_group_id = $19
+			source_group_id = $18, dest_group_id = $19, bidirectional = $20
 		WHERE id = $1
 	`, rule.ID, rule.Name, nullString(rule.Description),
 		rule.SourceType, nullStringPtr(rule.SourceNetworkID), nullStringPtr(rule.SourceNodeID), nullString(rule.SourceIP),
 		rule.DestType, nullStringPtr(rule.DestNetworkID), nullStringPtr(rule.DestNodeID), nullString(rule.DestIP),
 		rule.Protocol, nullString(rule.Port), rule.Action,
 		rule.Priority, rule.Enabled, rule.UpdatedAt,
-		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID))
+		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID), rule.Bidirectional)
 	
 	if err != nil {
 		return err

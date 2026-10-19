@@ -3013,6 +3013,9 @@
           "action": {
             "type": "string"
           },
+          "bidirectional": {
+            "type": "boolean"
+          },
           "created_at": {
             "format": "date-time",
             "type": "string"
@@ -3099,6 +3102,7 @@
         },
         "required": [
           "action",
+          "bidirectional",
           "created_at",
           "dest_type",
           "enabled",
@@ -3115,6 +3119,9 @@
         "properties": {
           "action": {
             "type": "string"
+          },
+          "bidirectional": {
+            "type": "boolean"
           },
           "description": {
             "type": "string"

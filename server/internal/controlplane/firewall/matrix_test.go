@@ -279,3 +279,27 @@ func TestMatrixMarksLimitedCells(t *testing.T) {
 		t.Error("iptables mode does not enforce limits")
 	}
 }
+
+// A mutual (bidirectional) rule lets both sides start connections: one
+// rule, compiled both ways. A one-way rule lets only its source start.
+func TestBidirectionalRule(t *testing.T) {
+	oneWay := []*models.VPNFirewallRule{vpnRule("a to b", func(r *models.VPNFirewallRule) {
+		r.SourceNetworkID, r.DestNetworkID = ptr("a"), ptr("b")
+	})}
+	m := buildMatrix(t, oneWay, nil, true)
+	if m.Cells["a"]["b"].Verdict != "allow" || m.Cells["b"]["a"].Verdict != "deny" {
+		t.Fatalf("one-way: a->b %s, b->a %s", m.Cells["a"]["b"].Verdict, m.Cells["b"]["a"].Verdict)
+	}
+	mutual := []*models.VPNFirewallRule{vpnRule("a and b", func(r *models.VPNFirewallRule) {
+		r.SourceNetworkID, r.DestNetworkID, r.Bidirectional = ptr("a"), ptr("b"), true
+	})}
+	m = buildMatrix(t, mutual, nil, true)
+	for _, c := range []MatrixCell{m.Cells["a"]["b"], m.Cells["b"]["a"]} {
+		if c.Verdict != "allow" || c.Rule != "a and b" {
+			t.Fatalf("mutual: %+v", c)
+		}
+	}
+	if m.Cells["a"]["c"].Verdict != "deny" {
+		t.Fatal("a mutual rule between a and b opens nothing else")
+	}
+}

@@ -122,6 +122,9 @@ func vpnRulesWithGroups(rules []*models.VPNFirewallRule, networks map[string]*mo
 			}
 		}
 		out = append(out, nft.VPNRule{ID: r.ID, Src: src, Dst: dst, SrcSet: srcSet, DstSet: dstSet, Proto: proto, Ports: ports, Action: r.Action})
+		if r.Bidirectional { // mutual: the other end may start connections too
+			out = append(out, nft.VPNRule{ID: r.ID, Src: dst, Dst: src, SrcSet: dstSet, DstSet: srcSet, Proto: proto, Ports: ports, Action: r.Action})
+		}
 	}
 	sets := make([]nft.Group, 0, len(used))
 	for _, g := range used {
