@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -268,5 +270,103 @@ func TestRotateNodeKeyKeepsTheKeyWhenThePeerStays(t *testing.T) {
 	}
 	if n, _ := st.GetNode(context.Background(), seed.node.ID); n.PublicKey != seed.node.PublicKey {
 		t.Fatalf("key changed: %s", n.PublicKey)
+	}
+}
+
+// Review 2026-10-19: an outside range a rule names is routed only by the
+// devices on the rule's other side, not by every device of every network.
+func TestCustomRangeRoutedOnlyByTheOtherSide(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	other := &models.Node{NetworkID: seed.empty.ID, Name: "elsewhere", VirtualIP: net.ParseIP("10.68.0.3"),
+		PublicKey: strings.Repeat("O", 43) + "=", Labels: map[string]string{}, Status: models.NodeStatusOnline}
+	if err := st.CreateNode(context.Background(), other); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetNodePrivateKey(context.Background(), other.ID, strings.Repeat("Q", 43)+"="); err != nil {
+		t.Fatal(err)
+	}
+	rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", `{"name":"lan to net","source_type":"custom","source_ip":"192.168.50.0/24",`+
+		`"dest_type":"network","dest_network_id":"`+seed.network.ID+`","protocol":"all","action":"accept","priority":100,"enabled":true}`, true)
+	if rec.Code != 201 {
+		t.Fatalf("rule = %d %s", rec.Code, rec.Body)
+	}
+	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "192.168.50.0/24") {
+		t.Fatalf("the rule's other side routes the range (replies):\n%s", conf)
+	}
+	if conf := configOf(t, s, other.ID); strings.Contains(conf, "192.168.50.0/24") {
+		t.Fatalf("a device the rule does not cover keeps its own route to the range:\n%s", conf)
+	}
+}
+
+// A custom 0.0.0.0/0 would put a full tunnel in configs; "any" says it.
+func TestCustomRangeMayNotBeEverything(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	for _, ip := range []string{"0.0.0.0/0", "0.0.0.0"} {
+		rec := callAs(t, s, "POST", "/api/v1/firewall/vpn/rules", `{"name":"all","source_type":"network","source_network_id":"`+
+			seed.network.ID+`","dest_type":"custom","dest_ip":"`+ip+`","protocol":"all","action":"accept","priority":100,"enabled":true}`, true)
+		if ip == "0.0.0.0/0" && rec.Code != 400 {
+			t.Errorf("%s = %d %s", ip, rec.Code, rec.Body)
+		}
+	}
+}
+
+// iptables mode: deleting a device rebuilds NOVUSGATE-VPN, so an ACCEPT for
+// its address does not pass to the next device that gets it.
+func TestIptablesRebuildsAfterNodeDelete(t *testing.T) {
+	s, st, stub := newContractServer(t)
+	seed := seedContract(t, st)
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
+		"iptables -A NOVUSGATE-VPN -i wg66 -o wg66 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg68 -o wg68 -j RETURN",
+		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation"} {
+		stub.out[cmd] = ""
+	}
+	stub.out["iptables -L FORWARD -n -v --line-numbers"] = "Chain FORWARD (policy DROP)\nnum pkts bytes target prot opt in out source destination\n"
+	stub.calls = nil
+	if rec := callAs(t, s, "DELETE", "/api/v1/nodes/"+seed.node.ID, "", true); rec.Code != 200 {
+		t.Fatalf("delete = %d %s", rec.Code, rec.Body)
+	}
+	if calls := strings.Join(stub.calls, "\n"); !strings.Contains(calls, "iptables -F NOVUSGATE-VPN") ||
+		!strings.Contains(calls, "--comment novusgate-vpn-isolation") {
+		t.Fatalf("chain not rebuilt:\n%s", calls)
+	}
+}
+
+// Review 2026-10-19: rotating the key of the device the request comes
+// through would cut the caller off before the new config is downloaded.
+func TestRotateNodeKeyRefusesTheCallersOwnDevice(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	req := httptest.NewRequest("POST", "/api/v1/nodes/"+seed.node.ID+"/rotate-key", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.RemoteAddr = seed.node.VirtualIP.String() + ":5555"
+	rec := httptest.NewRecorder()
+	s.router.ServeHTTP(rec, req)
+	if rec.Code != 409 || !strings.Contains(rec.Body.String(), "rotate_own_device") {
+		t.Fatalf("rotate own device = %d %s", rec.Code, rec.Body)
+	}
+}
+
+type takenAddress struct{ *fakePC }
+
+func (takenAddress) GetPeers() (map[string]wireguard.PeerStatus, error) {
+	return map[string]wireguard.PeerStatus{"SOMEONE": {AllowedIPs: "10.66.0.3/32"}}, nil
+}
+
+// Review 2026-10-19: a new peer that could not be added is an error, not a
+// success: the device would have no working config at all.
+func TestRotateNodeKeyReportsTheNewPeerFailing(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	orig := nodePeerControl
+	t.Cleanup(func() { nodePeerControl = orig })
+	nodePeerControl = func(*Server, string) peerControl {
+		return takenAddress{&fakePC{peers: map[string]wireguard.PeerStatus{}}}
+	}
+	rec := callAs(t, s, "POST", "/api/v1/nodes/"+seed.node.ID+"/rotate-key", "", true)
+	if rec.Code != 500 || !strings.Contains(rec.Body.String(), "rotate_peer_not_added") {
+		t.Fatalf("rotate = %d %s", rec.Code, rec.Body)
 	}
 }

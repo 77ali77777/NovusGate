@@ -49,7 +49,7 @@
     },
     "groupFilter": "Group",
     "allGroups": "All groups",
-    "adminInstallConfig": "The admin-vpn.conf from the installation only reaches the Admin VPN. To reach the other networks too, create a device for yourself here and use its config — it covers every network and tells you when a new network makes it outdated."
+    "adminInstallConfig": "The admin-vpn.conf from the installation only reaches the Admin VPN. To reach the other networks too, create a device for yourself here and use its config: it routes every network and tells you when a new network makes it outdated. What it may reach is decided by the rules under Firewall → Between networks (networks are apart until a rule allows it)."
   },
   "detail": {
     "notFound": {

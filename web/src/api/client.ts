@@ -920,7 +920,8 @@ export function useRotateNodeKey() {
   return useMutation({
     meta: { errorTitle: 'toasts:failedToRotateKey', successTitle: 'toasts:keyRotated' },
     mutationFn: (id: string) => api.rotateNodeKey(id),
-    onSuccess: (_, id) => {
+    // Also on error: a key may have changed even if its new peer was not added.
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: ['node', id] })
       queryClient.invalidateQueries({ queryKey: ['nodes'] })
     },

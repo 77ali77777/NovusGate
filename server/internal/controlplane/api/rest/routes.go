@@ -23,7 +23,7 @@ import (
 type routePlan struct {
 	cidr   map[string]string // network ID -> CIDR
 	all    []string          // every VPN network CIDR, sorted
-	custom []string          // ranges outside the VPN that enabled accept rules name, sorted
+	custom []customRoute     // ranges outside the VPN that enabled accept rules name
 	full   map[string]bool   // nodes that use the hub as internet exit
 }
 
@@ -49,20 +49,40 @@ func (s *Server) loadRoutePlan(ctx context.Context) (routePlan, error) {
 	if rules, err := s.store.ListVPNFirewallRules(ctx); err != nil {
 		slog.Warn("config routes: VPN rules not read; outside address ranges are not routed", "error", err)
 	} else {
-		seen := map[string]bool{}
+		groups := map[string]map[string]bool{} // group ID -> member node IDs
+		members := func(id *string) map[string]bool {
+			if id == nil {
+				return nil
+			}
+			if m, ok := groups[*id]; ok {
+				return m
+			}
+			m := map[string]bool{}
+			if g, err := s.store.GetNodeGroup(ctx, *id); err != nil {
+				slog.Warn("config routes: group not read", "group", *id, "error", err)
+			} else if g != nil {
+				for _, x := range g.Members {
+					m[x.NodeID] = true
+				}
+			}
+			groups[*id] = m
+			return m
+		}
 		for _, r := range rules {
 			if !r.Enabled || r.Action != "accept" {
 				continue
 			}
-			// Both ends: a range that reaches a device needs the reply routed.
-			for _, ip := range []string{customIP(r.SourceType, r.SourceIP), customIP(r.DestType, r.DestIP)} {
-				if ip != "" && !vpn[ip] && !seen[ip] {
-					seen[ip] = true
-					p.custom = append(p.custom, ip)
-				}
+			// A range on one end is routed by the devices on the other end:
+			// they start connections to it, or answer connections from it.
+			if ip := customIP(r.DestType, r.DestIP); ip != "" && !vpn[ip] {
+				p.custom = append(p.custom, customRoute{cidr: ip, kind: r.SourceType, network: deref(r.SourceNetworkID),
+					node: deref(r.SourceNodeID), members: members(r.SourceGroupID)})
+			}
+			if ip := customIP(r.SourceType, r.SourceIP); ip != "" && !vpn[ip] {
+				p.custom = append(p.custom, customRoute{cidr: ip, kind: r.DestType, network: deref(r.DestNetworkID),
+					node: deref(r.DestNodeID), members: members(r.DestGroupID)})
 			}
 		}
-		sort.Strings(p.custom)
 	}
 
 	if ids, err := s.store.ListEgressNodeIDs(ctx); err != nil {
@@ -75,6 +95,37 @@ func (s *Server) loadRoutePlan(ctx context.Context) (routePlan, error) {
 	return p, nil
 }
 
+// customRoute is an outside range and the rule end that routes it.
+type customRoute struct {
+	cidr    string
+	kind    string          // any, network, node, group (custom: no device)
+	network string          // kind network
+	node    string          // kind node
+	members map[string]bool // kind group: member node IDs
+}
+
+// covers says whether device n is on the routing end of the rule.
+func (c customRoute) covers(n *models.Node) bool {
+	switch c.kind {
+	case "any":
+		return true
+	case "network":
+		return n.NetworkID == c.network
+	case "node":
+		return n.ID == c.node
+	case "group":
+		return c.members[n.ID]
+	}
+	return false
+}
+
+func deref(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
 func customIP(kind, ip string) string {
 	if kind != "custom" {
 		return ""
@@ -84,7 +135,7 @@ func customIP(kind, ip string) string {
 
 // allowedIPs is the AllowedIPs of a node's config: everything for full
 // tunnel, else its own network first, the other VPN networks, then the
-// outside ranges the rules name.
+// outside ranges of the rules whose other end covers the device.
 func (p routePlan) allowedIPs(n *models.Node) string {
 	if p.full[n.ID] {
 		return "0.0.0.0/0"
@@ -99,8 +150,16 @@ func (p routePlan) allowedIPs(n *models.Node) string {
 			out = append(out, c)
 		}
 	}
-	out = append(out, p.custom...)
-	return strings.Join(out, ", ")
+	var custom []string
+	seen := map[string]bool{}
+	for _, c := range p.custom {
+		if !seen[c.cidr] && c.covers(n) {
+			seen[c.cidr] = true
+			custom = append(custom, c.cidr)
+		}
+	}
+	sort.Strings(custom)
+	return strings.Join(append(out, custom...), ", ")
 }
 
 // nodeRouting returns the AllowedIPs and DNS of a node's config. DNS is the

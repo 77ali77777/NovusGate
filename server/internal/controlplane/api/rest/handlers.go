@@ -64,6 +64,9 @@ type Server struct {
 	ifaceErrs    sync.Map // network ID -> last reason its interface did not come up
 	ifaceRetry   sync.Map // network ID -> retryState of the interface check
 	ifaceLocks   sync.Map // interface name -> *sync.Mutex (lockInterface)
+	// vpnSync serializes NOVUSGATE-VPN rebuilds (iptables mode): two
+	// interleaved flush-and-append runs would leave rules behind the DROP.
+	vpnSync sync.Mutex
 }
 
 // NewServer creates a new REST API server

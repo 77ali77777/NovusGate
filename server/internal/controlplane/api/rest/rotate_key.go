@@ -23,6 +23,10 @@ func (s *Server) handleRotateNodeKey(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusNotFound, "node not found")
 		return
 	}
+	// One rotation of a device at a time: two at once (one reading the node
+	// before the other wrote) could leave its address on a key whose private
+	// half was not kept.
+	defer s.lockInterface("rotate:" + id)()
 	ctx := r.Context()
 	node, err := s.store.GetNode(ctx, id)
 	if err != nil {
@@ -31,6 +35,13 @@ func (s *Server) handleRotateNodeKey(w http.ResponseWriter, r *http.Request) {
 	}
 	if node == nil {
 		errorResponse(w, http.StatusNotFound, "node not found")
+		return
+	}
+	// The caller's own device would lose its peer before the new config is
+	// downloaded (the panel answers only over the admin VPN).
+	if node.VirtualIP != nil && node.VirtualIP.String() == clientIP(r) {
+		errorWithCode(w, http.StatusConflict, "rotate_own_device",
+			"this request comes through this device: rotate its key from another device")
 		return
 	}
 	priv, pub, err := wireguard.GenerateKeys()
@@ -71,6 +82,9 @@ func (s *Server) handleRotateNodeKey(w http.ResponseWriter, r *http.Request) {
 	if pc != nil && own != "" && node.Active(time.Now()) {
 		if err := ensurePeer(pc, pub, own); err != nil {
 			slog.Error("rotate key: new peer not added", "node", node.Name, "error", err)
+			errorWithCode(w, http.StatusInternalServerError, "rotate_peer_not_added",
+				"the key was changed but the device's peer could not be added; use Restore connection")
+			return
 		}
 	}
 	slog.Info("device key rotated", "node", node.Name)

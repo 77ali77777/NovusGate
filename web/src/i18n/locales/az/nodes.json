@@ -49,7 +49,7 @@
     },
     "groupFilter": "Qrup",
     "allGroups": "Bütün qruplar",
-    "adminInstallConfig": "Quraşdırmada verilən admin-vpn.conf yalnız Admin VPN-i görür. Digər şəbəkələrə də çatmaq üçün burada özünüzə cihaz yaradın və onun konfiqini işlədin — o, bütün şəbəkələri əhatə edir və yeni şəbəkə əlavə olunanda “konfiq köhnədir” deyə xəbər verir."
+    "adminInstallConfig": "Quraşdırmada verilən admin-vpn.conf yalnız Admin VPN-i görür. Digər şəbəkələrə də çatmaq üçün burada özünüzə cihaz yaradın və onun konfiqini işlədin: o, bütün şəbəkələri marşrutlayır və yeni şəbəkə əlavə olunanda “konfiq köhnədir” deyə xəbər verir. Hara çata biləcəyini Firewall → Şəbəkələr arası bölməsindəki qaydalar həll edir (qayda icazə verməyənə qədər şəbəkələr ayrıdır)."
   },
   "detail": {
     "notFound": {

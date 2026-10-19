@@ -94,7 +94,7 @@ Publikdir (auth tələb etmir) və **həmişə 200** qaytarır. Vəziyyət `stat
 ## P2c dəyişiklikləri
 - **`GET /health`:** reconciler işləyəndə `checks.reconciler {ok, mode, last_run, pending}` əlavə olunur. `pending` shadow rejimində enforce-un edəcəyi əlavə və yeniləmələrin sayıdır (vaxtı keçmiş peer-lərin silinməsi hər iki rejimdə edilir). `ok: false` olanda `status: degraded` qaytarılır.
 - **`PUT /nodes/{id}`:** cavab forması dəyişmir. Node aktiv olanda (məsələn gələcək `expires_at` verildikdə) peer əlavə olunur, aktiv olmayanda silinir (B11).
-- **`POST /nodes/{id}/rotate-key`** (operator, 2026-10-19, VLAN planı M4): cihaza yeni açar cütü. Əvvəl köhnə peer interfeysdən silinir (alınmasa 500, heç nə dəyişmir), sonra DB-də açar və `config_routes = ''`, aktiv cihaz üçün yeni peer. Cavab: node (`config_outdated: true`, `has_config: true`); yeni konfiq `GET /nodes/{id}/config` ilə alınır. Köhnə konfiq dərhal işləməz olur. 404: cihaz yoxdur.
+- **`POST /nodes/{id}/rotate-key`** (operator, 2026-10-19, VLAN planı M4): cihaza yeni açar cütü. Əvvəl köhnə peer interfeysdən silinir (alınmasa 500, heç nə dəyişmir), sonra DB-də açar və `config_routes = ''`, aktiv cihaz üçün yeni peer. Cavab: node (`config_outdated: true`, `has_config: true`); yeni konfiq `GET /nodes/{id}/config` ilə alınır. Köhnə konfiq dərhal işləməz olur. 404: cihaz yoxdur. 409 `rotate_own_device`: sorğu bu cihazın özündən gəlir (açarı başqa cihazdan dəyişin). 500 `rotate_peer_not_added`: açar dəyişdi, amma yeni peer əlavə olunmadı ("Bağlantını bərpa et"). Eyni cihaz üçün rotasiyalar növbə ilə gedir.
 - **Vaxtı keçmiş node** ən geci 15 saniyəyə `status: "expired"` alır və peer-i silinir, panel açılmasa belə.
 
 ## Xəta formatı (P2d-1)
@@ -273,6 +273,7 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `DELETE /groups/{id}` → 204; VPN qaydası qrupu istifadə edirsə 409 `group_in_use`.
 - `PUT /groups/{id}/members` `{node_ids: []}` → üzvləri tam əvəz edir (transaksiya), sonra VPN qaydaları yenidən tətbiq olunur.
 - VPN qaydası: `source_type`/`dest_type` üçün yeni dəyər `group`; sorğuda `source_group_id`/`dest_group_id`, cavabda əlavə olaraq `source_group_name`/`dest_group_name`.
+- VPN qaydasında custom `0.0.0.0/0` (hər ünvan) 400 ilə rədd edilir — `any` tipi işlədilir (2026-10-19). Kənar IP aralığı yalnız qaydanın digər tərəfindəki cihazların konfiqinə yazılır.
 - VPN qaydası `bidirectional` (bool, default `false`): `true` = qarşılıqlı — hər iki tərəf əlaqə başlada bilər (hub əks istiqamətli qaydanı da yazır); `false` = bir tərəfli — yalnız mənbə başlayır, cavablar həmişə qayıdır.
 - nft rejimində qrup `set grp_N { type ipv4_addr; }` kimi kompilyasiya olunur; iptables rejimində hər üzv cütü üçün ayrıca qayda yazılır.
 

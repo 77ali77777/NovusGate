@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
@@ -963,6 +962,9 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 		if !isIPv4OrCIDR(req.SourceIP) {
 			return fmt.Errorf("invalid source_ip: must be an IPv4 address or CIDR")
 		}
+		if isEveryAddress(req.SourceIP) {
+			return fmt.Errorf("source_ip 0.0.0.0/0 is every address: use source_type any")
+		}
 	}
 
 	// Validate destination references based on type
@@ -981,6 +983,9 @@ func validateVPNFirewallRule(req *VPNFirewallRuleRequest) error {
 		}
 		if !isIPv4OrCIDR(req.DestIP) {
 			return fmt.Errorf("invalid dest_ip: must be an IPv4 address or CIDR")
+		}
+		if isEveryAddress(req.DestIP) {
+			return fmt.Errorf("dest_ip 0.0.0.0/0 is every address: use dest_type any")
 		}
 	}
 
@@ -1385,6 +1390,8 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		_, err := s.firewall.ReconcileOrRetry(ctx)
 		return err
 	}
+	s.vpnSync.Lock()
+	defer s.vpnSync.Unlock()
 	// Rules appended to FORWARD by earlier versions sat below the wg ACCEPTs
 	// and never matched; they are removed, then the chain is rebuilt.
 	if err := s.removeLegacyForwardVPNRules(); err != nil {
@@ -1420,9 +1427,11 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		return err
 	}
 
-	// Update WireGuard peer AllowedIPs based on VPN firewall rules
-	if err := s.syncPeerAllowedIPs(ctx, rules); err != nil {
-		slog.Error(fmt.Sprintf("Warning: failed to sync peer AllowedIPs: %v", err))
+	// Forwarding between the wg interfaces. Peers keep their /32 on the hub
+	// (configs route the rest, M1); rewriting them here with "wg set" could
+	// re-create a peer just removed (key rotation, expiry), so it is not done.
+	if _, err := execHostCommand("sysctl", "-w", "net.ipv4.ip_forward=1"); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] warning: enable ip_forward: %v", err))
 	}
 
 	// Save rules with netfilter-persistent
@@ -1467,157 +1476,6 @@ func (s *Server) SyncVPNRules(ctx context.Context) {
 	}
 }
 
-// syncPeerAllowedIPs updates WireGuard peer AllowedIPs based on VPN firewall rules
-// This allows traffic between networks when firewall rules permit it
-func (s *Server) syncPeerAllowedIPs(ctx context.Context, rules []*models.VPNFirewallRule) error {
-	// Get all networks
-	networks, err := s.store.ListNetworks(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list networks: %w", err)
-	}
-
-	// Build a map of network ID to CIDR
-	networkCIDRs := make(map[string]string)
-	for _, net := range networks {
-		networkCIDRs[net.ID] = net.CIDR
-	}
-
-	// For each network, determine which other networks it should be able to reach
-	// based on enabled ACCEPT rules
-	networkRoutes := make(map[string]map[string]bool) // networkID -> set of CIDRs to route
-
-	for _, rule := range rules {
-		if !rule.Enabled || rule.Action != "accept" {
-			continue
-		}
-
-		// Get source and destination network CIDRs
-		var sourceCIDRs, destCIDRs []string
-
-		switch rule.SourceType {
-		case "any":
-			// All networks
-			for _, cidr := range networkCIDRs {
-				sourceCIDRs = append(sourceCIDRs, cidr)
-			}
-		case "network":
-			if rule.SourceNetworkID != nil {
-				if cidr, ok := networkCIDRs[*rule.SourceNetworkID]; ok {
-					sourceCIDRs = append(sourceCIDRs, cidr)
-				}
-			}
-		case "node":
-			// For node, we need to find its network
-			if rule.SourceNodeID != nil {
-				node, _ := s.store.GetNode(ctx, *rule.SourceNodeID)
-				if node != nil {
-					if cidr, ok := networkCIDRs[node.NetworkID]; ok {
-						sourceCIDRs = append(sourceCIDRs, cidr)
-					}
-				}
-			}
-		case "group":
-			sourceCIDRs = append(sourceCIDRs, s.groupNetworkCIDRs(ctx, rule.SourceGroupID, networkCIDRs)...)
-		}
-
-		switch rule.DestType {
-		case "any":
-			for _, cidr := range networkCIDRs {
-				destCIDRs = append(destCIDRs, cidr)
-			}
-		case "network":
-			if rule.DestNetworkID != nil {
-				if cidr, ok := networkCIDRs[*rule.DestNetworkID]; ok {
-					destCIDRs = append(destCIDRs, cidr)
-				}
-			}
-		case "node":
-			if rule.DestNodeID != nil {
-				node, _ := s.store.GetNode(ctx, *rule.DestNodeID)
-				if node != nil {
-					if cidr, ok := networkCIDRs[node.NetworkID]; ok {
-						destCIDRs = append(destCIDRs, cidr)
-					}
-				}
-			}
-		case "group":
-			destCIDRs = append(destCIDRs, s.groupNetworkCIDRs(ctx, rule.DestGroupID, networkCIDRs)...)
-		}
-
-		// For each source network, add destination CIDRs to its routes
-		for _, srcCIDR := range sourceCIDRs {
-			// Find network ID by CIDR
-			var srcNetID string
-			for id, cidr := range networkCIDRs {
-				if cidr == srcCIDR {
-					srcNetID = id
-					break
-				}
-			}
-			if srcNetID == "" {
-				continue
-			}
-
-			if networkRoutes[srcNetID] == nil {
-				networkRoutes[srcNetID] = make(map[string]bool)
-			}
-			for _, destCIDR := range destCIDRs {
-				networkRoutes[srcNetID][destCIDR] = true
-			}
-		}
-	}
-
-	// Now update each network's peers with the combined AllowedIPs
-	for netID, routes := range networkRoutes {
-		network, err := s.store.GetNetwork(ctx, netID)
-		if err != nil || network == nil {
-			continue
-		}
-
-		// Get all nodes in this network
-		nodes, err := s.store.ListNodes(ctx, netID)
-		if err != nil {
-			continue
-		}
-
-		// Build AllowedIPs string: own network + all routed networks
-		allowedCIDRs := []string{network.CIDR}
-		for cidr := range routes {
-			if cidr != network.CIDR {
-				allowedCIDRs = append(allowedCIDRs, cidr)
-			}
-		}
-		allowedIPsStr := strings.Join(allowedCIDRs, ",")
-
-		// Update each node's peer entry on the server
-		mgr := s.getManager(netID)
-		if mgr == nil {
-			continue
-		}
-
-		for _, node := range nodes {
-			if !node.Active(time.Now()) {
-				continue // B11: never re-create an expired node's peer
-			}
-			// Update peer's AllowedIPs to include all routed networks
-			nodeAllowedIPs := node.VirtualIP.String() + "/32"
-			// Note: On server side, peer AllowedIPs is just the node's IP
-			// The routing happens via iptables FORWARD rules
-			// But we need to ensure IP forwarding is enabled
-			if err := mgr.UpdatePeerAllowedIPs(node.PublicKey, nodeAllowedIPs); err != nil {
-				slog.Error(fmt.Sprintf("Warning: failed to update peer %s AllowedIPs: %v", node.Name, err))
-			}
-		}
-
-		slog.Info(fmt.Sprintf("[VPN Firewall] Network %s can now route to: %s", network.Name, allowedIPsStr))
-	}
-
-	// Ensure IP forwarding is enabled
-	execHostCommand("sysctl", "-w", "net.ipv4.ip_forward=1")
-
-	return nil
-}
-
 // removeLegacyForwardVPNRules deletes VPN rules earlier versions appended to
 // FORWARD (comment "novusgate-vpn-*").
 func (s *Server) removeLegacyForwardVPNRules() error {
@@ -1660,6 +1518,17 @@ func isIPv4OrCIDR(s string) bool {
 	}
 	ip, _, err := net.ParseCIDR(s)
 	return err == nil && ip.To4() != nil
+}
+
+// isEveryAddress: a /0 range. As a rule end it would route the whole internet
+// through the hub in device configs; the endpoint type any says the same.
+func isEveryAddress(s string) bool {
+	_, n, err := net.ParseCIDR(strings.TrimSpace(s))
+	if err != nil {
+		return false
+	}
+	ones, _ := n.Mask.Size()
+	return ones == 0
 }
 
 // ruleCommentRe matches an iptables "/* comment */" in `iptables -L` output.

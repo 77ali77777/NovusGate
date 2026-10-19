@@ -135,6 +135,11 @@ func (s *Server) StartFirewall(ctx context.Context) error {
 // background.
 func (s *Server) reconcileFirewall(ctx context.Context) {
 	if !s.engineEnforces() {
+		// iptables mode: NOVUSGATE-VPN names networks (same-network RETURNs)
+		// and resolved addresses of devices and groups, so it is rebuilt.
+		if err := s.syncVPNFirewallRules(ctx); err != nil {
+			slog.Warn(fmt.Sprintf("[Firewall] VPN rules not re-applied: %v", err))
+		}
 		return
 	}
 	res, err := s.firewall.ReconcileOrRetry(ctx)
