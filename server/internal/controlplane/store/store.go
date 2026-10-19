@@ -198,10 +198,10 @@ func (s *Store) GetNode(ctx context.Context, id string) (*models.Node, error) {
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, ''), config_routes
 		FROM nodes WHERE id = $1
 	`, id).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -228,10 +228,10 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 	var lastSeen sql.NullTime
 	
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, ''), config_routes
 		FROM nodes WHERE network_id = $1 AND name = $2
 	`, networkID, name).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride)
+		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -253,7 +253,7 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 // ListNodes lists all nodes in a network
 func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, '')
+		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, ''), config_routes
 		FROM nodes WHERE network_id = $1 ORDER BY name
 	`, networkID)
 	if err != nil {
@@ -269,7 +269,7 @@ func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node
 		var lastSeen sql.NullTime
 		
 		if err := rows.Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
-			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride); err != nil {
+			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes); err != nil {
 			return nil, err
 		}
 		
@@ -778,4 +778,11 @@ func (s *Store) ExpireNodes(ctx context.Context, now time.Time) ([]*models.Node,
 		out = append(out, n)
 	}
 	return out, rows.Err()
+}
+
+// SetNodeConfigRoutes records the AllowedIPs of the config just handed out
+// for a node (config download, QR code, install script, creation).
+func (s *Store) SetNodeConfigRoutes(ctx context.Context, nodeID, routes string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE nodes SET config_routes = $2 WHERE id = $1`, nodeID, routes)
+	return err
 }

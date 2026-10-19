@@ -198,5 +198,11 @@
     "saved": "Saxlandı. Qüvvəyə minməsi üçün bu cihazın konfiqurasiyasını yenidən yükləyin.",
     "pending": "Firewall zolağında təsdiq gözləyir; sonra bu cihazın konfiqurasiyasını yenidən yükləyin.",
     "rolledBack": "Vaxtında təsdiq edilmədi: dəyişiklik geri qaytarıldı; bu cihaz əvvəlki rejimində qalır."
+  },
+  "outdated": {
+    "badge": "Konfiq köhnədir",
+    "title": "Bu cihazın konfiqurasiyası köhnədir",
+    "body": "Server tərəfində marşrutlar dəyişib (yeni şəbəkə, tunel rejimi və ya bu versiyadan əvvəl yüklənmiş konfiq). Cihazın hər yerə çatması üçün konfiqurasiyanı bir dəfə yenidən yükləyib cihaza qoyun.",
+    "noKey": "Server bu cihazın açarını saxlamır: konfiqurasiyanı cihazın özündə yeniləyin və ya cihazı yenidən yaradın."
   }
 }

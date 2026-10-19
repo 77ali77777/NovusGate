@@ -18,8 +18,8 @@ type MatrixNetwork struct {
 type MatrixCell struct {
 	Verdict string `json:"verdict"` // allow, deny or partial
 	Reason  string `json:"reason"`
-	// ReasonKey says why, for translation: rule, same_network, isolated or
-	// iptables_default; Rule names the deciding rule (reason_key rule).
+	// ReasonKey says why, for translation: rule, same_network or isolated (both
+	// engines keep networks apart by default); Rule names the deciding rule.
 	ReasonKey string   `json:"reason_key"`
 	Rule      string   `json:"rule,omitempty"`
 	Rules     []string `json:"rules"` // names of the rules that touch the pair, in order
@@ -128,7 +128,7 @@ func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, [
 	for _, from := range m.Networks {
 		m.Cells[from.ID] = map[string]MatrixCell{}
 		for _, to := range m.Networks {
-			c := matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, sets, names, nftEnforcing)
+			c := matrixCell(from.ID == to.ID, cidrs[from.ID], cidrs[to.ID], rs.VPNRules, sets, names)
 			c.Limited = limited[from.ID] || limited[to.ID]
 			m.Cells[from.ID][to.ID] = c
 		}
@@ -136,7 +136,7 @@ func PolicyMatrix(ctx context.Context, src Source, nftEnforcing bool) (Matrix, [
 	return m, warnings, nil
 }
 
-func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, sets map[string][]netip.Addr, names map[string]string, nftEnforcing bool) MatrixCell {
+func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, sets map[string][]netip.Addr, names map[string]string) MatrixCell {
 	touched := []string{}
 	var scoped []string
 	final, reason, key, rule := "", "", "", ""
@@ -155,8 +155,6 @@ func matrixCell(same bool, from, to netip.Prefix, rules []nft.VPNRule, sets map[
 	}
 	if final == "" {
 		switch {
-		case !nftEnforcing:
-			final, reason, key = "allow", "default (iptables mode accepts VPN traffic no rule drops)", "iptables_default"
 		case same:
 			final, reason, key = "allow", "default (same network)", "same_network"
 		default:

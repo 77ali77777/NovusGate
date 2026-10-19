@@ -1,6 +1,7 @@
 {
   "body": [
     {
+      "config_outdated": true,
       "created_at": "<time>",
       "endpoints": null,
       "has_config": true,

@@ -1993,6 +1993,7 @@ export interface components {
             }[] | null;
         };
         Node: {
+            config_outdated: boolean;
             /** Format: date-time */
             created_at: string;
             endpoints: string[] | null;

@@ -1401,6 +1401,14 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 		}
 	}
 
+	// Networks are apart by default, like the nftables engine (VLAN-style
+	// access): after the rules, traffic inside one network goes on to the
+	// ACCEPTs WireGuard's PostUp adds; between networks it is dropped.
+	// Traffic to the internet (full tunnel) and to the hub is not matched.
+	if err := s.isolateNetworks(ctx); err != nil {
+		return err
+	}
+
 	// Update WireGuard peer AllowedIPs based on VPN firewall rules
 	if err := s.syncPeerAllowedIPs(ctx, rules); err != nil {
 		slog.Error(fmt.Sprintf("Warning: failed to sync peer AllowedIPs: %v", err))
@@ -1410,6 +1418,42 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	execHostCommand("netfilter-persistent", "save")
 
 	return nil
+}
+
+// isolationComment marks the default DROP between networks in NOVUSGATE-VPN.
+const isolationComment = "novusgate-vpn-isolation"
+
+// isolateNetworks appends, after the VPN rules, a RETURN for traffic that
+// stays inside each network and a DROP for wg-to-wg traffic between them.
+func (s *Server) isolateNetworks(ctx context.Context) error {
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		return fmt.Errorf("list networks for isolation: %w", err)
+	}
+	for _, n := range networks {
+		if n.InterfaceName == "" {
+			continue
+		}
+		if _, err := execHostCommand("iptables", "-A", vpnChain, "-i", n.InterfaceName, "-o", n.InterfaceName, "-j", "RETURN"); err != nil {
+			return fmt.Errorf("%s same-network rule for %s: %w", vpnChain, n.InterfaceName, err)
+		}
+	}
+	if _, err := execHostCommand("iptables", "-A", vpnChain, "-i", "wg+", "-o", "wg+", "-j", "DROP", "-m", "comment", "--comment", isolationComment); err != nil {
+		return fmt.Errorf("%s isolation rule: %w", vpnChain, err)
+	}
+	return nil
+}
+
+// SyncVPNRules applies the stored VPN rules at start in iptables and shadow
+// mode (NOVUSGATE-VPN with networks apart by default); nftables mode does
+// this in its own engine. It is a no-op there.
+func (s *Server) SyncVPNRules(ctx context.Context) {
+	if s.engineEnforces() {
+		return
+	}
+	if err := s.syncVPNFirewallRules(ctx); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] applying the VPN rules at start failed: %v", err))
+	}
 }
 
 // syncPeerAllowedIPs updates WireGuard peer AllowedIPs based on VPN firewall rules

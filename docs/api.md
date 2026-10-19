@@ -327,3 +327,8 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 ## Şəbəkə interfeysinin vəziyyəti (2026-10-17)
 - `Network` cavablarında `interface_up` (interfeys hostda var) və `interface_error` (son qaldırma uğursuzluğunun səbəbi; uğurda `""`). Şəbəkə yaradılanda interfeys qalxmasa da 201 qaytarılır, səbəb `interface_error`-dadır.
 - `POST /networks/{id}/restart` → 200 `Network` (interfeys hostda `wg-quick@wgN` kimi yenidən başladılır, peer-lər DB-dən qaytarılır); qalxmasa 500 `interface_failed` səbəblə. Rol: operator. Naməlum şəbəkə → 404.
+
+## VLAN tipli icazə, M1 (2026-10-19)
+- Cihaz konfiqinin `AllowedIPs`-i qaydalardan asılı deyil: öz şəbəkəsi, bütün digər VPN şəbəkələri, qaydalarda adı çəkilən VPN-dən kənar ünvan aralıqları; tam tuneldə `0.0.0.0/0`. Kimin kimə çatdığını yalnız hub-ın firewall-u həll edir, ona görə qayda dərhal işləyir və cavablar həmişə qayıdır.
+- `Node` cavablarında `config_outdated` (bool): cihazdakı konfiq hazırkı marşrutlarla uyğun deyil (yeni şəbəkə, tunel dəyişikliyi, bu versiyadan əvvəlki konfiq).
+- iptables rejimində də şəbəkələr default ayrıdır: `NOVUSGATE-VPN` qaydalardan sonra hər şəbəkə üçün `-i wgN -o wgN -j RETURN`, sonda `-i wg+ -o wg+ -j DROP` (`novusgate-vpn-isolation`); start-da da tətbiq olunur. Siyasət matrisi hər iki rejimdə eyni default-u göstərir (`isolated`).

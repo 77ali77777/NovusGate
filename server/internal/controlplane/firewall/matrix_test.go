@@ -63,7 +63,8 @@ func TestMatrixDefaults(t *testing.T) {
 	if got := row(buildMatrix(t, nil, nil, true), "a"); !reflect.DeepEqual(got, []string{"allow", "deny", "deny"}) {
 		t.Fatalf("nft defaults = %v", got)
 	}
-	if got := row(buildMatrix(t, nil, nil, false), "a"); !reflect.DeepEqual(got, []string{"allow", "allow", "allow"}) {
+	// iptables mode keeps networks apart by default too (NOVUSGATE-VPN).
+	if got := row(buildMatrix(t, nil, nil, false), "a"); !reflect.DeepEqual(got, []string{"allow", "deny", "deny"}) {
 		t.Fatalf("iptables defaults = %v", got)
 	}
 }
@@ -121,7 +122,7 @@ func TestMatrixResolvesNodesAndCustomPrefixes(t *testing.T) {
 			r.SourceType, r.DestType, r.DestIP, r.Action = "any", "custom", "8.8.8.8", "drop"
 		}),
 	}
-	if got := row(buildMatrix(t, rules, nodes, false), "a"); !reflect.DeepEqual(got, []string{"allow", "allow", "allow"}) {
+	if got := row(buildMatrix(t, rules, nodes, false), "a"); !reflect.DeepEqual(got, []string{"allow", "deny", "deny"}) {
 		t.Fatalf("internet-only rule = %v", got)
 	}
 }
@@ -169,8 +170,14 @@ func TestMatrixReasonKeys(t *testing.T) {
 			t.Errorf("%s->%s = %+v", c.from, c.to, got)
 		}
 	}
-	if k := buildMatrix(t, nil, nil, false).Cells["a"]["b"].ReasonKey; k != "iptables_default" {
-		t.Errorf("iptables default key = %q", k)
+	// iptables mode keeps networks apart too (NOVUSGATE-VPN ends with a
+	// DROP between networks): the same defaults as nftables.
+	ipt := buildMatrix(t, nil, nil, false)
+	if c := ipt.Cells["a"]["b"]; c.ReasonKey != "isolated" || c.Verdict != "deny" {
+		t.Errorf("iptables mode between networks = %+v, want isolated deny", c)
+	}
+	if c := ipt.Cells["a"]["a"]; c.ReasonKey != "same_network" || c.Verdict != "allow" {
+		t.Errorf("iptables mode inside a network = %+v", c)
 	}
 }
 

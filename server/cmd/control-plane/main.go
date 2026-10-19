@@ -310,6 +310,11 @@ func runServer(cmd *cobra.Command, args []string) error {
 		}()
 		slog.Info(fmt.Sprintf("  Firewall engine: %s", fwMode))
 	}
+	if fwMode != firewall.ModeNft {
+		// iptables enforces: apply the VPN rules, with networks apart by
+		// default, also when nobody changed a rule since the update.
+		go apiServer.SyncVPNRules(context.Background())
+	}
 
 	// Ensure Admin Network manager is registered after bootstrap
 	// This handles the case where bootstrapSystem creates the network after loadNetworks runs

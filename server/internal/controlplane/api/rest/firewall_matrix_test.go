@@ -29,8 +29,10 @@ func TestPolicyMatrixEndpoint(t *testing.T) {
 	}
 	var m firewall.Matrix
 	json.Unmarshal(rec.Body.Bytes(), &m)
-	// No nft engine here: iptables mode, so b->a is allowed by default.
-	if m.NftEnforcing || m.Cells[a.ID][b.ID].Verdict != "deny" || m.Cells[b.ID][a.ID].Verdict != "allow" ||
+	// No nft engine here: iptables mode, which keeps networks apart by
+	// default too (NOVUSGATE-VPN ends with a DROP between networks).
+	if m.NftEnforcing || m.Cells[a.ID][b.ID].Verdict != "deny" || m.Cells[b.ID][a.ID].Verdict != "deny" ||
+		m.Cells[b.ID][a.ID].ReasonKey != "isolated" ||
 		len(m.Cells[a.ID][b.ID].Rules) != 1 {
 		t.Fatalf("matrix = %s", rec.Body)
 	}

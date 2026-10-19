@@ -66,6 +66,11 @@ type Node struct {
 	// TunnelOverride is TunnelSplit or TunnelFull for this node only; empty:
 	// the node follows its network's TunnelMode.
 	TunnelOverride string    `json:"tunnel_override"`
+	// ConfigRoutes is the AllowedIPs of the config last handed out for the
+	// node ("" before that was recorded); ConfigOutdated (not stored) says
+	// the node's config must be downloaded again to match the current one.
+	ConfigRoutes   string    `json:"-"`
+	ConfigOutdated bool      `json:"config_outdated"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 

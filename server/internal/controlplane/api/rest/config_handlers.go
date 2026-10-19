@@ -13,131 +13,10 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-// getRoutedNetworksForNode returns all network CIDRs that this node can reach
-// based on VPN firewall rules
 // fullTunnelDNS resolves names over the tunnel for full-tunnel nodes, so
 // DNS queries do not leave outside it.
 const fullTunnelDNS = "1.1.1.1"
 
-// tunnelRouting returns the AllowedIPs and DNS of a node's config: all IPv4
-// traffic when full tunnel (egress) is on for the node, otherwise split (the
-// routed VPN networks). DNS is the network's client DNS when it has one;
-// without it full tunnel uses fullTunnelDNS and split tunnel has none.
-func (s *Server) tunnelRouting(r *http.Request, node *models.Node, network *models.Network, split string) (string, string) {
-	dns := ""
-	if network != nil {
-		dns = network.ClientDNS
-	}
-	ids, err := s.store.ListEgressNodeIDs(r.Context())
-	if err != nil {
-		slog.Warn("full tunnel state not read; the config routes the VPN networks only", "node", node.ID, "error", err)
-		return split, dns
-	}
-	for _, id := range ids {
-		if id == node.ID {
-			if dns == "" {
-				dns = fullTunnelDNS
-			}
-			return "0.0.0.0/0", dns
-		}
-	}
-	return split, dns
-}
-
-func (s *Server) getRoutedNetworksForNode(r *http.Request, networkID string) []string {
-	// Start with own network
-	network, err := s.store.GetNetwork(r.Context(), networkID)
-	if err != nil || network == nil {
-		return []string{}
-	}
-
-	cidrs := []string{network.CIDR}
-	cidrSet := map[string]bool{network.CIDR: true}
-
-	// Get all VPN firewall rules
-	rules, err := s.store.ListVPNFirewallRules(r.Context())
-	if err != nil {
-		return cidrs
-	}
-
-	// Get all networks for lookup
-	networks, err := s.store.ListNetworks(r.Context())
-	if err != nil {
-		return cidrs
-	}
-	networkMap := make(map[string]*models.Network)
-	for _, n := range networks {
-		networkMap[n.ID] = n
-	}
-
-	// Check each enabled ACCEPT rule
-	for _, rule := range rules {
-		if !rule.Enabled || rule.Action != "accept" {
-			continue
-		}
-
-		// Check if this network is the source
-		isSource := false
-		switch rule.SourceType {
-		case "any":
-			isSource = true
-		case "network":
-			if rule.SourceNetworkID != nil && *rule.SourceNetworkID == networkID {
-				isSource = true
-			}
-		case "node":
-			if rule.SourceNodeID != nil {
-				node, _ := s.store.GetNode(r.Context(), *rule.SourceNodeID)
-				if node != nil && node.NetworkID == networkID {
-					isSource = true
-				}
-			}
-		}
-
-		if !isSource {
-			continue
-		}
-
-		// Add destination network CIDRs
-		switch rule.DestType {
-		case "any":
-			for _, n := range networks {
-				if !cidrSet[n.CIDR] {
-					cidrs = append(cidrs, n.CIDR)
-					cidrSet[n.CIDR] = true
-				}
-			}
-		case "network":
-			if rule.DestNetworkID != nil {
-				if n, ok := networkMap[*rule.DestNetworkID]; ok {
-					if !cidrSet[n.CIDR] {
-						cidrs = append(cidrs, n.CIDR)
-						cidrSet[n.CIDR] = true
-					}
-				}
-			}
-		case "node":
-			if rule.DestNodeID != nil {
-				node, _ := s.store.GetNode(r.Context(), *rule.DestNodeID)
-				if node != nil {
-					if n, ok := networkMap[node.NetworkID]; ok {
-						if !cidrSet[n.CIDR] {
-							cidrs = append(cidrs, n.CIDR)
-							cidrSet[n.CIDR] = true
-						}
-					}
-				}
-			}
-		case "custom":
-			if rule.DestIP != "" && !cidrSet[rule.DestIP] {
-				cidrs = append(cidrs, rule.DestIP)
-				cidrSet[rule.DestIP] = true
-			}
-		}
-	}
-
-	return cidrs
-}
 
 // handleDownloadConfig returns the WireGuard config for a node
 func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
@@ -195,12 +74,12 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 	}
 
-	// Get all routed networks based on VPN firewall rules
-	allowedIPs := s.getRoutedNetworksForNode(r, node.NetworkID)
-	allowedIPsStr := strings.Join(allowedIPs, ", ")
+	// Routes: every VPN network (the hub's firewall decides who reaches
+	// whom), or everything for full tunnel; recorded for "config outdated".
+	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
+	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
 
 	cfgGen := wireguard.NewConfigGenerator()
-	allowedIPsStr, dns := s.tunnelRouting(r, node, network, allowedIPsStr)
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -264,12 +143,12 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 	}
 
-	// Get all routed networks based on VPN firewall rules
-	allowedIPs := s.getRoutedNetworksForNode(r, node.NetworkID)
-	allowedIPsStr := strings.Join(allowedIPs, ", ")
+	// Routes: every VPN network (the hub's firewall decides who reaches
+	// whom), or everything for full tunnel; recorded for "config outdated".
+	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
+	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
 
 	cfgGen := wireguard.NewConfigGenerator()
-	allowedIPsStr, dns := s.tunnelRouting(r, node, network, allowedIPsStr)
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	png, err := qrcode.Encode(config, qrcode.Medium, 256)
@@ -361,12 +240,12 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 		serverEndpoint = fmt.Sprintf("%s:%d", wireguard.GetServerEndpoint(), port)
 	}
 
-	// Get all routed networks based on VPN firewall rules
-	allowedIPsList := s.getRoutedNetworksForNode(r, networkID)
-	allowedIPsStr := strings.Join(allowedIPsList, ", ")
+	// Routes: every VPN network (the hub's firewall decides who reaches
+	// whom), or everything for full tunnel; recorded for "config outdated".
+	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
+	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
 
 	cfgGen := wireguard.NewConfigGenerator()
-	allowedIPsStr, dns := s.tunnelRouting(r, node, network, allowedIPsStr)
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	response := CreateServerResponse{Node: node, Config: config}
@@ -434,12 +313,12 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// Get all routed networks based on VPN firewall rules
-	allowedIPsList := s.getRoutedNetworksForNode(r, node.NetworkID)
-	allowedIPsStr := strings.Join(allowedIPsList, ", ")
+	// Routes: every VPN network (the hub's firewall decides who reaches
+	// whom), or everything for full tunnel; recorded for "config outdated".
+	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
+	s.recordConfigRoutes(r.Context(), node.ID, allowedIPsStr)
 
 	cfgGen := wireguard.NewConfigGenerator()
-	allowedIPsStr, dns := s.tunnelRouting(r, node, network, allowedIPsStr)
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	if isHead(r) { // no token for a HEAD: only the headers are wanted

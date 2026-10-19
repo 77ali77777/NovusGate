@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Activity,
+  AlertTriangle,
   CheckCircle,
   Clock,
   Copy,
@@ -169,6 +170,13 @@ export const NodesPage: React.FC = () => {
         <div className="min-w-[8rem] max-w-[14rem] break-normal">
           <p className="font-medium text-gray-900 dark:text-white">{node.name}</p>
           <p className="text-xs text-gray-500">{node.id.slice(0, 8)}...</p>
+          {node.config_outdated && (
+            <div className="mt-1">
+              <Badge variant="warning" size="sm">
+                {t('outdated.badge')}
+              </Badge>
+            </div>
+          )}
           {/* Full tunnel stands out: the hub is this device's internet exit. */}
           {effectiveTunnel(node.tunnel_override, currentNetwork?.tunnel_mode) === 'full' && (
             <div className="mt-1">
@@ -714,6 +722,30 @@ export const NodeDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* The routes changed on the server: the device needs its config once more. */}
+      {node.config_outdated && (
+        <div
+          className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+        >
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <div className="space-y-2">
+            <p className="font-semibold">{t('outdated.title')}</p>
+            <p>{node.has_config ? t('outdated.body') : t('outdated.noKey')}</p>
+            {actions.includes('download') && (
+              <Button
+                size="sm"
+                loading={downloadConfig.isPending}
+                onClick={() => downloadConfig.mutate({ id: node.id, name: node.name })}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                {t('detail.actions.download')}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status & Expiration Card */}

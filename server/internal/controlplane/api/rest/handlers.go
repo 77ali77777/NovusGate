@@ -854,6 +854,7 @@ func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	for i := range nodes {
 		s.enrichNode(nodes[i], peers)
 	}
+	s.markOutdated(r.Context(), nodes...)
 
 	jsonResponse(w, http.StatusOK, nodes)
 }
@@ -880,6 +881,7 @@ func (s *Server) handleGetNode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.enrichNode(node, peers)
+	s.markOutdated(r.Context(), node)
 
 	jsonResponse(w, http.StatusOK, node)
 }

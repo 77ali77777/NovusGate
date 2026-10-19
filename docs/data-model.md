@@ -130,3 +130,7 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - Hub-un internet çıxışı olan cihazlar (`ListEgressNodeIDs`, firewall state-də `egress_node_ids`) indi hesablanır: `COALESCE(n.tunnel_override, w.tunnel_mode) = 'full'`.
 - `fw_egress` cədvəli silindi; onun sətirləri `tunnel_override = 'full'` oldu. History bərpası tunel ayarlarına toxunmur (snapshot şəbəkələrin rejimini və sonradan yaradılan cihazları bilmir). Migration təkrar işə düşsə də xəta vermir (`fw_egress` yoxdursa çevirmə atlanır).
 - Rollback: `migrations_rollback/020_tunnel_mode.down.sql` — `fw_egress` yenidən yaradılır və effektiv tam tunel cihazları ilə doldurulur, sonra iki sütun silinir.
+
+## 021: cihaza verilən konfiqin marşrutu (2026-10-19)
+- `nodes.config_routes` TEXT NOT NULL DEFAULT `''`: cihaza sonuncu verilən konfiqin `AllowedIPs`-i (konfiq, QR, install.sh, yaradılma). Hazırkı ilə fərqlidirsə (və ya `''`) API `config_outdated: true` qaytarır.
+- Rollback: `migrations_rollback/021_config_routes.down.sql`.
