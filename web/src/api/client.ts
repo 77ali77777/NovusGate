@@ -137,6 +137,12 @@ class ApiClient {
     await this.client.delete(`/nodes/${id}`)
   }
 
+  // A new key pair: the old config stops working; download the new one.
+  async rotateNodeKey(id: string): Promise<Node> {
+    const { data } = await this.client.post<Node>(`/nodes/${id}/rotate-key`)
+    return data
+  }
+
   async updateNode(
     id: string,
     data: {
@@ -904,6 +910,18 @@ export function useDeleteNode() {
     meta: { errorTitle: 'toasts:failedToDeleteNode', successTitle: 'toasts:nodeDeleted' },
     mutationFn: (id: string) => api.deleteNode(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+    },
+  })
+}
+
+export function useRotateNodeKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToRotateKey', successTitle: 'toasts:keyRotated' },
+    mutationFn: (id: string) => api.rotateNodeKey(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['node', id] })
       queryClient.invalidateQueries({ queryKey: ['nodes'] })
     },
   })

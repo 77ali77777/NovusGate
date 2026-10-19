@@ -3,7 +3,9 @@
 // tests/deviceActions.test.mjs runs it in Node.
 
 export type RowAction = 'config' | 'edit' | 'delete'
-export type DetailAction = 'download' | 'qr' | 'script' | 'sync'
+// rotate: a new key pair (VLAN plan M4) — for a leaked config, or a device
+// whose private key the server never held.
+export type DetailAction = 'download' | 'qr' | 'script' | 'sync' | 'rotate'
 
 // Config downloads and changes need an operator; viewers only look. Imported
 // devices have no private key on the server, so they have no config.
@@ -14,7 +16,7 @@ export function rowActions(device: { has_config: boolean }, canEdit: boolean): R
 
 export function detailActions(device: { has_config: boolean }, canEdit: boolean): DetailAction[] {
   if (!canEdit) return []
-  return device.has_config ? ['download', 'qr', 'script', 'sync'] : ['sync']
+  return device.has_config ? ['download', 'qr', 'script', 'sync', 'rotate'] : ['sync', 'rotate']
 }
 
 // defaultNetworkId: the network chosen in the sidebar if it still exists,

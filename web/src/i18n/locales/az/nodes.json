@@ -48,7 +48,8 @@
       "confirm": "Cihazı sil"
     },
     "groupFilter": "Qrup",
-    "allGroups": "Bütün qruplar"
+    "allGroups": "Bütün qruplar",
+    "adminInstallConfig": "Quraşdırmada verilən admin-vpn.conf yalnız Admin VPN-i görür. Digər şəbəkələrə də çatmaq üçün burada özünüzə cihaz yaradın və onun konfiqini işlədin — o, bütün şəbəkələri əhatə edir və yeni şəbəkə əlavə olunanda “konfiq köhnədir” deyə xəbər verir."
   },
   "detail": {
     "notFound": {
@@ -75,7 +76,8 @@
       "download": "Konfiqi yüklə",
       "qr": "QR kod",
       "script": "Linux skripti",
-      "sync": "Bağlantını bərpa et"
+      "sync": "Bağlantını bərpa et",
+      "rotate": "Yeni açar"
     },
     "downloadFailed": "Konfiqurasiyanı yükləmək alınmadı",
     "syncFailed": "Bağlantını bərpa etmək alınmadı",
@@ -203,6 +205,10 @@
     "badge": "Konfiq köhnədir",
     "title": "Bu cihazın konfiqurasiyası köhnədir",
     "body": "Server tərəfində marşrutlar dəyişib (yeni şəbəkə, tunel rejimi və ya bu versiyadan əvvəl yüklənmiş konfiq). Cihazın hər yerə çatması üçün konfiqurasiyanı bir dəfə yenidən yükləyib cihaza qoyun.",
-    "noKey": "Server bu cihazın açarını saxlamır: konfiqurasiyanı cihazın özündə yeniləyin və ya cihazı yenidən yaradın."
+    "noKey": "Server bu cihazın açarını saxlamır: konfiqi cihazın özündə yeniləyin və ya “Yeni açar” ilə yeni konfiq alın (köhnəsi işləməz olur)."
+  },
+  "rotate": {
+    "confirm": "«{{name}}» üçün yeni açar yaradılsın? Köhnə konfiq dərhal işləməyəcək — yeni konfiqi yükləyib cihaza qoymalı olacaqsınız.",
+    "hint": "Konfiq başqasının əlinə keçibsə və ya server bu cihazın açarını saxlamırsa: cihaz yeni açar və yeni konfiq alır."
   }
 }

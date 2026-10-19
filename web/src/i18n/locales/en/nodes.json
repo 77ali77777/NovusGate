@@ -48,7 +48,8 @@
       "confirm": "Delete device"
     },
     "groupFilter": "Group",
-    "allGroups": "All groups"
+    "allGroups": "All groups",
+    "adminInstallConfig": "The admin-vpn.conf from the installation only reaches the Admin VPN. To reach the other networks too, create a device for yourself here and use its config — it covers every network and tells you when a new network makes it outdated."
   },
   "detail": {
     "notFound": {
@@ -75,7 +76,8 @@
       "download": "Download config",
       "qr": "QR code",
       "script": "Linux script",
-      "sync": "Restore connection"
+      "sync": "Restore connection",
+      "rotate": "New key"
     },
     "downloadFailed": "Could not download the config",
     "syncFailed": "Could not restore the connection",
@@ -203,6 +205,10 @@
     "badge": "Config outdated",
     "title": "This device’s config is outdated",
     "body": "The routes changed on the server (a new network, the tunnel mode, or a config downloaded before this version). Download the config once more and put it on the device so it reaches everything it may.",
-    "noKey": "The server does not hold this device’s key: update the config on the device itself, or create the device again."
+    "noKey": "The server does not hold this device’s key: update the config on the device itself, or press “New key” to get a new config (the old one stops working)."
+  },
+  "rotate": {
+    "confirm": "Create a new key for “{{name}}”? The old config stops working at once — you will need to put the new config on the device.",
+    "hint": "For a config that leaked, or a device whose key the server does not hold: the device gets a new key and a new config."
   }
 }

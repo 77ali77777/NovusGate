@@ -91,5 +91,7 @@
   "upgradeStarted": "Package upgrade started",
   "failedToChangeTunnel": "Failed to change the tunnel mode",
   "failedToRestartInterface": "The interface did not come up",
-  "interfaceRestarted": "The interface is running"
+  "interfaceRestarted": "The interface is running",
+  "keyRotated": "New key created — download the new config",
+  "failedToRotateKey": "The key was not changed"
 }

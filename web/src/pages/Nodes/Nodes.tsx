@@ -7,6 +7,8 @@ import {
   Clock,
   Copy,
   Download,
+  Info,
+  KeyRound,
   Laptop,
   Pencil,
   QrCode,
@@ -31,6 +33,7 @@ import {
   useNode,
   useNodes,
   useResetQuota,
+  useRotateNodeKey,
   useUpdateNode,
 } from '@/api/client'
 import { CreateNodeModal } from '@/components/CreateNodeModal'
@@ -385,6 +388,13 @@ export const NodesPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* The installer's admin config routes only wg0 (VLAN plan M4) */}
+      {isAdminNetwork && (
+        <p className="mb-6 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {t('list.adminInstallConfig')}
+        </p>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -579,6 +589,7 @@ export const NodeDetailPage: React.FC = () => {
       document.body.removeChild(element)
     },
   })
+  const rotateKey = useRotateNodeKey()
   // "Restore connection": the hub re-adds the WireGuard peers its network
   // lost (POST /networks/{id}/sync); expired and disabled devices stay out.
   const syncPeers = useMutation({
@@ -712,6 +723,20 @@ export const NodeDetailPage: React.FC = () => {
             >
               <Terminal className="w-4 h-4" />
               {t('detail.actions.script')}
+            </Button>
+          )}
+          {actions.includes('rotate') && (
+            <Button
+              variant="secondary"
+              loading={rotateKey.isPending}
+              title={t('rotate.hint')}
+              onClick={() => {
+                if (confirm(t('rotate.confirm', { name: node.name }))) rotateKey.mutate(node.id)
+              }}
+              className="flex items-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" />
+              {t('detail.actions.rotate')}
             </Button>
           )}
           {canEdit && (

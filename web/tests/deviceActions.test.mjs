@@ -13,11 +13,12 @@ test('operators get config, edit and delete in the row', () => {
 
 test('imported devices (no private key) have no config action', () => {
   assert.deepEqual(rowActions({ has_config: false }, true), ['edit', 'delete'])
-  assert.deepEqual(detailActions({ has_config: false }, true), ['sync'])
+  // ... but a new key gives them one (VLAN plan M4)
+  assert.deepEqual(detailActions({ has_config: false }, true), ['sync', 'rotate'])
 })
 
 test('the detail page offers config, QR, Linux script and reconnect', () => {
-  assert.deepEqual(detailActions({ has_config: true }, true), ['download', 'qr', 'script', 'sync'])
+  assert.deepEqual(detailActions({ has_config: true }, true), ['download', 'qr', 'script', 'sync', 'rotate'])
 })
 
 test('the create form defaults to the current network when it exists', () => {

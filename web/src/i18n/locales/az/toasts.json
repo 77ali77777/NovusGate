@@ -91,5 +91,7 @@
   "upgradeStarted": "Paket yeniləməsi başladı",
   "failedToChangeTunnel": "Tunel rejimi dəyişdirilmədi",
   "failedToRestartInterface": "İnterfeys qalxmadı",
-  "interfaceRestarted": "İnterfeys işləyir"
+  "interfaceRestarted": "İnterfeys işləyir",
+  "keyRotated": "Yeni açar yaradıldı — yeni konfiqi yükləyin",
+  "failedToRotateKey": "Açar dəyişdirilmədi"
 }
