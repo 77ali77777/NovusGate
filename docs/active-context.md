@@ -218,10 +218,12 @@
 - **Web boşluqları (2026-10-20):** API xəta kodları paneldə az/en (`apiErrors` namespace, `setErrorTranslator`); "konfiq köhnədir" və DNS sahəsi mətnləri yeniləndi; şəbəkə səhifəsində "Hub üzərindən DNS" vəziyyəti (`dns_served`/`dns_error`).
 - **Center domen sahəsi:** quraşdırmada `vpnDomain` → admin konfiqi və `WG_SERVER_ENDPOINT` domeni işlədir (test 112/112; forma vizual yoxlanmayıb — qoşulmuş server tələb edir).
 - **README/README_AZ/USER_GUIDE(_AZ):** standart təcrid, istiqamət, 5 addımlı forma, "Kim kimi görür?", hovuz, avtomatik CIDR, hubda DNS, server domeni, "Yeni açar", "konfiq bir dəfə" bölməsi; köhnə "qayda AllowedIPs-i dəyişir" iddiası düzəldildi.
-- **Davam:** P4 (NETMAP) — dizayn sualı istifadəçidə; real serverdə yoxlama.
+- **Şəbəkə səhifəsi (2026-10-20):** KPI sırası (onlayn/cəmi, trafik ↓↑, tam tunel, qaydalar, diqqət: köhnə konfiq / 7 günə bitən / bitmiş) + 5 tab: Xülasə (hub, DNS, ən çox trafik), Cihazlar (status, son görülmə, trafik, tunel, qruplar, limitlər), Giriş və qaydalar (digər şəbəkələrlə matris + bir ucu burada olan bütün qaydalar: şəbəkə/cihaz/qrup/hər kəs), Qruplar və limitlər, Topologiya. Yalnız mövcud API-lər.
+- **Davam:** rol qrupları (dizayn təsdiqi gözləyir); P4 (NETMAP) — dizayn sualı istifadəçidə; real serverdə yoxlama.
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-20 | Şəbəkə səhifəsi: KPI-lar və 5 tab (cihazlar, qaydalar, qruplar/limitlər, topologiya) | web/src/{lib/networkOverview.ts,pages/Networks/{NetworkDetail,NetworkTopology}.tsx}, i18n networks | İstifadəçi: şəbəkəyə girəndə hər şey görünsün |
 | 2026-10-20 | Center: quraşdırmada server domeni; README və istifadəçi bələdçiləri yeni sistemə uyğun | NovusGate Center/{lib,scripts/install.sh,server.js,public/index.html}, README*.md, web/USER_GUIDE*.md | İstifadəçi: hamısını həll et |
 | 2026-10-20 | Xəta kodları paneldə tərcümədə; hub DNS vəziyyəti şəbəkə səhifəsində | web/src/{api/errors.ts,i18n,lib/networkDisplay.ts,components/NetworkStatus.tsx,pages/Networks/NetworkDetail.tsx}, server models.go, rest/interfaces.go | İstifadəçi: web tərəfi tam olsun |
 | 2026-10-20 | Hub DNS review: təcrid, döngü, TCP limit, SERVFAIL | server/internal/controlplane/{dnsfwd,api/rest/{dns_hub,network_dns,firewall_handlers,handlers}.go}, server/internal/netctl/nft/compile.go | Müstəqil review |

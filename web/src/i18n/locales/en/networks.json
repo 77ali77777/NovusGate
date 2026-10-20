@@ -108,5 +108,63 @@
     "direct": "Not answering — configs name the DNS servers",
     "unknown": "Unknown",
     "directHint": "Device configs name the DNS servers directly until the hub can answer at {{hub}}. The server tries again every 30 s."
+  },
+  "page": {
+    "tabs": {
+      "label": "Network sections",
+      "overview": "Overview",
+      "devices": "Devices",
+      "access": "Access and rules",
+      "groups": "Groups and limits",
+      "topology": "Topology"
+    },
+    "kpi": {
+      "devices": "Devices online",
+      "devicesHint": "{{offline}} offline · {{expired}} expired",
+      "traffic": "Traffic",
+      "trafficHint": "↓ {{rx}} · ↑ {{tx}} (since the counters started)",
+      "fullTunnel": "Full tunnel",
+      "mode": {
+        "split": "split tunnel",
+        "full": "full tunnel"
+      },
+      "rules": "Rules",
+      "rulesHint": "{{groups}} groups · {{limits}} limit profiles",
+      "attention": "Needs attention",
+      "attentionHint": "{{outdated}} config outdated · {{soon}} expire in 7 days · {{expired}} expired"
+    },
+    "topTraffic": "Most traffic",
+    "noTraffic": "No traffic yet.",
+    "trafficNote": "From the WireGuard counters of each device; the device page has the history.",
+    "cols": {
+      "device": "Device",
+      "status": "Status",
+      "lastSeen": "Last seen",
+      "traffic": "Traffic",
+      "tunnel": "Tunnel",
+      "groups": "Groups",
+      "limits": "Limits"
+    },
+    "expires": "expires {{at}}",
+    "policiesHint": "Whether this network can reach each other network, and the other way round.",
+    "rulesHint": "Every rule with an end in this network: the network itself, one of its devices, a group with members here, or anyone.",
+    "manageRules": "Manage rules →",
+    "side": {
+      "from": "this network starts",
+      "to": "this network is reached",
+      "both": "both ends here"
+    },
+    "groupsTitle": "Groups with devices here",
+    "noGroups": "No group has devices in this network.",
+    "groupCount": "{{here}} here · {{total}} in all",
+    "limitsTitle": "Limit profiles on these devices",
+    "noLimits": "No limit profile covers devices of this network.",
+    "limitDevices_one": "{{count}} device",
+    "limitDevices_other": "{{count}} devices",
+    "limitDown": "↓ {{v}} kbit/s",
+    "limitUp": "↑ {{v}} kbit/s",
+    "limitQuota": "quota {{v}} MB",
+    "limitOther": "connections or schedule",
+    "topologyHint": "This network with its devices; arrows show where traffic may go to or come from other networks (green: allowed, amber: partly). Click a device or network to open it."
   }
 }

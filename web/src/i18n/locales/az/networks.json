@@ -108,5 +108,63 @@
     "direct": "Cavab vermir — konfiqlər DNS serverlərini göstərir",
     "unknown": "Naməlum",
     "directHint": "Hub {{hub}} ünvanında cavab verə bilənə qədər cihaz konfiqləri DNS serverlərini birbaşa göstərir. Server hər 30 saniyədən bir yenidən cəhd edir."
+  },
+  "page": {
+    "tabs": {
+      "label": "Şəbəkə bölmələri",
+      "overview": "Xülasə",
+      "devices": "Cihazlar",
+      "access": "Giriş və qaydalar",
+      "groups": "Qruplar və limitlər",
+      "topology": "Topologiya"
+    },
+    "kpi": {
+      "devices": "Onlayn cihazlar",
+      "devicesHint": "{{offline}} oflayn · {{expired}} müddəti bitib",
+      "traffic": "Trafik",
+      "trafficHint": "↓ {{rx}} · ↑ {{tx}} (sayğaclar başlayandan)",
+      "fullTunnel": "Tam tunel",
+      "mode": {
+        "split": "split tunel",
+        "full": "tam tunel"
+      },
+      "rules": "Qaydalar",
+      "rulesHint": "{{groups}} qrup · {{limits}} limit profili",
+      "attention": "Diqqət tələb edir",
+      "attentionHint": "{{outdated}} konfiq köhnədir · {{soon}} 7 günə bitir · {{expired}} bitib"
+    },
+    "topTraffic": "Ən çox trafik",
+    "noTraffic": "Hələ trafik yoxdur.",
+    "trafficNote": "Hər cihazın WireGuard sayğaclarından; tarixçə cihaz səhifəsindədir.",
+    "cols": {
+      "device": "Cihaz",
+      "status": "Vəziyyət",
+      "lastSeen": "Son görülmə",
+      "traffic": "Trafik",
+      "tunnel": "Tunel",
+      "groups": "Qruplar",
+      "limits": "Limitlər"
+    },
+    "expires": "{{at}} bitir",
+    "policiesHint": "Bu şəbəkə digər şəbəkələrə çata bilirmi, onlar bu şəbəkəyə çata bilirmi.",
+    "rulesHint": "Bir ucu bu şəbəkədə olan bütün qaydalar: şəbəkənin özü, onun bir cihazı, üzvləri burada olan qrup və ya hər kəs.",
+    "manageRules": "Qaydaları idarə et →",
+    "side": {
+      "from": "bu şəbəkə başladır",
+      "to": "bu şəbəkəyə çatılır",
+      "both": "hər iki uc burada"
+    },
+    "groupsTitle": "Cihazları burada olan qruplar",
+    "noGroups": "Heç bir qrupun bu şəbəkədə cihazı yoxdur.",
+    "groupCount": "burada {{here}} · cəmi {{total}}",
+    "limitsTitle": "Bu cihazlardakı limit profilləri",
+    "noLimits": "Heç bir limit profili bu şəbəkənin cihazlarını əhatə etmir.",
+    "limitDevices_one": "{{count}} cihaz",
+    "limitDevices_other": "{{count}} cihaz",
+    "limitDown": "↓ {{v}} kbit/s",
+    "limitUp": "↑ {{v}} kbit/s",
+    "limitQuota": "kvota {{v}} MB",
+    "limitOther": "bağlantı sayı və ya cədvəl",
+    "topologyHint": "Bu şəbəkə və cihazları; oxlar trafikin digər şəbəkələrə və onlardan gələ bildiyi yerləri göstərir (yaşıl: icazə, sarı: qismən). Açmaq üçün cihaza və ya şəbəkəyə klikləyin."
   }
 }
