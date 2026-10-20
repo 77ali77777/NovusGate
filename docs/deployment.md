@@ -132,3 +132,6 @@ Center `install.sh` admin konfiqinə `AllowedIPs = 10.0.0.0/8` yazır (admin alt
 
 ## Server domeni quraşdırmada (2026-10-20)
 Center quraşdırma formasında istəyə bağlı **Server domain** sahəsi (`vpnDomain`, RFC 1123 ad, http:// və port olmadan; yanlışsa 400). Verilsə admin konfiqi `Endpoint = <domen>:51820` alır və `.env`-də `WG_SERVER_ENDPOINT=<domen>` yazılır, ona görə yeni şəbəkələrin cihaz konfiqləri də domeni göstərir. Quraşdırmadan əvvəl domenin A yazısını serverə yönəldin. Boş qalsa server IP-si (əvvəlki kimi). Sonradan paneldə Settings → Server ünvanı.
+
+## Şəbəkə sayı tavanı yoxdur (2026-10-20)
+Hər şəbəkə ayrı WireGuard interfeysi və UDP portudur (51820, 51821, …). Əvvəllər iptables rejimində firewall yalnız 51820–51900 aralığını açırdı (81 şəbəkə). İndi control-plane `NOVUSGATE-WG` zəncirində hər şəbəkənin portunu özü açır (nft rejimində onsuz da belə idi). **Provayder firewall-u** (məs. Hetzner Cloud Firewall) varsa, orada da UDP aralığını genişləndirin, məsələn 51820–52819 (1000 şəbəkə).

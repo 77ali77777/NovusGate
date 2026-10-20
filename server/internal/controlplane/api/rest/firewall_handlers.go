@@ -1393,6 +1393,7 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	s.vpnSync.Lock()
 	defer s.vpnSync.Unlock()
 	s.allowHubDNS(ctx)
+	s.openWireGuardPorts(ctx)
 	// Rules appended to FORWARD by earlier versions sat below the wg ACCEPTs
 	// and never matched; they are removed, then the chain is rebuilt.
 	if err := s.removeLegacyForwardVPNRules(); err != nil {
@@ -1477,6 +1478,44 @@ func (s *Server) allowHubDNS(ctx context.Context) {
 	}
 	if _, err := execHostCommand("iptables", append([]string{"-I", "INPUT", "1"}, jump...)...); err != nil {
 		slog.Warn(fmt.Sprintf("[Firewall] hub DNS chain not linked to INPUT: %v", err))
+	}
+}
+
+// wgChain holds the INPUT accepts for the networks' WireGuard ports.
+const wgChain = "NOVUSGATE-WG"
+
+// openWireGuardPorts opens every network's UDP listen port through
+// iptables INPUT. setup-firewall.sh opens only 51820-51900 (81 networks);
+// ports are given from 51820 up, so the 82nd network was unreachable. The
+// nftables engine opens each port itself (wireGuardRanges). A failure is
+// logged: networks inside the installer's range keep working.
+func (s *Server) openWireGuardPorts(ctx context.Context) {
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] WireGuard ports not opened: %v", err))
+		return
+	}
+	execHostCommand("iptables", "-N", wgChain) // exists after the first run
+	if _, err := execHostCommand("iptables", "-F", wgChain); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] WireGuard port chain not flushed: %v", err))
+		return
+	}
+	seen := map[int]bool{}
+	for _, n := range networks {
+		if n.ListenPort <= 0 || n.ListenPort > 65535 || seen[n.ListenPort] {
+			continue
+		}
+		seen[n.ListenPort] = true
+		if _, err := execHostCommand("iptables", "-A", wgChain, "-p", "udp", "--dport", strconv.Itoa(n.ListenPort), "-j", "ACCEPT"); err != nil {
+			slog.Warn(fmt.Sprintf("[Firewall] WireGuard port %d (%s) not opened: %v", n.ListenPort, n.Name, err))
+		}
+	}
+	jump := []string{"-p", "udp", "-j", wgChain}
+	if _, err := execHostCommand("iptables", append([]string{"-C", "INPUT"}, jump...)...); err == nil {
+		return
+	}
+	if _, err := execHostCommand("iptables", append([]string{"-I", "INPUT", "1"}, jump...)...); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] WireGuard port chain not linked to INPUT: %v", err))
 	}
 }
 
