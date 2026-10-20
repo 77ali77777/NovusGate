@@ -212,3 +212,90 @@ func TestScopedRoleRefusesAnUnreadableDeviceID(t *testing.T) {
 		t.Fatalf("unreadable id = %d %s", rec.Code, rec.Body)
 	}
 }
+
+// Own networks: the user sees none of the existing networks, creates its
+// own up to the role's limit and manages only those.
+func TestRoleWithOwnNetworks(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	token, _ := customUser(t, s, "own-nets", `{"name":"Own nets","permissions":{"networks":"edit","devices":"edit","configs":"view"},"scope_mode":"own","max_networks":2}`)
+	list := func() []models.Network {
+		var nets []models.Network
+		json.Unmarshal(callWith(t, s, token, "GET", "/api/v1/networks", "").Body.Bytes(), &nets)
+		return nets
+	}
+	if n := list(); len(n) != 0 {
+		t.Fatalf("no existing network is shown: %+v", n)
+	}
+	if rec := callWith(t, s, token, "GET", "/api/v1/networks/"+seed.network.ID, ""); rec.Code != 403 {
+		t.Fatalf("existing network = %d", rec.Code)
+	}
+	var mine models.Network
+	for i, name := range []string{"own-1", "own-2"} {
+		rec := callWith(t, s, token, "POST", "/api/v1/networks", `{"name":"`+name+`"}`)
+		if rec.Code != 201 {
+			t.Fatalf("create %d = %d %s", i, rec.Code, rec.Body)
+		}
+		json.Unmarshal(rec.Body.Bytes(), &mine)
+		if mine.OwnerUserID == nil {
+			t.Fatalf("owner not set: %s", rec.Body)
+		}
+	}
+	if rec := callWith(t, s, token, "POST", "/api/v1/networks", `{"name":"own-3"}`); rec.Code != 409 || !strings.Contains(rec.Body.String(), "network_limit") {
+		t.Fatalf("over the limit = %d %s", rec.Code, rec.Body)
+	}
+	if n := list(); len(n) != 2 {
+		t.Fatalf("its two networks: %+v", n)
+	}
+	if rec := callWith(t, s, token, "GET", "/api/v1/networks/"+mine.ID+"/nodes", ""); rec.Code != 200 {
+		t.Fatalf("own network's devices = %d", rec.Code)
+	}
+	var me struct {
+		ScopeMode     string `json:"scope_mode"`
+		MaxNetworks   int    `json:"max_networks"`
+		OwnedNetworks int    `json:"owned_networks"`
+	}
+	json.Unmarshal(callWith(t, s, token, "GET", "/api/v1/auth/me", "").Body.Bytes(), &me)
+	if me.ScopeMode != "own" || me.MaxNetworks != 2 || me.OwnedNetworks != 2 {
+		t.Fatalf("me = %+v", me)
+	}
+	if rec := callWith(t, s, token, "DELETE", "/api/v1/networks/"+mine.ID, ""); rec.Code != 204 {
+		t.Fatalf("delete own = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callWith(t, s, token, "DELETE", "/api/v1/networks/"+seed.network.ID, ""); rec.Code != 403 {
+		t.Fatalf("delete another's = %d", rec.Code)
+	}
+	if rec := callWith(t, s, token, "POST", "/api/v1/networks", `{"name":"own-3"}`); rec.Code != 201 {
+		t.Fatalf("room again after a delete = %d %s", rec.Code, rec.Body)
+	}
+}
+
+func TestScopeModeValidationAndOwnerTransfer(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	for _, bad := range []string{
+		`{"name":"x","permissions":{"networks":"view"},"scope_mode":"own","max_networks":1}`, // own needs networks: edit
+		`{"name":"x","permissions":{"networks":"edit"},"scope_mode":"own","max_networks":1,"network_ids":["` + seed.network.ID + `"]}`,
+		`{"name":"x","permissions":{},"scope_mode":"listed"}`, // listed needs networks
+		`{"name":"x","permissions":{},"scope_mode":"everything"}`,
+		`{"name":"x","permissions":{"networks":"edit"},"scope_mode":"own","max_networks":5000}`,
+	} {
+		if rec := callAs(t, s, "POST", "/api/v1/roles", bad, true); rec.Code != 400 {
+			t.Errorf("%s = %d %s", bad, rec.Code, rec.Body)
+		}
+	}
+	token, _ := customUser(t, s, "own-heir", `{"name":"Heir","permissions":{"networks":"edit","devices":"view"},"scope_mode":"own","max_networks":1}`)
+	u, _ := st.GetUserByUsername(context.Background(), "own-heir")
+	if rec := callAs(t, s, "PUT", "/api/v1/networks/"+seed.network.ID+"/owner", `{"user_id":"`+u.ID+`"}`, true); rec.Code != 200 {
+		t.Fatalf("hand over = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callWith(t, s, token, "GET", "/api/v1/networks/"+seed.network.ID, ""); rec.Code != 200 {
+		t.Fatalf("the new owner sees it = %d", rec.Code)
+	}
+	if rec := callWith(t, s, token, "PUT", "/api/v1/networks/"+seed.network.ID+"/owner", `{"user_id":null}`); rec.Code != 403 {
+		t.Fatalf("only an admin hands networks over = %d", rec.Code)
+	}
+	if rec := callAs(t, s, "PUT", "/api/v1/networks/"+seed.network.ID+"/owner", `{"user_id":null}`, true); rec.Code != 200 {
+		t.Fatalf("no owner = %d %s", rec.Code, rec.Body)
+	}
+}

@@ -11,6 +11,7 @@
     "interface_up": true,
     "listen_port": 51820,
     "name": "contract-new",
+    "owner_user_id": "<uuid-2>",
     "server_endpoint": "127.0.0.1:51820",
     "server_public_key": "<key>",
     "tunnel_mode": "split",

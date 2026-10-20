@@ -181,6 +181,11 @@ type MeResponse struct {
 	RoleName    string            `json:"role_name,omitempty"`
 	Permissions map[string]string `json:"permissions"`
 	NetworkIDs  []string          `json:"network_ids"` // custom role limited to networks; empty: all
+	// ScopeMode of a custom role: all, listed or own; for own, MaxNetworks
+	// is the limit and OwnedNetworks how many the user has.
+	ScopeMode     string `json:"scope_mode,omitempty"`
+	MaxNetworks   int    `json:"max_networks,omitempty"`
+	OwnedNetworks int    `json:"owned_networks,omitempty"`
 }
 
 // SetUserRoleRequest changes a user's role: a built-in one, or custom with
@@ -193,6 +198,7 @@ type SetUserRoleRequest struct {
 func (s *Server) registerRoleRoutes(api *mux.Router) {
 	api.HandleFunc("/auth/me", s.handleMe).Methods("GET")
 	api.HandleFunc("/users/{id}/role", s.handleSetUserRole).Methods("PUT")
+	api.HandleFunc("/networks/{id}/owner", s.handleSetNetworkOwner).Methods("PUT")
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
@@ -204,6 +210,10 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	me := MeResponse{ID: user.ID, Username: user.Username, Role: user.Role, NetworkIDs: []string{}}
 	if a := accessFrom(r); a != nil {
 		me.RoleID, me.RoleName, me.Permissions, me.NetworkIDs = a.role.ID, a.role.Name, a.perms, a.role.NetworkIDs
+		me.ScopeMode = scopeMode(a.role)
+		if a.own {
+			me.MaxNetworks, me.OwnedNetworks = a.role.MaxNetworks, len(a.networks)
+		}
 	} else {
 		me.Permissions = builtInPermissions(user.Role)
 	}
@@ -250,6 +260,36 @@ func (s *Server) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	errorResponse(w, http.StatusNotFound, "user not found")
+}
+
+// SetNetworkOwnerRequest hands a network to a user; null leaves it without
+// an owner.
+type SetNetworkOwnerRequest struct {
+	UserID *string `json:"user_id"`
+}
+
+func (s *Server) handleSetNetworkOwner(w http.ResponseWriter, r *http.Request) {
+	var req SetNetworkOwnerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
+		return
+	}
+	id := mux.Vars(r)["id"]
+	if err := s.store.SetNetworkOwner(r.Context(), id, req.UserID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			errorResponse(w, http.StatusNotFound, "network or user not found")
+			return
+		}
+		slog.Error("network owner change failed", "error", err)
+		errorResponse(w, http.StatusInternalServerError, "failed to change the owner")
+		return
+	}
+	network, err := s.store.GetNetwork(r.Context(), id)
+	if err != nil || network == nil {
+		errorResponse(w, http.StatusNotFound, "network not found")
+		return
+	}
+	jsonResponse(w, http.StatusOK, network)
 }
 
 func userRoleError(w http.ResponseWriter, err error) {

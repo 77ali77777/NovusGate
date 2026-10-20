@@ -151,3 +151,9 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 - `roles`: `id` UUID, `name` UNIQUE, `description`, `permissions` JSONB (bölmə → none|view|edit), `network_ids` UUID[] (boş: hamısı), `created_at`, `updated_at`.
 - `users.role_id` UUID → `roles(id)` ON DELETE RESTRICT; `role` dəyərləri + `custom`; CHECK: `role = custom` ⇔ `role_id` dolu.
 - Rollback: `migrations_rollback/025_custom_roles.down.sql` (fərdi rollu istifadəçilər viewer olur).
+
+## 026: şəbəkə sahibi və rol sahəsi (2026-10-20)
+- `networks.owner_user_id` UUID → `users(id)` ON DELETE SET NULL (+ indeks): şəbəkəni yaradan istifadəçi; köhnə şəbəkələrdə NULL.
+- `roles.scope_mode` TEXT NOT NULL DEFAULT `all`, CHECK `all|listed|own`; mövcud `network_ids` dolu rollar `listed` olur.
+- `roles.max_networks` INTEGER NOT NULL DEFAULT 0, CHECK 0–1000: `own` rolunda hər istifadəçinin yarada biləcəyi şəbəkə sayı.
+- Rollback: `migrations_rollback/026_network_owner.down.sql` (əvvəl `own` rolların icazələri sıfırlanır: sütunsuz boş `network_ids` "hamısı" deməkdir).

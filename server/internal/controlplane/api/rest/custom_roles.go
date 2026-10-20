@@ -160,17 +160,33 @@ type access struct {
 	role     *models.Role
 	perms    map[string]string
 	networks map[string]bool // nil: every network
+	own      bool            // scope own: it may create networks of its own
 }
 
 type accessKey struct{}
 
-// effectivePermissions: every section, a role limited to networks only
-// the sections that stay inside one network.
+// scopeMode is a role's scope: all, listed (network_ids) or own (the
+// networks its user creates). Roles stored before scope modes say it by
+// network_ids.
+func scopeMode(r *models.Role) string {
+	switch r.ScopeMode {
+	case "all", "listed", "own":
+		return r.ScopeMode
+	}
+	if len(r.NetworkIDs) > 0 {
+		return "listed"
+	}
+	return "all"
+}
+
+// effectivePermissions: every section, a role limited to networks (listed
+// or own) only the sections that stay inside one network.
 func effectivePermissions(r *models.Role) map[string]string {
+	limited := scopeMode(r) != "all"
 	out := map[string]string{}
 	for _, s := range roleSections {
 		lvl := r.Permissions[s.Key]
-		if levelRank[lvl] == 0 || (len(r.NetworkIDs) > 0 && !scopedSections[s.Key]) {
+		if levelRank[lvl] == 0 || (limited && !scopedSections[s.Key]) {
 			lvl = "none"
 		}
 		out[s.Key] = lvl
@@ -178,11 +194,20 @@ func effectivePermissions(r *models.Role) map[string]string {
 	return out
 }
 
-func newAccess(r *models.Role) *access {
+// newAccess builds a role's access; owned are the networks its user owns
+// (used by scope "own").
+func newAccess(r *models.Role, owned []string) *access {
 	a := &access{role: r, perms: effectivePermissions(r)}
-	if len(r.NetworkIDs) > 0 {
+	switch scopeMode(r) {
+	case "listed":
 		a.networks = map[string]bool{}
 		for _, id := range r.NetworkIDs {
+			a.networks[id] = true
+		}
+	case "own":
+		a.own = true
+		a.networks = map[string]bool{} // empty: no network until it makes one
+		for _, id := range owned {
 			a.networks[id] = true
 		}
 	}
@@ -224,10 +249,17 @@ func (s *Server) customAllows(r *http.Request, a *access, method, route string) 
 	if a.networks == nil {
 		return true, ""
 	}
-	// Limited to networks: nothing that makes or removes a network, and
-	// only resources inside its networks.
-	if key == "POST /api/v1/networks" || key == "DELETE /api/v1/networks/{id}" {
-		return false, "your role (" + a.role.Name + ") is limited to networks: it cannot create or delete networks"
+	// Limited to listed networks: nothing that makes or removes a network.
+	// Own networks: it makes its own (up to the limit, in the handler) and
+	// removes only those (the scope check below).
+	if key == "POST /api/v1/networks" {
+		if a.own {
+			return true, ""
+		}
+		return false, "your role (" + a.role.Name + ") is limited to networks: it cannot create networks"
+	}
+	if key == "DELETE /api/v1/networks/{id}" && !a.own {
+		return false, "your role (" + a.role.Name + ") is limited to networks: it cannot delete networks"
 	}
 	vars := mux.Vars(r)
 	netID := vars["networkId"]
@@ -252,7 +284,8 @@ func (s *Server) customAllows(r *http.Request, a *access, method, route string) 
 	return true, ""
 }
 
-// loadAccess reads the custom role of a user (nil: not a custom role).
+// loadAccess reads the custom role of a user (nil: not a custom role) and,
+// for scope "own", the networks the user owns.
 func (s *Server) loadAccess(ctx context.Context, user *models.User) (*access, error) {
 	if user.Role != "custom" || user.RoleID == nil {
 		return nil, nil
@@ -264,15 +297,25 @@ func (s *Server) loadAccess(ctx context.Context, user *models.User) (*access, er
 	if r == nil {
 		return nil, errors.New("role not found")
 	}
-	return newAccess(r), nil
+	var owned []string
+	if scopeMode(r) == "own" {
+		if owned, err = s.store.NetworksOwnedBy(ctx, user.ID); err != nil {
+			return nil, err
+		}
+	}
+	return newAccess(r, owned), nil
 }
 
-// RoleRequest creates or changes a custom role.
+// RoleRequest creates or changes a custom role. scope_mode: all, listed
+// (network_ids) or own (each user creates up to max_networks of its own);
+// left out, it follows network_ids.
 type RoleRequest struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
 	Permissions map[string]string `json:"permissions"`
 	NetworkIDs  []string          `json:"network_ids"`
+	ScopeMode   string            `json:"scope_mode,omitempty"`
+	MaxNetworks int               `json:"max_networks,omitempty"`
 }
 
 // RolesResponse lists the custom roles and the sections a role is made of.
@@ -342,7 +385,41 @@ func (s *Server) validRoleRequest(ctx context.Context, req *RoleRequest, had []s
 			}
 		}
 	}
-	return &models.Role{Name: name, Description: strings.TrimSpace(req.Description), Permissions: perms, NetworkIDs: ids}, nil
+	mode := req.ScopeMode
+	if mode == "" { // left out: follows network_ids, as before scope modes
+		mode = "all"
+		if len(ids) > 0 {
+			mode = "listed"
+		}
+	}
+	switch mode {
+	case "all":
+		if len(ids) > 0 {
+			return nil, errors.New("scope all takes no network_ids")
+		}
+	case "listed":
+		if len(ids) == 0 {
+			return nil, errors.New("scope listed needs network_ids")
+		}
+	case "own":
+		if len(ids) > 0 {
+			return nil, errors.New("scope own takes no network_ids: its user's own networks are the scope")
+		}
+		if perms["networks"] != "edit" {
+			return nil, errors.New("scope own needs networks: edit (its user creates the networks)")
+		}
+	default:
+		return nil, errors.New("scope_mode must be all, listed or own")
+	}
+	max := 0
+	if mode == "own" {
+		if req.MaxNetworks < 1 || req.MaxNetworks > 1000 {
+			return nil, errors.New("max_networks must be 1 to 1000")
+		}
+		max = req.MaxNetworks
+	}
+	return &models.Role{Name: name, Description: strings.TrimSpace(req.Description), Permissions: perms, NetworkIDs: ids,
+		ScopeMode: mode, MaxNetworks: max}, nil
 }
 
 func (s *Server) registerCustomRoleRoutes(api *mux.Router) {

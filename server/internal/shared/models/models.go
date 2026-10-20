@@ -28,6 +28,10 @@ type Network struct {
 	InterfaceName    string `json:"interface_name"`              // Interface name (e.g., wg0)
 	ClientDNS        string `json:"client_dns"`                  // DNS servers for clients, comma separated; empty: default
 	TunnelMode       string `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
+	// OwnerUserID: the user who created the network (nil: made before owners,
+	// at install, or its user was deleted). A role with scope_mode "own"
+	// sees only its user's networks.
+	OwnerUserID *string `json:"owner_user_id,omitempty"`
 	// Live state of the hub's interface (not stored): whether it runs, and
 	// the last reason it could not be brought up ("" when it came up).
 	InterfaceUp    bool   `json:"interface_up"`
@@ -113,10 +117,14 @@ type Role struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
 	Permissions map[string]string `json:"permissions"` // section -> none, view or edit
-	NetworkIDs  []string          `json:"network_ids"` // empty: every network
-	Users       int               `json:"users"`       // how many users have it
-	CreatedAt   time.Time         `json:"created_at"`
-	UpdatedAt   time.Time         `json:"updated_at"`
+	NetworkIDs  []string          `json:"network_ids"` // scope_mode "listed": the networks
+	// ScopeMode: all (every network), listed (NetworkIDs) or own (only the
+	// networks its user creates, each user up to MaxNetworks).
+	ScopeMode   string    `json:"scope_mode"`
+	MaxNetworks int       `json:"max_networks"`
+	Users       int       `json:"users"` // how many users have it
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // NetworkEvent represents a real-time network event

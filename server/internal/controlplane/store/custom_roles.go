@@ -19,13 +19,13 @@ var (
 	ErrRoleNotFound = errors.New("role not found")
 )
 
-const roleColumns = `r.id, r.name, r.description, r.permissions, r.network_ids, r.created_at, r.updated_at,
+const roleColumns = `r.id, r.name, r.description, r.permissions, r.network_ids, r.scope_mode, r.max_networks, r.created_at, r.updated_at,
 	(SELECT COUNT(*) FROM users u WHERE u.role_id = r.id)`
 
 func scanRole(sc interface{ Scan(...any) error }) (*models.Role, error) {
 	var r models.Role
 	var perms []byte
-	if err := sc.Scan(&r.ID, &r.Name, &r.Description, &perms, pq.Array(&r.NetworkIDs), &r.CreatedAt, &r.UpdatedAt, &r.Users); err != nil {
+	if err := sc.Scan(&r.ID, &r.Name, &r.Description, &perms, pq.Array(&r.NetworkIDs), &r.ScopeMode, &r.MaxNetworks, &r.CreatedAt, &r.UpdatedAt, &r.Users); err != nil {
 		return nil, err
 	}
 	r.Permissions = map[string]string{}
@@ -84,8 +84,8 @@ func (s *Store) CreateRole(ctx context.Context, r *models.Role) error {
 		r.NetworkIDs = []string{}
 	}
 	err = s.db.QueryRowContext(ctx, `
-		INSERT INTO roles (name, description, permissions, network_ids) VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, updated_at`, r.Name, r.Description, perms, pq.Array(r.NetworkIDs)).
+		INSERT INTO roles (name, description, permissions, network_ids, scope_mode, max_networks) VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at, updated_at`, r.Name, r.Description, perms, pq.Array(r.NetworkIDs), scopeOrAll(r.ScopeMode), r.MaxNetworks).
 		Scan(&r.ID, &r.CreatedAt, &r.UpdatedAt)
 	if isUniqueViolation(err) {
 		return ErrRoleNameTaken
@@ -108,8 +108,8 @@ func (s *Store) UpdateRole(ctx context.Context, r *models.Role) error {
 		r.NetworkIDs = []string{}
 	}
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE roles SET name = $2, description = $3, permissions = $4, network_ids = $5, updated_at = NOW()
-		WHERE id = $1`, id, r.Name, r.Description, perms, pq.Array(r.NetworkIDs))
+		UPDATE roles SET name = $2, description = $3, permissions = $4, network_ids = $5, scope_mode = $6, max_networks = $7, updated_at = NOW()
+		WHERE id = $1`, id, r.Name, r.Description, perms, pq.Array(r.NetworkIDs), scopeOrAll(r.ScopeMode), r.MaxNetworks)
 	if isUniqueViolation(err) {
 		return ErrRoleNameTaken
 	}

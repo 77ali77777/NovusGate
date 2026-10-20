@@ -779,7 +779,24 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	// try the half-made interface.
 	unlock := s.lockInterface(network.InterfaceName)
 	defer unlock()
-	if err := s.store.CreateNetwork(r.Context(), &network); err != nil {
+	// The owner is who creates the network, never what the body says. A
+	// role limited to its own networks creates up to its limit.
+	network.OwnerUserID = nil
+	user, _ := sessionFrom(r)
+	if user != nil {
+		network.OwnerUserID = &user.ID
+	}
+	if a := accessFrom(r); a != nil && a.own && user != nil {
+		err = s.store.CreateOwnedNetwork(r.Context(), &network, user.ID, a.role.MaxNetworks)
+		if errors.Is(err, store.ErrNetworkLimit) {
+			errorWithCode(w, http.StatusConflict, "network_limit", fmt.Sprintf(
+				"your role (%s) allows %d networks of your own; delete one to create another", a.role.Name, a.role.MaxNetworks))
+			return
+		}
+	} else {
+		err = s.store.CreateNetwork(r.Context(), &network)
+	}
+	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "failed to create network: "+err.Error())
 		return
 	}

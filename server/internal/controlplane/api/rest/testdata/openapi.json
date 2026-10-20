@@ -1479,12 +1479,18 @@
           "id": {
             "type": "string"
           },
+          "max_networks": {
+            "type": "integer"
+          },
           "network_ids": {
             "items": {
               "type": "string"
             },
             "nullable": true,
             "type": "array"
+          },
+          "owned_networks": {
+            "type": "integer"
           },
           "permissions": {
             "additionalProperties": {
@@ -1500,6 +1506,9 @@
             "type": "string"
           },
           "role_name": {
+            "type": "string"
+          },
+          "scope_mode": {
             "type": "string"
           },
           "username": {
@@ -1549,6 +1558,10 @@
             "type": "integer"
           },
           "name": {
+            "type": "string"
+          },
+          "owner_user_id": {
+            "nullable": true,
             "type": "string"
           },
           "server_endpoint": {
@@ -1616,6 +1629,10 @@
             "type": "integer"
           },
           "name": {
+            "type": "string"
+          },
+          "owner_user_id": {
+            "nullable": true,
             "type": "string"
           },
           "server_endpoint": {
@@ -2345,6 +2362,9 @@
           "id": {
             "type": "string"
           },
+          "max_networks": {
+            "type": "integer"
+          },
           "name": {
             "type": "string"
           },
@@ -2361,6 +2381,9 @@
             },
             "nullable": true,
             "type": "object"
+          },
+          "scope_mode": {
+            "type": "string"
           },
           "updated_at": {
             "format": "date-time",
@@ -2374,9 +2397,11 @@
           "created_at",
           "description",
           "id",
+          "max_networks",
           "name",
           "network_ids",
           "permissions",
+          "scope_mode",
           "updated_at",
           "users"
         ],
@@ -2386,6 +2411,9 @@
         "properties": {
           "description": {
             "type": "string"
+          },
+          "max_networks": {
+            "type": "integer"
           },
           "name": {
             "type": "string"
@@ -2403,6 +2431,9 @@
             },
             "nullable": true,
             "type": "object"
+          },
+          "scope_mode": {
+            "type": "string"
           }
         },
         "type": "object"
@@ -2605,6 +2636,15 @@
         "required": [
           "sessions"
         ],
+        "type": "object"
+      },
+      "SetNetworkOwnerRequest": {
+        "properties": {
+          "user_id": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SetUserRoleRequest": {
@@ -5753,7 +5793,7 @@
             "description": "Error"
           }
         },
-        "summary": "Create a network",
+        "summary": "Create a network (a role limited to its own networks: up to max_networks, 409 network_limit)",
         "tags": [
           "networks"
         ]
@@ -5878,6 +5918,57 @@
           }
         },
         "summary": "Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split)",
+        "tags": [
+          "networks"
+        ]
+      }
+    },
+    "/api/v1/networks/{id}/owner": {
+      "put": {
+        "operationId": "put_networks_by_id_owner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNetworkOwnerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Hand the network to a user (null: no owner); a role limited to its own networks then sees it (admin)",
         "tags": [
           "networks"
         ]
@@ -6864,7 +6955,7 @@
             "description": "Error"
           }
         },
-        "summary": "Create a custom role: section levels and optional networks (admin)",
+        "summary": "Create a custom role: section levels and its networks (all, listed, or own with max_networks) (admin)",
         "tags": [
           "users"
         ]

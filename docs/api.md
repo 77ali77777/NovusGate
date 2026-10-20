@@ -360,3 +360,8 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - `DELETE /roles/{id}` → 204; istifadəçisi varsa 409 `role_in_use`.
 - `PUT /users/{id}/role` `{role: "custom", role_id}` və ya daxili rol.
 - `GET /auth/me` indi `permissions` (bölmə → səviyyə, daxili rollar üçün də), `role_name`, `role_id`, `network_ids` qaytarır.
+- Rolun sahəsi (2026-10-20): `scope_mode` `all` | `listed` (`network_ids` lazımdır) | `own` (`network_ids` boş, `networks: edit` və `max_networks` 1–1000 lazımdır); verilməyəndə `network_ids`-dən çıxarılır. 400 səhv birləşmələrdə.
+- `own` rolu: `GET /networks` yalnız istifadəçinin öz şəbəkələri; `POST /networks` limitə qədər, sonra 409 `network_limit`; yalnız öz şəbəkəsini silir.
+- `POST /networks` cavabında `owner_user_id` (yaradan sessiya istifadəçisi; sorğu gövdəsindəki dəyər nəzərə alınmır).
+- `PUT /networks/{id}/owner` (admin) `{user_id: string|null}` → şəbəkə; 404 naməlum şəbəkə/istifadəçi.
+- `GET /auth/me` əlavə: `scope_mode`, `own` üçün `max_networks` və `owned_networks`.

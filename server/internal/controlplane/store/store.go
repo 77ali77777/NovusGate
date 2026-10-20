@@ -26,16 +26,16 @@ func New(connStr string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	
+
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	
+
 	// Set connection pool settings
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(5 * time.Minute)
-	
+
 	return &Store{db: db}, nil
 }
 
@@ -57,11 +57,20 @@ func (s *Store) CreateNetwork(ctx context.Context, network *models.Network) erro
 		network.TunnelMode = models.TunnelSplit
 	}
 
-	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO networks (id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	`, network.ID, network.Name, network.CIDR, network.ServerPrivateKey, network.ServerPublicKey, network.ServerEndpoint, network.ListenPort, network.InterfaceName, network.ClientDNS, network.TunnelMode, network.CreatedAt, network.UpdatedAt)
-	
+	return insertNetwork(ctx, s.db, network)
+}
+
+// execer is a database or a transaction.
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func insertNetwork(ctx context.Context, db execer, network *models.Network) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO networks (id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at, owner_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, network.ID, network.Name, network.CIDR, network.ServerPrivateKey, network.ServerPublicKey, network.ServerEndpoint, network.ListenPort, network.InterfaceName, network.ClientDNS, network.TunnelMode, network.CreatedAt, network.UpdatedAt, network.OwnerUserID)
+
 	return err
 }
 
@@ -70,10 +79,10 @@ func (s *Store) GetNetwork(ctx context.Context, id string) (*models.Network, err
 	var network models.Network
 	var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at, owner_user_id
 		FROM networks WHERE id = $1
-	`, id).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt)
-	
+	`, id).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt, &network.OwnerUserID)
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -88,10 +97,10 @@ func (s *Store) GetNetworkByName(ctx context.Context, name string) (*models.Netw
 	var network models.Network
 	var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at, owner_user_id
 		FROM networks WHERE name = $1
-	`, name).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt)
-	
+	`, name).Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt, &network.OwnerUserID)
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -104,19 +113,19 @@ func (s *Store) GetNetworkByName(ctx context.Context, name string) (*models.Netw
 // ListNetworks lists all networks
 func (s *Store) ListNetworks(ctx context.Context) ([]*models.Network, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at
+		SELECT id, name, cidr, server_private_key, server_public_key, server_endpoint, listen_port, interface_name, client_dns, tunnel_mode, created_at, updated_at, owner_user_id
 		FROM networks ORDER BY name
 	`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	networks := []*models.Network{}
 	for rows.Next() {
 		var network models.Network
 		var serverPrivateKey, serverPublicKey, serverEndpoint sql.NullString
-		if err := rows.Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt); err != nil {
+		if err := rows.Scan(&network.ID, &network.Name, &network.CIDR, &serverPrivateKey, &serverPublicKey, &serverEndpoint, &network.ListenPort, &network.InterfaceName, &network.ClientDNS, &network.TunnelMode, &network.CreatedAt, &network.UpdatedAt, &network.OwnerUserID); err != nil {
 			return nil, err
 		}
 		network.ServerPrivateKey = serverPrivateKey.String
@@ -196,27 +205,27 @@ func (s *Store) GetNode(ctx context.Context, id string) (*models.Node, error) {
 	var virtualIP string
 	var labelsJSON, nodeInfoJSON []byte
 	var lastSeen sql.NullTime
-	
+
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, ''), config_routes
 		FROM nodes WHERE id = $1
 	`, id).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
 		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	
+
 	node.VirtualIP = net.ParseIP(virtualIP)
 	if lastSeen.Valid {
 		node.LastSeen = lastSeen.Time
 	}
 	json.Unmarshal(labelsJSON, &node.Labels)
 	json.Unmarshal(nodeInfoJSON, &node.NodeInfo)
-	
+
 	return &node, nil
 }
 
@@ -226,27 +235,27 @@ func (s *Store) GetNodeByName(ctx context.Context, networkID, name string) (*mod
 	var virtualIP string
 	var labelsJSON, nodeInfoJSON []byte
 	var lastSeen sql.NullTime
-	
+
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, network_id, name, virtual_ip, public_key, labels, status, last_seen, node_info, expires_at, created_at, private_key_enc IS NOT NULL, COALESCE(tunnel_override, ''), config_routes
 		FROM nodes WHERE network_id = $1 AND name = $2
 	`, networkID, name).Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
 		&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	
+
 	node.VirtualIP = net.ParseIP(virtualIP)
 	if lastSeen.Valid {
 		node.LastSeen = lastSeen.Time
 	}
 	json.Unmarshal(labelsJSON, &node.Labels)
 	json.Unmarshal(nodeInfoJSON, &node.NodeInfo)
-	
+
 	return &node, nil
 }
 
@@ -260,26 +269,26 @@ func (s *Store) ListNodes(ctx context.Context, networkID string) ([]*models.Node
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	nodes := []*models.Node{}
 	for rows.Next() {
 		var node models.Node
 		var virtualIP string
 		var labelsJSON, nodeInfoJSON []byte
 		var lastSeen sql.NullTime
-		
+
 		if err := rows.Scan(&node.ID, &node.NetworkID, &node.Name, &virtualIP, &node.PublicKey,
 			&labelsJSON, &node.Status, &lastSeen, &nodeInfoJSON, &node.ExpiresAt, &node.CreatedAt, &node.HasConfig, &node.TunnelOverride, &node.ConfigRoutes); err != nil {
 			return nil, err
 		}
-		
+
 		node.VirtualIP = net.ParseIP(virtualIP)
 		if lastSeen.Valid {
 			node.LastSeen = lastSeen.Time
 		}
 		json.Unmarshal(labelsJSON, &node.Labels)
 		json.Unmarshal(nodeInfoJSON, &node.NodeInfo)
-		
+
 		nodes = append(nodes, &node)
 	}
 	return nodes, rows.Err()
@@ -297,13 +306,13 @@ func (s *Store) UpdateNodeStatus(ctx context.Context, id string, status models.N
 func (s *Store) UpdateNode(ctx context.Context, node *models.Node) error {
 	labelsJSON, _ := json.Marshal(node.Labels)
 	nodeInfoJSON, _ := json.Marshal(node.NodeInfo)
-	
+
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE nodes 
 		SET name = $2, labels = $3, status = $4, node_info = $5, expires_at = $6
 		WHERE id = $1
 	`, node.ID, node.Name, labelsJSON, node.Status, nodeInfoJSON, node.ExpiresAt)
-	
+
 	return err
 }
 
@@ -332,12 +341,12 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 	if network == nil {
 		return nil, fmt.Errorf("network not found")
 	}
-	
+
 	_, ipNet, err := net.ParseCIDR(network.CIDR)
 	if err != nil {
 		return nil, fmt.Errorf("invalid network CIDR: %w", err)
 	}
-	
+
 	// Get all allocated IPs
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT virtual_ip FROM nodes WHERE network_id = $1
@@ -346,7 +355,7 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	allocated := make(map[string]bool)
 	for rows.Next() {
 		var ip string
@@ -355,7 +364,7 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 		}
 		allocated[ip] = true
 	}
-	
+
 	// Find the next free IP: skip network, .1 (hub) and .2 as before; never the broadcast
 	ip := ipNet.IP.Mask(ipNet.Mask)
 	// The broadcast address (all host bits set) is never a valid peer.
@@ -373,7 +382,7 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 		}
 		ip = nextIP(ip)
 	}
-	
+
 	return nil, fmt.Errorf("no available IPs in network")
 }
 
@@ -384,7 +393,7 @@ func (s *Store) GetUserByUsername(ctx context.Context, username string) (*models
 		SELECT id, username, password_hash, role, role_id, created_at
 		FROM users WHERE username = $1
 	`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Role, &user.RoleID, &user.CreatedAt)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -403,12 +412,12 @@ func (s *Store) CreateUser(ctx context.Context, user *models.User) error {
 	if user.Role == "" {
 		user.Role = "admin" // the schema default; users created before roles were admins
 	}
-	
+
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO users (id, username, password_hash, role, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 	`, user.ID, user.Username, user.PasswordHash, user.Role, user.CreatedAt)
-	
+
 	return err
 }
 
@@ -420,7 +429,7 @@ func (s *Store) UpdateUserPassword(ctx context.Context, username, passwordHash s
 	if err != nil {
 		return err
 	}
-	
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -428,7 +437,7 @@ func (s *Store) UpdateUserPassword(ctx context.Context, username, passwordHash s
 	if rows == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -441,7 +450,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	users := []*models.User{}
 	for rows.Next() {
 		var user models.User
@@ -490,15 +499,15 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var rules []*models.VPNFirewallRule
 	for rows.Next() {
 		var rule models.VPNFirewallRule
 		var description, sourceIP, destIP, port sql.NullString
 		var sourceNetworkID, sourceNodeID, destNetworkID, destNodeID sql.NullString
 		var sourceNetworkName, sourceNodeName, destNetworkName, destNodeName sql.NullString
-	var sourceGroupID, destGroupID, sourceGroupName, destGroupName sql.NullString
-		
+		var sourceGroupID, destGroupID, sourceGroupName, destGroupName sql.NullString
+
 		if err := rows.Scan(
 			&rule.ID, &rule.Name, &description,
 			&rule.SourceType, &sourceNetworkID, &sourceNodeID, &sourceIP,
@@ -506,17 +515,17 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 			&rule.Protocol, &port, &rule.Action,
 			&rule.Priority, &rule.Enabled, &rule.CreatedAt, &rule.UpdatedAt,
 			&sourceNetworkName, &sourceNodeName, &destNetworkName, &destNodeName,
-		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
-		&rule.Bidirectional,
+			&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
+			&rule.Bidirectional,
 		); err != nil {
 			return nil, err
 		}
-		
+
 		rule.Description = description.String
 		rule.SourceIP = sourceIP.String
 		rule.DestIP = destIP.String
 		rule.Port = port.String
-		
+
 		if sourceNetworkID.Valid {
 			rule.SourceNetworkID = &sourceNetworkID.String
 		}
@@ -529,20 +538,20 @@ func (s *Store) ListVPNFirewallRules(ctx context.Context) ([]*models.VPNFirewall
 		if destNodeID.Valid {
 			rule.DestNodeID = &destNodeID.String
 		}
-		
+
 		rule.SourceNetworkName = sourceNetworkName.String
 		rule.SourceNodeName = sourceNodeName.String
 		rule.DestNetworkName = destNetworkName.String
 		rule.DestNodeName = destNodeName.String
-	rule.SourceGroupName = sourceGroupName.String
-	rule.DestGroupName = destGroupName.String
-	if sourceGroupID.Valid {
-		rule.SourceGroupID = &sourceGroupID.String
-	}
-	if destGroupID.Valid {
-		rule.DestGroupID = &destGroupID.String
-	}
-		
+		rule.SourceGroupName = sourceGroupName.String
+		rule.DestGroupName = destGroupName.String
+		if sourceGroupID.Valid {
+			rule.SourceGroupID = &sourceGroupID.String
+		}
+		if destGroupID.Valid {
+			rule.DestGroupID = &destGroupID.String
+		}
+
 		rules = append(rules, &rule)
 	}
 	return rules, rows.Err()
@@ -555,7 +564,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 	var sourceNetworkID, sourceNodeID, destNetworkID, destNodeID sql.NullString
 	var sourceNetworkName, sourceNodeName, destNetworkName, destNodeName sql.NullString
 	var sourceGroupID, destGroupID, sourceGroupName, destGroupName sql.NullString
-	
+
 	err := s.db.QueryRowContext(ctx, `
 		SELECT 
 			fr.id, fr.name, fr.description,
@@ -588,19 +597,19 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 		&sourceGroupID, &destGroupID, &sourceGroupName, &destGroupName,
 		&rule.Bidirectional,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	
+
 	rule.Description = description.String
 	rule.SourceIP = sourceIP.String
 	rule.DestIP = destIP.String
 	rule.Port = port.String
-	
+
 	if sourceNetworkID.Valid {
 		rule.SourceNetworkID = &sourceNetworkID.String
 	}
@@ -613,7 +622,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 	if destNodeID.Valid {
 		rule.DestNodeID = &destNodeID.String
 	}
-	
+
 	rule.SourceNetworkName = sourceNetworkName.String
 	rule.SourceNodeName = sourceNodeName.String
 	rule.DestNetworkName = destNetworkName.String
@@ -626,7 +635,7 @@ func (s *Store) GetVPNFirewallRule(ctx context.Context, id string) (*models.VPNF
 	if destGroupID.Valid {
 		rule.DestGroupID = &destGroupID.String
 	}
-	
+
 	return &rule, nil
 }
 
@@ -637,7 +646,7 @@ func (s *Store) CreateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 	}
 	rule.CreatedAt = time.Now()
 	rule.UpdatedAt = time.Now()
-	
+
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO firewall_rules (
 			id, name, description,
@@ -653,14 +662,14 @@ func (s *Store) CreateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 		rule.Protocol, nullString(rule.Port), rule.Action,
 		rule.Priority, rule.Enabled, rule.CreatedAt, rule.UpdatedAt,
 		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID), rule.Bidirectional)
-	
+
 	return err
 }
 
 // UpdateVPNFirewallRule updates an existing VPN firewall rule
 func (s *Store) UpdateVPNFirewallRule(ctx context.Context, rule *models.VPNFirewallRule) error {
 	rule.UpdatedAt = time.Now()
-	
+
 	result, err := s.db.ExecContext(ctx, `
 		UPDATE firewall_rules SET
 			name = $2, description = $3,
@@ -676,11 +685,11 @@ func (s *Store) UpdateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 		rule.Protocol, nullString(rule.Port), rule.Action,
 		rule.Priority, rule.Enabled, rule.UpdatedAt,
 		nullStringPtr(rule.SourceGroupID), nullStringPtr(rule.DestGroupID), rule.Bidirectional)
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -688,7 +697,7 @@ func (s *Store) UpdateVPNFirewallRule(ctx context.Context, rule *models.VPNFirew
 	if rows == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -698,7 +707,7 @@ func (s *Store) DeleteVPNFirewallRule(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -706,7 +715,7 @@ func (s *Store) DeleteVPNFirewallRule(ctx context.Context, id string) error {
 	if rows == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -720,7 +729,7 @@ func (s *Store) CreateFirewallAuditLog(ctx context.Context, action string, detai
 		INSERT INTO firewall_audit_log (id, action, details, user_ip, user_id, created_at)
 		VALUES ($1, $2, $3, $4, NULLIF($5, '')::uuid, $6)
 	`, id, action, detailsJSON, userIP, userID, time.Now())
-	
+
 	return err
 }
 
@@ -744,7 +753,7 @@ func nullStringPtr(s *string) sql.NullString {
 func nextIP(ip net.IP) net.IP {
 	next := make(net.IP, len(ip))
 	copy(next, ip)
-	
+
 	for i := len(next) - 1; i >= 0; i-- {
 		next[i]++
 		if next[i] != 0 {
