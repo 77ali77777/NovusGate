@@ -259,6 +259,10 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
   - node `/32` ünvanına, custom isə prefiksə çevrilir.
 - Default nəticə (2026-10-19, M1-dən bəri bütün rejimlərdə eyni): eyni şəbəkə daxilində `allow`, şəbəkələr arasında `deny`. Qarşılıqlı (`bidirectional`) qayda hər iki istiqamətdə sayılır.
 
+## Şəbəkə DNS-i və hub (2026-10-20, P3)
+- `PUT /networks/{id}/dns` və `POST /networks`: `client_dns`-də hər hansı şəbəkənin hub ünvanı 400 `dns_is_hub` (cihazlar hubu onsuz da DNS kimi işlədir; hub özünə ötürərdi).
+- Konfiq `DNS` sətri hubun şəbəkədəki ünvanıdır (dinləyici işləyirsə); serverləri dəyişmək konfiqi dəyişmir.
+
 ## `GET/PUT /api/v1/settings/vpn` (2026-10-19, server tərəfli marşrut P1)
 - **GET** (bütün rollar): `{pool, next_cidr}` — konfiqlərin marşrutladığı hovuz və yeni şəbəkənin alacağı /24 (`""`: hovuz doludur).
 - **P2:** cavabda həm də `endpoint_host` (`""`: IP) və `endpoint_default` (WG_SERVER_ENDPOINT). PUT `{endpoint_host}` — domen (RFC 1123) və ya IPv4, port və sxemsiz; 400 `invalid_endpoint_host`. PUT-da sahələrdən biri kifayətdir, verilməyən dəyişmir. Konfiqlərdə `Endpoint = <host>:<şəbəkə portu>`.

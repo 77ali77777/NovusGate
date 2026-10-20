@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/netip"
 	"strings"
 
 	"github.com/novusgate/novusgate/internal/controlplane/dnsfwd"
@@ -32,36 +33,19 @@ func hubIP(cidr string) (string, error) {
 	return ip, nil
 }
 
-// dnsUpstreams are the servers a network's DNS queries go to: its client
-// DNS, else the full-tunnel default.
-func dnsUpstreams(n *models.Network) []string {
-	var out []string
-	for _, ip := range strings.Split(n.ClientDNS, ",") {
-		if ip = strings.TrimSpace(ip); ip != "" {
-			out = append(out, net.JoinHostPort(ip, "53"))
+// dnsTargets is what each network's hub address serves: its own range
+// only (isolation: a device of another network gets no answer) and its DNS
+// servers, never a hub address (the forwarder would forward to itself);
+// with none left, the full-tunnel default. Networks without an interface
+// have no listener.
+func dnsTargets(networks []*models.Network) map[string]dnsfwd.Target {
+	hubs := map[string]bool{}
+	for _, n := range networks {
+		if hub, err := hubIP(n.CIDR); err == nil {
+			hubs[hub] = true
 		}
 	}
-	if len(out) == 0 {
-		out = []string{net.JoinHostPort(fullTunnelDNS, "53")}
-	}
-	return out
-}
-
-// SyncDNS listens on every network's hub address with its upstreams. An
-// address that cannot be bound yet (interface down) is retried on the next
-// run (the interface check runs it every 30 s); its devices' configs name
-// the DNS servers directly until then.
-func (s *Server) SyncDNS(ctx context.Context) {
-	if s.dns == nil {
-		return
-	}
-	networks, err := s.store.ListNetworks(ctx)
-	if err != nil {
-		slog.Warn("dns: networks not read", "error", err)
-		return
-	}
-	want := map[string][]string{}
-	names := map[string]string{}
+	out := map[string]dnsfwd.Target{}
 	for _, n := range networks {
 		if n.InterfaceName == "" {
 			continue
@@ -70,9 +54,46 @@ func (s *Server) SyncDNS(ctx context.Context) {
 		if err != nil {
 			continue
 		}
-		addr := dnsListenAddr(hub)
-		want[addr] = dnsUpstreams(n)
-		names[addr] = n.Name
+		p, err := netip.ParsePrefix(n.CIDR)
+		if err != nil {
+			continue
+		}
+		var ups []string
+		for _, ip := range strings.Split(n.ClientDNS, ",") {
+			if ip = strings.TrimSpace(ip); ip != "" && !hubs[ip] {
+				ups = append(ups, net.JoinHostPort(ip, "53"))
+			}
+		}
+		if len(ups) == 0 {
+			ups = []string{net.JoinHostPort(fullTunnelDNS, "53")}
+		}
+		out[dnsListenAddr(hub)] = dnsfwd.Target{Upstreams: ups, Allow: p.Masked()}
+	}
+	return out
+}
+
+// SyncDNS listens on every network's hub address with its upstreams. An
+// address that cannot be bound yet (interface down) is retried on the next
+// run (the interface check runs it every 30 s); its devices' configs name
+// the DNS servers directly until then. One run at a time: a stale list
+// read before a change must not undo it.
+func (s *Server) SyncDNS(ctx context.Context) {
+	if s.dns == nil {
+		return
+	}
+	s.dnsSync.Lock()
+	defer s.dnsSync.Unlock()
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		slog.Warn("dns: networks not read", "error", err)
+		return
+	}
+	want := dnsTargets(networks)
+	names := map[string]string{}
+	for _, n := range networks {
+		if hub, err := hubIP(n.CIDR); err == nil {
+			names[dnsListenAddr(hub)] = n.Name
+		}
 	}
 	errs := s.dns.Sync(want)
 	for addr := range want {

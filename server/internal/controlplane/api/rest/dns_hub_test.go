@@ -3,11 +3,13 @@ package rest
 import (
 	"context"
 	"net"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/novusgate/novusgate/internal/controlplane/dnsfwd"
+	"github.com/novusgate/novusgate/internal/shared/models"
 )
 
 // Server-side routing P3: a config names the hub as its DNS server; the
@@ -62,7 +64,7 @@ func TestConfigDNSIsTheHub(t *testing.T) {
 	if body := callAs(t, s, "GET", "/api/v1/nodes/"+seed.node.ID, "", true).Body.String(); !strings.Contains(body, `"config_outdated":false`) {
 		t.Fatalf("new DNS servers need no new config: %s", body)
 	}
-	// A split-tunnel network without DNS servers still hands out none.
+	// Still the hub after the change.
 	if conf := configOf(t, s, seed.node.ID); !strings.Contains(conf, "DNS = 10.66.0.1\n") {
 		t.Fatalf("still the hub:\n%s", conf)
 	}
@@ -71,5 +73,35 @@ func TestConfigDNSIsTheHub(t *testing.T) {
 	}
 	if conf := configOf(t, s, seed.node.ID); strings.Contains(conf, "DNS =") {
 		t.Fatalf("no DNS servers, split tunnel: no DNS line:\n%s", conf)
+	}
+}
+
+// Review P3: a listener answers only its network's range, and a hub
+// address is never an upstream (the forwarder would forward to itself).
+func TestDNSTargets(t *testing.T) {
+	nets := []*models.Network{
+		{Name: "a", CIDR: "10.10.0.0/24", InterfaceName: "wg1", ClientDNS: "10.20.0.1, 10.10.0.1, 10.10.0.53"},
+		{Name: "b", CIDR: "10.20.0.0/24", InterfaceName: "wg2", ClientDNS: "10.10.0.1"},
+		{Name: "down", CIDR: "10.30.0.0/24"},
+	}
+	got := dnsTargets(nets)
+	a := got[dnsListenAddr("10.10.0.1")]
+	if a.Allow != netip.MustParsePrefix("10.10.0.0/24") || strings.Join(a.Upstreams, ",") != "10.10.0.53:53" {
+		t.Fatalf("a = %+v", a)
+	}
+	if b := got[dnsListenAddr("10.20.0.1")]; strings.Join(b.Upstreams, ",") != "1.1.1.1:53" {
+		t.Fatalf("only hub addresses: the default; b = %+v", b)
+	}
+	if len(got) != 2 {
+		t.Fatalf("a network without interface has no listener: %v", got)
+	}
+}
+
+func TestClientDNSMayNotBeAHubAddress(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	rec := callAs(t, s, "PUT", "/api/v1/networks/"+seed.network.ID+"/dns", `{"client_dns":"10.68.0.1"}`, true)
+	if rec.Code != 400 || !strings.Contains(rec.Body.String(), "dns_is_hub") {
+		t.Fatalf("another network's hub = %d %s", rec.Code, rec.Body)
 	}
 }

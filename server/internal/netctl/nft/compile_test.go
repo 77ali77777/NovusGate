@@ -86,8 +86,10 @@ func TestCompileKeyBehaviour(t *testing.T) {
 		"type filter hook input priority filter - 10; policy drop;",
 		`iifname "wg0" tcp dport { 3007, 5432 } accept`,
 		`iifname { "wg0", "wg1", "wg2" } tcp dport { 8080, 8443 } accept`,
-		// The hub answers DNS on its VPN addresses (server-side routing P3).
-		`iifname { "wg0", "wg1", "wg2" } meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"`,
+		// The hub answers DNS on its VPN addresses (server-side routing P3),
+		// each network only at its own hub address (isolation).
+		`iifname "wg1" ip daddr 10.20.0.1 meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"`,
+		`iifname "wg0" ip daddr 10.99.0.1 meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"`,
 		`ip saddr { 203.0.113.0/24 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`ip6 saddr { 2001:db8::/32 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`iifname "wg1" udp dport 53 accept comment "svc:vpn-dns"`,
@@ -107,6 +109,9 @@ func TestCompileKeyBehaviour(t *testing.T) {
 	// Rule order matters: the drop for port 22 must precede the broader accept.
 	if strings.Index(got, "rule:block-ssh-a-b") > strings.Index(got, "rule:a-to-b-web") {
 		t.Error("VPN rules must keep their order")
+	}
+	if strings.Contains(got, `"wg2" } meta l4proto { tcp, udp } th dport 53`) {
+		t.Error("no blanket DNS rule for every VPN interface")
 	}
 	if strings.Contains(got, "192.0.2.10") || strings.Contains(got, "198.51.100.7") {
 		t.Error("expired or covered blocked entries must not be rendered")

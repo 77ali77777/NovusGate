@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net"
@@ -58,6 +59,10 @@ func (s *Server) handleSetNetworkDNS(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusBadRequest, "invalid_dns", err.Error())
 		return
 	}
+	if hub := s.hubAmong(r.Context(), dns); hub != "" {
+		errorWithCode(w, http.StatusBadRequest, "dns_is_hub", hub+" is the hub's own address: devices already use it as DNS; give the servers the hub should ask")
+		return
+	}
 	found, err := s.store.SetNetworkClientDNS(r.Context(), id, dns)
 	if err != nil {
 		slog.Error("client DNS not saved", "network", id, "error", err)
@@ -75,4 +80,29 @@ func (s *Server) handleSetNetworkDNS(w http.ResponseWriter, r *http.Request) {
 	}
 	s.SyncDNS(r.Context()) // the hub's forwarder takes the new servers
 	jsonResponse(w, http.StatusOK, network)
+}
+
+// hubAmong returns the first of the comma-separated addresses that is a
+// network's hub address, or "". Devices name the hub as DNS (P3); a hub as
+// one of its own upstreams would forward to itself.
+func (s *Server) hubAmong(ctx context.Context, dns string) string {
+	if dns == "" {
+		return ""
+	}
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		return ""
+	}
+	hubs := map[string]bool{}
+	for _, n := range networks {
+		if hub, err := hubIP(n.CIDR); err == nil {
+			hubs[hub] = true
+		}
+	}
+	for _, ip := range strings.Split(dns, ",") {
+		if ip = strings.TrimSpace(ip); hubs[ip] {
+			return ip
+		}
+	}
+	return ""
 }

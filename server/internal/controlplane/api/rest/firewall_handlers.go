@@ -1392,7 +1392,7 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	}
 	s.vpnSync.Lock()
 	defer s.vpnSync.Unlock()
-	allowHubDNS()
+	s.allowHubDNS(ctx)
 	// Rules appended to FORWARD by earlier versions sat below the wg ACCEPTs
 	// and never matched; they are removed, then the chain is rebuilt.
 	if err := s.removeLegacyForwardVPNRules(); err != nil {
@@ -1441,19 +1441,42 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	return nil
 }
 
-// allowHubDNS lets devices query the hub's DNS forwarder (server-side
-// routing P3) through iptables INPUT, which drops what it does not name.
-// setup-firewall.sh rebuilds INPUT on update; this puts the rule back.
-// A failure is logged: configs then still work, DNS through the hub not.
-func allowHubDNS() {
-	for _, proto := range []string{"udp", "tcp"} {
-		rule := []string{"-i", "wg+", "-p", proto, "--dport", "53", "-j", "ACCEPT"}
-		if _, err := execHostCommand("iptables", append([]string{"-C", "INPUT"}, rule...)...); err == nil {
+// dnsChain holds the INPUT accepts for the hub's DNS forwarder.
+const dnsChain = "NOVUSGATE-DNS"
+
+// allowHubDNS lets each network query the hub's DNS forwarder (server-side
+// routing P3) at its own hub address only, through iptables INPUT, which
+// drops what it does not name. setup-firewall.sh rebuilds INPUT on update;
+// this puts the jump back. A failure is logged: configs still work, DNS
+// through the hub not.
+func (s *Server) allowHubDNS(ctx context.Context) {
+	networks, err := s.store.ListNetworks(ctx)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] hub DNS rules not written: %v", err))
+		return
+	}
+	execHostCommand("iptables", "-N", dnsChain) // exists after the first run
+	if _, err := execHostCommand("iptables", "-F", dnsChain); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] hub DNS chain not flushed: %v", err))
+		return
+	}
+	for _, n := range networks {
+		hub, err := hubIP(n.CIDR)
+		if err != nil || n.InterfaceName == "" {
 			continue
 		}
-		if _, err := execHostCommand("iptables", append([]string{"-I", "INPUT", "1"}, rule...)...); err != nil {
-			slog.Warn(fmt.Sprintf("[Firewall] hub DNS (%s 53 from wg+) not allowed: %v", proto, err))
+		for _, proto := range []string{"udp", "tcp"} {
+			if _, err := execHostCommand("iptables", "-A", dnsChain, "-i", n.InterfaceName, "-d", hub, "-p", proto, "--dport", "53", "-j", "ACCEPT"); err != nil {
+				slog.Warn(fmt.Sprintf("[Firewall] hub DNS for %s not allowed: %v", n.Name, err))
+			}
 		}
+	}
+	jump := []string{"-i", "wg+", "-j", dnsChain}
+	if _, err := execHostCommand("iptables", append([]string{"-C", "INPUT"}, jump...)...); err == nil {
+		return
+	}
+	if _, err := execHostCommand("iptables", append([]string{"-I", "INPUT", "1"}, jump...)...); err != nil {
+		slog.Warn(fmt.Sprintf("[Firewall] hub DNS chain not linked to INPUT: %v", err))
 	}
 }
 

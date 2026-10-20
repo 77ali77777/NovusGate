@@ -54,18 +54,18 @@ func TestNetworkClientDNS(t *testing.T) {
 			t.Errorf("%s = %d %s, want 400", bad, rec.Code, rec.Body)
 		}
 	}
-	rec := callAs(t, s, "PUT", dnsPath, `{"client_dns":" 10.66.0.1 , 9.9.9.9 "}`, true)
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"client_dns":"10.66.0.1, 9.9.9.9"`) {
+	rec := callAs(t, s, "PUT", dnsPath, `{"client_dns":" 10.66.0.53 , 9.9.9.9 "}`, true)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"client_dns":"10.66.0.53, 9.9.9.9"`) {
 		t.Fatalf("set dns = %d %s", rec.Code, rec.Body)
 	}
 	assertMatchesSpec(t, s, "PUT", dnsPath, rec)
-	if body := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(body, "DNS = 10.66.0.1, 9.9.9.9\n") || strings.Contains(body, "0.0.0.0/0") {
+	if body := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(body, "DNS = 10.66.0.53, 9.9.9.9\n") || strings.Contains(body, "0.0.0.0/0") {
 		t.Fatalf("split config with network DNS:\n%s", body)
 	}
 	if err := st.SetNodeEgress(context.Background(), seed.node.ID, true); err != nil {
 		t.Fatal(err)
 	}
-	if body := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(body, "DNS = 10.66.0.1, 9.9.9.9\n") {
+	if body := callAs(t, s, "GET", path, "", true).Body.String(); !strings.Contains(body, "DNS = 10.66.0.53, 9.9.9.9\n") {
 		t.Fatalf("full config with network DNS:\n%s", body)
 	}
 	if rec := callAs(t, s, "PUT", dnsPath, `{"client_dns":""}`, true); rec.Code != 200 {

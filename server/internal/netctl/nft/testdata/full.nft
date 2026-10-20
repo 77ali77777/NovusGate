@@ -48,7 +48,9 @@ table inet novusgate {
 		ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"
 		iifname "wg0" tcp dport { 3007, 5432 } accept
 		iifname { "wg0", "wg1", "wg2" } tcp dport { 8080, 8443 } accept
-		iifname { "wg0", "wg1", "wg2" } meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"
+		iifname "wg1" ip daddr 10.20.0.1 meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"
+		iifname "wg0" ip daddr 10.99.0.1 meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"
+		iifname "wg2" ip daddr 10.30.0.1 meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"
 		tcp dport 443 accept comment "svc:https"
 		ip saddr { 203.0.113.0/24 } tcp dport 3389 accept comment "svc:office-rdp"
 		ip6 saddr { 2001:db8::/32 } tcp dport 3389 accept comment "svc:office-rdp"

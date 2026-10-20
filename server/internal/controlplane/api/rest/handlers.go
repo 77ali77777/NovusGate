@@ -70,6 +70,7 @@ type Server struct {
 	vpnSync sync.Mutex
 	dns     *dnsfwd.Forwarder // nil: configs name the DNS servers directly (P3)
 	dnsErrs sync.Map          // listen address -> last bind error ("" served)
+	dnsSync sync.Mutex        // one SyncDNS at a time
 }
 
 // NewServer creates a new REST API server
@@ -668,6 +669,10 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 	if network.ClientDNS, err = normalizeClientDNS(network.ClientDNS); err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_dns", err.Error())
+		return
+	}
+	if hub := s.hubAmong(r.Context(), network.ClientDNS); hub != "" {
+		errorWithCode(w, http.StatusBadRequest, "dns_is_hub", hub+" is a hub address: give the servers the hub should ask")
 		return
 	}
 	if network.TunnelMode == "" {

@@ -4,9 +4,13 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"net/netip"
+	"strings"
 	"testing"
 	"time"
 )
+
+var loopback = netip.MustParsePrefix("127.0.0.0/8")
 
 // fakeUpstream answers every UDP and TCP message with the message plus tag.
 func fakeUpstream(t *testing.T, tag string) string {
@@ -118,7 +122,7 @@ func TestForwardsUDPAndTCP(t *testing.T) {
 	f := New(500 * time.Millisecond)
 	t.Cleanup(f.Close)
 	hub := freeAddr(t)
-	if errs := f.Sync(map[string][]string{hub: {up}}); len(errs) != 0 {
+	if errs := f.Sync(map[string]Target{hub: {Upstreams: []string{up}, Allow: loopback}}); len(errs) != 0 {
 		t.Fatal(errs)
 	}
 	if !f.Listening(hub) {
@@ -137,7 +141,7 @@ func TestNextUpstreamWhenOneIsDead(t *testing.T) {
 	f := New(300 * time.Millisecond)
 	t.Cleanup(f.Close)
 	hub := freeAddr(t)
-	f.Sync(map[string][]string{hub: {deadAddr(t), up}})
+	f.Sync(map[string]Target{hub: {Upstreams: []string{deadAddr(t), up}, Allow: loopback}})
 	if got := askUDP(t, hub, "q"); got != "q!b" {
 		t.Fatalf("udp = %q", got)
 	}
@@ -150,12 +154,12 @@ func TestSyncSwapsUpstreamsAndStops(t *testing.T) {
 	f := New(500 * time.Millisecond)
 	t.Cleanup(f.Close)
 	hub := freeAddr(t)
-	f.Sync(map[string][]string{hub: {a}})
-	f.Sync(map[string][]string{hub: {b}})
+	f.Sync(map[string]Target{hub: {Upstreams: []string{a}, Allow: loopback}})
+	f.Sync(map[string]Target{hub: {Upstreams: []string{b}, Allow: loopback}})
 	if got := askUDP(t, hub, "q"); got != "q!b" {
 		t.Fatalf("new upstream: %q", got)
 	}
-	f.Sync(map[string][]string{})
+	f.Sync(map[string]Target{})
 	if f.Listening(hub) {
 		t.Fatal("a removed address stops listening")
 	}
@@ -171,8 +175,91 @@ func TestSyncSwapsUpstreamsAndStops(t *testing.T) {
 func TestSyncReportsAddressesItCannotBind(t *testing.T) {
 	f := New(500 * time.Millisecond)
 	t.Cleanup(f.Close)
-	errs := f.Sync(map[string][]string{"192.0.2.77:53": {"127.0.0.1:1"}})
+	errs := f.Sync(map[string]Target{"192.0.2.77:53": {Upstreams: []string{"127.0.0.1:1"}, Allow: loopback}})
 	if errs["192.0.2.77:53"] == nil || f.Listening("192.0.2.77:53") {
 		t.Fatalf("errs = %v", errs)
+	}
+}
+
+// query is a minimal DNS query for example.com A with the given ID.
+func query(id uint16) string {
+	q := []byte{byte(id >> 8), byte(id), 0x01, 0x00, 0, 1, 0, 0, 0, 0, 0, 0}
+	q = append(q, 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0, 0, 1, 0, 1)
+	return string(q)
+}
+
+// Review P3: a listener answers only its own network (isolation), never a
+// device of another network that routes the pool to the hub.
+func TestAnswersOnlyItsNetwork(t *testing.T) {
+	up := fakeUpstream(t, "!a")
+	f := New(300 * time.Millisecond)
+	t.Cleanup(f.Close)
+	hub := freeAddr(t)
+	f.Sync(map[string]Target{hub: {Upstreams: []string{up}, Allow: netip.MustParsePrefix("192.0.2.0/24")}})
+	if got := askUDP(t, hub, "q"); !strings.HasPrefix(got, "error") {
+		t.Fatalf("udp from outside the network answered: %q", got)
+	}
+	if got := askTCP(t, hub, "q"); got == "q!a" {
+		t.Fatal("tcp from outside the network answered")
+	}
+}
+
+// Review P3: when no upstream answers, the client gets SERVFAIL at once
+// instead of silence (it would retry and start more exchanges).
+func TestServfailWhenNoUpstreamAnswers(t *testing.T) {
+	f := New(200 * time.Millisecond)
+	t.Cleanup(f.Close)
+	hub := freeAddr(t)
+	f.Sync(map[string]Target{hub: {Upstreams: []string{deadAddr(t)}, Allow: loopback}})
+	got := askUDP(t, hub, query(0xBEEF))
+	if len(got) < 12 || got[0] != 0xBE || got[1] != 0xEF || got[2]&0x80 == 0 || got[3]&0x0F != 2 {
+		t.Fatalf("want SERVFAIL for ID 0xBEEF, got %q", got)
+	}
+}
+
+// Review P3: a dead first upstream costs one timeout, not one per query:
+// the forwarder starts with the server that answered last.
+func TestStartsWithTheUpstreamThatAnswered(t *testing.T) {
+	up := fakeUpstream(t, "!b")
+	f := New(400 * time.Millisecond)
+	t.Cleanup(f.Close)
+	hub := freeAddr(t)
+	f.Sync(map[string]Target{hub: {Upstreams: []string{deadAddr(t), up}, Allow: loopback}})
+	askUDP(t, hub, "first")
+	start := time.Now()
+	if got := askUDP(t, hub, "second"); got != "second!b" || time.Since(start) > 300*time.Millisecond {
+		t.Fatalf("second query %q took %v", got, time.Since(start))
+	}
+}
+
+// Review P3: idle TCP connections are capped per address.
+func TestTCPConnectionsAreCapped(t *testing.T) {
+	up := fakeUpstream(t, "!a")
+	f := New(300 * time.Millisecond)
+	t.Cleanup(f.Close)
+	hub := freeAddr(t)
+	f.Sync(map[string]Target{hub: {Upstreams: []string{up}, Allow: loopback}})
+	var conns []net.Conn
+	t.Cleanup(func() {
+		for _, c := range conns {
+			c.Close()
+		}
+	})
+	for i := 0; i < maxTCP; i++ {
+		c, err := net.Dial("tcp", hub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		conns = append(conns, c)
+	}
+	time.Sleep(100 * time.Millisecond)
+	extra, err := net.Dial("tcp", hub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer extra.Close()
+	extra.SetReadDeadline(time.Now().Add(time.Second))
+	if _, err := extra.Read(make([]byte, 1)); err == nil || strings.Contains(err.Error(), "timeout") {
+		t.Fatalf("a connection over the cap is closed at once: %v", err)
 	}
 }

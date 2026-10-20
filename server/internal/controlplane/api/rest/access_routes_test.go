@@ -102,7 +102,7 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN", "iptables -F NOVUSGATE-DNS",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg71 -o wg71 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg72 -o wg72 -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
@@ -129,11 +129,20 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 	if pool := strings.Index(calls, "iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP"); pool < accept {
 		t.Fatalf("rules, then the pool DROP:\n%s", calls)
 	}
-	// The hub answers DNS on its VPN addresses (P3): INPUT lets it in.
-	for _, p := range []string{"udp", "tcp"} {
-		if !strings.Contains(calls, "iptables -I INPUT 1 -i wg+ -p "+p+" --dport 53 -j ACCEPT") {
-			t.Errorf("no %s 53 INPUT rule:\n%s", p, calls)
+	// The hub answers DNS on its VPN addresses (P3): each network reaches
+	// only its own hub address, through the chain NOVUSGATE-DNS.
+	for _, want := range []string{
+		"iptables -F NOVUSGATE-DNS",
+		"iptables -A NOVUSGATE-DNS -i wg71 -d 10.71.0.1 -p udp --dport 53 -j ACCEPT",
+		"iptables -A NOVUSGATE-DNS -i wg72 -d 10.72.0.1 -p tcp --dport 53 -j ACCEPT",
+		"iptables -I INPUT 1 -i wg+ -j NOVUSGATE-DNS",
+	} {
+		if !strings.Contains(calls, want) {
+			t.Errorf("missing %q:\n%s", want, calls)
 		}
+	}
+	if strings.Contains(calls, "-i wg+ -p udp --dport 53 -j ACCEPT") {
+		t.Errorf("no blanket DNS rule for every VPN interface:\n%s", calls)
 	}
 }
 
@@ -148,7 +157,7 @@ func TestMutualRuleInIptablesMode(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN", "iptables -F NOVUSGATE-DNS",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg73 -o wg73 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg74 -o wg74 -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
@@ -332,7 +341,7 @@ func TestCustomRangeMayNotBeEverything(t *testing.T) {
 func TestIptablesRebuildsAfterNodeDelete(t *testing.T) {
 	s, st, stub := newContractServer(t)
 	seed := seedContract(t, st)
-	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN",
+	for _, cmd := range []string{"iptables -F NOVUSGATE-VPN", "iptables -I FORWARD 1 -i wg+ -j NOVUSGATE-VPN", "iptables -F NOVUSGATE-DNS",
 		"iptables -A NOVUSGATE-VPN -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg66 -o wg66 -j RETURN", "iptables -A NOVUSGATE-VPN -i wg68 -o wg68 -j RETURN",
 		"iptables -A NOVUSGATE-VPN -i wg+ -o wg+ -j DROP -m comment --comment novusgate-vpn-isolation",
