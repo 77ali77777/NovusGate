@@ -72,7 +72,7 @@ func (s *Store) SetUserRole(ctx context.Context, id, role string) error {
 			return ErrLastAdmin
 		}
 	}
-	res, err := tx.ExecContext(ctx, `UPDATE users SET role = $2 WHERE id = $1`, id, role)
+	res, err := tx.ExecContext(ctx, `UPDATE users SET role = $2, role_id = NULL WHERE id = $1`, id, role)
 	if err != nil {
 		return err
 	}

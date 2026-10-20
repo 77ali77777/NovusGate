@@ -2869,6 +2869,10 @@
           "role": {
             "type": "string"
           },
+          "role_id": {
+            "nullable": true,
+            "type": "string"
+          },
           "username": {
             "type": "string"
           }

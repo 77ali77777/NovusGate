@@ -101,8 +101,22 @@ type User struct {
 	ID           string    `json:"id"`
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"-"`
-	Role         string    `json:"role"` // admin, operator or viewer (P9a)
+	Role         string    `json:"role"` // admin, operator, viewer (P9a) or custom (RoleID)
+	RoleID       *string   `json:"role_id,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+// Role is a custom panel role (2026-10-20): which sections it sees or
+// changes, and the networks it is limited to (empty: all).
+type Role struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Permissions map[string]string `json:"permissions"` // section -> none, view or edit
+	NetworkIDs  []string          `json:"network_ids"` // empty: every network
+	Users       int               `json:"users"`       // how many users have it
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
 }
 
 // NetworkEvent represents a real-time network event

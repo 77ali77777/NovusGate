@@ -20,9 +20,9 @@ func (s *Store) CreateSession(ctx context.Context, userID, tokenHash string, now
 func (s *Store) SessionUser(ctx context.Context, tokenHash string, now time.Time) (*models.User, error) {
 	var u models.User
 	err := s.db.QueryRowContext(ctx, `
-		SELECT u.id, u.username, u.role, u.created_at
+		SELECT u.id, u.username, u.role, u.role_id, u.created_at
 		FROM sessions s JOIN users u ON u.id = s.user_id
-		WHERE s.token_hash = $1 AND s.expires_at > $2`, tokenHash, now).Scan(&u.ID, &u.Username, &u.Role, &u.CreatedAt)
+		WHERE s.token_hash = $1 AND s.expires_at > $2`, tokenHash, now).Scan(&u.ID, &u.Username, &u.Role, &u.RoleID, &u.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

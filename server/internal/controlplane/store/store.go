@@ -381,9 +381,9 @@ func (s *Store) AllocateIP(ctx context.Context, networkID string) (net.IP, error
 func (s *Store) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, username, password_hash, role, created_at
+		SELECT id, username, password_hash, role, role_id, created_at
 		FROM users WHERE username = $1
-	`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
+	`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Role, &user.RoleID, &user.CreatedAt)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -435,7 +435,7 @@ func (s *Store) UpdateUserPassword(ctx context.Context, username, passwordHash s
 // ListUsers lists all users
 func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, username, role, created_at FROM users ORDER BY username
+		SELECT id, username, role, role_id, created_at FROM users ORDER BY username
 	`)
 	if err != nil {
 		return nil, err
@@ -445,7 +445,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]*models.User, error) {
 	users := []*models.User{}
 	for rows.Next() {
 		var user models.User
-		if err := rows.Scan(&user.ID, &user.Username, &user.Role, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.Role, &user.RoleID, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, &user)
