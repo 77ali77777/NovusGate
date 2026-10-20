@@ -16,6 +16,7 @@ import (
 
 	"github.com/novusgate/novusgate/internal/controlplane/api/rest"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
+	"github.com/novusgate/novusgate/internal/controlplane/dnsfwd"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/notify"
 	"github.com/novusgate/novusgate/internal/controlplane/quota"
@@ -194,6 +195,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	// Create REST API server (WireGuard managers are initialized internally by loadNetworks)
 	apiServer := rest.NewServer(db)
+	// DNS on the hub's VPN addresses (server-side routing P3): configs name
+	// the hub; the interface check binds each address once it is up.
+	apiServer.EnableDNS(dnsfwd.New(2 * time.Second))
+	go apiServer.SyncDNS(context.Background())
 
 	// WireGuard reconciler: off | shadow (default: report only) | enforce.
 	wgMode, err := reconciler.ParseMode(os.Getenv("WG_RECONCILER"))

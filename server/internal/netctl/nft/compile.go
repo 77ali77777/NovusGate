@@ -124,6 +124,8 @@ func writeInput(b *builder, rs Ruleset) {
 	b.line(2, `ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"`)
 	b.line(2, fmt.Sprintf(`iifname %q tcp dport { %s } accept`, AdminInterface, joinPorts(AdminPorts)))
 	b.line(2, fmt.Sprintf(`iifname { %s } tcp dport { %s } accept`, quoteJoin(vpnInterfaces(rs)), joinPorts(APIPorts)))
+	// Configs name the hub as DNS server (server-side routing P3).
+	b.line(2, fmt.Sprintf(`iifname { %s } meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"`, quoteJoin(vpnInterfaces(rs))))
 	for _, s := range rs.Services {
 		for _, l := range serviceLines(s) {
 			b.line(2, l)

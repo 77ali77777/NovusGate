@@ -159,3 +159,9 @@
 - **Necə:** `internal/wireguard` bütün `wg`, `wg-quick`, `ip`, `systemctl`, `journalctl` əmrlərini `nsenter -t 1 -m -u -i -n` ilə hostda işlədir (hostun öz alətləri, öz profilləri ilə). Hər şəbəkənin interfeysi hostda `wg-quick@wgN` systemd unit-idir (wg0 kimi): `Up` = `enable` + `start` (əl ilə qaldırılmış interfeys unit-ə verilir), `Restart` = yeni konfiq, `Down` = `disable --now` + qalan interfeys silinir. Açarlar Go-da (Curve25519) yaradılır, `wg genkey/pubkey` işləmir.
 - **Görünən vəziyyət:** şəbəkə JSON-unda `interface_up` və `interface_error` (son uğursuzluğun səbəbi, unit-in jurnalı ilə). Start-da, şəbəkə yaradılanda və `POST /networks/{id}/restart`-da qaldırılır; `KeepInterfaces` hər 30 s itmiş interfeysi qaldırır. Hər qaldırılmadan sonra DB-dəki peer-lər qaytarılır (`SaveConfig = false`).
 - Konteynerdən kənar development: `wireguard.SetHostTools(false)`.
+
+## Hubda DNS (server tərəfli marşrut P3, 2026-10-20)
+- `internal/controlplane/dnsfwd`: hub hər şəbəkənin hub ünvanında (`10.x.y.1:53`, UDP+TCP) DNS-ə cavab verir və sorğunu şəbəkənin `client_dns` serverlərinə (boşdursa 1.1.1.1) ötürür. Yalnız standart kitabxana; ünvan başına 256 eyni vaxtlı UDP sorğusu; uğursuz ötürmə dəqiqədə bir dəfə Warn.
+- `rest.SyncDNS` interfeys yoxlaması ilə (30 s), şəbəkə yaradılanda/silinəndə və DNS dəyişəndə dinləyiciləri sinxronlaşdırır; bağlana bilməyən ünvan (interfeys hələ qalxmayıb) növbəti dəfə yoxlanır.
+- Konfiqin `DNS` sətri: hub ünvanı (yalnız dinləyici işləyirsə), əks halda serverlər birbaşa; split tuneldə `client_dns` boşdursa sətir yoxdur. `config_routes` = `AllowedIPs @ Endpoint # DNS`.
+- Firewall: nft `input`-da `iifname { wg… } meta l4proto { tcp, udp } th dport 53 accept`; iptables rejimində control-plane `INPUT`-a `-i wg+ -p udp/tcp --dport 53 -j ACCEPT` əlavə edir (yoxdursa).

@@ -45,6 +45,7 @@ table inet novusgate {
 		ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept comment "dhcpv6 client"
 		iifname "wg0" tcp dport { 3007, 5432 } accept
 		iifname { "wg0" } tcp dport { 8080, 8443 } accept
+		iifname { "wg0" } meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"
 		tcp dport { 3007, 5432, 8080, 8443 } counter drop comment "admin ports: VPN only"
 		meta l4proto { icmp, ipv6-icmp } accept
 		update @dropped_v4 { ip saddr }

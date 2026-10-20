@@ -73,5 +73,6 @@ func (s *Server) handleSetNetworkDNS(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to read the network")
 		return
 	}
+	s.SyncDNS(r.Context()) // the hub's forwarder takes the new servers
 	jsonResponse(w, http.StatusOK, network)
 }

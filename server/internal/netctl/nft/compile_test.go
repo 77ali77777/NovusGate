@@ -86,6 +86,8 @@ func TestCompileKeyBehaviour(t *testing.T) {
 		"type filter hook input priority filter - 10; policy drop;",
 		`iifname "wg0" tcp dport { 3007, 5432 } accept`,
 		`iifname { "wg0", "wg1", "wg2" } tcp dport { 8080, 8443 } accept`,
+		// The hub answers DNS on its VPN addresses (server-side routing P3).
+		`iifname { "wg0", "wg1", "wg2" } meta l4proto { tcp, udp } th dport 53 accept comment "hub dns"`,
 		`ip saddr { 203.0.113.0/24 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`ip6 saddr { 2001:db8::/32 } tcp dport 3389 accept comment "svc:office-rdp"`,
 		`iifname "wg1" udp dport 53 accept comment "svc:vpn-dns"`,

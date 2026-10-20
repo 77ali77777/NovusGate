@@ -161,6 +161,8 @@ func (s *Server) keepInterfacesOnce(ctx context.Context) {
 		}
 		s.keepInterface(ctx, n.ID)
 	}
+	// DNS on the hub addresses: binds what came up since the last run.
+	s.SyncDNS(ctx)
 }
 
 // keepInterface brings one network's interface back, under its lock and

@@ -129,6 +129,12 @@ func TestIptablesKeepsNetworksApart(t *testing.T) {
 	if pool := strings.Index(calls, "iptables -A NOVUSGATE-VPN -i wg+ -d 10.0.0.0/8 -j DROP"); pool < accept {
 		t.Fatalf("rules, then the pool DROP:\n%s", calls)
 	}
+	// The hub answers DNS on its VPN addresses (P3): INPUT lets it in.
+	for _, p := range []string{"udp", "tcp"} {
+		if !strings.Contains(calls, "iptables -I INPUT 1 -i wg+ -p "+p+" --dport 53 -j ACCEPT") {
+			t.Errorf("no %s 53 INPUT rule:\n%s", p, calls)
+		}
+	}
 }
 
 // A mutual rule is stored as such and applied both ways in iptables mode.

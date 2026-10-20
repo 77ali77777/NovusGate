@@ -1392,6 +1392,7 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	}
 	s.vpnSync.Lock()
 	defer s.vpnSync.Unlock()
+	allowHubDNS()
 	// Rules appended to FORWARD by earlier versions sat below the wg ACCEPTs
 	// and never matched; they are removed, then the chain is rebuilt.
 	if err := s.removeLegacyForwardVPNRules(); err != nil {
@@ -1438,6 +1439,22 @@ func (s *Server) syncVPNFirewallRules(ctx context.Context) error {
 	execHostCommand("netfilter-persistent", "save")
 
 	return nil
+}
+
+// allowHubDNS lets devices query the hub's DNS forwarder (server-side
+// routing P3) through iptables INPUT, which drops what it does not name.
+// setup-firewall.sh rebuilds INPUT on update; this puts the rule back.
+// A failure is logged: configs then still work, DNS through the hub not.
+func allowHubDNS() {
+	for _, proto := range []string{"udp", "tcp"} {
+		rule := []string{"-i", "wg+", "-p", proto, "--dport", "53", "-j", "ACCEPT"}
+		if _, err := execHostCommand("iptables", append([]string{"-C", "INPUT"}, rule...)...); err == nil {
+			continue
+		}
+		if _, err := execHostCommand("iptables", append([]string{"-I", "INPUT", "1"}, rule...)...); err != nil {
+			slog.Warn(fmt.Sprintf("[Firewall] hub DNS (%s 53 from wg+) not allowed: %v", proto, err))
+		}
+	}
 }
 
 // isolationComment marks the default DROP between networks in NOVUSGATE-VPN.

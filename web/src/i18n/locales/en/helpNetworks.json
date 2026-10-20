@@ -15,9 +15,9 @@
     "effect": "It may not overlap another network and cannot be changed later. Device configs route the whole pool, so a new network inside it needs no new config on any device. A new WireGuard interface (wg1, wg2…) is created on the first free UDP port after wg0’s 51820; that port must be reachable from the internet."
   },
   "clientDns": {
-    "what": "The DNS servers written into this network's device configs: up to 3 IPv4 addresses, comma separated.",
-    "who": "Networks whose devices should resolve names through a particular server, for example an internal DNS reachable over the VPN.",
-    "effect": "Empty: full-tunnel devices use 1.1.1.1 and split-tunnel devices keep their own DNS. With a value, every device of the network uses it. Only new or re-downloaded configs change; configs already on devices stay as they are until you send them again."
+    "what": "The DNS servers this network’s devices resolve names with: up to 3 IPv4 addresses, comma-separated. Device configs name the hub’s address in this network (for example 10.10.0.1) as DNS; the hub forwards the queries to the servers here.",
+    "who": "Networks whose devices must resolve names with a particular server (for example an internal DNS reached over the VPN).",
+    "effect": "Empty: full-tunnel devices use 1.1.1.1 (through the hub), split-tunnel devices keep their own DNS. Changing the servers changes no device config — the hub forwards to the new ones at once. Only going from empty to set or back (a split-tunnel config gaining or losing its DNS line) makes configs outdated once."
   },
   "tunnelMode": {
     "what": "What this network’s devices send through the server: VPN (split) sends only traffic to the VPN networks; full tunnel sends all internet traffic, so the server is their way to the internet.",

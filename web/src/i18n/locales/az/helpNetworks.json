@@ -15,9 +15,9 @@
     "effect": "Başqa şəbəkə ilə üst-üstə düşə bilməz və sonradan dəyişdirilmir. Cihaz konfiqləri bütün hovuzu marşrutlayır, ona görə hovuzun içində yeni şəbəkə heç bir cihazda yeni konfiq tələb etmir. Serverdə yeni WireGuard interfeysi (wg1, wg2…) wg0-ın 51820 portundan sonrakı ilk boş UDP portu ilə yaranır; bu port internetdən əlçatan olmalıdır."
   },
   "clientDns": {
-    "what": "Bu şəbəkənin cihaz konfiqlərinə yazılan DNS serverləri: vergüllə ayrılmış ən çox 3 IPv4 ünvanı.",
+    "what": "Bu şəbəkənin cihazlarının adları həll etdiyi DNS serverləri: vergüllə ayrılmış ən çox 3 IPv4 ünvanı. Cihaz konfiqləri DNS kimi hubun bu şəbəkədəki ünvanını (məsələn 10.10.0.1) göstərir; hub sorğuları buradakı serverlərə ötürür.",
     "who": "Cihazları adları müəyyən serverdən (məsələn VPN üzərindən çatılan daxili DNS-dən) həll etməli olan şəbəkələr.",
-    "effect": "Boş olanda tam tunel cihazları 1.1.1.1 işlədir, split tunel cihazları öz DNS-lərini saxlayır. Dəyər yazılanda şəbəkənin bütün cihazları onu işlədir. Yalnız yeni və ya yenidən endirilən konfiqlər dəyişir; cihazlarda olan konfiqlər yenidən göndərilənə qədər olduğu kimi qalır."
+    "effect": "Boş olanda tam tunel cihazları 1.1.1.1-ə (hub vasitəsilə) gedir, split tunel cihazları öz DNS-lərini saxlayır. Serverləri dəyişmək cihaz konfiqini dəyişmir — hub dərhal yeni serverlərə ötürür. Yalnız boş ↔ dolu keçidi (split tuneldə DNS sətrinin yaranması və ya itməsi) konfiqi bir dəfə köhnəldir."
   },
   "tunnelMode": {
     "what": "Bu şəbəkənin cihazları serverdən nəyi keçirir: VPN (split) yalnız VPN şəbəkələrinə gedən trafiki, tam tunel isə bütün internet trafikini keçirir, yəni server onların internetə çıxış yolu olur.",

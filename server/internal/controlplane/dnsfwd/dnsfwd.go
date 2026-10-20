@@ -30,6 +30,18 @@ type listener struct {
 	tcp net.Listener
 	up  atomic.Pointer[[]string] // upstream host:port, tried in order
 	sem chan struct{}
+	// lastWarn (unix seconds) keeps failed forwards to one warning a minute.
+	lastWarn atomic.Int64
+}
+
+// warn logs a failed forward, at most once a minute per address: a dead
+// upstream would otherwise log every query.
+func (l *listener) warn(err error) {
+	now := time.Now().Unix()
+	if last := l.lastWarn.Load(); now-last < 60 || !l.lastWarn.CompareAndSwap(last, now) {
+		return
+	}
+	slog.Warn("dns forward failed", "address", l.udp.LocalAddr().String(), "upstreams", l.upstreams(), "error", err)
 }
 
 // New returns a forwarder whose upstream exchanges time out after timeout.
@@ -125,7 +137,7 @@ func (f *Forwarder) serveUDP(l *listener) {
 			defer func() { <-l.sem }()
 			resp, err := f.exchangeUDP(q, l.upstreams())
 			if err != nil {
-				slog.Debug("dns forward failed", "error", err)
+				l.warn(err)
 				return
 			}
 			l.udp.WriteTo(resp, from)
@@ -170,6 +182,7 @@ func (f *Forwarder) serveTCP(l *listener) {
 				}
 				resp, err := f.exchangeTCP(q, l.upstreams())
 				if err != nil {
+					l.warn(err)
 					return
 				}
 				if writeTCPMsg(c, resp) != nil {

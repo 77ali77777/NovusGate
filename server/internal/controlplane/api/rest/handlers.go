@@ -20,6 +20,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/novusgate/novusgate/internal/controlplane/backup"
+	"github.com/novusgate/novusgate/internal/controlplane/dnsfwd"
 	"github.com/novusgate/novusgate/internal/controlplane/firewall"
 	"github.com/novusgate/novusgate/internal/controlplane/hostadmin"
 	"github.com/novusgate/novusgate/internal/controlplane/notify"
@@ -67,6 +68,8 @@ type Server struct {
 	// vpnSync serializes NOVUSGATE-VPN rebuilds (iptables mode): two
 	// interleaved flush-and-append runs would leave rules behind the DROP.
 	vpnSync sync.Mutex
+	dns     *dnsfwd.Forwarder // nil: configs name the DNS servers directly (P3)
+	dnsErrs sync.Map          // listen address -> last bind error ("" served)
 }
 
 // NewServer creates a new REST API server
@@ -797,6 +800,7 @@ func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {
 
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
+	s.SyncDNS(r.Context())
 	s.withInterfaceStatus(r, &network)
 	jsonResponse(w, http.StatusCreated, network)
 }
@@ -859,6 +863,7 @@ func (s *Server) handleDeleteNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info(fmt.Sprintf("Network %s (%s) deleted", network.Name, network.InterfaceName))
+	s.SyncDNS(r.Context())
 	s.reconcileFirewall(r.Context())
 	s.triggerReconcile()
 	w.WriteHeader(http.StatusNoContent)

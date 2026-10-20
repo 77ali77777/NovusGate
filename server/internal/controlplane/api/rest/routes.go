@@ -240,33 +240,27 @@ func (s *Server) nodeEndpoint(ctx context.Context, n *models.Network) string {
 	return endpointOf(host, n)
 }
 
-// configRecord is what a handed-out config is remembered by: its routes
-// and the endpoint it names. A change of either marks it outdated.
-func configRecord(allowed, endpoint string) string {
-	return allowed + " @ " + endpoint
+// configRecord is what a handed-out config is remembered by: its routes,
+// the endpoint and the DNS server it names. A change of any marks it
+// outdated.
+func configRecord(allowed, endpoint, dns string) string {
+	return allowed + " @ " + endpoint + " # " + dns
 }
 
 // nodeRouting returns the AllowedIPs and DNS of a node's config. DNS is the
 // network's client DNS; without one, full tunnel uses fullTunnelDNS (names
 // resolve over the tunnel) and split tunnel has none.
 func (s *Server) nodeRouting(ctx context.Context, node *models.Node, network *models.Network) (string, string) {
-	dns := ""
-	if network != nil {
-		dns = network.ClientDNS
-	}
 	p, err := s.loadRoutePlan(ctx)
 	if err != nil {
 		slog.Warn("config routes: plan not read; the config routes the node's own network", "node", node.ID, "error", err)
 		if network != nil {
-			return network.CIDR, dns
+			return network.CIDR, s.configDNS(network, network.CIDR)
 		}
-		return "", dns
+		return "", ""
 	}
 	allowed := p.allowedIPs(node)
-	if allowed == "0.0.0.0/0" && dns == "" {
-		dns = fullTunnelDNS
-	}
-	return allowed, dns
+	return allowed, s.configDNS(network, allowed)
 }
 
 // recordConfigRoutes keeps the routes of the config just handed out; a
@@ -287,10 +281,12 @@ func (s *Server) markOutdated(ctx context.Context, nodes ...*models.Node) {
 	for _, n := range nodes {
 		if n != nil {
 			endpoint := ""
-			if nw := p.nets[n.NetworkID]; nw != nil {
+			nw := p.nets[n.NetworkID]
+			if nw != nil {
 				endpoint = endpointOf(p.host, nw)
 			}
-			n.ConfigOutdated = n.ConfigRoutes != configRecord(p.allowedIPs(n), endpoint)
+			allowed := p.allowedIPs(n)
+			n.ConfigOutdated = n.ConfigRoutes != configRecord(allowed, endpoint, s.configDNS(nw, allowed))
 		}
 	}
 }

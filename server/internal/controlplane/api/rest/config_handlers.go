@@ -69,7 +69,7 @@ func (s *Server) handleDownloadConfig(w http.ResponseWriter, r *http.Request) {
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint, dns))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -131,7 +131,7 @@ func (s *Server) handleGetQRCode(w http.ResponseWriter, r *http.Request) {
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint, dns))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -221,7 +221,7 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	// Routes: every VPN network (the hub's firewall decides who reaches
 	// whom), or everything for full tunnel; recorded for "config outdated".
 	allowedIPsStr, dns := s.nodeRouting(r.Context(), node, network)
-	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint, dns))
 
 	cfgGen := wireguard.NewConfigGenerator()
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
@@ -295,7 +295,7 @@ func (s *Server) handleNodeInstallScript(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Content-Type", "text/x-shellscript")
 		return
 	}
-	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint))
+	s.recordConfigRoutes(r.Context(), node.ID, configRecord(allowedIPsStr, serverEndpoint, dns))
 	// 2. A fresh one-time token lets the script check in over the VPN.
 	token, err := newSessionToken()
 	if err != nil {
