@@ -101,5 +101,12 @@
     "downHint": "The WireGuard interface of this network does not run on the server: devices cannot connect. The server retries every 30 seconds.",
     "restart": "Restart",
     "restarting": "Restarting…"
+  },
+  "dnsStatus": {
+    "label": "DNS through the hub",
+    "served": "Answering at {{hub}}",
+    "direct": "Not answering — configs name the DNS servers",
+    "unknown": "Unknown",
+    "directHint": "Device configs name the DNS servers directly until the hub can answer at {{hub}}. The server tries again every 30 s."
   }
 }

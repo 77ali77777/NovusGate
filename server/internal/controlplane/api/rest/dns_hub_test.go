@@ -105,3 +105,44 @@ func TestClientDNSMayNotBeAHubAddress(t *testing.T) {
 		t.Fatalf("another network's hub = %d %s", rec.Code, rec.Body)
 	}
 }
+
+// The panel shows whether the hub answers DNS for a network, and why not.
+func TestNetworkShowsDNSStatus(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	ctx := context.Background()
+	get := func() string {
+		t.Helper()
+		return callAs(t, s, "GET", "/api/v1/networks/"+seed.network.ID, "", true).Body.String()
+	}
+	if body := get(); !strings.Contains(body, `"dns_served":false`) {
+		t.Fatalf("no forwarder: %s", body)
+	}
+	orig := dnsListenAddr
+	t.Cleanup(func() { dnsListenAddr = orig })
+	free := ""
+	dnsListenAddr = func(hub string) string {
+		if hub == "10.66.0.1" {
+			if free == "" {
+				pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+				if err != nil {
+					t.Fatal(err)
+				}
+				free = pc.LocalAddr().String()
+				pc.Close()
+			}
+			return free
+		}
+		return net.JoinHostPort(hub, "53") // cannot be bound here
+	}
+	s.EnableDNS(dnsfwd.New(time.Second))
+	t.Cleanup(func() { s.dns.Close() })
+	s.SyncDNS(ctx)
+	if body := get(); !strings.Contains(body, `"dns_served":true`) || !strings.Contains(body, `"dns_error":""`) {
+		t.Fatalf("served: %s", body)
+	}
+	if body := callAs(t, s, "GET", "/api/v1/networks/"+seed.empty.ID, "", true).Body.String(); !strings.Contains(body, `"dns_served":false`) ||
+		!strings.Contains(body, "assign requested address") {
+		t.Fatalf("not bindable, with the reason: %s", body)
+	}
+}

@@ -262,6 +262,7 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 ## Şəbəkə DNS-i və hub (2026-10-20, P3)
 - `PUT /networks/{id}/dns` və `POST /networks`: `client_dns`-də hər hansı şəbəkənin hub ünvanı 400 `dns_is_hub` (cihazlar hubu onsuz da DNS kimi işlədir; hub özünə ötürərdi).
 - Konfiq `DNS` sətri hubun şəbəkədəki ünvanıdır (dinləyici işləyirsə); serverləri dəyişmək konfiqi dəyişmir.
+- Şəbəkə JSON-unda (siyahı, detal, yaratma) `dns_served` (bool: hub bu şəbəkə üçün DNS-ə cavab verir) və `dns_error` (cavab vermirsə səbəb; yalnız operator və admin görür, viewer üçün `""`). Saxlanmır, canlı vəziyyətdir.
 
 ## `GET/PUT /api/v1/settings/vpn` (2026-10-19, server tərəfli marşrut P1)
 - **GET** (bütün rollar): `{pool, next_cidr}` — konfiqlərin marşrutladığı hovuz və yeni şəbəkənin alacağı /24 (`""`: hovuz doludur).

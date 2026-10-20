@@ -30,10 +30,15 @@ type Network struct {
 	TunnelMode       string `json:"tunnel_mode"`                 // TunnelSplit or TunnelFull: what its nodes route through the hub
 	// Live state of the hub's interface (not stored): whether it runs, and
 	// the last reason it could not be brought up ("" when it came up).
-	InterfaceUp    bool      `json:"interface_up"`
-	InterfaceError string    `json:"interface_error"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	InterfaceUp    bool   `json:"interface_up"`
+	InterfaceError string `json:"interface_error"`
+	// Live state of the hub's DNS forwarder for this network (not stored):
+	// whether it answers at the hub address configs name, and the last
+	// reason it could not listen (operators and admins only).
+	DNSServed bool      `json:"dns_served"`
+	DNSError  string    `json:"dns_error"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Tunnel modes. Split: a node's config routes the VPN networks through the

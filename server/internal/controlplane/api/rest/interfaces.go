@@ -75,11 +75,20 @@ func (s *Server) withInterfaceStatus(r *http.Request, n *models.Network) {
 	}
 	n.InterfaceUp = n.InterfaceName != "" && interfaceUp(n.InterfaceName)
 	n.InterfaceError = ""
+	n.DNSServed, n.DNSError = false, ""
+	dnsAddr := ""
+	if hub, err := hubIP(n.CIDR); err == nil && s.dns != nil && n.InterfaceName != "" {
+		dnsAddr = dnsListenAddr(hub)
+		n.DNSServed = s.dns.Listening(dnsAddr)
+	}
 	if user, _ := sessionFrom(r); user != nil && roleRank[user.Role] < roleRank["operator"] {
 		return
 	}
 	if v, ok := s.ifaceErrs.Load(n.ID); ok {
 		n.InterfaceError = v.(string)
+	}
+	if v, ok := s.dnsErrs.Load(dnsAddr); ok && dnsAddr != "" && !n.DNSServed {
+		n.DNSError = v.(string)
 	}
 }
 

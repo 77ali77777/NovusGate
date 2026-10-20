@@ -2007,6 +2007,8 @@ export interface components {
             client_dns: string;
             /** Format: date-time */
             created_at: string;
+            dns_error: string;
+            dns_served: boolean;
             id: string;
             interface_error: string;
             interface_name: string;
@@ -2024,6 +2026,8 @@ export interface components {
             client_dns?: string;
             /** Format: date-time */
             created_at?: string;
+            dns_error?: string;
+            dns_served?: boolean;
             id?: string;
             interface_error?: string;
             interface_name?: string;

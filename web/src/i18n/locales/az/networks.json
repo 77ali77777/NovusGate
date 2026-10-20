@@ -101,5 +101,12 @@
     "downHint": "Bu şəbəkənin WireGuard interfeysi serverdə işləmir: cihazlar qoşula bilmir. Server hər 30 saniyədən bir yenidən cəhd edir.",
     "restart": "Yenidən qaldır",
     "restarting": "Qaldırılır…"
+  },
+  "dnsStatus": {
+    "label": "Hub üzərindən DNS",
+    "served": "{{hub}} ünvanında cavab verir",
+    "direct": "Cavab vermir — konfiqlər DNS serverlərini göstərir",
+    "unknown": "Naməlum",
+    "directHint": "Hub {{hub}} ünvanında cavab verə bilənə qədər cihaz konfiqləri DNS serverlərini birbaşa göstərir. Server hər 30 saniyədən bir yenidən cəhd edir."
   }
 }

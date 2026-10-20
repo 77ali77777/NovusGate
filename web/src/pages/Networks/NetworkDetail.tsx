@@ -12,7 +12,7 @@ import {
   useVPNFirewallRules,
 } from '@/api/client'
 import { PageHeader } from '@/components/Layout'
-import { NetworkInterfaceStatus } from '@/components/NetworkStatus'
+import { NetworkDNSStatus, NetworkInterfaceStatus } from '@/components/NetworkStatus'
 import { FirewallPendingNotice, NetworkTunnel } from '@/components/Tunnel'
 import { Badge, Button, Card, Input } from '@/components/ui'
 import { matrixReason } from '@/lib/matrixReason'
@@ -133,6 +133,9 @@ export const NetworkDetailPage = () => {
         </div>
         <div className="mt-4">
           <ClientDNSForm id={network.id} current={network.client_dns} />
+        </div>
+        <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+          <NetworkDNSStatus network={network} />
         </div>
       </Card>
 

@@ -1505,6 +1505,12 @@
             "format": "date-time",
             "type": "string"
           },
+          "dns_error": {
+            "type": "string"
+          },
+          "dns_served": {
+            "type": "boolean"
+          },
           "id": {
             "type": "string"
           },
@@ -1541,6 +1547,8 @@
           "cidr",
           "client_dns",
           "created_at",
+          "dns_error",
+          "dns_served",
           "id",
           "interface_error",
           "interface_name",
@@ -1563,6 +1571,12 @@
           "created_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "dns_error": {
+            "type": "string"
+          },
+          "dns_served": {
+            "type": "boolean"
           },
           "id": {
             "type": "string"

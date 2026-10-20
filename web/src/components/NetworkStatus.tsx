@@ -1,7 +1,7 @@
-import { Activity, RotateCw } from 'lucide-react'
+import { Activity, Globe, RotateCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useCan, useRestartNetworkInterface } from '@/api/client'
-import { interfaceState } from '@/lib/networkDisplay'
+import { dnsState, interfaceState } from '@/lib/networkDisplay'
 import type { Network } from '@/types'
 
 // NetworkInterfaceStatus: whether the network's hub interface runs on the
@@ -47,6 +47,41 @@ export const NetworkInterfaceStatus = ({ network }: { network: Network }) => {
               />
               {restart.isPending ? t('status.restarting') : t('status.restart')}
             </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// NetworkDNSStatus: whether the hub answers DNS for this network at the
+// address device configs name (server-side routing P3). When it cannot,
+// configs name the DNS servers directly, and it says why (operators and
+// admins); the server tries to listen again every 30 s.
+export const NetworkDNSStatus = ({ network }: { network: Network }) => {
+  const { t } = useTranslation('networks')
+  const { state, hub, reason } = dnsState(network)
+  const tone = {
+    served: 'text-green-600 dark:text-green-400',
+    direct: 'text-amber-600 dark:text-amber-400',
+    unknown: 'text-gray-500 dark:text-gray-400',
+  }[state]
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+          <Globe className="h-4 w-4" aria-hidden="true" />
+          {t('dnsStatus.label')}
+        </span>
+        <span className={`font-medium ${tone}`}>{t(`dnsStatus.${state}`, { hub })}</span>
+      </div>
+      {state === 'direct' && (
+        <div className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">
+          <p>{t('dnsStatus.directHint', { hub })}</p>
+          {reason && (
+            <p className="mt-1 line-clamp-3 break-words font-mono" title={reason}>
+              {reason}
+            </p>
           )}
         </div>
       )}

@@ -3,6 +3,8 @@
     "cidr": "10.66.0.0/24",
     "client_dns": "",
     "created_at": "<time>",
+    "dns_error": "",
+    "dns_served": false,
     "id": "<uuid-1>",
     "interface_error": "",
     "interface_name": "wg66",

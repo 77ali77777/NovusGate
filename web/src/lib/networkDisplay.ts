@@ -77,3 +77,32 @@ export function interfaceState(network: {
     reason: network.interface_up ? '' : (network.interface_error ?? ''),
   }
 }
+
+export interface DNSState {
+  state: 'served' | 'direct' | 'unknown'
+  hub: string // the address configs name as DNS when served
+  reason: string // why the hub does not answer ("" when unknown or for viewers)
+}
+
+// dnsState reads whether the hub answers DNS for a network (server-side
+// routing P3): served, configs name the hub; direct, configs name the DNS
+// servers themselves until the hub can listen.
+export function dnsState(network: {
+  cidr?: string
+  dns_served?: boolean
+  dns_error?: string
+}): DNSState {
+  const hub = hubAddress(network.cidr ?? '')
+  if (network.dns_served === undefined) return { state: 'unknown', hub, reason: '' }
+  return network.dns_served
+    ? { state: 'served', hub, reason: '' }
+    : { state: 'direct', hub, reason: network.dns_error ?? '' }
+}
+
+// hubAddress is the first address of an IPv4 CIDR ("" when it is not one).
+function hubAddress(cidr: string): string {
+  const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)\/\d+$/.exec(cidr)
+  if (!m) return ''
+  const n = ((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + +m[4] + 1
+  return [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.')
+}
