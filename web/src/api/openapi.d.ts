@@ -771,7 +771,7 @@ export interface paths {
         /** List networks */
         get: operations["get_networks"];
         put?: never;
-        /** Create a network */
+        /** Create a network (a role limited to its own networks: up to max_networks, 409 network_limit) */
         post: operations["post_networks"];
         delete?: never;
         options?: never;
@@ -807,6 +807,23 @@ export interface paths {
         get?: never;
         /** Set the DNS servers of the network's client configs (up to 3 IPs; empty: 1.1.1.1 for full tunnel, none for split) */
         put: operations["put_networks_by_id_dns"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/networks/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Hand the network to a user (null: no owner); a role limited to its own networks then sees it (admin) */
+        put: operations["put_networks_by_id_owner"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1117,7 +1134,7 @@ export interface paths {
         /** Custom roles and the sections they are made of (admin) */
         get: operations["get_roles"];
         put?: never;
-        /** Create a custom role: section levels and optional networks (admin) */
+        /** Create a custom role: section levels and its networks (all, listed, or own with max_networks) (admin) */
         post: operations["post_roles"];
         delete?: never;
         options?: never;
@@ -2035,13 +2052,16 @@ export interface components {
         };
         MeResponse: {
             id: string;
+            max_networks?: number;
             network_ids: string[] | null;
+            owned_networks?: number;
             permissions: {
                 [key: string]: string;
             } | null;
             role: string;
             role_id?: string;
             role_name?: string;
+            scope_mode?: string;
             username: string;
         };
         Network: {
@@ -2057,6 +2077,7 @@ export interface components {
             interface_up: boolean;
             listen_port: number;
             name: string;
+            owner_user_id?: string | null;
             server_endpoint?: string;
             server_public_key?: string;
             tunnel_mode: string;
@@ -2076,6 +2097,7 @@ export interface components {
             interface_up?: boolean;
             listen_port?: number;
             name?: string;
+            owner_user_id?: string | null;
             server_endpoint?: string;
             server_public_key?: string;
             tunnel_mode?: string;
@@ -2279,22 +2301,26 @@ export interface components {
             created_at: string;
             description: string;
             id: string;
+            max_networks: number;
             name: string;
             network_ids: string[] | null;
             permissions: {
                 [key: string]: string;
             } | null;
+            scope_mode: string;
             /** Format: date-time */
             updated_at: string;
             users: number;
         };
         RoleRequest: {
             description?: string;
+            max_networks?: number;
             name?: string;
             network_ids?: string[] | null;
             permissions?: {
                 [key: string]: string;
             } | null;
+            scope_mode?: string;
         };
         RoleSection: {
             editable: boolean;
@@ -2342,6 +2368,9 @@ export interface components {
         };
         SessionsResponse: {
             sessions: (components["schemas"]["SessionInfo"] | null)[] | null;
+        };
+        SetNetworkOwnerRequest: {
+            user_id?: string | null;
         };
         SetUserRoleRequest: {
             role?: string;
@@ -4416,6 +4445,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ClientDNSRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_networks_by_id_owner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetNetworkOwnerRequest"];
             };
         };
         responses: {

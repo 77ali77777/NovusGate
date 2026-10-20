@@ -20,15 +20,19 @@ import { NetworkInterfaceStatus } from '@/components/NetworkStatus'
 import { FirewallPendingNotice, NetworkTunnel, TunnelChoice } from '@/components/Tunnel'
 import { dateFnsLocale } from '@/i18n'
 import { networkLabel, networkMatches } from '@/lib/networkDisplay'
+import { networkScope } from '@/lib/roles'
 import type { CreateNetworkForm } from '@/types'
 
 export const Networks = () => {
   const { t } = useTranslation('networks')
   // Networks are changed by operators and admins (P9a).
   const canEdit = useAllowed('networks', 'edit')
-  // A role limited to networks cannot create or delete networks.
-  const scoped = (useMe().data?.network_ids?.length ?? 0) > 0
-  const canManage = canEdit && !scoped
+  // A role limited to listed networks cannot create or delete networks; one
+  // limited to its own networks creates them up to its limit.
+  const me = useMe().data
+  const scope = networkScope(me)
+  const canManage = canEdit && scope.mode !== 'listed'
+  const canCreate = canManage && !scope.full
   const isAdmin = useCan('admin') // full tunnel (the hub as internet exit) is admin only
   const { data: networks, isLoading } = useNetworks()
   const createMutation = useCreateNetwork()
@@ -81,7 +85,7 @@ export const Networks = () => {
         title={t('title')}
         description={t('description')}
         actions={
-          canManage && (
+          canCreate && (
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
@@ -95,6 +99,19 @@ export const Networks = () => {
       />
 
       <FirewallPendingNotice className="mb-4" />
+
+      {scope.mode === 'own' && (
+        <div
+          className={`mb-4 rounded-lg border p-3 text-sm ${
+            scope.full
+              ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
+              : 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+          }`}
+        >
+          {t('ownLimit', { count: scope.owned, max: scope.max })}{' '}
+          {scope.full ? t('ownLimitFull') : t('ownLimitNote')}
+        </div>
+      )}
 
       {/* Search */}
       <div className="mb-6">
@@ -226,7 +243,7 @@ export const Networks = () => {
         })}
 
         {/* Add New Card (Empty State or Last Item) */}
-        {canManage && (
+        {canCreate && (
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}

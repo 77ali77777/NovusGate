@@ -101,5 +101,7 @@
   "roleSaved": "Role saved",
   "failedToSaveRole": "The role was not saved",
   "roleDeleted": "Role deleted",
-  "failedToDeleteRole": "The role was not deleted"
+  "failedToDeleteRole": "The role was not deleted",
+  "failedToSaveOwner": "Failed to change the owner",
+  "ownerSaved": "Owner changed"
 }

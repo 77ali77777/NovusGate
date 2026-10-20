@@ -95,6 +95,16 @@
       "what": "Rolun məhdud olduğu şəbəkələr. Heç biri seçilməsə: bütün şəbəkələr.",
       "who": "Kiməsə, məsələn ofis menecerinə, yalnız öz şəbəkəsini verən adminlər.",
       "effect": "Rol yalnız bu şəbəkələri və onların cihazlarını görür və dəyişir; qaydalar, qruplar, limitlər və digər şəbəkələrarası bölmələr bağlıdır, şəbəkə yaratmaq və silmək olmur."
+    },
+    "scope": {
+      "what": "Rolun hansı şəbəkələri əhatə etdiyi: bütün şəbəkələr, yalnız seçdikləriniz, və ya yalnız hər istifadəçinin özünün yaratdıqları.",
+      "who": "Kiməsə, məsələn müştəriyə və ya komanda rəhbərinə, ayrıca sahə verən adminlər: “Yalnız istifadəçinin yaratdığı şəbəkələr” ilə o, heç bir şəbəkəsiz başlayır və özününkünü yaradır.",
+      "effect": "Seçilmiş və ya öz şəbəkələrində rolda yalnız Şəbəkələr, Cihazlar və Cihaz konfiqləri qalır; qaydalar, qruplar, limitlər və digər şəbəkələrarası bölmələr bağlıdır. Öz şəbəkələrində istifadəçi başqasının yaratdığı şəbəkəni heç vaxt görmür; admin şəbəkəni ona şəbəkə səhifəsində (Sahib) verə bilər."
+    },
+    "maxNetworks": {
+      "what": "Bu rolu olan hər istifadəçinin eyni anda sahib ola biləcəyi şəbəkə sayı (1–1000).",
+      "who": "“Yalnız istifadəçinin yaratdığı şəbəkələr” seçilmiş rollar.",
+      "effect": "Limitə çatanda istifadəçi öz şəbəkələrindən birini silənə qədər yenisini yarada bilmir. Limiti azaltmaq heç nəyi silmir: limitdən çox şəbəkəsi olan sadəcə yenisini yarada bilmir."
     }
   }
 }

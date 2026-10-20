@@ -47,7 +47,10 @@
     "noRules": "None.",
     "clientDns": "Client DNS servers",
     "clientDnsDefault": "Default: 1.1.1.1 for full tunnel, none for split",
-    "clientDnsHint": "Up to 3 IPv4 addresses, comma separated. Devices ask the hub; the hub forwards to these at once — no device needs a new config."
+    "clientDnsHint": "Up to 3 IPv4 addresses, comma separated. Devices ask the hub; the hub forwards to these at once — no device needs a new config.",
+    "owner": "Owner",
+    "noOwner": "— no owner —",
+    "ownerHint": "A user whose role shows only their own networks sees this network when they own it."
   },
   "verdict": {
     "allow": "allow",
@@ -167,5 +170,8 @@
     "limitQuota": "quota {{v}} MB",
     "limitOther": "connections or schedule",
     "topologyHint": "This network with its devices; arrows show where traffic may go to or come from other networks (green: allowed, amber: partly). Click a device or network to open it."
-  }
+  },
+  "ownLimit": "Your networks: {{count}} of {{max}}.",
+  "ownLimitNote": "Your role shows only the networks you create.",
+  "ownLimitFull": "You have reached your role’s limit: delete a network to create another."
 }

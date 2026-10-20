@@ -6,6 +6,12 @@
 - **2026-10-14 sessiyaları (P2b–P4c)** `docs/archive/active-context-2026-10-14.md` faylına köçürülüb.
 - **2026-10-14 sessiyalarının qalanı** (minor-lar, hand-off, P5, P3c, P7) `docs/archive/active-context-2026-10-14.md` faylına köçürülüb (2026-10-17).
 
+### 2026-10-20: öz şəbəkələri olan rol + 100+ şəbəkə
+- **Tapşırıq:** rolun istifadəçisi mövcud şəbəkələrin heç birini görməsin, yalnız özünün yaratdıqlarını görsün; yaratma limiti olsun; ən azı 100 şəbəkə mümkün olsun.
+- **Nəticə:** fcea348 (iptables rejimində hər şəbəkənin WG portu açılır — 81 tavanı götürüldü) · 78c345d (server: DB 026, `scope_mode` all/listed/own, `max_networks`, `PUT /networks/{id}/owner`) · panel: rol redaktorunda “Hansı şəbəkələr” + limit, Şəbəkələr səhifəsində “x / max” zolağı, şəbəkə səhifəsində admin üçün Sahib seçimi.
+- **Yoxlanılıb:** Go 17 paket ok, web tsc/130 test/biome/vite, test stack-də brauzer axını (rol yaradılır → istifadəçi 0 şəbəkə görür → 1 yaradır → limitdə düymə yox, API 409 → admin sahibi silir → istifadəçi görmür).
+- **Açıq:** P4 (NETMAP) istifadəçi seçimini gözləyir; provayder firewall-unda UDP aralığını genişləndirmək (məs. 51820–52819) istifadəçinin işidir.
+
 
 ### 2026-10-15: P8 — yeni imkanlar
 - **İstifadəçi qərarları:**
@@ -224,6 +230,8 @@
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-20 | Öz şəbəkələri olan rol: limit, sahib, panel UI | server/…/store/{network_owner.go,migrations_sql/026_network_owner.sql}, api/rest/{custom_roles,roles,handlers}.go, web/src/{lib/roles.ts,pages/Settings/RolesCard.tsx,pages/Networks/{Networks,NetworkDetail}.tsx}, i18n | İstifadəçi: hər kəs yalnız öz şəbəkəsini görsün, limitlə |
+| 2026-10-20 | iptables rejimində hər şəbəkənin WG portu (NOVUSGATE-WG zənciri) | server/…/api/rest/firewall_handlers.go | 51820:51900 aralığı 81 şəbəkədə tavan qoyurdu |
 | 2026-10-20 | Fərdi rollar: bölmə icazələri və şəbəkə sahəsi (DB 025, server, panel) | server/internal/controlplane/{store/custom_roles.go,api/rest/{custom_roles,roles}.go}, web/src/{lib/roles.ts,pages/Settings/RolesCard.tsx,…} | İstifadəçi: rol qrupları yaradılsın |
 | 2026-10-20 | Şəbəkə səhifəsi: KPI-lar və 5 tab (cihazlar, qaydalar, qruplar/limitlər, topologiya) | web/src/{lib/networkOverview.ts,pages/Networks/{NetworkDetail,NetworkTopology}.tsx}, i18n networks | İstifadəçi: şəbəkəyə girəndə hər şey görünsün |
 | 2026-10-20 | Center: quraşdırmada server domeni; README və istifadəçi bələdçiləri yeni sistemə uyğun | NovusGate Center/{lib,scripts/install.sh,server.js,public/index.html}, README*.md, web/USER_GUIDE*.md | İstifadəçi: hamısını həll et |

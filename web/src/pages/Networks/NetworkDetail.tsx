@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import {
   useAllowed,
+  useCan,
   useFirewallPolicyMatrix,
   useGroups,
   useLimits,
@@ -19,8 +20,11 @@ import {
   useNetworks,
   useNodes,
   useSetNetworkDNS,
+  useSetNetworkOwner,
+  useUsers,
   useVPNFirewallRules,
 } from '@/api/client'
+import { HelpTip } from '@/components/HelpTip'
 import { PageHeader } from '@/components/Layout'
 import { NetworkDNSStatus, NetworkInterfaceStatus } from '@/components/NetworkStatus'
 import { FirewallPendingNotice, NetworkTunnel } from '@/components/Tunnel'
@@ -96,6 +100,38 @@ const ClientDNSForm = ({ id, current }: { id: string; current: string }) => {
   )
 }
 
+// NetworkOwnerForm (admin): the user who owns the network. A role limited
+// to its own networks sees only the networks its user owns.
+const NetworkOwnerForm = ({ id, current }: { id: string; current: string | null }) => {
+  const { t } = useTranslation('networks')
+  const { data: users = [] } = useUsers()
+  const save = useSetNetworkOwner()
+  return (
+    <div>
+      <label htmlFor="network-owner" className="mb-1 block text-sm font-medium">
+        {t('detail.owner')}
+        <HelpTip k="helpNetworks:owner" />
+      </label>
+      <select
+        data-help="helpNetworks:owner"
+        id="network-owner"
+        value={current ?? ''}
+        disabled={save.isPending}
+        onChange={(e) => save.mutate({ id, userId: e.target.value || null })}
+        className="w-full rounded-lg border px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+      >
+        <option value="">{t('detail.noOwner')}</option>
+        {users.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.username}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1 text-xs text-gray-500">{t('detail.ownerHint')}</p>
+    </div>
+  )
+}
+
 type NetworkTab = 'overview' | 'devices' | 'access' | 'groups' | 'topology'
 
 // Kpi is one number of the network's summary row.
@@ -130,6 +166,7 @@ export const NetworkDetailPage = () => {
   const canRules = useAllowed('vpn_rules', 'view')
   const canGroups = useAllowed('groups', 'view')
   const canLimits = useAllowed('limits', 'view')
+  const isAdmin = useCan('admin')
   const { data: matrix } = useFirewallPolicyMatrix(!!id && canRules)
   const { data: rules = [] } = useVPNFirewallRules(canRules)
   const groups = (useGroups(canGroups).data?.groups ?? []).filter((g) => g !== null)
@@ -275,6 +312,11 @@ export const NetworkDetailPage = () => {
             <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
               <NetworkDNSStatus network={network} />
             </div>
+            {isAdmin && (
+              <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+                <NetworkOwnerForm id={network.id} current={network.owner_user_id ?? null} />
+              </div>
+            )}
           </Card>
           <Card padding="lg">
             <h3 className="mb-3 text-lg font-semibold">{t('page.topTraffic')}</h3>

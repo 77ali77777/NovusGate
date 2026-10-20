@@ -23,5 +23,10 @@
     "what": "Bu şəbəkənin cihazları serverdən nəyi keçirir: VPN (split) yalnız VPN şəbəkələrinə gedən trafiki, tam tunel isə bütün internet trafikini keçirir, yəni server onların internetə çıxış yolu olur.",
     "who": "Əksər şəbəkələr üçün split uyğundur. Tam tunel serverdən internetə çıxmalı olan cihazlar üçündür, məsələn ictimai Wi-Fi-da və ya serverin IP ünvanı ilə görünmək üçün.",
     "effect": "Öz rejimi olmayan bütün cihazlara aiddir. Cihazlar yalnız konfiqurasiyası yenidən yükləndikdən sonra keçir. Tam tunel serverin trafikini artırır; admin tələb edir, Admin VPN-də isə nftables mühərriki."
+  },
+  "owner": {
+    "what": "Bu şəbəkənin sahibi olan istifadəçi. Şəbəkəni kim yaradırsa, sahibi o olur.",
+    "who": "Şəbəkəni rolu yalnız öz şəbəkələrini göstərən istifadəçiyə verən və ya geri alan adminlər.",
+    "effect": "Yeni sahib şəbəkəni (cihazları və konfiqləri ilə) dərhal görür və idarə edir; rolu yalnız öz şəbəkələrini göstərən əvvəlki sahib onu artıq görmür. Digər rollara təsiri yoxdur."
   }
 }

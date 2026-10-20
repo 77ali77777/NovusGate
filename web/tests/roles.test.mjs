@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { roleAtLeast } from '../src/lib/roles.ts'
+import { networkScope, roleAtLeast } from '../src/lib/roles.ts'
 
 test('roleAtLeast follows viewer < operator < admin', () => {
   assert.equal(roleAtLeast('admin', 'operator'), true)
@@ -38,4 +38,20 @@ test('navVisible hides menu entries the role cannot see', async () => {
   assert.equal(navVisible(me, '/settings'), true) // own password, sessions
   assert.equal(navVisible(me, '/server'), false) // admin only
   assert.equal(navVisible({ role: 'admin', permissions: {} }, '/server'), true)
+})
+
+// Own networks (2026-10-20): the scope comes from /auth/me; older servers
+// say it only by network_ids.
+test('networkScope reads the role scope and the own-network limit', () => {
+  assert.deepEqual(networkScope({ scope_mode: 'own', owned_networks: 1, max_networks: 3 }), {
+    mode: 'own',
+    owned: 1,
+    max: 3,
+    full: false,
+  })
+  assert.equal(networkScope({ scope_mode: 'own', owned_networks: 3, max_networks: 3 }).full, true)
+  assert.equal(networkScope({ network_ids: ['n1'] }).mode, 'listed')
+  assert.equal(networkScope({ network_ids: [] }).mode, 'all')
+  assert.equal(networkScope({ scope_mode: 'listed', network_ids: ['n1'] }).full, false)
+  assert.equal(networkScope(undefined).mode, 'all')
 })

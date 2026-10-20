@@ -95,6 +95,16 @@
       "what": "The networks the role is limited to. None ticked: every network.",
       "who": "Admins giving someone, for example an office manager, only their own network.",
       "effect": "The role then sees and changes only these networks and their devices; rules, groups, limits and other cross-network sections are off, and it cannot create or delete networks."
+    },
+    "scope": {
+      "what": "Which networks the role covers: every network, only the networks you tick, or only the networks each of its users creates.",
+      "who": "Admins giving someone, for example a customer or a team lead, a separate space: with “Only networks the user creates” they start with no network and make their own.",
+      "effect": "Chosen or own networks keep only Networks, Devices and Device configs; rules, groups, limits and other cross-network sections are off. With own networks the user never sees networks someone else made; an admin can hand a network to them on the network page (Owner)."
+    },
+    "maxNetworks": {
+      "what": "How many networks each user with this role may own at once (1 to 1000).",
+      "who": "Roles set to “Only networks the user creates”.",
+      "effect": "At the limit, creating is refused until the user deletes one of their networks. Lowering the limit deletes nothing: users above it just cannot create more."
     }
   }
 }

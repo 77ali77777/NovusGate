@@ -58,3 +58,31 @@ export function navVisible(
   const sections = navSections[href]
   return !sections || sections.some((s) => allowed(me, s, 'view'))
 }
+
+export interface NetworkScope {
+  mode: 'all' | 'listed' | 'own'
+  owned: number
+  max: number
+  full: boolean // own networks: the limit is reached
+}
+
+// networkScope reads which networks the signed-in role covers. Answers from
+// servers before scope modes say it by network_ids.
+export function networkScope(
+  me?: {
+    scope_mode?: string
+    network_ids?: string[] | null
+    owned_networks?: number
+    max_networks?: number
+  } | null
+): NetworkScope {
+  const mode =
+    me?.scope_mode === 'own' || me?.scope_mode === 'listed' || me?.scope_mode === 'all'
+      ? me.scope_mode
+      : (me?.network_ids?.length ?? 0) > 0
+        ? 'listed'
+        : 'all'
+  const owned = me?.owned_networks ?? 0
+  const max = me?.max_networks ?? 0
+  return { mode, owned, max, full: mode === 'own' && owned >= max }
+}

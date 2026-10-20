@@ -153,6 +153,17 @@
     "onlyNetworks": "only {{names}}",
     "summary_one": "{{count}} user",
     "summary_other": "{{count}} users",
-    "deletedNetwork": "deleted network (no longer exists)"
+    "deletedNetwork": "deleted network (no longer exists)",
+    "scope": {
+      "label": "Which networks",
+      "all": "Every network",
+      "allHint": "The role works on every network, with the sections ticked above.",
+      "listed": "Only chosen networks",
+      "listedHint": "The role sees and changes only the networks ticked below; it cannot create or delete networks.",
+      "own": "Only networks the user creates",
+      "ownHint": "The user sees none of the existing networks: only the ones they create themselves, up to the limit, and can delete only those. Networks must be set to Change."
+    },
+    "maxNetworks": "Networks each user may create",
+    "ownNetworks": "own networks, up to {{max}} each"
   }
 }

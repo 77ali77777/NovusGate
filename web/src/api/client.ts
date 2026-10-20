@@ -605,6 +605,13 @@ class ApiClient {
     return data
   }
 
+  // Hands a network to a user (admin); null leaves it without an owner. A
+  // role limited to its own networks then sees it.
+  async setNetworkOwner(id: string, userId: string | null): Promise<Network> {
+    const { data } = await this.client.put<Network>(`/networks/${id}/owner`, { user_id: userId })
+    return data
+  }
+
   // Restarts a network's WireGuard interface (its systemd unit on the host)
   // and puts its peers back; a failure says why (500 interface_failed).
   async restartNetworkInterface(id: string): Promise<Network> {
@@ -853,6 +860,7 @@ export function useCreateNetwork() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['networks'] })
       queryClient.invalidateQueries({ queryKey: ['settings', 'vpn'] }) // the next free /24
+      queryClient.invalidateQueries({ queryKey: ['me'] }) // own networks: how many are left
     },
   })
 }
@@ -864,6 +872,7 @@ export function useDeleteNetwork() {
     mutationFn: (id: string) => api.deleteNetwork(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['networks'] })
+      queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 }
@@ -1637,6 +1646,16 @@ export function useSetNetworkDNS() {
   return useMutation({
     meta: { errorTitle: 'toasts:failedToSaveDns', successTitle: 'toasts:dnsSaved' },
     mutationFn: (v: { id: string; clientDNS: string }) => api.setNetworkDNS(v.id, v.clientDNS),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['networks'] }),
+  })
+}
+
+// Network owner (admin): who sees it under a role limited to its own networks.
+export function useSetNetworkOwner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle: 'toasts:failedToSaveOwner', successTitle: 'toasts:ownerSaved' },
+    mutationFn: (v: { id: string; userId: string | null }) => api.setNetworkOwner(v.id, v.userId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['networks'] }),
   })
 }

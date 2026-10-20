@@ -153,6 +153,17 @@
     "onlyNetworks": "yalnız {{names}}",
     "summary_one": "{{count}} istifadəçi",
     "summary_other": "{{count}} istifadəçi",
-    "deletedNetwork": "silinmiş şəbəkə (artıq yoxdur)"
+    "deletedNetwork": "silinmiş şəbəkə (artıq yoxdur)",
+    "scope": {
+      "label": "Hansı şəbəkələr",
+      "all": "Bütün şəbəkələr",
+      "allHint": "Rol yuxarıda seçilmiş bölmələrlə bütün şəbəkələrdə işləyir.",
+      "listed": "Yalnız seçilmiş şəbəkələr",
+      "listedHint": "Rol yalnız aşağıda seçilmiş şəbəkələri görür və dəyişir; şəbəkə yarada və silə bilmir.",
+      "own": "Yalnız istifadəçinin yaratdığı şəbəkələr",
+      "ownHint": "İstifadəçi mövcud şəbəkələrin heç birini görmür: yalnız özünün yaratdıqlarını, limitə qədər, və yalnız onları silə bilir. Şəbəkələr bölməsi “Dəyişmək” olmalıdır."
+    },
+    "maxNetworks": "Hər istifadəçinin yarada biləcəyi şəbəkə sayı",
+    "ownNetworks": "öz şəbəkələri, hər biri ən çox {{max}}"
   }
 }

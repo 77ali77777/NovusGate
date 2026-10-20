@@ -9,5 +9,6 @@
   "rotate_peer_not_added": "The key was changed, but the device could not be added to the server again. Press “Restore connection” on the device page.",
   "cidr_overlap": "This range overlaps another network. Leave the field empty to get a free range automatically.",
   "invalid_cidr": "This range is too small or invalid. Use a /24 such as 10.12.0.0/24, or leave the field empty.",
-  "invalid_dns": "Enter up to 3 IPv4 addresses separated by commas, for example 1.1.1.1, 8.8.8.8."
+  "invalid_dns": "Enter up to 3 IPv4 addresses separated by commas, for example 1.1.1.1, 8.8.8.8.",
+  "network_limit": "Your role allows no more networks of your own. Delete one of your networks to create another, or ask an admin to raise the limit."
 }

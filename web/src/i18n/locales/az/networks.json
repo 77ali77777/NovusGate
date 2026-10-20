@@ -47,7 +47,10 @@
     "noRules": "Yoxdur.",
     "clientDns": "Klient DNS serverləri",
     "clientDnsDefault": "Default: tam tunel üçün 1.1.1.1, split üçün yoxdur",
-    "clientDnsHint": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı. Cihazlar hubdan soruşur; hub dərhal bunlara ötürür — heç bir cihaza yeni konfiq lazım deyil."
+    "clientDnsHint": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı. Cihazlar hubdan soruşur; hub dərhal bunlara ötürür — heç bir cihaza yeni konfiq lazım deyil.",
+    "owner": "Sahib",
+    "noOwner": "— sahibsiz —",
+    "ownerHint": "Rolu yalnız öz şəbəkələrini göstərən istifadəçi bu şəbəkəyə sahib olanda onu görür."
   },
   "verdict": {
     "allow": "icazə",
@@ -167,5 +170,8 @@
     "limitQuota": "kvota {{v}} MB",
     "limitOther": "bağlantı sayı və ya cədvəl",
     "topologyHint": "Bu şəbəkə və cihazları; oxlar trafikin digər şəbəkələrə və onlardan gələ bildiyi yerləri göstərir (yaşıl: icazə, sarı: qismən). Açmaq üçün cihaza və ya şəbəkəyə klikləyin."
-  }
+  },
+  "ownLimit": "Sizin şəbəkələriniz: {{max}} şəbəkədən {{count}}.",
+  "ownLimitNote": "Rolunuz yalnız sizin yaratdığınız şəbəkələri göstərir.",
+  "ownLimitFull": "Rolunuzun limitinə çatmısınız: yenisini yaratmaq üçün bir şəbəkəni silin."
 }

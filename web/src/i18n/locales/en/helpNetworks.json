@@ -23,5 +23,10 @@
     "what": "What this network’s devices send through the server: VPN (split) sends only traffic to the VPN networks; full tunnel sends all internet traffic, so the server is their way to the internet.",
     "who": "Split suits most networks. Full tunnel suits devices that must browse through the server, e.g. on public Wi-Fi or to appear with the server’s IP address.",
     "effect": "It applies to every device of the network that has no own mode. Devices only switch after their config is downloaded again. Full tunnel raises the server’s traffic; it needs an admin, and on the Admin VPN the nftables engine."
+  },
+  "owner": {
+    "what": "The user who owns this network. Whoever creates a network becomes its owner.",
+    "who": "Admins moving a network to a user whose role shows only their own networks, or taking it back.",
+    "effect": "The new owner sees and manages the network at once (its devices and configs too); the previous owner no longer sees it, if their role shows only their own networks. Other roles are not affected."
   }
 }

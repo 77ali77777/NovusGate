@@ -101,5 +101,7 @@
   "roleSaved": "Rol saxlandı",
   "failedToSaveRole": "Rol saxlanmadı",
   "roleDeleted": "Rol silindi",
-  "failedToDeleteRole": "Rol silinmədi"
+  "failedToDeleteRole": "Rol silinmədi",
+  "failedToSaveOwner": "Sahib dəyişdirilmədi",
+  "ownerSaved": "Sahib dəyişdirildi"
 }

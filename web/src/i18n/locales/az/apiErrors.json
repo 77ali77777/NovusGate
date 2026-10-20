@@ -9,5 +9,6 @@
   "rotate_peer_not_added": "Açar dəyişdi, amma cihaz serverə yenidən əlavə oluna bilmədi. Cihaz səhifəsində “Bağlantını bərpa et” düyməsini basın.",
   "cidr_overlap": "Bu aralıq başqa şəbəkə ilə üst-üstə düşür. Sahəni boş qoyun — boş aralıq avtomatik verilsin.",
   "invalid_cidr": "Bu aralıq çox kiçikdir və ya yanlışdır. 10.12.0.0/24 kimi /24 yazın və ya sahəni boş qoyun.",
-  "invalid_dns": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı yazın, məsələn 1.1.1.1, 8.8.8.8."
+  "invalid_dns": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı yazın, məsələn 1.1.1.1, 8.8.8.8.",
+  "network_limit": "Rolunuz daha çox öz şəbəkənizə icazə vermir. Yenisini yaratmaq üçün şəbəkələrinizdən birini silin və ya admindən limiti artırmasını istəyin."
 }
