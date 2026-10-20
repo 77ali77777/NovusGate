@@ -132,3 +132,10 @@
 ## Kömək mətnləri yoxlamasında tapılanlar (2026-10-15)
 - Center reinstall yeni `.env`-i default icazə ilə yazırdı, köhnəsini isə `/tmp`-ə icazəsiz kopyalayırdı: indi `chmod 600` və `cp -p`.
 - iptables rejimində `8000-9000` port aralığı olan VPN qaydası saxlanılırdı, amma tətbiq olunmurdu (iptables `a:b` istəyir): indi iptables-ə `8000:9000` gedir.
+
+## Fərdi rollar (2026-10-20)
+- Admin rol yaradır: hər bölmə üçün `none` / `view` / `edit` (bölmələr: dashboard, networks, devices, configs, groups, vpn_rules, limits, host_firewall, fail2ban, audit) və istəyə görə şəbəkələr (`network_ids`).
+- Fərdi rol **operatordan çox ala bilməz**: `edit` yalnız operatorun dəyişə bildiyi bölmələrdə (networks, devices, groups, vpn_rules, limits); configs, host_firewall, fail2ban, audit, dashboard yalnız `view`. Server idarəsi, istifadəçilər, rollar, backup, tunel dəyişikliyi, host firewall dəyişiklikləri həmişə admin.
+- Yoxlama serverdədir (`roleMiddleware` → `customAllows`): hər API yolu `routeSections` xəritəsindədir; xəritədə olmayan yol fərdi rola bağlıdır (test bunu tamlığına görə yoxlayır).
+- Şəbəkə ilə məhdud rol: yalnız networks/devices/configs bölmələri; `/networks/{id}`, `{networkId}`, `/nodes/{id}` yollarında resursun şəbəkəsi rolun şəbəkələrində olmalıdır (403); şəbəkə yaratmaq/silmək olmaz; `GET /networks` filtrlənir.
+- Rol dəyişikliyi dərhal tətbiq olunur (hər sorğuda rol oxunur). İstifadəçisi olan rol silinmir (409 `role_in_use`).

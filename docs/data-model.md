@@ -146,3 +146,8 @@ Firewall dəyişiklik tarixçəsi. Hər tətbiq olunmuş dəyişiklikdən sonrak
 ## 024: server ünvanı (2026-10-19, P2)
 - `vpn_settings.endpoint_host` TEXT NOT NULL DEFAULT `''`: konfiqlərin `Endpoint`-də işlətdiyi domen və ya IPv4 (port şəbəkədən). Boş: şəbəkənin saxlanmış endpoint-i. `nodes.config_routes` indi `<AllowedIPs> @ <Endpoint>` saxlayır — endpoint dəyişəndə də "konfiq köhnədir".
 - Rollback: `migrations_rollback/024_endpoint_host.down.sql`.
+
+## 025: fərdi rollar (2026-10-20)
+- `roles`: `id` UUID, `name` UNIQUE, `description`, `permissions` JSONB (bölmə → none|view|edit), `network_ids` UUID[] (boş: hamısı), `created_at`, `updated_at`.
+- `users.role_id` UUID → `roles(id)` ON DELETE RESTRICT; `role` dəyərləri + `custom`; CHECK: `role = custom` ⇔ `role_id` dolu.
+- Rollback: `migrations_rollback/025_custom_roles.down.sql` (fərdi rollu istifadəçilər viewer olur).

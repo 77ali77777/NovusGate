@@ -81,8 +81,12 @@ func (s *Server) withInterfaceStatus(r *http.Request, n *models.Network) {
 		dnsAddr = dnsListenAddr(hub)
 		n.DNSServed = s.dns.Listening(dnsAddr)
 	}
+	// The reasons are for those who can act on them: operators, admins and
+	// custom roles that change networks.
 	if user, _ := sessionFrom(r); user != nil && roleRank[user.Role] < roleRank["operator"] {
-		return
+		if a := accessFrom(r); a == nil || a.perms["networks"] != "edit" {
+			return
+		}
 	}
 	if v, ok := s.ifaceErrs.Load(n.ID); ok {
 		n.InterfaceError = v.(string)

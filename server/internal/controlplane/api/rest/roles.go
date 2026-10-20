@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -63,6 +64,7 @@ var sensitiveReads = map[string]string{
 	"GET /api/v1/backups/{name}":              "admin",    // database dump and WireGuard keys
 	"GET /api/v1/debug/wireguard/{networkId}": "admin",
 	"GET /api/v1/users":                       "admin",
+	"GET /api/v1/roles":                       "admin", // custom roles (2026-10-20)
 	"GET /api/v1/firewall/host/export":        "admin", // the whole host ruleset
 	"GET /api/v1/server/services":             "admin", // server administration (P10a)
 	"GET /api/v1/server/sysctl":               "admin", // server administration (P10a)
@@ -144,6 +146,22 @@ func (s *Server) roleMiddleware(next http.Handler) http.Handler {
 				route = tpl
 			}
 		}
+		// A custom role decides by section (and its networks), never more
+		// than an operator may (custom_roles.go).
+		if user.Role == "custom" {
+			a, err := s.loadAccess(r.Context(), user)
+			if err != nil || a == nil {
+				slog.Error("custom role not read", "user", user.Username, "error", err)
+				errorWithCode(w, http.StatusForbidden, "forbidden", "your role could not be read")
+				return
+			}
+			if ok, reason := s.customAllows(r, a, r.Method, route); !ok {
+				errorWithCode(w, http.StatusForbidden, "forbidden", reason)
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), accessKey{}, a)))
+			return
+		}
 		need := requiredRole(r.Method, route)
 		if roleRank[user.Role] < roleRank[need] {
 			errorWithCode(w, http.StatusForbidden, "forbidden", "your role ("+user.Role+") cannot do this; it needs "+need)
@@ -153,16 +171,23 @@ func (s *Server) roleMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// MeResponse is the signed-in user.
+// MeResponse is the signed-in user, with what the role allows per section
+// (none, view or edit) so the panel shows only that.
 type MeResponse struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	ID          string            `json:"id"`
+	Username    string            `json:"username"`
+	Role        string            `json:"role"` // admin, operator, viewer or custom
+	RoleID      string            `json:"role_id,omitempty"`
+	RoleName    string            `json:"role_name,omitempty"`
+	Permissions map[string]string `json:"permissions"`
+	NetworkIDs  []string          `json:"network_ids"` // custom role limited to networks; empty: all
 }
 
-// SetUserRoleRequest changes a user's role.
+// SetUserRoleRequest changes a user's role: a built-in one, or custom with
+// role_id.
 type SetUserRoleRequest struct {
-	Role string `json:"role"`
+	Role   string `json:"role"`
+	RoleID string `json:"role_id,omitempty"`
 }
 
 func (s *Server) registerRoleRoutes(api *mux.Router) {
@@ -176,7 +201,13 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusUnauthorized, "invalid_token", "invalid token")
 		return
 	}
-	jsonResponse(w, http.StatusOK, MeResponse{ID: user.ID, Username: user.Username, Role: user.Role})
+	me := MeResponse{ID: user.ID, Username: user.Username, Role: user.Role, NetworkIDs: []string{}}
+	if a := accessFrom(r); a != nil {
+		me.RoleID, me.RoleName, me.Permissions, me.NetworkIDs = a.role.ID, a.role.Name, a.perms, a.role.NetworkIDs
+	} else {
+		me.Permissions = builtInPermissions(user.Role)
+	}
+	jsonResponse(w, http.StatusOK, me)
 }
 
 func (s *Server) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
@@ -185,13 +216,24 @@ func (s *Server) handleSetUserRole(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	if !store.ValidRole(req.Role) {
-		errorResponse(w, http.StatusBadRequest, "role must be admin, operator or viewer")
-		return
-	}
 	id := mux.Vars(r)["id"]
-	if err := s.store.SetUserRole(r.Context(), id, req.Role); err != nil {
-		userRoleError(w, err)
+	switch {
+	case req.Role == "custom":
+		if role, err := s.store.GetRole(r.Context(), req.RoleID); err != nil || role == nil {
+			errorWithCode(w, http.StatusBadRequest, "invalid_role", "role_id must name a custom role")
+			return
+		}
+		if err := s.store.SetUserCustomRole(r.Context(), id, req.RoleID); err != nil {
+			userRoleError(w, err)
+			return
+		}
+	case store.ValidRole(req.Role):
+		if err := s.store.SetUserRole(r.Context(), id, req.Role); err != nil {
+			userRoleError(w, err)
+			return
+		}
+	default:
+		errorResponse(w, http.StatusBadRequest, "role must be admin, operator, viewer or custom (with role_id)")
 		return
 	}
 	users, err := s.store.ListUsers(r.Context())

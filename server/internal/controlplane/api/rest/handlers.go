@@ -294,6 +294,7 @@ func (s *Server) setupRoutes() {
 	s.registerLimitRoutes(api)
 	s.registerServerAdminRoutes(api)
 	s.registerRoleRoutes(api)
+	s.registerCustomRoleRoutes(api)
 	s.registerTunnelRoutes(api)
 	api.HandleFunc("/networks/{networkId}/servers", s.handleCreateServerWithConfig).Methods("POST")
 
@@ -628,10 +629,16 @@ func (s *Server) handleListNetworks(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "failed to list networks")
 		return
 	}
+	// A custom role limited to networks lists only those.
+	shown := networks[:0]
 	for _, n := range networks {
+		if !seesNetwork(r, n.ID) {
+			continue
+		}
 		s.withInterfaceStatus(r, n)
+		shown = append(shown, n)
 	}
-	jsonResponse(w, http.StatusOK, networks)
+	jsonResponse(w, http.StatusOK, shown)
 }
 
 func (s *Server) handleCreateNetwork(w http.ResponseWriter, r *http.Request) {

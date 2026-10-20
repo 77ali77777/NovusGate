@@ -353,3 +353,10 @@ Manual backup-lar. Hər backup bir `.tar.gz` faylıdır: `db.sql` (`pg_dump`) v�
 - Cihaz konfiqinin `AllowedIPs`-i qaydalardan asılı deyil: öz şəbəkəsi, bütün digər VPN şəbəkələri, qaydalarda adı çəkilən VPN-dən kənar ünvan aralıqları; tam tuneldə `0.0.0.0/0`. Kimin kimə çatdığını yalnız hub-ın firewall-u həll edir, ona görə qayda dərhal işləyir və cavablar həmişə qayıdır.
 - `Node` cavablarında `config_outdated` (bool): cihazdakı konfiq hazırkı marşrutlarla uyğun deyil (yeni şəbəkə, tunel dəyişikliyi, bu versiyadan əvvəlki konfiq).
 - iptables rejimində də şəbəkələr default ayrıdır: `NOVUSGATE-VPN` qaydalardan sonra hər şəbəkə üçün `-i wgN -o wgN -j RETURN`, sonda `-i wg+ -o wg+ -j DROP` (`novusgate-vpn-isolation`); start-da da tətbiq olunur. Siyasət matrisi hər iki rejimdə eyni default-u göstərir (`isolated`).
+
+## Fərdi rollar — `/api/v1/roles` (admin, 2026-10-20)
+- `GET /roles` → `{roles[], sections[]}` (`sections`: `key`, `editable`, `inside_scope`); hər rolda `users` sayı.
+- `POST /roles` / `PUT /roles/{id}` `{name, description, permissions: {section: none|view|edit}, network_ids[]}`; 400 `invalid_role` (naməlum bölmə/səviyyə, yalnız-baxış bölməsinə edit, naməlum şəbəkə), 409 `role_name_taken`.
+- `DELETE /roles/{id}` → 204; istifadəçisi varsa 409 `role_in_use`.
+- `PUT /users/{id}/role` `{role: "custom", role_id}` və ya daxili rol.
+- `GET /auth/me` indi `permissions` (bölmə → səviyyə, daxili rollar üçün də), `role_name`, `role_id`, `network_ids` qaytarır.

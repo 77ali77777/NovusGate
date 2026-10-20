@@ -1479,7 +1479,27 @@
           "id": {
             "type": "string"
           },
+          "network_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "permissions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          },
           "role": {
+            "type": "string"
+          },
+          "role_id": {
+            "type": "string"
+          },
+          "role_name": {
             "type": "string"
           },
           "username": {
@@ -1488,6 +1508,8 @@
         },
         "required": [
           "id",
+          "network_ids",
+          "permissions",
           "role",
           "username"
         ],
@@ -2311,6 +2333,128 @@
         ],
         "type": "object"
       },
+      "Role": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "permissions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "users": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created_at",
+          "description",
+          "id",
+          "name",
+          "network_ids",
+          "permissions",
+          "updated_at",
+          "users"
+        ],
+        "type": "object"
+      },
+      "RoleRequest": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_ids": {
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "permissions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "RoleSection": {
+        "properties": {
+          "editable": {
+            "type": "boolean"
+          },
+          "inside_scope": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "editable",
+          "inside_scope",
+          "key"
+        ],
+        "type": "object"
+      },
+      "RolesResponse": {
+        "properties": {
+          "roles": {
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                }
+              ],
+              "nullable": true,
+              "type": "object"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/RoleSection"
+            },
+            "nullable": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "roles",
+          "sections"
+        ],
+        "type": "object"
+      },
       "RuleCounter": {
         "properties": {
           "bytes": {
@@ -2466,6 +2610,9 @@
       "SetUserRoleRequest": {
         "properties": {
           "role": {
+            "type": "string"
+          },
+          "role_id": {
             "type": "string"
           }
         },
@@ -6653,6 +6800,159 @@
         ]
       }
     },
+    "/api/v1/roles": {
+      "get": {
+        "operationId": "get_roles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Custom roles and the sections they are made of (admin)",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "operationId": "post_roles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Role"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a custom role: section levels and optional networks (admin)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/roles/{id}": {
+      "delete": {
+        "operationId": "delete_roles_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a custom role no user has (409 role_in_use)",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "operationId": "put_roles_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Role"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change a custom role; it applies at once to its users (admin)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/api/v1/server/network": {
       "get": {
         "operationId": "get_server_network",
@@ -7931,7 +8231,7 @@
             "description": "Error"
           }
         },
-        "summary": "Change a user's role (admin, operator, viewer; 409 last_admin)",
+        "summary": "Change a user's role (admin, operator, viewer, or custom with role_id; 409 last_admin)",
         "tags": [
           "users"
         ]
