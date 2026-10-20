@@ -204,7 +204,7 @@
   "outdated": {
     "badge": "Konfiq köhnədir",
     "title": "Bu cihazın konfiqurasiyası köhnədir",
-    "body": "Server tərəfində marşrutlar dəyişib (yeni şəbəkə, tunel rejimi və ya bu versiyadan əvvəl yüklənmiş konfiq). Cihazın hər yerə çatması üçün konfiqurasiyanı bir dəfə yenidən yükləyib cihaza qoyun.",
+    "body": "Bu konfiqin göstərdiyi bir şey serverdə dəyişib: VPN ünvan hovuzu, server ünvanı (domen), şəbəkənin DNS verib-verməməsi, tunel rejimi, ya da konfiq bu versiyadan əvvəl yüklənib. Onu bir dəfə yenidən yükləyib cihaza qoyun. Yeni şəbəkə, qayda və qrup bunu heç vaxt tələb etmir.",
     "noKey": "Server bu cihazın açarını saxlamır: konfiqi cihazın özündə yeniləyin və ya “Yeni açar” ilə yeni konfiq alın (köhnəsi işləməz olur)."
   },
   "rotate": {

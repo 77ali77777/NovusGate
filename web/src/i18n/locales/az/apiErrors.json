@@ -1,0 +1,13 @@
+{
+  "dns_is_hub": "Bu, hubun öz ünvanıdır. Cihazlar hubu onsuz da DNS kimi işlədir; hubun soruşacağı serverləri yazın (məsələn 1.1.1.1 və ya daxili DNS-iniz).",
+  "cidr_outside_pool": "Bu aralıq VPN ünvan hovuzundan kənardadır. Sahəni boş qoyun — növbəti boş aralıq avtomatik verilsin, ya da hovuzu Tənzimləmələrdə dəyişin.",
+  "pool_full": "VPN ünvan hovuzunda boş /24 qalmayıb. Hovuzu Tənzimləmələrdə genişləndirin və ya işlənməyən şəbəkəni silin.",
+  "invalid_pool": "Hovuz /8 ilə /16 arasında özəl IPv4 bloku olmalıdır və şəbəkə ünvanı ilə yazılmalıdır — məsələn 10.0.0.0/8.",
+  "endpoint_inside_pool": "Bu server ünvanı VPN ünvan hovuzunun içindədir, cihazlar serverə çata bilməz. Açıq (public) IP və ya domen yazın.",
+  "invalid_endpoint_host": "vpn.example.com kimi domen və ya IPv4 ünvanı yazın — http:// və port olmadan.",
+  "rotate_own_device": "Bu cihaz üzərindən qoşulmusunuz: açarı dəyişsəniz, yeni konfiqi yükləməmiş bağlantınız kəsilər. Bunu başqa cihazdan edin.",
+  "rotate_peer_not_added": "Açar dəyişdi, amma cihaz serverə yenidən əlavə oluna bilmədi. Cihaz səhifəsində “Bağlantını bərpa et” düyməsini basın.",
+  "cidr_overlap": "Bu aralıq başqa şəbəkə ilə üst-üstə düşür. Sahəni boş qoyun — boş aralıq avtomatik verilsin.",
+  "invalid_cidr": "Bu aralıq çox kiçikdir və ya yanlışdır. 10.12.0.0/24 kimi /24 yazın və ya sahəni boş qoyun.",
+  "invalid_dns": "Vergüllə ayrılmış ən çox 3 IPv4 ünvanı yazın, məsələn 1.1.1.1, 8.8.8.8."
+}

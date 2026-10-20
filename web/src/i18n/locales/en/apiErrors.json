@@ -1,0 +1,13 @@
+{
+  "dns_is_hub": "That is the hub’s own address. Devices already use the hub as their DNS; enter the servers the hub should ask (for example 1.1.1.1 or your internal DNS).",
+  "cidr_outside_pool": "This range is outside the VPN address pool. Leave the field empty to get the next free range automatically, or change the pool under Settings.",
+  "pool_full": "The VPN address pool has no free /24 left. Widen the pool under Settings or delete a network you no longer use.",
+  "invalid_pool": "The pool must be a private IPv4 block from /8 to /16, written as its network address — for example 10.0.0.0/8.",
+  "endpoint_inside_pool": "This server address is inside the VPN address pool, so devices could not reach the server. Use the public IP or a domain.",
+  "invalid_endpoint_host": "Enter a domain like vpn.example.com or an IPv4 address — without http:// and without a port.",
+  "rotate_own_device": "You are connected through this device: changing its key would cut you off before you download the new config. Do it from another device.",
+  "rotate_peer_not_added": "The key was changed, but the device could not be added to the server again. Press “Restore connection” on the device page.",
+  "cidr_overlap": "This range overlaps another network. Leave the field empty to get a free range automatically.",
+  "invalid_cidr": "This range is too small or invalid. Use a /24 such as 10.12.0.0/24, or leave the field empty.",
+  "invalid_dns": "Enter up to 3 IPv4 addresses separated by commas, for example 1.1.1.1, 8.8.8.8."
+}

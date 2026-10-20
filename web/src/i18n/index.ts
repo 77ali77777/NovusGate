@@ -1,6 +1,7 @@
 import { az } from 'date-fns/locale'
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import { setErrorTranslator } from '@/api/errors'
 
 // Translations live in locales/<lang>/<namespace>.json and are picked up
 // automatically; every namespace exists in both languages with the same keys
@@ -44,6 +45,11 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false }, // React escapes
 })
 document.documentElement.lang = i18n.language
+
+// Known API error codes are shown in the panel's language (apiErrors).
+setErrorTranslator((code) =>
+  i18n.exists(`apiErrors:${code}`) ? i18n.t(`apiErrors:${code}`) : undefined
+)
 
 export function setLanguage(code: string) {
   i18n.changeLanguage(code)

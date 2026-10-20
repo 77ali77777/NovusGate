@@ -204,7 +204,7 @@
   "outdated": {
     "badge": "Config outdated",
     "title": "This device’s config is outdated",
-    "body": "The routes changed on the server (a new network, the tunnel mode, or a config downloaded before this version). Download the config once more and put it on the device so it reaches everything it may.",
+    "body": "Something this config names changed on the server: the VPN address pool, the server address (domain), whether the network hands out DNS, the tunnel mode, or the config was downloaded before this version. Download it once more and put it on the device. New networks, rules and groups never need this.",
     "noKey": "The server does not hold this device’s key: update the config on the device itself, or press “New key” to get a new config (the old one stops working)."
   },
   "rotate": {

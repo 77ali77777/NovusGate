@@ -32,14 +32,25 @@ export function errorBodyCode(err: unknown): string | undefined {
   return undefined
 }
 
-// apiErrorMessage returns the server's message for an axios error. An HTTP
-// error without one shows fallback (not axios' "Request failed with status
-// code …"); only errors without a response (network down) show their own
-// message.
+// translate turns a stable error code into a sentence in the panel's
+// language (src/i18n sets it from the apiErrors namespace); a hook, so this
+// file needs no imports and runs in web/tests.
+let translate: ((code: string) => string | undefined) | undefined
+
+export function setErrorTranslator(fn: ((code: string) => string | undefined) | undefined) {
+  translate = fn
+}
+
+// apiErrorMessage returns the translation of an axios error's code when the
+// panel has one, else the server's message. An HTTP error without one shows
+// fallback (not axios' "Request failed with status code …"); only errors
+// without a response (network down) show their own message.
 export function apiErrorMessage(err: unknown, fallback: string): string {
   const response = (err as { response?: { data?: unknown } } | undefined)?.response
   if (response) {
-    return errorBodyMessage(response.data) ?? fallback
+    const code = errorBodyCode(err)
+    const translated = code ? translate?.(code) : undefined
+    return translated ?? errorBodyMessage(response.data) ?? fallback
   }
   return err instanceof Error && err.message ? err.message : fallback
 }
