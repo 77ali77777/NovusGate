@@ -238,6 +238,7 @@ Brauzerdə: `http://localhost:3017`
 | **Admin Username** | Panelin ilk admin istifadəçisi (defolt `admin`) |
 | **Admin Password** | Boş buraxsanız təsadüfi parol yaradılır |
 | **Admin VPN Gateway IP** | Hub-ın admin VPN-dəki ünvanı (defolt `10.99.0.1`, şəbəkə `10.99.0.0/24`) |
+| **Server domain** (istəyə bağlı) | Konfiqlərin serveri tapdığı domen (məs. `vpn.example.com`); əvvəlcə A yazısını serverə yönəldin. Boş: server IP-si |
 | **Database Name / User / Password** | PostgreSQL üçün; parol boşdursa təsadüfi yaradılır |
 
 Hər sahənin yanındakı **"?"** onun nə etdiyini izah edir.
@@ -329,12 +330,21 @@ Manual production quraşdırması: 👉 **[Server İstifadəçi Təlimatı](./se
 
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **Ayrı subnet-lər** | Hər şəbəkənin öz CIDR-i var (məs. 10.10.0.0/24, 10.20.0.0/24); üst-üstə düşə bilməz |
+| **Ayrı subnet-lər** | Hər şəbəkə VPN ünvan hovuzundan (defolt `10.0.0.0/8`) avtomatik /24 alır: 10.10.0.0/24, 10.11.0.0/24…; üst-üstə düşə bilməz |
 | **Öz interfeysi** | Avtomatik təyin olunur: wg0, wg1, wg2… |
 | **Öz portu** | Hər şəbəkə növbəti boş UDP portunda dinləyir (51820, 51821…) |
-| **Klient DNS** | Şəbəkənin cihazlarının işlədəcəyi DNS serverləri (ən çox 3 IPv4) |
+| **Klient DNS** | Hubun soruşacağı DNS serverləri (ən çox 3 IPv4); cihazlar DNS kimi hubu işlədir, hub ötürür |
 
-**Şəbəkə yaratmaq:** Panel → **Şəbəkələr** → yeni şəbəkə → ad və CIDR (məs. `10.50.0.0/24`). İnterfeys və port avtomatik təyin olunur; o portu (UDP) internetə açın.
+**Şəbəkə yaratmaq:** Panel → **Şəbəkələr** → yeni şəbəkə → ad (CIDR boş qala bilər — server hovuzdan növbəti boş /24-ü verir). İnterfeys və port avtomatik təyin olunur; o portu (UDP) internetə açın.
+
+### Konfiq bir dəfə verilir — qalanını server idarə edir
+Cihaz konfiqi bir dəfə yüklənir. Bunlar **heç bir cihazda yeni konfiq tələb etmir**:
+- yeni şəbəkə (konfiq bütün ünvan hovuzunu marşrutlayır);
+- VPN qaydaları, qruplar, limitlər, kvota, müddət (qərarı yalnız hubun firewall-u verir);
+- şəbəkənin DNS serverləri (cihazlar DNS kimi hubu işlədir, hub ötürür);
+- serverin yeni IP-si — **Settings → Server ünvanı (domen)** təyin olunubsa, yalnız DNS yazısı dəyişir.
+
+Yeni konfiq yalnız bunlarda lazımdır: tunel rejimi (split ↔ tam) dəyişəndə, ünvan hovuzu və ya server domeni dəyişəndə, açar yeniləndikdə ("Yeni açar"). Belə hallarda cihaz siyahıda **"Konfiq köhnədir"** göstərir.
 
 ---
 
@@ -385,11 +395,14 @@ Paneldə **Fail2Ban** səhifəsi.
 ### VPN firewall (şəbəkələr arası qaydalar)
 | Xüsusiyyət | Təsvir |
 |------------|--------|
-| **Mənbə / hədəf** | Şəbəkə, node, qrup və ya xüsusi IP |
+| **Standart təcrid** | Şəbəkələr bir-birini görmür (VLAN kimi), hər iki firewall rejimində; yalnız qayda icazə verəni keçir |
+| **Mənbə / hədəf** | Şəbəkə, cihaz, qrup və ya xüsusi IP |
+| **İstiqamət** | Bir tərəfli (A → B; B yalnız cavab verir) və ya qarşılıqlı (A ⇄ B) |
 | **Protokol və port** | TCP, UDP, ICMP və ya hamısı; port, siyahı və ya aralıq |
 | **Prioritet** | Kiçik rəqəm əvvəl; ilk uyğun gələn qayda qərar verir |
 | **Siyasət matrisi** | Hansı şəbəkənin hansına çata bildiyini və səbəbini göstərir |
-| **Avtomatik AllowedIPs** | Cihaz konfiqləri icazə verilmiş şəbəkələri özü əhatə edir |
+| **Kim kimi görür?** | İki şəbəkə, cihaz və ya qrup seçin — cavab bir cümlə ilə, hər istiqamət üçün səbəb və qayda |
+| **Qayda forması** | 5 sual: Kim? → Kimə? → Nəyə? → İstiqamət → Qərar; hazır xidmətlər (Veb, SSH, RDP, SMB, Ping), altda adi dildə nəticə |
 
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐

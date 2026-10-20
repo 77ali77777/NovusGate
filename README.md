@@ -238,6 +238,7 @@ In your browser: `http://localhost:3017`
 | **Admin Username** | The panel's first admin user (default `admin`) |
 | **Admin Password** | Leave empty to get a random one |
 | **Admin VPN Gateway IP** | The hub's address on the admin VPN (default `10.99.0.1`, network `10.99.0.0/24`) |
+| **Server domain** (optional) | The domain configs reach the server by (e.g. `vpn.example.com`); point its A record at the server first. Empty: the server IP |
 | **Database Name / User / Password** | For PostgreSQL; an empty password is generated |
 
 The **"?"** beside each field explains what it does.
@@ -329,12 +330,21 @@ Manual production setup: 👉 **[Server User Guide](./server/USER_GUIDE.md)**
 
 | Feature | Description |
 |---------|-------------|
-| **Separate subnets** | Each network has its own CIDR (e.g. 10.10.0.0/24, 10.20.0.0/24); they may not overlap |
+| **Separate subnets** | Each network gets a /24 from the VPN address pool automatically (default `10.0.0.0/8`): 10.10.0.0/24, 10.11.0.0/24…; they may not overlap |
 | **Own interface** | Assigned automatically: wg0, wg1, wg2… |
 | **Own port** | Each network listens on the next free UDP port (51820, 51821…) |
-| **Client DNS** | The DNS servers the network's devices use (up to 3 IPv4 addresses) |
+| **Client DNS** | The DNS servers the hub asks (up to 3 IPv4 addresses); devices use the hub as DNS and the hub forwards |
 
-**Create a network:** panel → **Networks** → new network → name and CIDR (e.g. `10.50.0.0/24`). The interface and port are assigned automatically; open that port (UDP) to the internet.
+**Create a network:** panel → **Networks** → new network → name (the CIDR may stay empty — the server takes the next free /24 of the pool). The interface and port are assigned automatically; open that port (UDP) to the internet.
+
+### A config is handed out once — the server manages the rest
+A device downloads its config once. None of these needs a new config on any device:
+- a new network (configs route the whole address pool);
+- VPN rules, groups, limits, quota, expiry (only the hub firewall decides);
+- a network's DNS servers (devices use the hub as DNS, the hub forwards);
+- a new server IP — when **Settings → Server address (domain)** is set, only the DNS record changes.
+
+A new config is needed only when the tunnel mode (split ↔ full), the address pool or the server domain changes, or the key is renewed ("New key"). The device list then shows **"Config outdated"**.
 
 ---
 
@@ -385,11 +395,14 @@ The **Fail2Ban** page in the panel.
 ### VPN firewall (rules between networks)
 | Feature | Description |
 |---------|-------------|
-| **Source / destination** | Network, node, group or a custom IP |
+| **Isolation by default** | Networks cannot see each other (like VLANs), in both firewall modes; only what a rule allows passes |
+| **Source / destination** | Network, device, group or a custom IP |
+| **Direction** | One-way (A → B; B only answers) or both ways (A ⇄ B) |
 | **Protocol and port** | TCP, UDP, ICMP or all; a port, a list or a range |
 | **Priority** | Lower number first; the first matching rule decides |
 | **Policy matrix** | Shows which network can reach which, and why |
-| **Automatic AllowedIPs** | Device configs include the networks they are allowed to reach |
+| **Who can reach whom?** | Pick two networks, devices or groups — the answer in one sentence, with the reason and rule for each direction |
+| **Rule form** | Five questions: Who? → To whom? → What? → Direction → Decision; common services (web, SSH, RDP, SMB, ping) and a plain-language result |
 
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐

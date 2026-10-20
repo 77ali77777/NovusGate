@@ -217,10 +217,12 @@
 - **P3 review düzəlişləri:** hub ünvanı DNS serveri kimi qadağan + siyahıdan atılır (döngü agent tərəfindən təkrarlanmışdı: 1 sorğu → minlərlə goroutine); dinləyici yalnız öz şəbəkəsinə cavab verir, firewall şəbəkə başına yalnız öz hub ünvanına (A şəbəkəsi B-nin DNS-ini işlədə bilmirdi təcridi pozmadan); TCP limit 64, Accept xətasında dayanmır; SERVFAIL; son işləyən server əvvəl; `SyncDNS` mutex. Real: öz şəbəkəsi UDP/TCP cavab aldı, başqa şəbəkə timeout, iptables `NOVUSGATE-DNS` düzgün. Təxirə salınan minor-lar: yenilənmədən sonra hamı bir dəfə "köhnədir" görür (format dəyişdi); dinləyici qalxana qədər konfiq birbaşa DNS-ə keçə bilər; split tunel + `client_dns` olan şəbəkədə bütün DNS indi hubdan keçir (hub/tunel düşəndə ad həlli də düşür).
 - **Web boşluqları (2026-10-20):** API xəta kodları paneldə az/en (`apiErrors` namespace, `setErrorTranslator`); "konfiq köhnədir" və DNS sahəsi mətnləri yeniləndi; şəbəkə səhifəsində "Hub üzərindən DNS" vəziyyəti (`dns_served`/`dns_error`).
 - **Center domen sahəsi:** quraşdırmada `vpnDomain` → admin konfiqi və `WG_SERVER_ENDPOINT` domeni işlədir (test 112/112; forma vizual yoxlanmayıb — qoşulmuş server tələb edir).
-- **Davam:** README/USER_GUIDE; P4 (NETMAP) — dizayn sualı istifadəçidə.
+- **README/README_AZ/USER_GUIDE(_AZ):** standart təcrid, istiqamət, 5 addımlı forma, "Kim kimi görür?", hovuz, avtomatik CIDR, hubda DNS, server domeni, "Yeni açar", "konfiq bir dəfə" bölməsi; köhnə "qayda AllowedIPs-i dəyişir" iddiası düzəldildi.
+- **Davam:** P4 (NETMAP) — dizayn sualı istifadəçidə; real serverdə yoxlama.
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-20 | Center: quraşdırmada server domeni; README və istifadəçi bələdçiləri yeni sistemə uyğun | NovusGate Center/{lib,scripts/install.sh,server.js,public/index.html}, README*.md, web/USER_GUIDE*.md | İstifadəçi: hamısını həll et |
 | 2026-10-20 | Xəta kodları paneldə tərcümədə; hub DNS vəziyyəti şəbəkə səhifəsində | web/src/{api/errors.ts,i18n,lib/networkDisplay.ts,components/NetworkStatus.tsx,pages/Networks/NetworkDetail.tsx}, server models.go, rest/interfaces.go | İstifadəçi: web tərəfi tam olsun |
 | 2026-10-20 | Hub DNS review: təcrid, döngü, TCP limit, SERVFAIL | server/internal/controlplane/{dnsfwd,api/rest/{dns_hub,network_dns,firewall_handlers,handlers}.go}, server/internal/netctl/nft/compile.go | Müstəqil review |
 | 2026-10-20 | Hubda DNS: konfiq hubu göstərir, server ötürür | server/internal/controlplane/{dnsfwd,api/rest/dns_hub.go,api/rest/{routes,config_handlers,firewall_handlers,interfaces,network_dns,handlers}.go}, server/internal/netctl/nft/compile.go, cmd/control-plane/main.go, web i18n helpNetworks | Server tərəfli marşrut P3 · `4e4e7be`, `ee21e40` |

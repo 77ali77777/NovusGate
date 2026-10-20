@@ -150,7 +150,8 @@ docker run -d \
 
 Manage VPN network configurations:
 - View existing networks
-- Create new networks with custom subnets
+- Create new networks — the CIDR may stay empty, the server takes the next free /24 of the address pool
+- See "DNS through the hub" on the network page (whether the hub answers DNS, and why not)
 - Edit network settings
 - Delete unused networks
 
@@ -196,17 +197,18 @@ Manage ports accepting incoming connections:
 
 Control traffic flow between VPN networks:
 
-**Creating a VPN Rule:**
-1. Click **VPN Rule** button
-2. Fill in the form:
-   - **Rule Name:** Descriptive name
-   - **Priority:** Lower number = higher priority (1-1000)
-   - **Source:** Any, Network, Node, or Custom IP
-   - **Destination:** Any, Network, Node, or Custom IP
-   - **Protocol:** All, TCP, UDP, or ICMP
-   - **Port:** Specific port or range (optional)
-   - **Action:** Accept, Drop, or Reject
-3. Click **Create Rule**
+Networks cannot see each other by default (like VLANs); only what a rule allows passes.
+
+**Creating a VPN Rule** (Firewall → Between networks → **VPN rule**) — five questions:
+1. **Who?** — the side that starts the connection: a network, one device, a group, an IP address or anyone
+2. **To whom?** — what it wants to reach
+3. **What?** — everything, a common service (web, SSH, remote desktop, file sharing, ping) or protocol + port
+4. **Direction** — **one-way** (A → B; B only answers) or **both ways** (A ⇄ B)
+5. **Decision** — Allow, Block or Refuse
+
+The result is written below in one plain sentence. Name, order (priority) and note are under **More**; an empty name becomes "A ⇄ B".
+
+In **Who can reach whom?** pick two networks, devices or groups: the answer comes in one sentence, with the reason and the deciding rule for each direction, and "Write a rule for this pair" right there.
 
 **Example Use Cases:**
 - Allow office network to access admin panel
@@ -220,7 +222,7 @@ Source Node → VPN Server (FORWARD chain) → Destination Node
 ```
 All VPN traffic flows through the server. VPN rules control which traffic can be forwarded.
 
-**Important:** When you create a VPN rule, the source node's AllowedIPs configuration is automatically updated. Existing connected devices may need to reload their configuration.
+**Important:** rules do not change device configs — a rule takes effect on the server as soon as it is saved; nothing needs doing on the devices.
 
 #### Blocked IPs Tab
 
@@ -239,6 +241,13 @@ Available on all tabs (except Overview):
 - **Refresh:** Reload firewall status
 
 ### ⚙️ Settings
+
+#### VPN address pool and server address (admin only)
+- **VPN address pool** (default `10.0.0.0/8`): the block every device config routes; networks are made inside it. Choose it once — changing it means every device downloads its config again.
+- **Server address (domain)**: configs reach the server by this name (e.g. `vpn.example.com`). When the server moves to a new IP, change only the DNS record.
+
+#### Renewing a device's key
+**New key** on the device page: when a config leaked, or the server does not hold the device's key. The old config stops working at once; download the new one. You cannot renew the key of the device you are connected through (it would cut you off) — do it from another device.
 
 #### Change Password
 

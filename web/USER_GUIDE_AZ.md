@@ -149,7 +149,8 @@ docker run -d \
 
 VPN şəbəkə konfiqurasiyalarını idarə edin:
 - Mövcud şəbəkələri görün
-- Xüsusi subnet-lərlə yeni şəbəkələr yaradın
+- Yeni şəbəkələr yaradın — CIDR boş qala bilər, server ünvan hovuzundan növbəti boş /24-ü verir
+- Şəbəkə səhifəsində "Hub üzərindən DNS" vəziyyətini görün (hub DNS-ə cavab verir, ya yox və səbəbi)
 - Şəbəkə parametrlərini redaktə edin
 - İstifadə olunmayan şəbəkələri silin
 
@@ -195,17 +196,18 @@ Gələn əlaqələri qəbul edən portları idarə edin:
 
 VPN şəbəkələri arasında trafik axınını idarə edin:
 
-**VPN Qaydası Yaratmaq:**
-1. **VPN Rule** düyməsinə klikləyin
-2. Formu doldurun:
-   - **Qayda Adı:** Təsviri ad
-   - **Prioritet:** Aşağı rəqəm = yüksək prioritet (1-1000)
-   - **Mənbə:** Any, Şəbəkə, Node və ya Xüsusi IP
-   - **Təyinat:** Any, Şəbəkə, Node və ya Xüsusi IP
-   - **Protokol:** Hamısı, TCP, UDP və ya ICMP
-   - **Port:** Müəyyən port və ya aralıq (istəyə bağlı)
-   - **Əməliyyat:** Accept, Drop və ya Reject
-3. **Create Rule** klikləyin
+Şəbəkələr standart olaraq bir-birini görmür (VLAN kimi); yalnız qaydanın icazə verdiyi keçir.
+
+**VPN Qaydası Yaratmaq** (Firewall → Şəbəkələr arası → **VPN qaydası**) — 5 sual:
+1. **Kim?** — əlaqəni başladan tərəf: şəbəkə, bir cihaz, qrup, IP ünvanı və ya hər kəs
+2. **Kimə?** — çatmaq istədiyi tərəf
+3. **Nəyə?** — hər şey, ya da hazır xidmət (Veb, SSH, Uzaq masaüstü, Fayl paylaşımı, Ping) və ya protokol + port
+4. **İstiqamət** — **bir tərəfli** (A → B; B yalnız cavab verir) və ya **qarşılıqlı** (A ⇄ B)
+5. **Qərar** — İcazə ver, Blokla və ya Rədd et
+
+Altda qaydanın nə edəcəyi adi cümlə ilə yazılır. Ad, sıra (prioritet) və qeyd **Ətraflı** bölməsindədir; ad boş qalsa "A ⇄ B" kimi avtomatik verilir.
+
+**Kim kimi görür?** kartında iki şəbəkə, cihaz və ya qrup seçin: cavab bir cümlə ilə, hər istiqamətin səbəbi və qərar verən qayda ilə görünür; buradan birbaşa "Bu cüt üçün qayda yaz" da olar.
 
 **İstifadə Nümunələri:**
 - Ofis şəbəkəsinin admin panelinə girişinə icazə vermək
@@ -219,7 +221,7 @@ Mənbə Node → VPN Server (FORWARD chain) → Hədəf Node
 ```
 Bütün VPN trafiki server üzərindən keçir. VPN qaydaları hansı trafikin yönləndirilə biləcəyini idarə edir.
 
-**Vacib:** VPN qaydası yaratdıqda, mənbə node-un AllowedIPs konfiqurasiyası avtomatik yenilənir. Mövcud qoşulmuş cihazlar konfiqurasiyanı yenidən yükləməli ola bilər.
+**Vacib:** qaydalar cihaz konfiqini dəyişmir — qayda yadda saxlanan kimi serverdə qüvvəyə minir, cihazlarda heç nə etmək lazım deyil.
 
 #### Blocked IPs Tab (Bloklanmış IP-lər)
 
@@ -238,6 +240,13 @@ Bütün tab-larda mövcuddur (Overview xaric):
 - **Refresh:** Firewall statusunu yeniləyin
 
 ### Settings (Tənzimləmələr)
+
+#### VPN ünvan hovuzu və server ünvanı (yalnız admin)
+- **VPN ünvan hovuzu** (defolt `10.0.0.0/8`): bütün cihaz konfiqlərinin marşrutladığı blok; şəbəkələr onun içində yaradılır. Bir dəfə seçin — dəyişsəniz hamı konfiqi bir dəfə yenidən yükləməlidir.
+- **Server ünvanı (domen)**: konfiqlər serveri bu adla tapır (məs. `vpn.example.com`). Server yeni IP-yə köçəndə yalnız DNS yazısını dəyişin.
+
+#### Cihazın açarını yeniləmək
+Cihaz səhifəsində **Yeni açar**: konfiq başqasının əlinə keçibsə və ya server cihazın açarını saxlamırsa. Köhnə konfiq dərhal işləməz olur; yeni konfiqi yükləyin. Qoşulduğunuz cihazın öz açarını dəyişmək olmaz (bağlantınız kəsilərdi) — başqa cihazdan edin.
 
 #### Şifrəni Dəyişmək
 
