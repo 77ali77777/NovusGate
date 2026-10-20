@@ -236,8 +236,13 @@ func (s *Server) customAllows(r *http.Request, a *access, method, route string) 
 	}
 	if strings.HasPrefix(route, "/api/v1/nodes/{id}") {
 		node, err := s.store.GetNode(r.Context(), vars["id"])
-		if err != nil || node == nil {
-			return true, "" // the handler answers 404
+		if err != nil {
+			// Fail closed: a device that cannot be looked up is not known
+			// to be inside the role's networks.
+			return false, "your role (" + a.role.Name + ") is limited to networks: this device could not be checked"
+		}
+		if node == nil {
+			return true, "" // no such device: the handler answers 404
 		}
 		netID = node.NetworkID
 	}
@@ -283,7 +288,10 @@ type RoleSection struct {
 	InsideScope bool   `json:"inside_scope"` // kept by a role limited to networks
 }
 
-func (s *Server) validRoleRequest(ctx context.Context, req *RoleRequest) (*models.Role, error) {
+// validRoleRequest checks a role; had are the networks the role has now,
+// which may stay even when deleted since (fail closed: dropping them could
+// leave the list empty, and empty means every network).
+func (s *Server) validRoleRequest(ctx context.Context, req *RoleRequest, had []string) (*models.Role, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" || utf8.RuneCountInString(name) > 100 {
 		return nil, errors.New("name must be 1 to 100 characters")
@@ -318,6 +326,9 @@ func (s *Server) validRoleRequest(ctx context.Context, req *RoleRequest) (*model
 		known := map[string]bool{}
 		for _, n := range networks {
 			known[n.ID] = true
+		}
+		for _, id := range had {
+			known[id] = true
 		}
 		seen := map[string]bool{}
 		for _, id := range req.NetworkIDs {
@@ -378,7 +389,7 @@ func (s *Server) handleCreateRole(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	role, err := s.validRoleRequest(r.Context(), &req)
+	role, err := s.validRoleRequest(r.Context(), &req, nil)
 	if err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_role", err.Error())
 		return
@@ -396,12 +407,21 @@ func (s *Server) handleUpdateRole(w http.ResponseWriter, r *http.Request) {
 		errorWithCode(w, http.StatusBadRequest, "invalid_request_body", "invalid request body")
 		return
 	}
-	role, err := s.validRoleRequest(r.Context(), &req)
+	current, err := s.store.GetRole(r.Context(), mux.Vars(r)["id"])
+	if err != nil {
+		roleError(w, err)
+		return
+	}
+	if current == nil {
+		roleError(w, sql.ErrNoRows)
+		return
+	}
+	role, err := s.validRoleRequest(r.Context(), &req, current.NetworkIDs)
 	if err != nil {
 		errorWithCode(w, http.StatusBadRequest, "invalid_role", err.Error())
 		return
 	}
-	role.ID = mux.Vars(r)["id"]
+	role.ID = current.ID
 	if err := s.store.UpdateRole(r.Context(), role); err != nil {
 		roleError(w, err)
 		return

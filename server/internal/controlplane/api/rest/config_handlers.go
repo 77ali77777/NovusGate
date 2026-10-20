@@ -227,6 +227,11 @@ func (s *Server) handleCreateServerWithConfig(w http.ResponseWriter, r *http.Req
 	config := cfgGen.GeneratePeerConfigDNS(privateKey, serverPublicKey, serverEndpoint, node.VirtualIP.String(), allowedIPsStr, dns)
 
 	response := CreateServerResponse{Node: node, Config: config}
+	// A custom role that may add devices but not download configs gets the
+	// device without its private key (the config stays fetchable by others).
+	if a := accessFrom(r); a != nil && levelRank[a.perms["configs"]] < levelRank["view"] {
+		response.Config = ""
+	}
 
 	s.triggerReconcile()
 	// A full-tunnel network's new node joins the hub's internet exit set.

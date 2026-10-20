@@ -256,6 +256,8 @@ func userRoleError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, store.ErrLastAdmin):
 		errorWithCode(w, http.StatusConflict, "last_admin", err.Error())
+	case errors.Is(err, store.ErrRoleNotFound):
+		errorWithCode(w, http.StatusBadRequest, "invalid_role", "role_id must name a custom role")
 	case errors.Is(err, sql.ErrNoRows):
 		errorResponse(w, http.StatusNotFound, "user not found")
 	default:

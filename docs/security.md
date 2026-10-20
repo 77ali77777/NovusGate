@@ -139,3 +139,4 @@
 - Yoxlama serverdədir (`roleMiddleware` → `customAllows`): hər API yolu `routeSections` xəritəsindədir; xəritədə olmayan yol fərdi rola bağlıdır (test bunu tamlığına görə yoxlayır).
 - Şəbəkə ilə məhdud rol: yalnız networks/devices/configs bölmələri; `/networks/{id}`, `{networkId}`, `/nodes/{id}` yollarında resursun şəbəkəsi rolun şəbəkələrində olmalıdır (403); şəbəkə yaratmaq/silmək olmaz; `GET /networks` filtrlənir.
 - Rol dəyişikliyi dərhal tətbiq olunur (hər sorğuda rol oxunur). İstifadəçisi olan rol silinmir (409 `role_in_use`).
+- Review düzəlişləri (2026-10-20): `devices: edit` olub `configs` olmayan rol cihaz yaradanda cavabda konfiq (private açar) gəlmir; sahəsi olan rolda yoxlana bilməyən cihaz ID-si 403 (fail closed); silinmiş şəbəkə rolun siyahısında qalır (boş siyahı = bütün şəbəkələr olduğundan avtomatik çıxarılmır), admin onu redaktorda özü götürür; 025 rollback-i fərdi rollu istifadəçilər olanda da işləyir (real Postgres-də yoxlanıb).

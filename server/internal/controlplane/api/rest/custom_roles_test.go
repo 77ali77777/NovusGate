@@ -168,3 +168,47 @@ func TestRoleLimitedToNetworks(t *testing.T) {
 	}
 	_ = mux.Vars
 }
+
+// Review: "devices: edit" without "configs" creates devices, but the new
+// device's config (its private key) is not handed out.
+func TestDeviceEditWithoutConfigsGetsNoKey(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	token, _ := customUser(t, s, "no-configs", `{"name":"Devices only","permissions":{"networks":"view","devices":"edit"}}`)
+	rec := callWith(t, s, token, "POST", "/api/v1/networks/"+seed.network.ID+"/servers", `{"name":"made-by-role"}`)
+	if rec.Code != 201 {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	if strings.Contains(rec.Body.String(), "PrivateKey") {
+		t.Fatalf("no configs permission, no private key: %s", rec.Body)
+	}
+}
+
+// Review: a deleted network stays in a role limited to networks (fail
+// closed: the role does not turn into "every network"), and the role can
+// still be saved.
+func TestRoleKeepsADeletedNetwork(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	_, id := customUser(t, s, "scope-gone", `{"name":"Gone","permissions":{"devices":"view"},"network_ids":["`+seed.empty.ID+`"]}`)
+	if err := st.DeleteNetwork(context.Background(), seed.empty.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec := callAs(t, s, "PUT", "/api/v1/roles/"+id, `{"name":"Gone","permissions":{"devices":"view"},"network_ids":["`+seed.empty.ID+`"]}`, true)
+	if rec.Code != 200 {
+		t.Fatalf("save with the deleted network = %d %s", rec.Code, rec.Body)
+	}
+	if rec := callAs(t, s, "PUT", "/api/v1/roles/"+id, `{"name":"Gone","permissions":{},"network_ids":["00000000-0000-0000-0000-00000000beef"]}`, true); rec.Code != 400 {
+		t.Fatalf("a network it never had is still refused: %d", rec.Code)
+	}
+}
+
+// Review: the scope check fails closed on a device id it cannot look up.
+func TestScopedRoleRefusesAnUnreadableDeviceID(t *testing.T) {
+	s, st, _ := newContractServer(t)
+	seed := seedContract(t, st)
+	token, _ := customUser(t, s, "scoped-bad-id", `{"name":"Scoped bad id","permissions":{"devices":"view"},"network_ids":["`+seed.network.ID+`"]}`)
+	if rec := callWith(t, s, token, "GET", "/api/v1/nodes/not-a-uuid", ""); rec.Code != 403 {
+		t.Fatalf("unreadable id = %d %s", rec.Code, rec.Body)
+	}
+}

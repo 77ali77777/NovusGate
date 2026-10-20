@@ -15,6 +15,8 @@ var (
 	ErrRoleNameTaken = errors.New("a role with this name exists")
 	// ErrRoleInUse: users still have the role.
 	ErrRoleInUse = errors.New("the role is given to users")
+	// ErrRoleNotFound: no custom role has the id.
+	ErrRoleNotFound = errors.New("role not found")
 )
 
 const roleColumns = `r.id, r.name, r.description, r.permissions, r.network_ids, r.created_at, r.updated_at,
@@ -177,7 +179,10 @@ func (s *Store) SetUserCustomRole(ctx context.Context, userID, roleID string) er
 	// The role row is locked so it cannot be deleted before the user has it.
 	var locked string
 	if err := tx.QueryRowContext(ctx, `SELECT id FROM roles WHERE id = $1 FOR SHARE`, roleID).Scan(&locked); err != nil {
-		return err // sql.ErrNoRows for an unknown role
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrRoleNotFound
+		}
+		return err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE users SET role = 'custom', role_id = $2 WHERE id = $1`, userID, roleID); err != nil {
 		return err

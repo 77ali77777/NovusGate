@@ -152,6 +152,7 @@
     "scopedNote": "Yalnız seçilmiş şəbəkələr: rolda Şəbəkələr, Cihazlar və Cihaz konfiqləri qalır, yalnız bu şəbəkələr daxilində. Bir neçə şəbəkəni birlikdə göstərən bölmələr bağlıdır.",
     "onlyNetworks": "yalnız {{names}}",
     "summary_one": "{{count}} istifadəçi",
-    "summary_other": "{{count}} istifadəçi"
+    "summary_other": "{{count}} istifadəçi",
+    "deletedNetwork": "silinmiş şəbəkə (artıq yoxdur)"
   }
 }

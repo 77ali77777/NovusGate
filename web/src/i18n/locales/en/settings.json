@@ -152,6 +152,7 @@
     "scopedNote": "Only the chosen networks: the role keeps Networks, Devices and Device configs, inside these networks only. Sections that show several networks at once are off.",
     "onlyNetworks": "only {{names}}",
     "summary_one": "{{count}} user",
-    "summary_other": "{{count}} users"
+    "summary_other": "{{count}} users",
+    "deletedNetwork": "deleted network (no longer exists)"
   }
 }

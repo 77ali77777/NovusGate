@@ -190,6 +190,21 @@ const RoleEditor = ({
                 {networkLabel(n, t).name}
               </label>
             ))}
+            {/* A network deleted since stays in the role (the role does not turn
+                into "every network"); unticking it is the admin's choice. */}
+            {nets
+              .filter((id) => !networks.some((n) => n.id === id))
+              .map((id) => (
+                <label key={id} className="flex items-center gap-2 text-sm text-gray-500">
+                  <input
+                    data-help="helpSettings:roles.networks"
+                    type="checkbox"
+                    checked
+                    onChange={() => setNets((cur) => cur.filter((x) => x !== id))}
+                  />
+                  {t('roles.deletedNetwork')}
+                </label>
+              ))}
           </div>
         </fieldset>
 
