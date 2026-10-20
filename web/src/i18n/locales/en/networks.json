@@ -13,7 +13,8 @@
     "cidrRange": "CIDR Range",
     "listenPort": "Listen Port",
     "serverEndpoint": "Server Endpoint",
-    "autoDetected": "Auto-detected"
+    "autoDetected": "Auto-detected",
+    "open": "Open details: devices, rules, groups, topology"
   },
   "newCard": {
     "title": "Create New Network",

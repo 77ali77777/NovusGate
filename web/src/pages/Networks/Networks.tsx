@@ -129,7 +129,10 @@ export const Networks = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">
-                        <Link to={`/networks/${network.id}`} className="hover:underline">
+                        <Link
+                          to={`/networks/${network.id}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400"
+                        >
                           {label.name}
                         </Link>
                       </h3>
@@ -210,6 +213,14 @@ export const Networks = () => {
                   </div>
                 </div>
               </div>
+              {/* The network page: devices, rules, groups, limits, topology */}
+              <Link
+                to={`/networks/${network.id}`}
+                className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-800/60 dark:text-blue-400 dark:hover:bg-blue-900/20"
+              >
+                {t('card.open')}
+                <span aria-hidden="true">→</span>
+              </Link>
             </div>
           )
         })}

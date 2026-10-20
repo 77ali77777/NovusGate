@@ -13,7 +13,8 @@
     "cidrRange": "CIDR diapazonu",
     "listenPort": "Dinləmə portu",
     "serverEndpoint": "Server endpoint-i",
-    "autoDetected": "Avtomatik təyin edilib"
+    "autoDetected": "Avtomatik təyin edilib",
+    "open": "Detallara bax: cihazlar, qaydalar, qruplar, topologiya"
   },
   "newCard": {
     "title": "Yeni şəbəkə yarat",
