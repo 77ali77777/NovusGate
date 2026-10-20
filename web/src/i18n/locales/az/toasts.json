@@ -97,5 +97,9 @@
   "poolSaved": "Ünvan hovuzu saxlandı — cihazlar konfiqi bir dəfə yenidən yükləməlidir",
   "failedToSavePool": "Ünvan hovuzu saxlanmadı",
   "endpointSaved": "Server ünvanı saxlandı — cihazlar konfiqi bir dəfə yenidən yükləməlidir",
-  "failedToSaveEndpoint": "Server ünvanı saxlanmadı"
+  "failedToSaveEndpoint": "Server ünvanı saxlanmadı",
+  "roleSaved": "Rol saxlandı",
+  "failedToSaveRole": "Rol saxlanmadı",
+  "roleDeleted": "Rol silindi",
+  "failedToDeleteRole": "Rol silinmədi"
 }

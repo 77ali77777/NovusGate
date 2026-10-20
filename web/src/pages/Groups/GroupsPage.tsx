@@ -2,7 +2,7 @@ import { Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  useCan,
+  useAllowed,
   useCreateGroup,
   useDeleteGroup,
   useGroups,
@@ -21,7 +21,7 @@ import type { NodeGroup } from '@/types'
 export const GroupsPage = () => {
   const { t } = useTranslation('groups')
   const { data, isLoading, isError } = useGroups()
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('groups', 'edit')
   const deleteGroup = useDeleteGroup()
   const [editing, setEditing] = useState<NodeGroup | 'new' | null>(null)
   const [membersOf, setMembersOf] = useState<NodeGroup | null>(null)

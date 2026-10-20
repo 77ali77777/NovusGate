@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import {
-  useCan,
+  useAllowed,
   useFirewallPolicyMatrix,
   useGroups,
   useLimits,
@@ -60,7 +60,7 @@ const Field = ({ label, value }: { label: string; value?: string | number }) => 
 // what they have.
 const ClientDNSForm = ({ id, current }: { id: string; current: string }) => {
   const { t } = useTranslation('networks')
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('networks', 'edit')
   const save = useSetNetworkDNS()
   const [value, setValue] = useState<string | null>(null)
   const shown = value ?? current
@@ -126,10 +126,14 @@ export const NetworkDetailPage = () => {
   const { data: network, isLoading } = useNetwork(id)
   const { data: nodes = [] } = useNodes(id)
   const { data: networks = [] } = useNetworks()
-  const { data: matrix } = useFirewallPolicyMatrix(!!id)
-  const { data: rules = [] } = useVPNFirewallRules()
-  const groups = (useGroups().data?.groups ?? []).filter((g) => g !== null)
-  const profiles = (useLimits().data?.profiles ?? []).filter((p) => p !== null)
+  // Only what the role may see is asked for (custom roles).
+  const canRules = useAllowed('vpn_rules', 'view')
+  const canGroups = useAllowed('groups', 'view')
+  const canLimits = useAllowed('limits', 'view')
+  const { data: matrix } = useFirewallPolicyMatrix(!!id && canRules)
+  const { data: rules = [] } = useVPNFirewallRules(canRules)
+  const groups = (useGroups(canGroups).data?.groups ?? []).filter((g) => g !== null)
+  const profiles = (useLimits(canLimits).data?.profiles ?? []).filter((p) => p !== null)
   const [tab, setTab] = useState<NetworkTab>('overview')
 
   if (isLoading) return <p className="text-sm text-gray-500">{t('common:state.loading')}</p>
@@ -169,7 +173,9 @@ export const NetworkDetailPage = () => {
       count: myGroups.length + myLimits.length,
     },
     { id: 'topology', label: t('page.tabs.topology'), icon: Share2 },
-  ]
+  ].filter(
+    (x) => (x.id !== 'access' || canRules) && (x.id !== 'groups' || canGroups || canLimits)
+  ) as TabItem<NetworkTab>[]
 
   return (
     <div className="space-y-6">

@@ -5,6 +5,7 @@ import { BackupsCard } from './BackupsCard'
 import { ChangePasswordCard } from './ChangePasswordCard'
 import { EndpointHostCard } from './EndpointHostCard'
 import { NotificationsCard } from './NotificationsCard'
+import { RolesCard } from './RolesCard'
 import { SessionsCard } from './SessionsCard'
 import { UserManagementCard } from './UserManagementCard'
 import { VPNPoolCard } from './VPNPoolCard'
@@ -23,6 +24,7 @@ export const SettingsPage: React.FC = () => {
         {isAdmin && (
           <>
             <UserManagementCard />
+            <RolesCard />
             <BackupsCard />
             <NotificationsCard />
             <VPNPoolCard />

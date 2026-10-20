@@ -46,6 +46,9 @@ import type {
   OpenPortResponse,
   PanelUser,
   PermanentBans,
+  Role,
+  RoleRequest,
+  RolesResponse,
   SessionInfo,
   StatsOverview,
   StatusMessage,
@@ -219,8 +222,28 @@ class ApiClient {
     return data
   }
 
-  async setUserRole(id: string, role: UserRole): Promise<void> {
-    await this.client.put(`/users/${id}/role`, { role })
+  // A built-in role, or 'custom' with the custom role's id.
+  async setUserRole(id: string, role: UserRole | 'custom', roleId?: string): Promise<void> {
+    await this.client.put(`/users/${id}/role`, roleId ? { role, role_id: roleId } : { role })
+  }
+
+  async getRoles(): Promise<RolesResponse> {
+    const { data } = await this.client.get<RolesResponse>('/roles')
+    return data
+  }
+
+  async createRole(body: RoleRequest): Promise<Role> {
+    const { data } = await this.client.post<Role>('/roles', body)
+    return data
+  }
+
+  async updateRole(id: string, body: RoleRequest): Promise<Role> {
+    const { data } = await this.client.put<Role>(`/roles/${id}`, body)
+    return data
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await this.client.delete(`/roles/${id}`)
   }
 
   // Node groups (P9a)
@@ -789,7 +812,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { type AuditCursor, nextBefore } from '@/lib/audit'
 import { engineState, retryFirewallV2 } from '@/lib/firewallV2'
 import type { NotificationSettingsRequest } from '@/lib/notifications'
-import { roleAtLeast } from '@/lib/roles'
+import { allowed, roleAtLeast, type Section } from '@/lib/roles'
 import { retryServerQuery } from '@/lib/serverAdmin'
 import type { TrafficPoint, TrafficRange } from '@/lib/traffic'
 import type {
@@ -994,6 +1017,54 @@ export function useMe() {
   return useQuery({ queryKey: ['me'], queryFn: () => api.getMe(), staleTime: 60000 })
 }
 
+// useAllowed reports whether the signed-in user may view or edit a section
+// (custom roles; built-in roles report their levels too).
+export function useAllowed(section: Section, level: 'view' | 'edit'): boolean {
+  const { data } = useMe()
+  return allowed(data, section, level)
+}
+
+// Custom roles (admin).
+export function useRoles(enabled = true) {
+  return useQuery({ queryKey: ['roles'], queryFn: () => api.getRoles(), enabled })
+}
+
+function useRoleMutation<T>(
+  fn: (v: T) => Promise<unknown>,
+  errorTitle: string,
+  successTitle: string
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorTitle, successTitle },
+    mutationFn: fn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+  })
+}
+
+export const useCreateRole = () =>
+  useRoleMutation(
+    (b: RoleRequest) => api.createRole(b),
+    'toasts:failedToSaveRole',
+    'toasts:roleSaved'
+  )
+export const useUpdateRole = () =>
+  useRoleMutation(
+    (v: { id: string; body: RoleRequest }) => api.updateRole(v.id, v.body),
+    'toasts:failedToSaveRole',
+    'toasts:roleSaved'
+  )
+export const useDeleteRole = () =>
+  useRoleMutation(
+    (id: string) => api.deleteRole(id),
+    'toasts:failedToDeleteRole',
+    'toasts:roleDeleted'
+  )
+
 // useCan reports whether the signed-in role may do what need allows.
 export function useCan(need: UserRole): boolean {
   const { data } = useMe()
@@ -1004,7 +1075,8 @@ export function useSetUserRole() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { errorTitle: 'toasts:failedToChangeRole', successTitle: 'toasts:roleChanged' },
-    mutationFn: (v: { id: string; role: UserRole }) => api.setUserRole(v.id, v.role),
+    mutationFn: (v: { id: string; role: UserRole | 'custom'; roleId?: string }) =>
+      api.setUserRole(v.id, v.role, v.roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       // An admin may have changed their own role.
@@ -1013,8 +1085,9 @@ export function useSetUserRole() {
   })
 }
 
-export function useGroups() {
-  return useQuery({ queryKey: ['groups'], queryFn: () => api.getGroups() })
+// enabled: false where the role cannot see groups (custom roles).
+export function useGroups(enabled = true) {
+  return useQuery({ queryKey: ['groups'], queryFn: () => api.getGroups(), enabled })
 }
 
 // Group changes also change the VPN rules that name the group.
@@ -1062,8 +1135,8 @@ export const useSetGroupMembers = () =>
     'toasts:membersSaved'
   )
 
-export function useLimits() {
-  return useQuery({ queryKey: ['limits'], queryFn: () => api.getLimits() })
+export function useLimits(enabled = true) {
+  return useQuery({ queryKey: ['limits'], queryFn: () => api.getLimits(), enabled })
 }
 
 // Limit changes are compiled into the host ruleset (nft mode): the firewall
@@ -1356,11 +1429,12 @@ export function useAccessCheck(from: AccessSide | null, to: AccessSide | null) {
   })
 }
 
-export function useVPNFirewallRules() {
+export function useVPNFirewallRules(enabled = true) {
   return useQuery({
     queryKey: ['firewall', 'vpn', 'rules'],
     queryFn: () => api.getVPNFirewallRules(),
     refetchInterval: 30000,
+    enabled,
   })
 }
 

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 
-import { useCan, useNetworks } from '@/api/client'
+import { useAllowed, useNetworks } from '@/api/client'
 import { HelpTip } from '@/components/HelpTip'
 import { Badge, Button, Card } from '@/components/ui'
 import { networkLabelById } from '@/lib/networkDisplay'
@@ -42,7 +42,7 @@ export const VPNRulesTab = ({
   deleteLoading,
 }: VPNRulesTabProps) => {
   const { t } = useTranslation('firewall')
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('vpn_rules', 'edit')
   const { data: allNets } = useNetworks()
   // Markup for the <accept> and <drop> tags of the step 4 translation.
   const acceptTag = <strong className="text-green-600" />

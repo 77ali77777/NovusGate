@@ -29,3 +29,12 @@ test('the create form defaults to the current network when it exists', () => {
   assert.equal(defaultNetworkId('b', undefined), 'b')
   assert.equal(defaultNetworkId(null, []), '')
 })
+
+// Custom roles: changing devices and downloading configs (private keys)
+// are separate permissions.
+test('config actions follow the configs permission, edits the devices one', () => {
+  assert.deepEqual(rowActions({ has_config: true }, false, true), ['config'])
+  assert.deepEqual(rowActions({ has_config: true }, true, false), ['edit', 'delete'])
+  assert.deepEqual(detailActions({ has_config: true }, false, true), ['download', 'qr', 'script'])
+  assert.deepEqual(detailActions({ has_config: true }, true, false), ['sync', 'rotate'])
+})

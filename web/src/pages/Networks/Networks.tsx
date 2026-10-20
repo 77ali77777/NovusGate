@@ -5,9 +5,11 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
+  useAllowed,
   useCan,
   useCreateNetwork,
   useDeleteNetwork,
+  useMe,
   useNetworks,
   useVPNSettings,
 } from '@/api/client'
@@ -23,7 +25,10 @@ import type { CreateNetworkForm } from '@/types'
 export const Networks = () => {
   const { t } = useTranslation('networks')
   // Networks are changed by operators and admins (P9a).
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('networks', 'edit')
+  // A role limited to networks cannot create or delete networks.
+  const scoped = (useMe().data?.network_ids?.length ?? 0) > 0
+  const canManage = canEdit && !scoped
   const isAdmin = useCan('admin') // full tunnel (the hub as internet exit) is admin only
   const { data: networks, isLoading } = useNetworks()
   const createMutation = useCreateNetwork()
@@ -76,7 +81,7 @@ export const Networks = () => {
         title={t('title')}
         description={t('description')}
         actions={
-          canEdit && (
+          canManage && (
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
@@ -140,7 +145,7 @@ export const Networks = () => {
                       </p>
                     </div>
                   </div>
-                  {canEdit && (
+                  {canManage && (
                     <button
                       type="button"
                       onClick={() => handleDelete(network.id, label.name)}
@@ -210,7 +215,7 @@ export const Networks = () => {
         })}
 
         {/* Add New Card (Empty State or Last Item) */}
-        {canEdit && (
+        {canManage && (
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}

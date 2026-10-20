@@ -100,5 +100,58 @@
     "warning": "Point the domain’s A record at this server first. Changing this means every device downloads its config once more.",
     "confirm": "Change the server address in every device config? Every device will need to download its config once more.",
     "placeholder": "e.g. vpn.example.com"
+  },
+  "roles": {
+    "title": "Roles",
+    "description_text": "Make your own roles: for each section choose hidden, view or change, and if you like the networks the role is limited to. Then give the role to users under Users.",
+    "new": "New role",
+    "edit": "Edit role",
+    "delete": "Delete role",
+    "deleteConfirm": "Delete the role “{{name}}”?",
+    "empty": "No custom roles yet. Admin, Operator and Viewer are always there.",
+    "custom": "Custom roles",
+    "name": "Name",
+    "namePlaceholder": "e.g. Office manager",
+    "description": "Description",
+    "startFrom": "Start from:",
+    "likeViewer": "like Viewer",
+    "likeOperator": "like Operator",
+    "section": "Section",
+    "levels": {
+      "none": "Hidden",
+      "view": "Can view",
+      "edit": "Can change"
+    },
+    "sections": {
+      "dashboard": "Overview",
+      "networks": "Networks",
+      "devices": "Devices",
+      "configs": "Device configs",
+      "groups": "Groups",
+      "vpn_rules": "VPN rules",
+      "limits": "Limits and quota",
+      "host_firewall": "Host firewall",
+      "fail2ban": "Fail2Ban",
+      "audit": "Audit log"
+    },
+    "sectionHints": {
+      "dashboard": "The overview page and server stats.",
+      "networks": "Network list and pages; edit: DNS, restart, create and delete.",
+      "devices": "Device list and pages; edit: add, rename, expire, delete, new key.",
+      "configs": "Download configs, QR codes and install scripts — they hold private keys.",
+      "groups": "Device groups; edit: create, change members.",
+      "vpn_rules": "Rules between networks, the matrix and \"Who can reach whom?\"; edit: write rules.",
+      "limits": "Speed limits and quotas; edit: profiles and who they cover.",
+      "host_firewall": "View the server firewall (changes stay with admins).",
+      "fail2ban": "View bans and logs (changes stay with admins).",
+      "audit": "Who did what in the panel."
+    },
+    "adminOnlyNote": "Always admins only, whatever the role: server administration, users and roles, backups, tunnel changes and host firewall changes.",
+    "networks": "Limited to networks",
+    "allNetworks": "Every network.",
+    "scopedNote": "Only the chosen networks: the role keeps Networks, Devices and Device configs, inside these networks only. Sections that show several networks at once are off.",
+    "onlyNetworks": "only {{names}}",
+    "summary_one": "{{count}} user",
+    "summary_other": "{{count}} users"
   }
 }

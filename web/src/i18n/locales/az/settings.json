@@ -100,5 +100,58 @@
     "warning": "Əvvəlcə domenin A yazısını bu serverə yönəldin. Bunu dəyişmək bütün cihazların konfiqi bir dəfə yenidən yükləməsi deməkdir.",
     "confirm": "Bütün cihaz konfiqlərində server ünvanı dəyişsin? Bütün cihazlar konfiqini bir dəfə yenidən yükləməli olacaq.",
     "placeholder": "məs. vpn.example.com"
+  },
+  "roles": {
+    "title": "Rollar",
+    "description_text": "Öz rollarınızı yaradın: hər bölmə üçün gizli, baxa bilər və ya dəyişə bilər seçin, istəsəniz rolun aid olduğu şəbəkələri də. Sonra rolu İstifadəçilər bölməsində istifadəçilərə verin.",
+    "new": "Yeni rol",
+    "edit": "Rolu redaktə et",
+    "delete": "Rolu sil",
+    "deleteConfirm": "«{{name}}» rolu silinsin?",
+    "empty": "Hələ fərdi rol yoxdur. Admin, Operator və Baxışçı həmişə var.",
+    "custom": "Fərdi rollar",
+    "name": "Ad",
+    "namePlaceholder": "məs. Ofis meneceri",
+    "description": "Təsvir",
+    "startFrom": "Başlanğıc:",
+    "likeViewer": "Baxışçı kimi",
+    "likeOperator": "Operator kimi",
+    "section": "Bölmə",
+    "levels": {
+      "none": "Gizli",
+      "view": "Baxa bilər",
+      "edit": "Dəyişə bilər"
+    },
+    "sections": {
+      "dashboard": "İcmal",
+      "networks": "Şəbəkələr",
+      "devices": "Cihazlar",
+      "configs": "Cihaz konfiqləri",
+      "groups": "Qruplar",
+      "vpn_rules": "VPN qaydaları",
+      "limits": "Limitlər və kvota",
+      "host_firewall": "Host firewall",
+      "fail2ban": "Fail2Ban",
+      "audit": "Audit jurnalı"
+    },
+    "sectionHints": {
+      "dashboard": "İcmal səhifəsi və server göstəriciləri.",
+      "networks": "Şəbəkə siyahısı və səhifələri; dəyişmək: DNS, yenidən qaldırma, yaratma və silmə.",
+      "devices": "Cihaz siyahısı və səhifələri; dəyişmək: əlavə, ad, müddət, silmə, yeni açar.",
+      "configs": "Konfiq, QR kod və quraşdırma skriptini yükləmək — içində private açar var.",
+      "groups": "Cihaz qrupları; dəyişmək: yaratma, üzvlər.",
+      "vpn_rules": "Şəbəkələr arası qaydalar, matris və \"Kim kimi görür?\"; dəyişmək: qayda yazmaq.",
+      "limits": "Sürət limitləri və kvota; dəyişmək: profillər və kimə aid olduqları.",
+      "host_firewall": "Server firewall-una baxmaq (dəyişiklik admin-də qalır).",
+      "fail2ban": "Bloklara və log-lara baxmaq (dəyişiklik admin-də qalır).",
+      "audit": "Paneldə kim nə edib."
+    },
+    "adminOnlyNote": "Rol nə olursa olsun, həmişə yalnız admin: server idarəsi, istifadəçilər və rollar, backup, tunel dəyişikliyi və host firewall dəyişiklikləri.",
+    "networks": "Şəbəkələrlə məhdud",
+    "allNetworks": "Bütün şəbəkələr.",
+    "scopedNote": "Yalnız seçilmiş şəbəkələr: rolda Şəbəkələr, Cihazlar və Cihaz konfiqləri qalır, yalnız bu şəbəkələr daxilində. Bir neçə şəbəkəni birlikdə göstərən bölmələr bağlıdır.",
+    "onlyNetworks": "yalnız {{names}}",
+    "summary_one": "{{count}} istifadəçi",
+    "summary_other": "{{count}} istifadəçi"
   }
 }

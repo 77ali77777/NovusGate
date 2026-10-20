@@ -74,5 +74,27 @@
     "what": "A domain (for example vpn.example.com) or an IPv4 address that device configs use as the hub’s Endpoint; the network’s port is added. No http:// and no port.",
     "who": "Admins, once. Useful when the server may move to another IP (another provider, a new VPS).",
     "effect": "Every config names this host: devices show \"config outdated\" until downloaded once. Afterwards a new server IP needs only a DNS change. Empty uses the server IP set at installation."
+  },
+  "roles": {
+    "name": {
+      "what": "The role’s name, shown in the user list.",
+      "who": "Admins making roles.",
+      "effect": "Must be unique. Changing it changes nothing in what the role may do."
+    },
+    "description": {
+      "what": "A note on what the role is for.",
+      "who": "Admins who look at the roles later.",
+      "effect": "Shown only; no effect on what the role may do."
+    },
+    "level": {
+      "what": "For each section: Hidden (not in the menu, refused by the server), Can view, or Can change.",
+      "who": "Admins deciding what a group of users may see and do.",
+      "effect": "Applies at once to every user with the role. \"Can change\" exists only where an operator can change things; the rest stays with admins."
+    },
+    "networks": {
+      "what": "The networks the role is limited to. None ticked: every network.",
+      "who": "Admins giving someone, for example an office manager, only their own network.",
+      "effect": "The role then sees and changes only these networks and their devices; rules, groups, limits and other cross-network sections are off, and it cannot create or delete networks."
+    }
   }
 }

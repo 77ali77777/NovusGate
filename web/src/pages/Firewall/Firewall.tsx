@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   api,
+  useAllowed,
   useAllowIP,
   useApplyVPNFirewallRules,
   useBlockIP,
@@ -56,7 +57,7 @@ export const Firewall: React.FC = () => {
   const { t } = useTranslation('firewall')
   // Host firewall changes are admin-only, VPN rules operator (P9a).
   const isAdmin = useCan('admin')
-  const isOperator = useCan('operator')
+  const isOperator = useAllowed('vpn_rules', 'edit')
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<FirewallTab>('overview')
   const [advancedSection, setAdvancedSection] = useState<AdvancedSection>('nft')

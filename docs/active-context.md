@@ -219,10 +219,12 @@
 - **Center domen sahəsi:** quraşdırmada `vpnDomain` → admin konfiqi və `WG_SERVER_ENDPOINT` domeni işlədir (test 112/112; forma vizual yoxlanmayıb — qoşulmuş server tələb edir).
 - **README/README_AZ/USER_GUIDE(_AZ):** standart təcrid, istiqamət, 5 addımlı forma, "Kim kimi görür?", hovuz, avtomatik CIDR, hubda DNS, server domeni, "Yeni açar", "konfiq bir dəfə" bölməsi; köhnə "qayda AllowedIPs-i dəyişir" iddiası düzəldildi.
 - **Şəbəkə səhifəsi (2026-10-20):** KPI sırası (onlayn/cəmi, trafik ↓↑, tam tunel, qaydalar, diqqət: köhnə konfiq / 7 günə bitən / bitmiş) + 5 tab: Xülasə (hub, DNS, ən çox trafik), Cihazlar (status, son görülmə, trafik, tunel, qruplar, limitlər), Giriş və qaydalar (digər şəbəkələrlə matris + bir ucu burada olan bütün qaydalar: şəbəkə/cihaz/qrup/hər kəs), Qruplar və limitlər, Topologiya. Yalnız mövcud API-lər.
-- **Davam:** rol qrupları (dizayn təsdiqi gözləyir); P4 (NETMAP) — dizayn sualı istifadəçidə; real serverdə yoxlama.
+- **Fərdi rollar (R1+R2, istifadəçi "icra et"):** DB 025 (`c578623`), server yoxlaması `routeSections` + `customAllows` (`653fbad`), panel: Settings → Rollar (bölmə × Gizli/Baxa bilər/Dəyişə bilər, şablonlar, şəbəkə seçimi), İstifadəçilər siyahısında fərdi rol seçimi, menyu `navVisible`, səhifələr `useAllowed(section)`, konfiq yükləmə ayrıca `configs` icazəsi. Fərdi rol operatordan çox ala bilməz; şəbəkə ilə məhdud rol yalnız networks/devices/configs. Brauzerdə: rol yaradıldı, istifadəçiyə verildi, istifadəçi yalnız Ofis-i gördü, başqa şəbəkə və qaydalar 403.
+- **Davam:** P4 (NETMAP) — dizayn sualı istifadəçidə; real serverdə yoxlama; son commitlər üçün müstəqil review.
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|
+| 2026-10-20 | Fərdi rollar: bölmə icazələri və şəbəkə sahəsi (DB 025, server, panel) | server/internal/controlplane/{store/custom_roles.go,api/rest/{custom_roles,roles}.go}, web/src/{lib/roles.ts,pages/Settings/RolesCard.tsx,…} | İstifadəçi: rol qrupları yaradılsın |
 | 2026-10-20 | Şəbəkə səhifəsi: KPI-lar və 5 tab (cihazlar, qaydalar, qruplar/limitlər, topologiya) | web/src/{lib/networkOverview.ts,pages/Networks/{NetworkDetail,NetworkTopology}.tsx}, i18n networks | İstifadəçi: şəbəkəyə girəndə hər şey görünsün |
 | 2026-10-20 | Center: quraşdırmada server domeni; README və istifadəçi bələdçiləri yeni sistemə uyğun | NovusGate Center/{lib,scripts/install.sh,server.js,public/index.html}, README*.md, web/USER_GUIDE*.md | İstifadəçi: hamısını həll et |
 | 2026-10-20 | Xəta kodları paneldə tərcümədə; hub DNS vəziyyəti şəbəkə səhifəsində | web/src/{api/errors.ts,i18n,lib/networkDisplay.ts,components/NetworkStatus.tsx,pages/Networks/NetworkDetail.tsx}, server models.go, rest/interfaces.go | İstifadəçi: web tərəfi tam olsun |

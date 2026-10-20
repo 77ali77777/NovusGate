@@ -24,7 +24,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   api,
-  useCan,
+  useAllowed,
   useCreateServerWithConfig,
   useDeleteNode,
   useGroups,
@@ -94,8 +94,9 @@ export const NodesPage: React.FC = () => {
   const navigate = useNavigate()
   const networkId = useCurrentNetworkId()
   const { data: allNodes, isLoading } = useNodes(networkId || '')
-  // Config download and changes need an operator (P9a).
-  const canEdit = useCan('operator')
+  // Changes need the devices permission, downloads the configs one (roles).
+  const canEdit = useAllowed('devices', 'edit')
+  const canConfig = useAllowed('configs', 'view')
   const { data: groupData } = useGroups()
   const nodeGroups = groupsByNode(groupData?.groups)
   const { data: limits } = useLimits()
@@ -288,7 +289,7 @@ export const NodesPage: React.FC = () => {
       header: '',
       className: 'sticky right-0 w-px whitespace-nowrap bg-white dark:bg-gray-800',
       render: (node: Node) => {
-        const actions = rowActions(node, canEdit)
+        const actions = rowActions(node, canEdit, canConfig)
         return (
           <div className="flex items-center gap-1">
             {actions.includes('config') && (
@@ -352,7 +353,7 @@ export const NodesPage: React.FC = () => {
     },
   ]
 
-  const visibleColumns = canEdit ? columns : columns.filter((c) => c.key !== 'actions')
+  const visibleColumns = canEdit || canConfig ? columns : columns.filter((c) => c.key !== 'actions')
 
   const onlineCount = allNodes?.filter((n) => n.status === 'online').length || 0
   const pendingCount = allNodes?.filter((n) => n.status === 'pending').length || 0
@@ -553,7 +554,8 @@ export const NodesPage: React.FC = () => {
 // Node detail page
 export const NodeDetailPage: React.FC = () => {
   const { t } = useTranslation('nodes')
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('devices', 'edit')
+  const canConfig = useAllowed('configs', 'view')
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [copied, setCopied] = useState(false)
@@ -648,7 +650,7 @@ export const NodeDetailPage: React.FC = () => {
     )
   }
 
-  const actions = detailActions(node, canEdit)
+  const actions = detailActions(node, canEdit, canConfig)
 
   const copyToClipboard = async (text: string) => {
     try {

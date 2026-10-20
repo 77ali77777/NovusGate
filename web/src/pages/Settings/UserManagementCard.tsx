@@ -1,7 +1,7 @@
 import { Shield, Trash2, User, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCreateUser, useDeleteUser, useSetUserRole, useUsers } from '@/api/client'
+import { useCreateUser, useDeleteUser, useRoles, useSetUserRole, useUsers } from '@/api/client'
 import { apiErrorMessage } from '@/api/errors'
 import { HelpTip } from '@/components/HelpTip'
 import { locale } from '@/i18n'
@@ -15,6 +15,7 @@ export const UserManagementCard: React.FC = () => {
   const createUser = useCreateUser()
   const deleteUser = useDeleteUser()
   const setRole = useSetUserRole()
+  const customRoles = (useRoles().data?.roles ?? []).filter((r) => r !== null)
 
   const [isAdding, setIsAdding] = useState(false)
   const [newUsername, setNewUsername] = useState('')
@@ -171,11 +172,15 @@ export const UserManagementCard: React.FC = () => {
                   <select
                     data-help="helpSettings:users.role"
                     aria-label={t('users.roleFor', { username: user.username })}
-                    value={user.role}
+                    value={user.role === 'custom' ? `custom:${user.role_id ?? ''}` : user.role}
                     disabled={setRole.isPending}
-                    onChange={(e) =>
-                      setRole.mutate({ id: user.id, role: e.target.value as UserRole })
-                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      // Custom roles are "custom:<id>" (Settings → Roles).
+                      if (v.startsWith('custom:'))
+                        setRole.mutate({ id: user.id, role: 'custom', roleId: v.slice(7) })
+                      else setRole.mutate({ id: user.id, role: v as UserRole })
+                    }}
                     className="px-2 py-1 text-xs border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
                     {roles.map((r) => (
@@ -183,6 +188,15 @@ export const UserManagementCard: React.FC = () => {
                         {t(`users.roles.${r}`)}
                       </option>
                     ))}
+                    {customRoles.length > 0 && (
+                      <optgroup label={t('roles.custom')}>
+                        {customRoles.map((r) => (
+                          <option key={r.id} value={`custom:${r.id}`}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                   {user.username !== 'admin' && ( // Hide delete for admin
                     <button

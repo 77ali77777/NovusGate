@@ -7,16 +7,29 @@ export type RowAction = 'config' | 'edit' | 'delete'
 // whose private key the server never held.
 export type DetailAction = 'download' | 'qr' | 'script' | 'sync' | 'rotate'
 
-// Config downloads and changes need an operator; viewers only look. Imported
-// devices have no private key on the server, so they have no config.
-export function rowActions(device: { has_config: boolean }, canEdit: boolean): RowAction[] {
-  if (!canEdit) return []
-  return device.has_config ? ['config', 'edit', 'delete'] : ['edit', 'delete']
+// Changes need the devices permission (edit), config downloads the configs
+// one (private keys; built-in roles: operators and admins). Imported devices
+// have no private key on the server, so they have no config.
+export function rowActions(
+  device: { has_config: boolean },
+  canEdit: boolean,
+  canConfig = canEdit
+): RowAction[] {
+  const out: RowAction[] = []
+  if (canConfig && device.has_config) out.push('config')
+  if (canEdit) out.push('edit', 'delete')
+  return out
 }
 
-export function detailActions(device: { has_config: boolean }, canEdit: boolean): DetailAction[] {
-  if (!canEdit) return []
-  return device.has_config ? ['download', 'qr', 'script', 'sync', 'rotate'] : ['sync', 'rotate']
+export function detailActions(
+  device: { has_config: boolean },
+  canEdit: boolean,
+  canConfig = canEdit
+): DetailAction[] {
+  const out: DetailAction[] = []
+  if (canConfig && device.has_config) out.push('download', 'qr', 'script')
+  if (canEdit) out.push('sync', 'rotate')
+  return out
 }
 
 // defaultNetworkId: the network chosen in the sidebar if it still exists,

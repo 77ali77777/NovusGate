@@ -2,7 +2,7 @@ import { Gauge, Link2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  useCan,
+  useAllowed,
   useCreateLimit,
   useDeleteLimit,
   useGroups,
@@ -31,7 +31,7 @@ export const LimitsTab = () => {
   const { t } = useTranslation('limits')
   const { data, isLoading, isError } = useLimits()
   const { data: groupData } = useGroups()
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('limits', 'edit')
   const deleteLimit = useDeleteLimit()
   const [editing, setEditing] = useState<LimitProfile | 'new' | null>(null)
   const [binding, setBinding] = useState<LimitProfile | null>(null)

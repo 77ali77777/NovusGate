@@ -1107,6 +1107,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Custom roles and the sections they are made of (admin) */
+        get: operations["get_roles"];
+        put?: never;
+        /** Create a custom role: section levels and optional networks (admin) */
+        post: operations["post_roles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change a custom role; it applies at once to its users (admin) */
+        put: operations["put_roles_by_id"];
+        post?: never;
+        /** Delete a custom role no user has (409 role_in_use) */
+        delete: operations["delete_roles_by_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/server/network": {
         parameters: {
             query?: never;
@@ -1581,7 +1617,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Change a user's role (admin, operator, viewer; 409 last_admin) */
+        /** Change a user's role (admin, operator, viewer, or custom with role_id; 409 last_admin) */
         put: operations["put_users_by_id_role"];
         post?: never;
         delete?: never;
@@ -1999,7 +2035,13 @@ export interface components {
         };
         MeResponse: {
             id: string;
+            network_ids: string[] | null;
+            permissions: {
+                [key: string]: string;
+            } | null;
             role: string;
+            role_id?: string;
+            role_name?: string;
             username: string;
         };
         Network: {
@@ -2232,6 +2274,37 @@ export interface components {
             ok: boolean;
             pending: number;
         };
+        Role: {
+            /** Format: date-time */
+            created_at: string;
+            description: string;
+            id: string;
+            name: string;
+            network_ids: string[] | null;
+            permissions: {
+                [key: string]: string;
+            } | null;
+            /** Format: date-time */
+            updated_at: string;
+            users: number;
+        };
+        RoleRequest: {
+            description?: string;
+            name?: string;
+            network_ids?: string[] | null;
+            permissions?: {
+                [key: string]: string;
+            } | null;
+        };
+        RoleSection: {
+            editable: boolean;
+            inside_scope: boolean;
+            key: string;
+        };
+        RolesResponse: {
+            roles: (components["schemas"]["Role"] | null)[] | null;
+            sections: components["schemas"]["RoleSection"][] | null;
+        };
         RuleCounter: {
             bytes: number;
             chain: string;
@@ -2272,6 +2345,7 @@ export interface components {
         };
         SetUserRoleRequest: {
             role?: string;
+            role_id?: string;
         };
         StatsOverviewResponse: {
             expired_nodes: number;
@@ -2384,6 +2458,7 @@ export interface components {
             created_at: string;
             id: string;
             role: string;
+            role_id?: string | null;
             username: string;
         };
         V2ChangeResponse: {
@@ -5030,6 +5105,132 @@ export interface operations {
                 content: {
                     "application/json": Record<string, never>;
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    post_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    put_roles_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_roles_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

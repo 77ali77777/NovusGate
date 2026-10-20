@@ -178,6 +178,10 @@ export type NodeGroupsResponse = S['NodeGroupsResponse']
 export type MeResponse = S['MeResponse']
 export type PanelUser = S['User']
 export type UserRole = 'admin' | 'operator' | 'viewer'
+// Custom roles (2026-10-20): section levels and optional networks.
+export type Role = S['Role']
+export type RoleRequest = S['RoleRequest']
+export type RolesResponse = S['RolesResponse']
 
 // Limit profiles (P9b)
 export type LimitProfile = S['LimitProfile']

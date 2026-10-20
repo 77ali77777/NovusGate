@@ -97,5 +97,9 @@
   "poolSaved": "Address pool saved — devices need their config once more",
   "failedToSavePool": "The address pool was not saved",
   "endpointSaved": "Server address saved — devices need their config once more",
-  "failedToSaveEndpoint": "The server address was not saved"
+  "failedToSaveEndpoint": "The server address was not saved",
+  "roleSaved": "Role saved",
+  "failedToSaveRole": "The role was not saved",
+  "roleDeleted": "Role deleted",
+  "failedToDeleteRole": "The role was not deleted"
 }

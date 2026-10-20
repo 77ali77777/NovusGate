@@ -19,9 +19,10 @@ import type React from 'react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { useCan, useNetworks } from '@/api/client'
+import { useMe, useNetworks } from '@/api/client'
 import { LANGUAGES, setLanguage } from '@/i18n'
 import { networkLabel } from '@/lib/networkDisplay'
+import { navVisible } from '@/lib/roles'
 import { useAppStore, useSidebarOpen } from '@/store'
 import { Branding } from './Branding'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -33,7 +34,6 @@ interface NavItem {
   labelKey: string // layout:nav.*
   href: string
   icon: React.ReactNode
-  adminOnly?: boolean // hidden for other roles; the API refuses them anyway
 }
 
 const navigation: NavItem[] = [
@@ -49,7 +49,6 @@ const navigation: NavItem[] = [
     labelKey: 'nav.server',
     href: '/server',
     icon: <HardDrive className="w-5 h-5" />,
-    adminOnly: true,
   },
   { labelKey: 'nav.settings', href: '/settings', icon: <Settings className="w-5 h-5" /> },
 ]
@@ -60,7 +59,8 @@ export const Layout = () => {
   const sidebarOpen = useSidebarOpen()
   const { toggleSidebar, setSidebarOpen, currentNetworkId, setCurrentNetworkId } = useAppStore()
   const { data: networks } = useNetworks()
-  const isAdmin = useCan('admin')
+  // Entries the role cannot see are hidden (roles); the API refuses them anyway.
+  const { data: me } = useMe()
   const logout = useLogout()
   // The mobile drawer closes once a page is chosen; on lg it is always shown.
   const closeDrawer = () => setSidebarOpen(false)
@@ -148,7 +148,7 @@ export const Layout = () => {
         {/* Navigation */}
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           {navigation
-            .filter((item) => !item.adminOnly || isAdmin)
+            .filter((item) => navVisible(me, item.href))
             .map((item) => {
               const isActive = location.pathname === item.href
               return (

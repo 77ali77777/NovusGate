@@ -1,6 +1,6 @@
 import { Activity, Globe, RotateCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useCan, useRestartNetworkInterface } from '@/api/client'
+import { useAllowed, useRestartNetworkInterface } from '@/api/client'
 import { dnsState, interfaceState } from '@/lib/networkDisplay'
 import type { Network } from '@/types'
 
@@ -9,7 +9,7 @@ import type { Network } from '@/types'
 // a restart (operators and admins); the server also retries every 30 s.
 export const NetworkInterfaceStatus = ({ network }: { network: Network }) => {
   const { t } = useTranslation('networks')
-  const canEdit = useCan('operator')
+  const canEdit = useAllowed('networks', 'edit')
   const restart = useRestartNetworkInterface()
   const { state, reason } = interfaceState(network)
   const tone = {

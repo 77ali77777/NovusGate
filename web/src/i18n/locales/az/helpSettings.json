@@ -74,5 +74,27 @@
     "what": "Cihaz konfiqlərinin hubun Endpoint-i kimi işlətdiyi domen (məsələn vpn.example.com) və ya IPv4 ünvanı; şəbəkənin portu əlavə olunur. http:// və port yazmayın.",
     "who": "Adminlər, bir dəfə. Server başqa IP-yə köçə bilərsə faydalıdır (başqa provayder, yeni VPS).",
     "effect": "Bütün konfiqlər bu adı işlədir: cihazlar bir dəfə yükləyənə qədər \"konfiq köhnədir\" göstərir. Sonra serverin yeni IP-si yalnız DNS dəyişikliyi tələb edir. Boş qalsa quraşdırmada verilən server IP-si işlənir."
+  },
+  "roles": {
+    "name": {
+      "what": "Rolun adı; istifadəçi siyahısında görünür.",
+      "who": "Rol yaradan adminlər.",
+      "effect": "Təkrar olmamalıdır. Adı dəyişmək rolun icazələrini dəyişmir."
+    },
+    "description": {
+      "what": "Rolun nə üçün olduğu barədə qeyd.",
+      "who": "Sonradan rollara baxan adminlər.",
+      "effect": "Yalnız göstərilir; icazələrə təsiri yoxdur."
+    },
+    "level": {
+      "what": "Hər bölmə üçün: Gizli (menyuda yoxdur, server rədd edir), Baxa bilər və ya Dəyişə bilər.",
+      "who": "Bir qrup istifadəçinin nəyi görüb edə biləcəyini həll edən adminlər.",
+      "effect": "Rolu olan bütün istifadəçilərə dərhal tətbiq olunur. \"Dəyişə bilər\" yalnız operatorun dəyişə bildiyi yerlərdə var; qalanı admin-də qalır."
+    },
+    "networks": {
+      "what": "Rolun məhdud olduğu şəbəkələr. Heç biri seçilməsə: bütün şəbəkələr.",
+      "who": "Kiməsə, məsələn ofis menecerinə, yalnız öz şəbəkəsini verən adminlər.",
+      "effect": "Rol yalnız bu şəbəkələri və onların cihazlarını görür və dəyişir; qaydalar, qruplar, limitlər və digər şəbəkələrarası bölmələr bağlıdır, şəbəkə yaratmaq və silmək olmur."
+    }
   }
 }
