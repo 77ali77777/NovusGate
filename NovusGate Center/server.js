@@ -714,6 +714,7 @@ app.post('/api/servers/:id/install', async (req, res) => {
       networkName: req.body.networkName,
       networkCidr: req.body.networkCidr,
       vpnIp: req.body.vpnIp,
+      vpnDomain: req.body.vpnDomain,
       dbName: req.body.dbName,
       dbUser: req.body.dbUser,
       dbPassword: req.body.dbPassword

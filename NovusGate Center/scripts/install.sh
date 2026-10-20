@@ -20,6 +20,7 @@ ADMIN_PASSWORD=@@ADMIN_PASSWORD@@ # Empty means auto-generate
 VPN_IP=@@VPN_IP@@
 VPN_SUBNET=@@VPN_SUBNET@@
 VPN_CLIENT_IP=@@VPN_CLIENT_IP@@
+VPN_DOMAIN=@@VPN_DOMAIN@@
 
 # Database Config
 DB_NAME=@@DB_NAME@@
@@ -89,6 +90,9 @@ fi
 log_info "Detecting Server IP..."
 SERVER_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 icanhazip.com 2>/dev/null || hostname -I | awk '{print $1}')
 log_info "Server IP: $SERVER_IP"
+# Configs name the hub by the domain when one is given (server-side
+# routing P2): a new server IP then changes only the DNS record.
+ENDPOINT_HOST=${VPN_DOMAIN:-$SERVER_IP}
 
 
 # ==========================================
@@ -205,7 +209,7 @@ DNS = 8.8.8.8
 
 [Peer]
 PublicKey = $WG_SERVER_PUBLIC_KEY
-Endpoint = $SERVER_IP:51820
+Endpoint = $ENDPOINT_HOST:51820
 AllowedIPs = $ADMIN_ROUTES
 PersistentKeepalive = 25
 CLIENT
@@ -246,7 +250,7 @@ API_KEY=$API_KEY
 MASTER_KEY=$MASTER_KEY
 ADMIN_USERNAME=$ADMIN_USERNAME
 ADMIN_PASSWORD=$ADMIN_PASSWORD
-WG_SERVER_ENDPOINT=$SERVER_IP
+WG_SERVER_ENDPOINT=$ENDPOINT_HOST
 ADMIN_CIDR=$VPN_SUBNET
 VPN_IP=$VPN_IP
 EOF

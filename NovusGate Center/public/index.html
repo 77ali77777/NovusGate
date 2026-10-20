@@ -947,6 +947,12 @@
             <input type="text" id="confVpnIp" value="10.99.0.1" required placeholder="e.g. 10.99.0.1" style="padding: 10px;">
           </div>
 
+          <!-- Server domain (optional) -->
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="confVpnDomain" style="font-size: 0.85rem;">🔗 Server domain <small style="color: var(--text-muted);">(optional)</small> <button type="button" class="help-tip" aria-label="Help" aria-expanded="false">?</button><span class="help-tip-text" hidden><span><b>What it is:</b> A domain (for example vpn.example.com) that WireGuard configs use to reach this server, instead of its IP address. No http:// and no port.</span><span><b>Who needs it:</b> Anyone who may move the server to another IP later (another provider, a new VPS). Point the domain&#x27;s A record at this server before installing.</span><span><b>If you change it:</b> The admin config and every device config name this domain, so a new server IP needs only a DNS change and no new configs. Empty uses the server&#x27;s IP; you can set a domain later in the panel (Settings → Server address).</span></span></label>
+            <input type="text" id="confVpnDomain" placeholder="e.g. vpn.example.com (empty: server IP)" style="padding: 10px;">
+          </div>
+
           <div style="border-top: 1px solid var(--border); margin: 12px 0;"></div>
 
           <!-- Database Settings Header -->
@@ -1934,6 +1940,7 @@
           adminPassword: document.getElementById('confAdminPass').value,
           // networkName/Cidr removed as we only use Admin Network now
           vpnIp: document.getElementById('confVpnIp').value,
+          vpnDomain: document.getElementById('confVpnDomain').value.trim(),
           dbName: document.getElementById('confDbName').value,
           dbUser: document.getElementById('confDbUser').value,
           dbPassword: document.getElementById('confDbPass').value

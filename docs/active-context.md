@@ -216,7 +216,8 @@
 - **P3 (2026-10-20, istifadəçi "davam"):** `dnsfwd` paketi (`4e4e7be`) + qoşulma: konfiq DNS = hub ünvanı, hub şəbəkənin DNS serverlərinə ötürür; DNS serverlərini dəyişmək konfiqi dəyişmir; firewall-da wg-dən 53 açıq. Test stack-də real: ünvan `lo`-ya əlavə olunandan sonra dinləyici özü qalxdı, `nslookup example.com 10.20.0.1` cavab verdi, nft sintaksisi `nft -c` ilə OK.
 - **P3 review düzəlişləri:** hub ünvanı DNS serveri kimi qadağan + siyahıdan atılır (döngü agent tərəfindən təkrarlanmışdı: 1 sorğu → minlərlə goroutine); dinləyici yalnız öz şəbəkəsinə cavab verir, firewall şəbəkə başına yalnız öz hub ünvanına (A şəbəkəsi B-nin DNS-ini işlədə bilmirdi təcridi pozmadan); TCP limit 64, Accept xətasında dayanmır; SERVFAIL; son işləyən server əvvəl; `SyncDNS` mutex. Real: öz şəbəkəsi UDP/TCP cavab aldı, başqa şəbəkə timeout, iptables `NOVUSGATE-DNS` düzgün. Təxirə salınan minor-lar: yenilənmədən sonra hamı bir dəfə "köhnədir" görür (format dəyişdi); dinləyici qalxana qədər konfiq birbaşa DNS-ə keçə bilər; split tunel + `client_dns` olan şəbəkədə bütün DNS indi hubdan keçir (hub/tunel düşəndə ad həlli də düşür).
 - **Web boşluqları (2026-10-20):** API xəta kodları paneldə az/en (`apiErrors` namespace, `setErrorTranslator`); "konfiq köhnədir" və DNS sahəsi mətnləri yeniləndi; şəbəkə səhifəsində "Hub üzərindən DNS" vəziyyəti (`dns_served`/`dns_error`).
-- **Davam:** Center quraşdırmada domen sahəsi; README/USER_GUIDE; P4 (NETMAP) — dizayn sualı istifadəçidə.
+- **Center domen sahəsi:** quraşdırmada `vpnDomain` → admin konfiqi və `WG_SERVER_ENDPOINT` domeni işlədir (test 112/112; forma vizual yoxlanmayıb — qoşulmuş server tələb edir).
+- **Davam:** README/USER_GUIDE; P4 (NETMAP) — dizayn sualı istifadəçidə.
 ## Son Dəyişikliklər
 | Tarix | Dəyişiklik | Fayllar | Səbəb |
 |---|---|---|---|

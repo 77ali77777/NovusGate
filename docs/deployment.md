@@ -129,3 +129,6 @@ Update-dən sonra paneldə yaradılmış drop/reject VPN qaydaları iptables rej
 
 ## Admin VPN konfiqi və ünvan hovuzu (2026-10-19)
 Center `install.sh` admin konfiqinə `AllowedIPs = 10.0.0.0/8` yazır (admin alt şəbəkəsi 10.x-dirsə; başqa aralıqdırsa öz alt şəbəkəsini). Panel şəbəkələri bu hovuzda yaradır, ona görə yeni şəbəkələr üçün admin konfiqini dəyişmək lazım deyil. Mövcud quraşdırmalarda köhnə `admin-vpn.conf` yalnız wg0-u görür — Admin VPN-də özünüzə cihaz yaradın.
+
+## Server domeni quraşdırmada (2026-10-20)
+Center quraşdırma formasında istəyə bağlı **Server domain** sahəsi (`vpnDomain`, RFC 1123 ad, http:// və port olmadan; yanlışsa 400). Verilsə admin konfiqi `Endpoint = <domen>:51820` alır və `.env`-də `WG_SERVER_ENDPOINT=<domen>` yazılır, ona görə yeni şəbəkələrin cihaz konfiqləri də domeni göstərir. Quraşdırmadan əvvəl domenin A yazısını serverə yönəldin. Boş qalsa server IP-si (əvvəlki kimi). Sonradan paneldə Settings → Server ünvanı.

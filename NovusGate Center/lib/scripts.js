@@ -102,6 +102,7 @@ const GENERATE_INSTALL_SCRIPT = (config) =>
     VPN_IP: shellQuote(config.vpnIp || '10.99.0.1'),
     VPN_SUBNET: shellQuote(config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.0/24') : '10.99.0.0/24'),
     VPN_CLIENT_IP: shellQuote(config.vpnIp ? config.vpnIp.replace(/\.\d+$/, '.2') : '10.99.0.2'),
+    VPN_DOMAIN: shellQuote(config.vpnDomain || ''), // empty: the server IP
     DB_NAME: shellQuote(config.dbName || 'NovusGate'),
     DB_USER: shellQuote(config.dbUser || 'NovusGate'),
     DB_PASSWORD: shellQuote(config.dbPassword || ''), // empty: generated on the server

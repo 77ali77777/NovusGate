@@ -42,3 +42,25 @@ test('install routes the address pool in the admin config', () => {
   // A hub reached at a 10.x address: its handshakes would go into the tunnel.
   assert.strictEqual(pick('10.99.0.0/24', '10.0.5.4'), '10.99.0.0/24');
 });
+
+// Server-side routing P2 at install: an optional domain names the hub in
+// the admin config and in every device config (WG_SERVER_ENDPOINT), so a
+// new server IP changes only a DNS record.
+test('install takes an optional domain for the endpoint', () => {
+  const { validateInstallConfig } = require('../lib/validate');
+  assert.strictEqual(validateInstallConfig({ vpnDomain: 'vpn.example.com' }), '');
+  assert.strictEqual(validateInstallConfig({ vpnDomain: '' }), '');
+  for (const bad of ['http://vpn.example.com', 'vpn.example.com:51820', '1.2.3', 'a..b', "x'; reboot"]) {
+    assert.notStrictEqual(validateInstallConfig({ vpnDomain: bad }), '', bad);
+  }
+  const withDomain = generateAll({ ...sampleConfig, vpnDomain: 'vpn.example.com' }).install;
+  assert.match(withDomain, /^VPN_DOMAIN='vpn\.example\.com'$/m);
+  assert.match(withDomain, /^Endpoint = \$ENDPOINT_HOST:51820$/m);
+  assert.match(withDomain, /^WG_SERVER_ENDPOINT=\$ENDPOINT_HOST$/m);
+  const line = withDomain.split('\n').find((l) => l.startsWith('ENDPOINT_HOST='));
+  const { execFileSync } = require('node:child_process');
+  const pick = (domain) => execFileSync('sh', ['-c', `VPN_DOMAIN=${domain}; SERVER_IP=203.0.113.5; ${line}; printf %s "$ENDPOINT_HOST"`]).toString();
+  assert.strictEqual(pick('vpn.example.com'), 'vpn.example.com');
+  assert.strictEqual(pick("''"), '203.0.113.5');
+  assert.match(generateAll(sampleConfig).install, /^VPN_DOMAIN=''$/m);
+});
